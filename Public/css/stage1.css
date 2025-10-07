@@ -189,12 +189,26 @@
   transition: all 185ms;
 }
 
+p.cps-humain {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  font-size: 0.85rem;
+  color: #00ff00;
+  font-weight: bold;
+  font-style: italic;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
 .zone-wrap .acps {
   font-size: 14px;
   position: absolute;
   left: 40%;
   bottom: -30px;
   transform: translateX(-60%, 0%);
+  width: 100%;
 }
 
 .reset {

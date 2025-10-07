@@ -18,139 +18,202 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
             document.addEventListener('DOMContentLoaded', () => {
-  const socket = io();
+    let estHote = false;
+    const socket = io();
 
-  let myName = null;
+    socket.on("you:role", (data) => {
+        estHote = data.estHote;
 
-  const me = document.getElementById("me");
-  const usersCount = document.getElementById("usersCount");
-  const form = document.getElementById("chat-form");
-  const input = document.getElementById("chat-input");
-  const messages = document.getElementById("chat-messages");
-  const submit = document.querySelector(".submit");
 
-  // ========== CHAT ==========
-  function addMessage({ author, text, at, type = "user" }) {
-    const el = document.createElement("div");
-    el.className = `msg ${type}`;
-   const time = at
-  ? new Date(at).toLocaleString("fr-FR", {
-      dateStyle: "short",
-      timeStyle: "medium",
-    })
-  : "";
-    el.innerHTML = `
-      <div class="meta">
-        <span class="author">[${author}]</span>
-        <span class="time"><i>${time}</i></span>
-      </div>
-      <div class="text"></div>
-    `;
-    el.querySelector(".text").textContent = text;
-    messages.appendChild(el);
-    messages.scrollTop = messages.scrollHeight;
-  }
+        let myName = null;
 
-  socket.on("you:name", (name) => {
-    myName = name || "inconnu";
-    if (me) me.textContent = `Connecté en tant que : ${myName} | >`;
-  });
+        const me = document.getElementById("me");
+        const usersCount = document.getElementById("usersCount");
+        const form = document.getElementById("chat-form");
+        const input = document.getElementById("chat-input");
+        const messages = document.getElementById("chat-messages");
+        const submit = document.querySelector(".submit");
 
-  socket.on("chat:history", (history) => {
-    if (!Array.isArray(history)) return;
-    history.forEach((msg) => {
-      addMessage({ author: msg.name, text: msg.text, at: msg.at });
-    });
-  });
-
-  socket.on("system:info", (text) =>
-    addMessage({ author: "Système", text, type: "system" })
-  );
-
-  socket.on("users:list", (list) => {
-    if (usersCount)
-      usersCount.textContent = `Utilisateurs en ligne: ${list.length}`;
-  });
-
-  socket.on("chat:message", (payload) =>
-    addMessage({ author: payload.name, text: payload.text, at: payload.at })
-  );
-
-  if (form) {
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
-      socket.emit("chat:message", { text });
-      input.value = "";
-      input.focus();
-    });
-    window.addEventListener("keydown", (event) => {
-      if (document.activeElement === input) {
-        if (event.key === "Enter") {
-          submit.click();
+        // ========== CHAT ==========
+        function addMessage({
+            author,
+            text,
+            at,
+            type = "user"
+        }) {
+            const el = document.createElement("div");
+            el.className = `msg ${type}`;
+            const time = at ?
+                new Date(at).toLocaleString("fr-FR", {
+                    dateStyle: "short",
+                    timeStyle: "medium",
+                }) :
+                "";
+            el.innerHTML = `
+      			<div class="meta">
+        			<span class="author">[${author}]</span>
+        			<span class="time"><i>${time}</i></span>
+      			</div>
+      			<div class="text"></div>
+    		`;
+            el.querySelector(".text").textContent = text;
+            messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
         }
-      }
-    });
-  }
 
-  // ========== CLICKER ==========
-  const zone = document.querySelector(".zone");
-  const acpsEl = document.querySelector(".acps");
-  const resetBtn = document.querySelector(".reset");
-  const medalsWrap = document.querySelector(".medals-wrap");
-  const leaderboardBody = document.querySelector("#leaderboard tbody");
-  const yourScoreEl = document.getElementById("your-score");
+        socket.on("you:name", (name) => {
+            myName = name || "inconnu";
+            if (me) me.textContent = `Connecté en tant que : ${myName} | >`;
+        });
 
-  let currentScore = 0;
-  let currentAutoClick = 0;
-  let autoClickTimer = null;
-  let unlockedMedals = new Set();
+        socket.on("chat:history", (history) => {
+            if (!Array.isArray(history)) return;
+            history.forEach((msg) => {
+                addMessage({
+                    author: msg.name,
+                    text: msg.text,
+                    at: msg.at
+                });
+            });
+        });
 
-  const medals = [
-    { name: "Bronze", icon: "🥉", threshold: 2500, cps: 1 },
-    { name: "Argent", icon: "🥈", threshold: 5000, cps: 3 },
-    { name: "Or", icon: "🥇", threshold: 10000, cps: 5 },
-    { name: "Diamant", icon: "💎", threshold: 20000, cps: 7 },
-    { name: "Rubis", icon: "❤️‍🔥", threshold: 40000, cps: 9 },
-    { name: "Saphir", icon: "💠", threshold: 80000, cps: 11 },
-    { name: "Légendaire", icon: "👑", threshold: 160000, cps: 13 },
-  ];
+        socket.on("system:info", (text) =>
+            addMessage({
+                author: "Système",
+                text,
+                type: "system"
+            })
+        );
 
-  function setAutoClick(cps) {
-    if (autoClickTimer) clearInterval(autoClickTimer);
-    currentAutoClick = cps;
-    if (acpsEl) acpsEl.textContent = cps > 0 ? `+ ${cps} cps` : "";
-    if (cps > 0) {
-  const delay = 1000; 
-  autoClickTimer = setInterval(() => {
-    for (let i = 0; i < cps; i++) {
-      socket.emit("clicker:click");
-    }
-  }, delay + 575);
-  }
-  }
+        socket.on("users:list", (list) => {
+            if (usersCount)
+                usersCount.textContent = `Utilisateurs en ligne: ${list.length}`;
+        });
 
-  function stopAutoClicks() {
-    if (autoClickTimer) clearInterval(autoClickTimer);
-    currentAutoClick = 0;
-    if (acpsEl) acpsEl.textContent = "";
-  }
+        socket.on("chat:message", (payload) =>
+            addMessage({
+                author: payload.name,
+                text: payload.text,
+                at: payload.at
+            })
+        );
 
-  function bumpZone() {
-    zone?.classList.add("temp");
-    setTimeout(() => zone?.classList.remove("temp"), 120);
-  }
+        if (form) {
+            form.addEventListener("submit", (event) => {
+                event.preventDefault();
+                const text = input.value.trim();
+                if (!text) return;
+                socket.emit("chat:message", {
+                    text
+                });
+                input.value = "";
+                input.focus();
+            });
+            window.addEventListener("keydown", (event) => {
+                if (document.activeElement === input) {
+                    if (event.key === "Enter") {
+                        submit.click();
+                    }
+                }
+            });
+        }
 
-  function showNotif(text, duration = 3000) {
-    const notif = document.createElement("div");
-    notif.className = "notif";
-    notif.textContent = text;
-    notif.style.cssText = `
+        // ========== CLICKER ==========
+        const zone = document.querySelector(".zone");
+        const acpsEl = document.querySelector(".acps");
+        const resetBtn = document.querySelector(".reset");
+        const medalsWrap = document.querySelector(".medals-wrap");
+        const leaderboardBody = document.querySelector("#leaderboard tbody");
+        const yourScoreEl = document.getElementById("your-score");
+
+        let scoreActuel = 0;
+        let cpsActuel = 0;
+        let autoClickTimer = null;
+        let medalsDebloquees = new Set();
+        let clicksManuels = [];
+        let cpsHumain = 0;
+        let timerHumain = null;
+
+        const medals = [{
+                nom: "Bronze",
+                icon: "🥉",
+                pallier: 2500,
+                cps: 1
+            },
+            {
+                nom: "Argent",
+                icon: "🥈",
+                pallier: 5000,
+                cps: 3
+            },
+            {
+                nom: "Or",
+                icon: "🥇",
+                pallier: 10000,
+                cps: 5
+            },
+            {
+                nom: "Diamant",
+                icon: "💎",
+                pallier: 20000,
+                cps: 7
+            },
+            {
+                nom: "Rubis",
+                icon: "❤️‍🔥",
+                pallier: 40000,
+                cps: 9
+            },
+            {
+                nom: "Saphir",
+                icon: "💠",
+                pallier: 80000,
+                cps: 11
+            },
+            {
+                nom: "Légendaire",
+                icon: "👑",
+                pallier: 160000,
+                cps: 13
+            },
+        ];
+
+        function setAutoClick(cps) {
+            if (autoClickTimer) clearInterval(autoClickTimer);
+            cpsActuel = cps;
+
+            if (acpsEl) acpsEl.textContent = cps > 0 ? `+ ${cps} cps` : "";
+            if (cps > 0) {
+                const delay = 1000;
+                autoClickTimer = setInterval(() => {
+                    for (let i = 0; i < cps; i++) {
+                        socket.emit("clicker:click");
+                    }
+                }, delay + 575);
+            }
+        }
+
+        function stopAutoClicks() {
+            if (autoClickTimer) clearInterval(autoClickTimer);
+            cpsActuel = 0;
+            if (acpsEl) acpsEl.textContent = "";
+        }
+
+        function bumpZone() {
+            zone?.classList.add("temp");
+            setTimeout(() => zone?.classList.remove("temp"), 120);
+        }
+
+        function showNotif(text, duration = 4500) {
+            const notif = document.createElement("div");
+            notif.className = "notif";
+            notif.textContent = text;
+            notif.style.cssText = `
       position: fixed;
       top: 20px;
       right: 20px;
       background: #00ff00;
+      opacity: 0.87;
       color: #000;
       padding: 15px 25px;
       border-radius: 8px;
@@ -158,96 +221,114 @@
       z-index: 9999;
       animation: slideIn 0.3s ease;
     `;
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), duration);
-  }
-
-  function checkMedals(score) {
-    let targetMedal = null;
-    for (let i = medals.length - 1; i >= 0; i--) {
-      if (score >= medals[i].threshold) {
-        targetMedal = medals[i];
-        break;
-      }
-    }
-
-    if (targetMedal) {
-      medals.forEach((medal) => {
-        const medalEl = medalsWrap?.querySelector(`.medal[data-name="${medal.name}"]`);
-        if (!medalEl) return;
-
-        if (medal.threshold <= targetMedal.threshold) {
-          // Cette médaille devrait être débloquée
-          if (!medalEl.classList.contains("shown")) {
-            medalEl.classList.add("shown");
-            medalEl.classList.remove("hidden");
-          }
-
-          if (!unlockedMedals.has(medal.name)) {
-            unlockedMedals.add(medal.name);
-            if (medal === targetMedal) {
-              showNotif(`🎉 Médaille ${medal.name} débloquée! ${medal.icon}`);
-            }
-          }
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), duration);
         }
-      });
 
-      if (targetMedal.cps !== currentAutoClick) {
-        setAutoClick(targetMedal.cps);
-      }
-    }
-  }
+        function verifMedals(score) {
+            let medalCible = null;
+            for (let i = medals.length - 1; i >= 0; i--) {
+                if (score >= medals[i].pallier) {
+                    medalCible = medals[i];
+                    break;
+                }
+            }
 
-  function resetProgress() {
-    const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score et tes médailles seront perdus !"
-    );
-    if (!confirmReset) return;
+            if (medalCible) {
+                medals.forEach((medal) => {
+                    const medalEl = medalsWrap?.querySelector(`.medal[data-name="${medal.nom}"]`);
+                    if (!medalEl) return;
 
-    socket.emit("clicker:reset");
-    stopAutoClicks();
-    currentScore = 0;
-    unlockedMedals.clear();
-    if (yourScoreEl) yourScoreEl.textContent = "0";
-    if (acpsEl) acpsEl.textContent = "";
-    medalsWrap?.querySelectorAll(".medal").forEach((m) => {
-      m.classList.remove("shown");
-      m.classList.add("hidden");
+                    if (medal.pallier <= medalCible.pallier) {
+                        if (!medalEl.classList.contains("shown")) {
+                            medalEl.classList.add("shown");
+                            medalEl.classList.remove("hidden");
+                        }
+
+                        if (!medalsDebloquees.has(medal.nom)) {
+                            medalsDebloquees.add(medal.nom);
+                            if (medal === medalCible) {
+                                showNotif(`>> Médaille ${medal.nom} débloquée! ${medal.icon}`);
+                            }
+                        }
+                    }
+                });
+
+                if (medalCible.cps !== cpsActuel) {
+                    setAutoClick(medalCible.cps);
+                }
+            }
+        }
+
+        function resetProgress() {
+            const confirmReset = confirm(
+                "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score et tes médailles seront perdus !"
+            );
+            if (!confirmReset) return;
+
+            socket.emit("clicker:reset");
+            stopAutoClicks();
+            scoreActuel = 0;
+            medalsDebloquees.clear();
+            if (yourScoreEl) yourScoreEl.textContent = "0";
+            if (acpsEl) acpsEl.textContent = "";
+            medalsWrap?.querySelectorAll(".medal").forEach((m) => {
+                m.classList.remove("shown");
+                m.classList.add("hidden");
+            });
+            showNotif("🔁 Progression réinitialisée !");
+        }
+
+        if (resetBtn) resetBtn.addEventListener("click", resetProgress);
+
+        function updateDisplay(score) {
+            scoreActuel = score;
+            bumpZone();
+            if (zone) zone.innerHTML = `<i>${score.toLocaleString()}</i>`;
+            verifMedals(score);
+        }
+
+        socket.on("clicker:you", ({
+            score
+        }) => {
+            updateDisplay(score);
+            if (yourScoreEl) yourScoreEl.textContent = score;
+        });
+
+        socket.on("leaderboard:update", (items) => {
+            if (!leaderboardBody) return;
+            leaderboardBody.innerHTML = "";
+            items.forEach((row, i) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${i + 1}</td><td>${row.ip}</td><td>${row.score}</td>`;
+                if (row.score === scoreActuel) tr.style.background = "#000";
+                leaderboardBody.appendChild(tr);
+            });
+        });
+
+        if (zone) {
+            zone.addEventListener("click", () => {
+                socket.emit("clicker:click");
+
+                const mtn = Date.now();
+                clicksManuels.push(mtn);
+                clicksManuels = clicksManuels.filter(tps => mtn - tps < 1000);
+                cpsHumain = clicksManuels.length / 1; // cps sur 1 s
+
+                clearTimeout(timerHumain);
+                timerHumain = setTimeout(() => {
+                  cpsHumain = 0;
+                }, 1100);
+            });
+        }
+
+        setInterval(() => { // affich cps humain
+          if (document.querySelector(".cps-humain")) {
+            const cpsHumainTxt = cpsHumain >= 0 ? `${cpsHumain.toFixed(1)} CPS` : "";
+            document.querySelector(".cps-humain").textContent = `${cpsHumainTxt ? cpsHumainTxt : ""}`;
+          }
+        }, 225);
     });
-    showNotif("🔁 Progression réinitialisée !");
-  }
-
-  if (resetBtn) resetBtn.addEventListener("click", resetProgress);
-
-  function updateDisplay(score) {
-    currentScore = score;
-    bumpZone();
-    if (zone) zone.innerHTML = `<i>${score.toLocaleString()}</i>`;
-    checkMedals(score);
-  }
-
-  // ========== SOCKET EVENTS ==========
-  socket.on("clicker:you", ({ score }) => {
-    updateDisplay(score);
-    if (yourScoreEl) yourScoreEl.textContent = score;
-  });
-
-  socket.on("leaderboard:update", (items) => {
-    if (!leaderboardBody) return;
-    leaderboardBody.innerHTML = "";
-    items.forEach((row, i) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${i + 1}</td><td>${row.ip}</td><td>${row.score}</td>`;
-      if (row.score === currentScore) tr.style.background = "#1f2937";
-      leaderboardBody.appendChild(tr);
-    });
-  });
-
-  if (zone) {
-    zone.addEventListener("click", () => {
-      socket.emit("clicker:click");
-    });
-  }
 });
         </script>
   </head>
@@ -287,6 +368,7 @@
 
       <div class="zone-wrap" data-state="shown">
         <div class="zone"></div>
+        <p class="cps-humain"></p>
         <i class="acps"></i>
         <button class="reset">RESET</button>
       </div>

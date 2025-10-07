@@ -197,8 +197,7 @@ function loop() {
 
   // nuages
   cloudTimer++;
-  if (cloudTimer > 100) {
-    // spawn plus fréquent qu'avant (200 → 100)
+  if (cloudTimer > 70) {
     clouds.push(new Cloud());
     cloudTimer = 0;
   }
@@ -273,56 +272,64 @@ function showGameOver() {
 
   c.font = "20px Arial";
   c.fillText(
-    '"Espace" ou "Z" pour restart',
+    'Clique sur Jouer ou appuie sur "Z" pour restart',
     canvas.width / 2,
     canvas.height / 2 + 20
   );
 }
 
 // =========================
-// RESET
+// RESET / STOP / START
 // =========================
-function resetGame() {
+let gameLoopId = null;
+
+function startGame() {
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+  isFirstStart = false;
+  gameOver = false;
   score = 0;
   gameSpeed = INITIAL_SPEED;
   cacti = [];
   clouds = [];
   spawnTimer = 0;
   cloudTimer = 0;
-  gameOver = false;
   dino.reset();
-
   loop();
+}
+
+function stopGame() {
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
+  gameLoopId = null;
+}
+
+function resetHighScore() {
+  highScore = 0;
+  localStorage.setItem("highScore", "0");
+  showGameOver();
 }
 
 // =========================
 // CONTROLES
 // =========================
 document.querySelector(".dino-start").addEventListener("click", () => {
-  if (gameOver || isFirstStart) {
-    resetGame();
-    isFirstStart = false;
+  if (isFirstStart || gameOver) {
+    startGame();
   } else {
     dino.jump();
   }
 });
 
 document.querySelector(".dino-reset").addEventListener("click", () => {
-  resetGame();
+  resetHighScore();
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === " " || event.key.toLowerCase() === "z") {
-    if (gameOver || isFirstStart) {
-      resetGame();
-      isFirstStart = false;
+  if (event.key.toLowerCase() === "z") {
+    // ca marche avec ESPACE ... La vie je capte pas
+    if (isFirstStart || gameOver) {
+      startGame();
     } else {
       dino.jump();
     }
   }
 });
-
-// =========================
-// DEMARRAGE AUTO
-// =========================
-loop();
