@@ -1,26 +1,23 @@
 <!DOCTYPE html>
 <html>
 
-    <head>
-        <title>Page de l'ennui</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script defer type="text/javascript" src="js/horloge.js"></script>
-        <script defer type="text/javascript" src="js/clicker.js"></script>
-        <script defer type="text/javascript" src="js/affichage.js"></script>
-        <script defer src="js/dino.js"></script>
-        <link rel="stylesheet" type="text/css" href="css/common.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage1.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage2.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage3.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage4.css" />
-        <link rel='shortcut icon' type="img/png" href="icon.png" />
+  <head>
+    <title>Page de l'ennui</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script defer type="text/javascript" src="js/horloge.js"></script>
+    <script defer type="text/javascript" src="js/affichage.js"></script>
+    <script defer src="js/dino.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/common.css" />
+    <link rel="stylesheet" type="text/css" href="css/stage1.css" />
+    <link rel="stylesheet" type="text/css" href="css/stage2.css" />
+    <link rel="stylesheet" type="text/css" href="css/stage3.css" />
+    <link rel="stylesheet" type="text/css" href="css/stage4.css" />
+    <link rel='shortcut icon' type="img/png" href="icon.png" />
 
-        <script src="/socket.io/socket.io.js"></script>
-        <!--<script defer type="text/javascript" src="js/chat.js"></script>
-        <script defer type="text/javascript" src="js/leaderboard.js"></script>-->
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {(function () {
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+            document.addEventListener('DOMContentLoaded', () => {
   const socket = io();
 
   let myName = null;
@@ -30,9 +27,9 @@
   const form = document.getElementById("chat-form");
   const input = document.getElementById("chat-input");
   const messages = document.getElementById("chat-messages");
-
   const submit = document.querySelector(".submit");
 
+  // ========== CHAT ==========
   function addMessage({ author, text, at, type = "user" }) {
     const el = document.createElement("div");
     el.className = `msg ${type}`;
@@ -54,9 +51,17 @@
     if (me) me.textContent = `Connecté en tant que : ${myName} | >`;
   });
 
+  socket.on("chat:history", (history) => {
+    if (!Array.isArray(history)) return;
+    history.forEach((msg) => {
+      addMessage({ author: msg.name, text: msg.text, at: msg.at });
+    });
+  });
+
   socket.on("system:info", (text) =>
     addMessage({ author: "Système", text, type: "system" })
   );
+
   socket.on("users:list", (list) => {
     if (usersCount)
       usersCount.textContent = `Utilisateurs en ligne: ${list.length}`;
@@ -83,41 +88,42 @@
       }
     });
   }
- const zone = document.querySelector(".zone");
-  const acpsEl = document.querySelector(".acps"); // auto-clicks par seconde
+
+  // ========== CLICKER ==========
+  const zone = document.querySelector(".zone");
+  const acpsEl = document.querySelector(".acps");
   const resetBtn = document.querySelector(".reset");
   const medalsWrap = document.querySelector(".medals-wrap");
   const leaderboardBody = document.querySelector("#leaderboard tbody");
   const yourScoreEl = document.getElementById("your-score");
 
-  // --- État local ---
   let currentScore = 0;
-  let currentAutoClick = 0; // clicks/s
+  let currentAutoClick = 0;
   let autoClickTimer = null;
-  let currentMedal = null;
+  let unlockedMedals = new Set();
 
-  // --- Paliers et médailles ---
   const medals = [
     { name: "Bronze", icon: "🥉", threshold: 2500, cps: 1 },
     { name: "Argent", icon: "🥈", threshold: 5000, cps: 3 },
-    { name: "Or", icon: "🥇", threshold: 10000, cps: 6 },
-    { name: "Diamant", icon: "💎", threshold: 20000, cps: 9 },
-    { name: "Rubis", icon: "❤️‍🔥", threshold: 40000, cps: 12 },
-    { name: "Saphir", icon: "💠", threshold: 80000, cps: 15 },
-    { name: "Légendaire", icon: "👑", threshold: 160000, cps: 20 },
+    { name: "Or", icon: "🥇", threshold: 10000, cps: 5 },
+    { name: "Diamant", icon: "💎", threshold: 20000, cps: 7 },
+    { name: "Rubis", icon: "❤️‍🔥", threshold: 40000, cps: 9 },
+    { name: "Saphir", icon: "💠", threshold: 80000, cps: 11 },
+    { name: "Légendaire", icon: "👑", threshold: 160000, cps: 13 },
   ];
 
-  // --- Gestion auto-click permanent (non cumulatif) ---
   function setAutoClick(cps) {
     if (autoClickTimer) clearInterval(autoClickTimer);
     currentAutoClick = cps;
-    if (acpsEl) acpsEl.textContent = cps > 0 ? `+${cps} cps` : "";
+    if (acpsEl) acpsEl.textContent = cps > 0 ? `+ ${cps} cps` : "";
     if (cps > 0) {
-      const delay = 1000 / cps;
-      autoClickTimer = setInterval(() => {
-        socket.emit("clicker:click");
-      }, delay);
+  const delay = 1000; 
+  autoClickTimer = setInterval(() => {
+    for (let i = 0; i < cps; i++) {
+      socket.emit("clicker:click");
     }
+  }, delay + 575);
+  }
   }
 
   function stopAutoClicks() {
@@ -126,65 +132,97 @@
     if (acpsEl) acpsEl.textContent = "";
   }
 
-  // --- Effets visuels ---
   function bumpZone() {
-    zone?.classList.add("pressed");
-    setTimeout(() => zone?.classList.remove("pressed"), 120);
+    zone?.classList.add("temp");
+    setTimeout(() => zone?.classList.remove("temp"), 120);
   }
 
   function showNotif(text, duration = 3000) {
     const notif = document.createElement("div");
     notif.className = "notif";
     notif.textContent = text;
+    notif.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #00ff00;
+      color: #000;
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-weight: bold;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+    `;
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), duration);
   }
 
-  // --- Médailles ---
   function checkMedals(score) {
-    for (const medal of medals) {
-      if (score >= medal.threshold && currentMedal !== medal.name) {
-        currentMedal = medal.name;
-        unlockMedal(medal);
+    let targetMedal = null;
+    for (let i = medals.length - 1; i >= 0; i--) {
+      if (score >= medals[i].threshold) {
+        targetMedal = medals[i];
         break;
+      }
+    }
+
+    if (targetMedal) {
+      medals.forEach((medal) => {
+        const medalEl = medalsWrap?.querySelector(`.medal[data-name="${medal.name}"]`);
+        if (!medalEl) return;
+
+        if (medal.threshold <= targetMedal.threshold) {
+          // Cette médaille devrait être débloquée
+          if (!medalEl.classList.contains("shown")) {
+            medalEl.classList.add("shown");
+            medalEl.classList.remove("hidden");
+          }
+
+          if (!unlockedMedals.has(medal.name)) {
+            unlockedMedals.add(medal.name);
+            if (medal === targetMedal) {
+              showNotif(`🎉 Médaille ${medal.name} débloquée! ${medal.icon}`);
+            }
+          }
+        }
+      });
+
+      // Met à jour l'auto-click avec la valeur de la médaille la plus élevée
+      if (targetMedal.cps !== currentAutoClick) {
+        setAutoClick(targetMedal.cps);
       }
     }
   }
 
-  function unlockMedal(medal) {
-    setAutoClick(medal.cps);
-
-    // Active visuellement la médaille correspondante
-    const medalEl = medalsWrap?.querySelector(`.medal[data-name="${medal.name}"]`);
-    if (medalEl) medalEl.classList.add("shown");
-  }
-
-  // --- Reset ---
   function resetProgress() {
-    const confirmReset = confirm("⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score et tes médailles seront perdus !");
+    const confirmReset = confirm(
+      "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score et tes médailles seront perdus !"
+    );
     if (!confirmReset) return;
 
     socket.emit("clicker:reset");
     stopAutoClicks();
     currentScore = 0;
-    currentMedal = null;
+    unlockedMedals.clear();
     if (yourScoreEl) yourScoreEl.textContent = "0";
     if (acpsEl) acpsEl.textContent = "";
-    medalsWrap?.querySelectorAll(".medal").forEach(m => m.classList.remove("shown"));
+    medalsWrap?.querySelectorAll(".medal").forEach((m) => {
+      m.classList.remove("shown");
+      m.classList.add("hidden");
+    });
     showNotif("🔁 Progression réinitialisée !");
   }
 
   if (resetBtn) resetBtn.addEventListener("click", resetProgress);
 
-  // --- Score & affichage ---
   function updateDisplay(score) {
     currentScore = score;
     bumpZone();
-    zone.innerHTML = `<i>${score.toLocaleString()}</i>`;
+    if (zone) zone.innerHTML = `<i>${score.toLocaleString()}</i>`;
     checkMedals(score);
   }
 
-  // --- Socket.IO ---
+  // ========== SOCKET EVENTS ==========
   socket.on("clicker:you", ({ score }) => {
     updateDisplay(score);
     if (yourScoreEl) yourScoreEl.textContent = score;
@@ -201,17 +239,16 @@
     });
   });
 
-  // --- Interaction utilisateur ---
   if (zone) {
     zone.addEventListener("click", () => {
       socket.emit("clicker:click");
     });
   }
-})();});
+});
         </script>
-    </head>
+  </head>
 
-    <script>
+  <script>
         //Commun
         document.addEventListener("keydown", (event) => {
             if (event.key === "Space" || event.key === "ArrowUp" || event.key === "Enter") {
@@ -220,93 +257,93 @@
         });
          </script>
 
-    <body>
+  <body>
 
-        <section id="1" class="first-stage">
-            <div class="btns-wrap">
-                <button class="H">Horloge</button>
-                <button class="P">Pauses</button>
-                <button class="C">Clicker</button>
-                <button class="M">Médailles</button>
-            </div>
+    <section id="1" class="first-stage">
+      <div class="btns-wrap">
+        <button class="H">Horloge</button>
+        <button class="P">Pauses</button>
+        <button class="C">Clicker</button>
+        <button class="M">Médailles</button>
+      </div>
 
-            <center>
-                <h1 data-state="shown"></h1>
+      <center>
+        <h1 data-state="shown"></h1>
 
-                <ul data-state="shown">
-                    <li data-debut-pause="8.9167">8H55</li>
-                    <li data-debut-pause="9.8333">9H50</li>
-                    <li data-debut-pause="11.0000">11H00</li>
-                    <li data-debut-pause="11.9167">11H55</li>
-                    <li data-debut-pause="15.7500">15H45</li>
-                    <li data-debut-pause="16.8333">16H50</li>
-                    <li data-debut-pause="17.9167">17H55</li>
-                </ul>
-            </center>
+        <ul data-state="hidden" style="visibility: hidden;">
+          <li data-debut-pause="8.9167">8H55</li>
+          <li data-debut-pause="9.8333">9H50</li>
+          <li data-debut-pause="11.0000">11H00</li>
+          <li data-debut-pause="11.9167">11H55</li>
+          <li data-debut-pause="15.7500">15H45</li>
+          <li data-debut-pause="16.8333">16H50</li>
+          <li data-debut-pause="17.9167">17H55</li>
+        </ul>
+      </center>
 
-            <div class="zone-wrap" data-state="shown">
-                <div class="zone"></div>
-                <i class="acps"></i>
-                <button class="reset">RESET</button>
-            </div>
+      <div class="zone-wrap" data-state="shown">
+        <div class="zone"></div>
+        <i class="acps"></i>
+        <button class="reset">RESET</button>
+      </div>
 
-            <div class="medals-wrap" data-state="shown">
-                <div data-name="Bronze" class="medal hidden first-reward"></div>
-                <div data-name="Argent"
-                    class="medal hidden second-reward"></div>
-                <div data-name="Or" class="medal hidden third-reward"></div>
-                <div data-name="Diamant"
-                    class="medal hidden fourth-reward"></div>
-                <div data-name="Rubis" class="medal hidden fifth-reward"></div>
-                <div data-name="Saphir" class="medal hidden sixth-reward"></div>
-                <div data-name="Légendaire"
-                    class="medal hidden seventh-reward"></div>
-            </div>
-        </section>
+      <div class="medals-wrap" data-state="shown">
+        <div data-name="Bronze" class="medal hidden first-reward"></div>
+        <div data-name="Argent"
+          class="medal hidden second-reward"></div>
+        <div data-name="Or" class="medal hidden third-reward"></div>
+        <div data-name="Diamant"
+          class="medal hidden fourth-reward"></div>
+        <div data-name="Rubis" class="medal hidden fifth-reward"></div>
+        <div data-name="Saphir" class="medal hidden sixth-reward"></div>
+        <div data-name="Légendaire"
+          class="medal hidden seventh-reward"></div>
+      </div>
+    </section>
 
-        <section id="2" class="second-stage">
-            <div class="dino-wrap">
-                <div class="dino-btns-wrap">
-                    <button class="dino-start">Jouer</button>
-                    <button class="dino-reset">Reset</button>
-                </div>
-                <canvas class="game"></canvas>
-            </div>
-        </section>
+    <section id="2" class="second-stage">
+      <div class="dino-wrap">
+        <div class="dino-btns-wrap">
+          <button class="dino-start">Jouer</button>
+          <button class="dino-reset">Reset</button>
+        </div>
+        <canvas class="game"></canvas>
+      </div>
+    </section>
 
-        <section id="3" class="third-stage">
-            <div class="chat-card" role="region" aria-label="Chat LAN">
-                <div class="chat-header">
-                    <h2>Chat.exe</h2>
-                    <div class="chat-status">
-                        <span id="me"></span>
-                        <span id="usersCount"></span>
-                    </div>
-                </div>
-                <div id="chat-messages" class="chat-messages"
-                    aria-live="polite"></div>
-                <form id="chat-form" autocomplete="off" autocorrect="off"
-                    class="chat-form">
-                    <input id="chat-input" type="text"
-                        placeholder="..."
-                        aria-label="Message" />
-                    <button type="submit" title="Envoyer"
-                        class="submit">Envoyer</button>
-                </form>
-            </div>
-        </section>
-        <section id="4" class="fourth-stage">
-            <div class="leaderboard-card">
-                <div class="leaderboard-header"><h2>Leaderboard.exe</h2>
-                    <div class="you-score">Votre score : <span
-                            id="your-score">0</span></div></div>
-                <table class="board" id="leaderboard">
-                    <thead><tr><th>Rang</th><th>IP</th><th>Score</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </section>
+    <section id="3" class="third-stage">
+      <div class="chat-card" role="region" aria-label="Chat LAN">
+        <div class="chat-header">
+          <h2>Chat.exe</h2>
+          <div class="chat-status">
+            <span id="me"></span>
+            <span id="usersCount"></span>
+          </div>
+        </div>
+        <div id="chat-messages" class="chat-messages"
+          aria-live="polite"></div>
+        <form id="chat-form" autocomplete="off" autocorrect="off"
+          class="chat-form">
+          <input id="chat-input" type="text"
+            placeholder="..."
+            aria-label="Message" />
+          <button type="submit" title="Envoyer"
+            class="submit">Envoyer</button>
+        </form>
+      </div>
+    </section>
+    <section id="4" class="fourth-stage">
+      <div class="leaderboard-card">
+        <div class="leaderboard-header"><h2>Leaderboard.exe</h2>
+          <div class="you-score">Votre score : <span
+              id="your-score">0</span></div></div>
+        <table class="board" id="leaderboard">
+          <thead><tr><th>Rang</th><th>IP</th><th>Score</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
-    </body>
+  </body>
 
 </html>

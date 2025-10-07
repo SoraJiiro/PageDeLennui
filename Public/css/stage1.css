@@ -192,9 +192,9 @@
 .zone-wrap .acps {
   font-size: 14px;
   position: absolute;
-  left: 20%;
+  left: 40%;
   bottom: -30px;
-  transform: translateX(-66%, 0%);
+  transform: translateX(-60%, 0%);
 }
 
 .reset {
@@ -223,18 +223,19 @@
 }
 
 .medals-wrap {
-  height: fit-content;
-  width: fit-content;
+  height: 85dvh;
+  width: 20dvw;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   position: absolute;
-  right: 50px;
+  right: 40px;
   top: 67px;
-  padding: 15px 15px;
+  padding: 5px;
   border: 4px solid #00ff00;
+  overflow: scroll;
 }
 
 .medals-wrap::before {
@@ -254,7 +255,7 @@
 }
 
 .medals-wrap .medal {
-  width: 10dvw;
+  width: 9dvw;
   height: 9dvw;
   border-radius: 50%;
   position: relative;
@@ -283,9 +284,13 @@
 
 .medals-wrap .medal.shown.first-reward {
   /*=== MEDAL 1 ====*/
-  background: #11b5ba;
-  background: linear-gradient(120deg, #11b5ba 30%, rgba(157, 242, 245, 1) 60%);
+  background: #b77641;
+  background: linear-gradient(120deg, #b77641 30%, #ffb476 60%);
   border: 5px solid #0a5254;
+}
+
+.medals-wrap .medal.shown:hover {
+  animation: spin 1s ease;
 }
 
 .medals-wrap .medal.shown::after {
@@ -305,7 +310,7 @@
 
 .medals-wrap .medal.shown.second-reward {
   /*=== MEDAL 2 ====*/
-  background: linear-gradient(120deg, #3cb371 30%, #7fffd4 60%);
+  background: linear-gradient(120deg, #57aeb7 30%, #95fffa 60%);
   border: 5px solid #1e6d4d;
 }
 
@@ -414,28 +419,113 @@
   color: #000;
 }
 
-/* tailles un peu progressives */
-.medal[data-name="Rubis"] {
-  background: radial-gradient(circle at 30% 30%, #ff0055, #7a001f);
-  box-shadow: 0 0 10px rgba(255, 0, 85, 0.6);
+.medal[data-name="Rubis"].shown {
+  background: linear-gradient(120deg, #f42370 30%, #f5b0de 60%);
+  border: 5px solid #ac0e58;
+  box-shadow: 0 0 30px rgba(255, 77, 198, 0.6);
 }
-.medal[data-name="Saphir"] {
-  background: radial-gradient(circle at 30% 30%, #00b4ff, #004d80);
-  box-shadow: 0 0 10px rgba(0, 180, 255, 0.6);
+.medal[data-name="Rubis"]::after {
+  content: "5";
+  color: #ac0e58;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
+}
+.medal[data-name="Saphir"].shown {
+  background: linear-gradient(120deg, #0000ff 30%, #84b9ff 60%);
+  border: 5px solid #1c008e;
+  box-shadow: 0 0 30px rgba(117, 214, 255, 0.6);
+}
+
+.medal[data-name="Saphir"]::after {
+  content: "6";
+  color: #1c008e;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
 }
 .medal[data-name="Légendaire"] {
-  background: radial-gradient(circle at 30% 30%, #fff56b, #c29100);
-  box-shadow: 0 0 12px rgba(255, 230, 100, 0.8);
+  border: 5px solid #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.medal[data-name="Légendaire"]::after {
+  content: "7";
+  color: #fff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
+  z-index: 1;
 }
 
 .medal[data-name="Légendaire"].shown {
   animation: glowLegend 2s ease-in-out infinite alternate;
+  transition: all 0.45s ease;
 }
+
+.medal[data-name="Légendaire"].shown:hover {
+  scale: 1.2;
+}
+
+.medal[data-name="Légendaire"].shown::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    #ff0000,
+    #ff0000,
+    #0000ff,
+    #c746ff,
+    #ff7f00,
+    #ffff00,
+    #2a9f2a,
+    #0000ff,
+    #c746ff,
+    #ff0000
+  );
+  background-size: 400% 400%;
+  animation: rainbowMove 3s ease infinite;
+  opacity: 0.8;
+  z-index: 0;
+}
+
 @keyframes glowLegend {
   from {
-    box-shadow: 0 0 10px rgba(255, 230, 100, 0.6);
+    box-shadow: 0 0 15px rgba(255, 230, 100, 0.8),
+      0 0 30px rgba(255, 100, 255, 0.4);
+    filter: brightness(1);
   }
   to {
-    box-shadow: 0 0 25px rgba(255, 230, 100, 1);
+    box-shadow: 0 0 30px rgba(255, 230, 100, 1),
+      0 0 79px rgba(255, 100, 255, 0.6);
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes rainbowMove {
+  0% {
+    background-position: 0% 50%;
+    rotate: 70deg;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+    rotate: -79deg;
   }
 }

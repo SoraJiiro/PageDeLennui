@@ -6,7 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const PORT = process.env.PORT || 7550;
-const HOST = "10.166.176.200";
+const HOST = "192.168.1.70";
 
 const app = express();
 const serveur = http.createServer(app);
@@ -54,7 +54,7 @@ function normalizeIp(addr) {
   if (addr === "::1") return "127.0.0.1";
   return addr;
 }
-function sortedLeaderboard() {
+function leaderboardClasse() {
   const arr = Object.entries(scores).map(([ip, score]) => ({
     ip,
     score: Number(score) || 0,
@@ -63,12 +63,12 @@ function sortedLeaderboard() {
   return arr;
 }
 function broadcastLeaderboard() {
-  io.emit("leaderboard:update", sortedLeaderboard());
+  io.emit("leaderboard:update", leaderboardClasse());
 }
 
-const clickWindowMs = 1000;
+const clickWindowMs = 1200;
 const clickMaxPerWindow = 22;
-const clickBuckets = new Map(); // socket.id -> { windowStart, count }
+const clickBuckets = new Map();
 
 function allowClick(socketId) {
   const now = Date.now();
@@ -91,7 +91,7 @@ io.on("connection", (socket) => {
   socket.emit("you:name", ip);
   socket.emit("chat:history", historique);
   socket.emit("clicker:you", { score: scores[ip] || 0 });
-  socket.emit("leaderboard:update", sortedLeaderboard());
+  socket.emit("leaderboard:update", leaderboardClasse());
 
   io.emit("system:info", `${ip} a rejoint le chat`);
   io.emit(
@@ -99,11 +99,11 @@ io.on("connection", (socket) => {
     Array.from(users.values()).map((u) => u.name)
   );
 
-  // Chat message
+  // MESSAGE HANDLER ICI
   socket.on("chat:message", ({ text }) => {
     const msg = String(text || "").trim();
     if (!msg) return;
-    const payload = { name: ip, text: msg, at: new Date().toISOString() };
+    const payload = { name: "Moi", text: msg, at: new Date().toISOString() };
     historique.push(payload);
     if (historique.length > 200) historique = historique.slice(-200);
     writeJSON(files.historique, historique);
