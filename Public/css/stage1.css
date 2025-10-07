@@ -1,0 +1,441 @@
+.fini::selection {
+  background: #000;
+  color: red;
+}
+
+.first-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100dvw;
+  height: 100dvh;
+}
+
+.first-stage h1 {
+  margin-top: 55px;
+  position: relative;
+  font-size: 6.5rem;
+  width: fit-content;
+}
+
+.first-stage h1::before {
+  content: "Horloge.exe";
+  background: #00ff00;
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.15rem;
+  background: #00ff00;
+  color: #000;
+  border-radius: 25px;
+  padding: 1px 8.5px;
+  width: fit-content;
+  font-weight: normal;
+}
+
+.first-stage ul {
+  margin-top: 115px;
+  font-size: 0.5rem;
+  width: 200px;
+  height: 8.5vh;
+  list-style: none;
+  position: relative;
+}
+
+.first-stage ul::before {
+  content: "Pauses.exe";
+  background: #00ff00;
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.15rem;
+  background: #00ff00;
+  color: #000;
+  border-radius: 25px;
+  padding: 1px 8.5px;
+  width: fit-content;
+  font-weight: normal;
+}
+
+.first-stage li {
+  border-left: 4px solid #00ff00;
+  border-right: 4px solid #00ff00;
+  width: 100%;
+  height: 90%;
+  transition: background 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3rem;
+  position: relative;
+}
+
+.first-stage li:nth-child(1) {
+  border-top: 4px solid #00ff00;
+}
+
+.first-stage li:last-child {
+  border-bottom: 4px solid #00ff00;
+}
+
+.first-stage li::after {
+  content: "(à suivre)";
+  position: absolute;
+  right: -200px;
+  top: 35%;
+  font-size: 1.45rem;
+  font-style: italic;
+  color: #00ff00;
+}
+
+.avenir {
+  background: #000;
+  color: #00ff00;
+}
+
+.avenir::after {
+  content: "";
+}
+
+.pendant {
+  background-color: #00ff00;
+  color: #000;
+}
+
+.fini {
+  background-color: red;
+  color: #000;
+}
+
+.fini::after {
+  content: "(passée)";
+  position: absolute;
+  right: -165px;
+  top: 35%;
+  font-size: 1.45rem;
+  font-style: italic;
+  color: #00ff00;
+}
+
+.pendant::after {
+  content: "(en pause)";
+  position: absolute;
+  right: -200px;
+  top: 35%;
+  font-size: 1.45rem;
+  font-style: italic;
+  color: #00ff00;
+}
+
+.zone-wrap {
+  position: absolute;
+  left: 50px;
+  bottom: 200px;
+  width: 300px;
+  height: fit-content;
+}
+
+.zone {
+  width: 100%;
+  height: 235px;
+  border-radius: 15px;
+  border: 3px solid #00ff00;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 185ms;
+  position: relative;
+  z-index: 5;
+}
+
+.zone::before {
+  content: "Clicker.exe";
+  background: #00ff00;
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.15rem;
+  background: #00ff00;
+  color: #000;
+  border-radius: 25px;
+  padding: 1px 8.5px;
+  width: fit-content;
+  font-weight: normal;
+  pointer-events: none;
+  cursor: default;
+  transition: all 185ms;
+}
+
+.first-stage i {
+  font-style: normal;
+  font-weight: bold;
+  font-size: 1.85rem;
+}
+
+.zone i::selection {
+  background: none;
+  color: #00ff00;
+}
+
+.temp {
+  scale: 1.075;
+  transition: all 185ms;
+}
+
+.zone-wrap .acps {
+  font-size: 14px;
+  position: absolute;
+  left: 20%;
+  bottom: -30px;
+  transform: translateX(-66%, 0%);
+}
+
+.reset {
+  background: #000;
+  color: #00ff00;
+  width: 40%;
+  height: 65px;
+  font-size: x-large;
+  font-weight: bold;
+  letter-spacing: 1.25px;
+  border: 3px solid #00ff00;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 110px);
+  cursor: pointer;
+  transition: all 325ms ease-out;
+}
+
+.reset:hover {
+  color: #000;
+  background: #00ff00;
+  border: 2px solid #000;
+  outline: 2px solid #00ff00;
+  transition: all 325ms ease-out;
+}
+
+.medals-wrap {
+  height: fit-content;
+  width: fit-content;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  position: absolute;
+  right: 50px;
+  top: 67px;
+  padding: 15px 15px;
+  border: 4px solid #00ff00;
+}
+
+.medals-wrap::before {
+  content: "Médailles.exe";
+  background: #00ff00;
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.15rem;
+  background: #00ff00;
+  color: #000;
+  border-radius: 25px;
+  padding: 1px 8.5px;
+  width: fit-content;
+  font-weight: normal;
+}
+
+.medals-wrap .medal {
+  width: 10dvw;
+  height: 9dvw;
+  border-radius: 50%;
+  position: relative;
+}
+
+.medals-wrap .medal.hidden {
+  border: 5px dotted gray;
+  background: none;
+}
+
+.medals-wrap .medal:hover {
+  cursor: pointer;
+}
+
+.medals-wrap .medal.hidden::after {
+  content: "?";
+  color: gray;
+  position: absolute;
+  left: 52%;
+  top: 50%;
+  transform: translate(-48%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
+  font-size: 6.5rem;
+}
+
+.medals-wrap .medal.shown.first-reward {
+  /*=== MEDAL 1 ====*/
+  background: #11b5ba;
+  background: linear-gradient(120deg, #11b5ba 30%, rgba(157, 242, 245, 1) 60%);
+  border: 5px solid #0a5254;
+}
+
+.medals-wrap .medal.shown::after {
+  font-size: 2.5rem;
+}
+
+.medals-wrap .medal.shown.first-reward::after {
+  content: "1";
+  color: #0a5254;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
+}
+
+.medals-wrap .medal.shown.second-reward {
+  /*=== MEDAL 2 ====*/
+  background: linear-gradient(120deg, #3cb371 30%, #7fffd4 60%);
+  border: 5px solid #1e6d4d;
+}
+
+.medals-wrap .medal.shown.second-reward::after {
+  content: "2";
+  color: #1e6d4d;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
+}
+
+.medals-wrap .medal.shown.third-reward {
+  /*=== MEDAL 3 ====*/
+  background: linear-gradient(120deg, #ffd700 30%, #fff8dc 60%);
+  border: 5px solid #b8860b;
+}
+
+.medals-wrap .medal.shown.third-reward::after {
+  content: "3";
+  color: #b8860b;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
+}
+
+.medals-wrap .medal.shown.fourth-reward {
+  /*=== MEDAL 4 ====*/
+  background: linear-gradient(120deg, #8a2be2 30%, #dda0dd 60%);
+  border: 5px solid #4b0082;
+}
+
+.medals-wrap .medal.shown.fourth-reward::after {
+  content: "4";
+  color: #4b0082;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-family: "Liberation Serif", monospace;
+}
+
+@keyframes spin {
+  from {
+    transform: rotateY(0deg);
+  }
+
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+.medals-wrap .medal.shown:hover {
+  animation: spin 0.45s ease;
+}
+
+.btns-wrap {
+  padding: 0px 5px;
+  width: fit-content;
+  height: fit-content;
+  position: absolute;
+  left: 50px;
+  top: 67px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5.5px;
+}
+
+.btns-wrap::before {
+  content: "Affichage.exe";
+  background: #00ff00;
+  position: absolute;
+  top: -33px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.15rem;
+  background: #00ff00;
+  color: #000;
+  border-radius: 25px;
+  padding: 1px 8.5px;
+  width: fit-content;
+  font-weight: normal;
+}
+
+.btns-wrap button {
+  width: 110px;
+  height: 4dvh;
+  background: #000;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  font-weight: 600;
+  letter-spacing: 2.2px;
+  border-radius: 35px;
+}
+
+.btns-wrap button:hover {
+  background: #00ff00;
+  color: #000;
+}
+
+/* tailles un peu progressives */
+.medal[data-name="Rubis"] {
+  background: radial-gradient(circle at 30% 30%, #ff0055, #7a001f);
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.6);
+}
+.medal[data-name="Saphir"] {
+  background: radial-gradient(circle at 30% 30%, #00b4ff, #004d80);
+  box-shadow: 0 0 10px rgba(0, 180, 255, 0.6);
+}
+.medal[data-name="Légendaire"] {
+  background: radial-gradient(circle at 30% 30%, #fff56b, #c29100);
+  box-shadow: 0 0 12px rgba(255, 230, 100, 0.8);
+}
+
+.medal[data-name="Légendaire"].shown {
+  animation: glowLegend 2s ease-in-out infinite alternate;
+}
+@keyframes glowLegend {
+  from {
+    box-shadow: 0 0 10px rgba(255, 230, 100, 0.6);
+  }
+  to {
+    box-shadow: 0 0 25px rgba(255, 230, 100, 1);
+  }
+}

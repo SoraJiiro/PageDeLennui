@@ -1,0 +1,22 @@
+*,
+::before,
+::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    color: #00FF00;
+    font-family: monospace, monospace;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+::selection {
+    background: #00FF00;
+    color: #000;
+}

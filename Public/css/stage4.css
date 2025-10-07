@@ -1,0 +1,64 @@
+.fourth-stage {
+  position: absolute;
+  top: calc(3 * 100dvh);
+  left: 0;
+  right: 0;
+  bottom: auto;
+  width: 100dvw;
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.leaderboard-card {
+  width: min(900px, 92vw);
+  background: #000;
+  color: #00ff00;
+  border: 1px solid #000;
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.leaderboard-card .leaderboard-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.leaderboard-card .leaderboard-header h2 {
+  margin-top: 0;
+  color: #000;
+  background-color: #00ff00;
+  padding: 2.5px 7.5px;
+  border-radius: 25px;
+  width: fit-content;
+}
+.you-score {
+  color: #fff;
+}
+
+#your-score {
+  font-weight: bold;
+  color: #00ff00;
+}
+
+.board {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+.board th,
+.board td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid #00ff00;
+  text-align: left;
+}
+.board tr:nth-child(even) td {
+  background: #000;
+}
+.board tr:nth-child(odd) td {
+  background: #000;
+}
