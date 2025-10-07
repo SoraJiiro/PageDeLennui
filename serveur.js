@@ -8,9 +8,13 @@ const { Server } = require("socket.io");
 const PORT = process.env.PORT || 7550;
 const HOST = "192.168.1.70";
 
+const HOSTIP = HOST;
+
 const app = express();
 const serveur = http.createServer(app);
 const io = new Server(serveur, {}); // RIEN METTRE ICI SINON BUG
+
+var blacklist = ["192.168.197.197", "192.168.197.1"];
 
 const WEBROOT = path.join(__dirname, "Public");
 app.use(express.static(WEBROOT));
@@ -56,7 +60,7 @@ function normalizeIp(addr) {
 }
 function leaderboardClasse() {
   const arr = Object.entries(scores).map(([ip, score]) => ({
-    ip,
+    ip: ip === HOSTIP ? "LeDéveloppeur" : ip,
     score: Number(score) || 0,
   }));
   arr.sort((a, b) => b.score - a.score || a.ip.localeCompare(b.ip));
@@ -86,14 +90,27 @@ io.on("connection", (socket) => {
   const ip = normalizeIp(
     socket.handshake.headers["x-forwarded-for"] || socket.handshake.address
   );
-  users.set(socket.id, { name: ip });
 
-  socket.emit("you:name", ip);
+  if (blacklist.includes(ip)) {
+    console.log(
+      `❌ Connexion refusée pour IP blacklistée: ${ip}` +
+        new Date().toISOString()
+    );
+    // socket.emit("system:info", "Vous êtes banni du serveur [ACCESS DENIED].");
+    socket.disconnect(true);
+    return;
+  }
+
+  let displayName = ip === HOSTIP ? "LeDéveloppeur" : ip;
+
+  users.set(socket.id, { name: displayName });
+
+  socket.emit("you:name", displayName);
   socket.emit("chat:history", historique);
   socket.emit("clicker:you", { score: scores[ip] || 0 });
   socket.emit("leaderboard:update", leaderboardClasse());
 
-  io.emit("system:info", `${ip} a rejoint le chat`);
+  io.emit("system:info", `${displayName} a rejoint le chat`);
   io.emit(
     "users:list",
     Array.from(users.values()).map((u) => u.name)
@@ -103,7 +120,11 @@ io.on("connection", (socket) => {
   socket.on("chat:message", ({ text }) => {
     const msg = String(text || "").trim();
     if (!msg) return;
-    const payload = { name: "Moi", text: msg, at: new Date().toISOString() };
+    const payload = {
+      name: displayName,
+      text: msg,
+      at: new Date().toISOString(),
+    };
     historique.push(payload);
     if (historique.length > 200) historique = historique.slice(-200);
     writeJSON(files.historique, historique);
@@ -113,18 +134,18 @@ io.on("connection", (socket) => {
 
   socket.on("clicker:click", () => {
     if (!allowClick(socket.id)) return;
-    scores[ip] = (scores[ip] || 0) + 1;
+    scores[displayName] = (scores[displayName] || 0) + 1;
     writeJSON(files.leaderboard, scores);
-    socket.emit("clicker:you", { score: scores[ip] });
+    socket.emit("clicker:you", { score: scores[displayName] });
     broadcastLeaderboard();
   });
 
   socket.on("clicker:reset", () => {
-    scores[ip] = 0;
+    scores[displayName] = 0;
     writeJSON(files.leaderboard, scores);
     socket.emit("clicker:you", { score: 0 });
     broadcastLeaderboard();
-    console.log(`🔁 Reset effectué pour ${ip}`);
+    console.log(`🔁 Reset effectué pour ${displayName}`);
   });
 
   socket.on("disconnect", () => {
@@ -142,5 +163,5 @@ io.on("connection", (socket) => {
 });
 
 serveur.listen(PORT, HOST, () => {
-  console.log(`✅ Serveur : http://${HOST}:${PORT}`);
+  console.log(`>>> ✅ Serveur : http://${HOST}:${PORT}`);
 });

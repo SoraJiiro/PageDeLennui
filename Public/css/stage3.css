@@ -97,9 +97,11 @@
   color: #fff;
   cursor: pointer;
   font-weight: 600;
+  transition: 750ms;
 }
 .chat-form button:hover {
   filter: brightness(1.1);
+  background: linear-gradient(20deg, #000, #37ff1d);
 }
 
 @media (max-width: 600px) {

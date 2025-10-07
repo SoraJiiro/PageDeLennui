@@ -33,7 +33,12 @@
   function addMessage({ author, text, at, type = "user" }) {
     const el = document.createElement("div");
     el.className = `msg ${type}`;
-    const time = at ? new Date(at).toLocaleTimeString() : "";
+   const time = at
+  ? new Date(at).toLocaleString("fr-FR", {
+      dateStyle: "short",
+      timeStyle: "medium",
+    })
+  : "";
     el.innerHTML = `
       <div class="meta">
         <span class="author">[${author}]</span>
@@ -187,7 +192,6 @@
         }
       });
 
-      // Met à jour l'auto-click avec la valeur de la médaille la plus élevée
       if (targetMedal.cps !== currentAutoClick) {
         setAutoClick(targetMedal.cps);
       }
