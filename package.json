@@ -1,14 +1,19 @@
 {
   "name": "page-de-lennui-lan-chat",
-  "version": "2.4.0",
+  "version": "3.1.0",
   "private": true,
   "type": "commonjs",
   "scripts": {
     "start": "node serveur.js"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "express-session": "^1.18.2",
+    "express-socket.io-session": "^1.3.5",
+    "socket.io": "^4.7.5",
+    "uuid": "^13.0.0"
   }
 }

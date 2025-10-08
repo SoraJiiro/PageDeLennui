@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Inscription</title>
+        <style>
+    body {
+      background: #000;
+      color: #00ff00;
+      font-family: "Consolas", monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background: #111;
+      padding: 25px 35px;
+      border-radius: 10px;
+      border: 1px solid #00ff00;
+      box-shadow: 0 0 12px #00ff00;
+    }
+    input {
+      background: #000;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    button {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #00cc00;
+    }
+    a {
+      color: #00ff00;
+      text-decoration: underline;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
+    </head>
+    <body>
+        <h1>🧾 Inscription</h1>
+
+        <form>
+            <input type="text" name="username" placeholder="Nom d'utilisateur"
+                required />
+            <input type="password" name="password" placeholder="Mot de passe"
+                required />
+            <button type="submit">Créer un compte</button>
+        </form>
+
+        <p>Déjà inscrit ? <a href="/login">Se connecter</a></p>
+
+        <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.querySelector("form");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const username = form.username.value.trim();
+        const password = form.password.value.trim();
+
+        if (!username || !password) {
+          alert("⚠️ Merci de remplir tous les champs !");
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            alert(data.message || "❌ Erreur d'inscription.");
+            return;
+          }
+
+          console.log("✅ Compte créé :", data.username || username);
+          window.location.href = "/login"; // Redirige vers la connexion
+        } catch (err) {
+          console.error("Erreur réseau :", err);
+          alert("🚨 Impossible de contacter le serveur.");
+        }
+      });
+    });
+  </script>
+    </body>
+</html>

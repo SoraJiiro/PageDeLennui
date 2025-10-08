@@ -1,179 +1,75 @@
-.fini::selection {
-  background: #000;
-  color: red;
-}
-
 .first-stage {
   position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   width: 100dvw;
   height: 100dvh;
 }
 
 .first-stage h1 {
-  margin-top: 55px;
-  position: relative;
-  font-size: 6.5rem;
+  position: absolute;
+  left: 50%;
+  top: 45px;
+  transform: translateX(-50%);
   width: fit-content;
+  font-size: 6.5rem;
+  margin: 0;
 }
 
 .first-stage h1::before {
   content: "Horloge.exe";
-  background: #00ff00;
   position: absolute;
   top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 1.15rem;
-  background: #00ff00;
-  color: #000;
-  border-radius: 25px;
   padding: 1px 8.5px;
-  width: fit-content;
-  font-weight: normal;
-}
-
-.first-stage ul {
-  margin-top: 115px;
-  font-size: 0.5rem;
-  width: 200px;
-  height: 8.5vh;
-  list-style: none;
-  position: relative;
-}
-
-.first-stage ul::before {
-  content: "Pauses.exe";
-  background: #00ff00;
-  position: absolute;
-  top: -35px;
-  left: 50%;
-  transform: translateX(-50%);
   font-size: 1.15rem;
+  font-weight: normal;
+  border-radius: 25px;
   background: #00ff00;
   color: #000;
-  border-radius: 25px;
-  padding: 1px 8.5px;
-  width: fit-content;
-  font-weight: normal;
-}
-
-.first-stage li {
-  border-left: 4px solid #00ff00;
-  border-right: 4px solid #00ff00;
-  width: 100%;
-  height: 90%;
-  transition: background 0.3s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 3rem;
-  position: relative;
-}
-
-.first-stage li:nth-child(1) {
-  border-top: 4px solid #00ff00;
-}
-
-.first-stage li:last-child {
-  border-bottom: 4px solid #00ff00;
-}
-
-.first-stage li::after {
-  content: "(à suivre)";
-  position: absolute;
-  right: -200px;
-  top: 35%;
-  font-size: 1.45rem;
-  font-style: italic;
-  color: #00ff00;
-}
-
-.avenir {
-  background: #000;
-  color: #00ff00;
-}
-
-.avenir::after {
-  content: "";
-}
-
-.pendant {
-  background-color: #00ff00;
-  color: #000;
-}
-
-.fini {
-  background-color: red;
-  color: #000;
-}
-
-.fini::after {
-  content: "(passée)";
-  position: absolute;
-  right: -165px;
-  top: 35%;
-  font-size: 1.45rem;
-  font-style: italic;
-  color: #00ff00;
-}
-
-.pendant::after {
-  content: "(en pause)";
-  position: absolute;
-  right: -200px;
-  top: 35%;
-  font-size: 1.45rem;
-  font-style: italic;
-  color: #00ff00;
 }
 
 .zone-wrap {
   position: absolute;
-  left: 50px;
-  bottom: 200px;
+  left: 25px;
+  bottom: 140px;
   width: 300px;
-  height: fit-content;
 }
 
 .zone {
+  position: relative;
   width: 100%;
   height: 235px;
-  border-radius: 15px;
   border: 3px solid #00ff00;
+  border-radius: 15px;
   background: #000;
+  color: #00ff00;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: all 185ms;
-  position: relative;
+  transition: all 185ms ease;
   z-index: 5;
 }
 
 .zone::before {
   content: "Clicker.exe";
-  background: #00ff00;
   position: absolute;
   top: -35px;
   left: 50%;
   transform: translateX(-50%);
+  padding: 1px 8.5px;
   font-size: 1.15rem;
+  border-radius: 25px;
   background: #00ff00;
   color: #000;
-  border-radius: 25px;
-  padding: 1px 8.5px;
-  width: fit-content;
   font-weight: normal;
   pointer-events: none;
-  cursor: default;
+  user-select: none;
   transition: all 185ms;
 }
 
-.first-stage i {
+.zone i {
   font-style: normal;
   font-weight: bold;
   font-size: 1.85rem;
@@ -184,7 +80,7 @@
   color: #00ff00;
 }
 
-.temp {
+.zone.temp {
   scale: 1.075;
   transition: all 185ms;
 }
@@ -203,85 +99,69 @@ p.cps-humain {
 }
 
 .zone-wrap .acps {
-  font-size: 14px;
   position: absolute;
   left: 40%;
   bottom: -30px;
-  transform: translateX(-60%, 0%);
   width: 100%;
+  font-size: 14px;
 }
 
 .reset {
-  background: #000;
-  color: #00ff00;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 110px);
   width: 40%;
   height: 65px;
   font-size: x-large;
   font-weight: bold;
   letter-spacing: 1.25px;
+  background: #000;
+  color: #00ff00;
   border: 3px solid #00ff00;
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translate(-50%, 110px);
   cursor: pointer;
   transition: all 325ms ease-out;
 }
 
 .reset:hover {
-  color: #000;
   background: #00ff00;
+  color: #000;
   border: 2px solid #000;
   outline: 2px solid #00ff00;
-  transition: all 325ms ease-out;
 }
 
 .medals-wrap {
-  height: 85dvh;
-  width: 20dvw;
+  position: absolute;
+  right: 25px;
+  top: 40px;
+  height: 92.5dvh;
+  width: 22.5dvw;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  position: absolute;
-  right: 40px;
-  top: 67px;
-  padding: 5px;
+  gap: 15px;
+  padding: 10px;
   border: 4px solid #00ff00;
-  overflow: scroll;
-}
-
-.medals-wrap::before {
-  content: "Médailles.exe";
-  background: #00ff00;
-  position: absolute;
-  top: -35px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.15rem;
-  background: #00ff00;
-  color: #000;
-  border-radius: 25px;
-  padding: 1px 8.5px;
-  width: fit-content;
-  font-weight: normal;
+  overflow: auto;
 }
 
 .medals-wrap .medal {
-  width: 9dvw;
-  height: 9dvw;
+  width: 45%;
+  height: 22.5%;
   border-radius: 50%;
   position: relative;
+  transition: all 0.3s ease;
+}
+
+.medals-wrap .medal.shown:hover {
+  cursor: pointer;
+  animation: spin 0.45s ease;
 }
 
 .medals-wrap .medal.hidden {
   border: 5px dotted gray;
   background: none;
-}
-
-.medals-wrap .medal:hover {
-  cursor: pointer;
 }
 
 .medals-wrap .medal.hidden::after {
@@ -292,145 +172,54 @@ p.cps-humain {
   top: 50%;
   transform: translate(-48%, -50%);
   font-weight: bold;
-  font-family: "Liberation Serif", monospace;
   font-size: 6.5rem;
-}
-
-.medals-wrap .medal.shown.first-reward {
-  /*=== MEDAL 1 ====*/
-  background: #b77641;
-  background: linear-gradient(120deg, #b77641 30%, #ffb476 60%);
-  border: 5px solid #0a5254;
-}
-
-.medals-wrap .medal.shown:hover {
-  animation: spin 1s ease;
+  font-family: "Liberation Serif", monospace;
 }
 
 .medals-wrap .medal.shown::after {
-  font-size: 2.5rem;
-}
-
-.medals-wrap .medal.shown.first-reward::after {
-  content: "1";
-  color: #0a5254;
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   font-weight: bold;
+  font-size: 2.5rem;
   font-family: "Liberation Serif", monospace;
 }
 
-.medals-wrap .medal.shown.second-reward {
-  /*=== MEDAL 2 ====*/
+.medal[data-name="Bronze"].shown {
+  background: linear-gradient(120deg, #b77641 30%, #ffb476 60%);
+  border: 5px solid #0a5254;
+}
+.medal[data-name="Bronze"]::after {
+  content: "1";
+  color: #0a5254;
+}
+
+.medal[data-name="Argent"].shown {
   background: linear-gradient(120deg, #57aeb7 30%, #95fffa 60%);
   border: 5px solid #1e6d4d;
 }
-
-.medals-wrap .medal.shown.second-reward::after {
+.medal[data-name="Argent"]::after {
   content: "2";
   color: #1e6d4d;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: bold;
-  font-family: "Liberation Serif", monospace;
 }
 
-.medals-wrap .medal.shown.third-reward {
-  /*=== MEDAL 3 ====*/
+.medal[data-name="Or"].shown {
   background: linear-gradient(120deg, #ffd700 30%, #fff8dc 60%);
   border: 5px solid #b8860b;
 }
-
-.medals-wrap .medal.shown.third-reward::after {
+.medal[data-name="Or"]::after {
   content: "3";
   color: #b8860b;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: bold;
-  font-family: "Liberation Serif", monospace;
 }
 
-.medals-wrap .medal.shown.fourth-reward {
-  /*=== MEDAL 4 ====*/
+.medal[data-name="Diamant"].shown {
   background: linear-gradient(120deg, #8a2be2 30%, #dda0dd 60%);
   border: 5px solid #4b0082;
 }
-
-.medals-wrap .medal.shown.fourth-reward::after {
+.medal[data-name="Diamant"]::after {
   content: "4";
   color: #4b0082;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: bold;
-  font-family: "Liberation Serif", monospace;
-}
-
-@keyframes spin {
-  from {
-    transform: rotateY(0deg);
-  }
-
-  to {
-    transform: rotateY(360deg);
-  }
-}
-
-.medals-wrap .medal.shown:hover {
-  animation: spin 0.45s ease;
-}
-
-.btns-wrap {
-  padding: 0px 5px;
-  width: fit-content;
-  height: fit-content;
-  position: absolute;
-  left: 50px;
-  top: 67px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 5.5px;
-}
-
-.btns-wrap::before {
-  content: "Affichage.exe";
-  background: #00ff00;
-  position: absolute;
-  top: -33px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.15rem;
-  background: #00ff00;
-  color: #000;
-  border-radius: 25px;
-  padding: 1px 8.5px;
-  width: fit-content;
-  font-weight: normal;
-}
-
-.btns-wrap button {
-  width: 110px;
-  height: 4dvh;
-  background: #000;
-  color: #00ff00;
-  border: 2px solid #00ff00;
-  font-weight: 600;
-  letter-spacing: 2.2px;
-  border-radius: 35px;
-}
-
-.btns-wrap button:hover {
-  background: #00ff00;
-  color: #000;
 }
 
 .medal[data-name="Rubis"].shown {
@@ -441,33 +230,22 @@ p.cps-humain {
 .medal[data-name="Rubis"]::after {
   content: "5";
   color: #ac0e58;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: bold;
-  font-family: "Liberation Serif", monospace;
 }
+
 .medal[data-name="Saphir"].shown {
   background: linear-gradient(120deg, #0000ff 30%, #84b9ff 60%);
   border: 5px solid #1c008e;
   box-shadow: 0 0 30px rgba(117, 214, 255, 0.6);
 }
-
 .medal[data-name="Saphir"]::after {
   content: "6";
   color: #1c008e;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: bold;
-  font-family: "Liberation Serif", monospace;
 }
+
 .medal[data-name="Légendaire"] {
   border: 5px solid #fff;
-  position: relative;
   overflow: hidden;
+  position: relative;
 }
 
 .medal[data-name="Légendaire"]::after {
@@ -517,6 +295,60 @@ p.cps-humain {
   z-index: 0;
 }
 
+.btns-wrap {
+  position: fixed;
+  left: 25px;
+  top: 50px;
+  width: 300px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5.5px;
+  padding: 15px;
+  background: #000;
+  border: 2px solid #00ff00;
+  z-index: 9999;
+}
+
+.btns-wrap::before {
+  content: "Navigation.exe";
+  position: absolute;
+  top: -33px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8.5px;
+  font-size: 1.15rem;
+  border-radius: 25px;
+  background: #00ff00;
+  color: #000;
+}
+
+.btns-wrap button {
+  width: 125px;
+  height: 7dvh;
+  background: #000;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  font-weight: 600;
+  letter-spacing: 2.2px;
+  transition: all 0.25s ease;
+}
+
+.btns-wrap button:hover {
+  background: #00ff00;
+  color: #000;
+}
+
+@keyframes spin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
 @keyframes glowLegend {
   from {
     box-shadow: 0 0 15px rgba(255, 230, 100, 0.8),
@@ -543,3 +375,4 @@ p.cps-humain {
     rotate: -79deg;
   }
 }
+/* */
