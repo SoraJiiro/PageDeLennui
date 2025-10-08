@@ -1,6 +1,4 @@
-export function initDino() {
-  const socket = window.socket || io({ query: { username: window.username } });
-
+export function initDino(socket) {
   const canvas = document.querySelector(".game");
   if (!canvas) return;
   const c = canvas.getContext("2d");
@@ -157,7 +155,7 @@ export function initDino() {
       }
       if (cx.x + cx.width < 0) {
         score++;
-        gameSpeed += 0.05;
+        gameSpeed += 0.02;
       }
       return true;
     });
@@ -165,6 +163,7 @@ export function initDino() {
     // Score
     c.fillStyle = "#00FF00";
     c.font = "20px Arial";
+    c.textAlign = "left";
     c.fillText(`Score: ${score}`, 10, 10);
 
     requestAnimationFrame(loop);

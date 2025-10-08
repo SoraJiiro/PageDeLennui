@@ -123,8 +123,8 @@ let medals = readJSON(files.medals, {});
 // -----------------------------
 // Logique principale
 // -----------------------------
-let users = new Map(); // socket.id → { name }
-let connectedUsers = new Set(); // usernames uniques connectés
+let users = new Map(); // socket.id → { name, socketId }
+let userSockets = new Map(); // username → Set de socket.id
 
 function clickerLeaderboardClasse() {
   return Object.entries(scores)
@@ -165,17 +165,30 @@ io.on("connection", (socket) => {
   }
 
   const username = user.username;
-  console.log(`✅ Connexion socket pour ${username} (${socket.id})`);
 
-  // Supprimer anciennes connexions du même utilisateur
-  for (const [id, data] of users.entries()) {
-    if (data.name === username && id !== socket.id) {
-      users.delete(id);
-    }
+  // 🔥 CRITICAL: Déconnecter les anciennes sockets du même user
+  if (userSockets.has(username)) {
+    const oldSockets = userSockets.get(username);
+    oldSockets.forEach((oldSocketId) => {
+      const oldSocket = io.sockets.sockets.get(oldSocketId);
+      if (oldSocket && oldSocket.id !== socket.id) {
+        console.log(
+          `🔄 Déconnexion de l'ancienne socket ${oldSocketId} pour ${username}`
+        );
+        oldSocket.disconnect(true);
+      }
+    });
+    oldSockets.clear();
   }
 
+  // Enregistrer la nouvelle socket
+  if (!userSockets.has(username)) {
+    userSockets.set(username, new Set());
+  }
+  userSockets.get(username).add(socket.id);
   users.set(socket.id, { name: username });
-  connectedUsers.add(username);
+
+  console.log(`>> [${username}] connecté (socket: ${socket.id})`);
 
   // Envoyer infos initiales
   socket.emit("you:name", username);
@@ -185,11 +198,14 @@ io.on("connection", (socket) => {
   socket.emit("clicker:medals", medals[username] || []);
   socket.emit(
     "dino:leaderboard",
-    Object.entries(dinoScores).map(([u, s]) => ({ username: u, score: s }))
+    Object.entries(dinoScores)
+      .map(([u, s]) => ({ username: u, score: s }))
+      .sort((a, b) => b.score - a.score)
   );
 
-  // Broadcast liste + info
-  io.emit("users:list", Array.from(connectedUsers.values()));
+  // Broadcast liste (utilisateurs uniques)
+  const uniqueUsers = Array.from(userSockets.keys());
+  io.emit("users:list", uniqueUsers);
   io.emit("system:info", `${username} a rejoint le chat`);
 
   // ===== Chat =====
@@ -221,7 +237,7 @@ io.on("connection", (socket) => {
     socket.emit("clicker:you", { score: 0 });
     socket.emit("clicker:medals", []);
     broadcastClickerLeaderboard();
-    console.log(`🔄 Reset complet pour ${username}`);
+    console.log(`🔄 Reset Clicker pour ${username}`);
   });
 
   socket.on("clicker:medalUnlock", ({ medalName }) => {
@@ -253,7 +269,7 @@ io.on("connection", (socket) => {
     if (s > current) {
       dinoScores[username] = s;
       writeJSON(files.dinoScores, dinoScores);
-      console.log(`🦖 Nouveau score Dino enregistré pour ${username}: ${s}`);
+      console.log(`🦖 Nouveau score Dino pour ${username}: ${s}`);
     }
     const arr = Object.entries(dinoScores)
       .map(([u, sc]) => ({ username: u, score: sc }))
@@ -266,18 +282,22 @@ io.on("connection", (socket) => {
   // ===== Déconnexion =====
   socket.on("disconnect", (reason) => {
     users.delete(socket.id);
+    clickBuckets.delete(socket.id);
 
-    const stillConnected = Array.from(users.values()).some(
-      (u) => u.name === username
-    );
-    if (!stillConnected) {
-      connectedUsers.delete(username);
-      io.emit("system:info", `${username} a quitté le chat`);
+    // Retirer cette socket du Set
+    if (userSockets.has(username)) {
+      userSockets.get(username).delete(socket.id);
+      // Si plus aucune socket pour cet user
+      if (userSockets.get(username).size === 0) {
+        userSockets.delete(username);
+        io.emit("system:info", `${username} a quitté le chat`);
+        console.log(`>> ${username} déconnecté (${reason})`);
+      }
     }
 
-    io.emit("users:list", Array.from(connectedUsers.values()));
-    clickBuckets.delete(socket.id);
-    console.log(`❌ ${username} déconnecté (${reason})`);
+    // Mise à jour liste utilisateurs
+    const uniqueUsers = Array.from(userSockets.keys());
+    io.emit("users:list", uniqueUsers);
   });
 });
 

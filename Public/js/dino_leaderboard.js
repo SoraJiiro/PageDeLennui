@@ -1,5 +1,4 @@
-export function initDinoLeaderboard() {
-  const socket = window.socket || io({ query: { username: window.username } });
+export function initDinoLeaderboard(socket) {
   const leaderboard = document.querySelector("#dino-leaderboard tbody");
   if (!leaderboard) return;
 

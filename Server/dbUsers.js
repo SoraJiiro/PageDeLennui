@@ -20,11 +20,11 @@ function writeAll(db) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(db, null, 2));
 }
 
-function findByUsername(username) {
+function findBypseudo(pseudo) {
   const db = readAll();
   return (
     db.users.find(
-      (u) => u.username.toLowerCase() === String(username).toLowerCase()
+      (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase()
     ) || null
   );
 }
@@ -34,11 +34,11 @@ function countByIp(ip) {
   return db.users.filter((u) => u.createdFromIp === ip).length;
 }
 
-function createUser({ id, username, passHash, createdFromIp }) {
+function createUser({ id, pseudo, passHash, createdFromIp }) {
   const db = readAll();
   db.users.push({
     id,
-    username,
+    pseudo,
     passHash,
     createdFromIp,
     createdAt: new Date().toISOString(),
@@ -51,4 +51,4 @@ function findById(id) {
   return db.users.find((u) => u.id === id) || null;
 }
 
-module.exports = { findByUsername, findById, countByIp, createUser };
+module.exports = { findBypseudo, findById, countByIp, createUser };

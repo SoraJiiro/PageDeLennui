@@ -1,4 +1,3 @@
-// HORLOGE
 const display = document.querySelector("h1");
 
 function horloge() {

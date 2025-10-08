@@ -1,4 +1,3 @@
-// === chat.js ===
 export function initChat(socket) {
   const meSpan = document.getElementById("me");
   const usersCount = document.getElementById("usersCount");
@@ -7,7 +6,7 @@ export function initChat(socket) {
   const messages = document.getElementById("chat-messages");
   const submit = document.querySelector(".submit");
 
-  function addMessage({ author, text, at, type = "user" }) {
+  function addMessage({ auteur, text, at, type = "user" }) {
     const el = document.createElement("div");
     el.className = `msg ${type}`;
     const time = at
@@ -18,7 +17,7 @@ export function initChat(socket) {
       : "";
     el.innerHTML = `
       <div class="meta">
-        <span class="author">[${author}]</span>
+        <span class="auteur">[${auteur}]</span>
         <span class="time"><i>${time}</i></span>
       </div>
       <div class="text"></div>`;
@@ -28,30 +27,29 @@ export function initChat(socket) {
   }
 
   socket.on("you:name", (name) => {
-    if (meSpan) meSpan.textContent = `Connecté en tant que : ${name} `;
+    if (meSpan) meSpan.textContent = `Connecté en tant que : ${name} | `;
   });
 
-  // 🔹 Historique propre (on le remplace intégralement à chaque fois)
   socket.on("chat:history", (history) => {
     if (!Array.isArray(history)) return;
-    messages.innerHTML = ""; // vider avant d'ajouter
+    messages.innerHTML = "";
     history.forEach((msg) =>
-      addMessage({ author: msg.name, text: msg.text, at: msg.at })
+      addMessage({ auteur: msg.name, text: msg.text, at: msg.at })
     );
   });
 
   socket.on("system:info", (text) =>
-    addMessage({ author: "Système", text, type: "system" })
+    addMessage({ auteur: "Système", text, type: "system" })
   );
 
-  socket.on("users:list", (list) => {
+  socket.on("users:list", (l) => {
     if (usersCount)
-      usersCount.textContent = `Utilisateurs en ligne: ${list.length}`;
+      usersCount.textContent = `Utilisateurs en ligne: ${l.length}`;
   });
 
   socket.on("chat:message", (payload) =>
     addMessage({
-      author: payload.name,
+      auteur: payload.name,
       text: payload.text,
       at: payload.at,
     })

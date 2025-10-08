@@ -1,4 +1,3 @@
-// ==================== CLICKER LOGIQUE ====================
 export function initClicker(socket) {
   const zone = document.querySelector(".zone");
   const acpsEl = document.querySelector(".acps");
@@ -9,14 +8,14 @@ export function initClicker(socket) {
 
   let scoreActuel = 0;
   let cpsActuel = 0;
-  let autoClickTimer = null;
+  let timeAutoClicks = null;
   let medalsDebloquees = new Set();
   let clicksManuels = [];
   let cpsHumain = 0;
   let timerHumain = null;
 
-  // Liste officielle des médailles
   const medalsList = [
+    // Medailles
     { nom: "Bronze", icon: "🥉", pallier: 2500, cps: 1 },
     { nom: "Argent", icon: "🥈", pallier: 5000, cps: 3 },
     { nom: "Or", icon: "🥇", pallier: 10000, cps: 5 },
@@ -26,27 +25,27 @@ export function initClicker(socket) {
     { nom: "Légendaire", icon: "👑", pallier: 160000, cps: 13 },
   ];
 
-  // -------------------- Auto click --------------------
+  // Auto click
   function setAutoClick(cps) {
-    if (autoClickTimer) clearInterval(autoClickTimer);
+    if (timeAutoClicks) clearInterval(timeAutoClicks);
     cpsActuel = cps;
 
     if (acpsEl) acpsEl.textContent = cps > 0 ? `+ ${cps} cps` : "";
     if (cps > 0) {
-      autoClickTimer = setInterval(() => {
+      timeAutoClicks = setInterval(() => {
         for (let i = 0; i < cps; i++) socket.emit("clicker:click");
       }, 1000);
     }
   }
 
   function stopAutoClicks() {
-    if (autoClickTimer) clearInterval(autoClickTimer);
-    autoClickTimer = null;
+    if (timeAutoClicks) clearInterval(timeAutoClicks);
+    timeAutoClicks = null;
     cpsActuel = 0;
     if (acpsEl) acpsEl.textContent = "";
   }
 
-  // -------------------- Anim + UI --------------------
+  // Anim zone + notifs
   function bumpZone() {
     zone?.classList.add("temp");
     setTimeout(() => zone?.classList.remove("temp"), 120);
@@ -73,7 +72,7 @@ export function initClicker(socket) {
     setTimeout(() => notif.remove(), duration);
   }
 
-  // -------------------- Médaille logique --------------------
+  // Logique medailles
   function verifMedals(score) {
     let medalCible = null;
     for (let i = medalsList.length - 1; i >= 0; i--) {
@@ -103,14 +102,13 @@ export function initClicker(socket) {
         }
       });
 
-      // Ajuster l'auto-click selon la médaille la plus haute
       if (medalCible.cps !== cpsActuel) {
         setAutoClick(medalCible.cps);
       }
     }
   }
 
-  // -------------------- Reset complet --------------------
+  // Reset
   function resetProgress() {
     const confirmReset = confirm(
       "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score et tes médailles seront perdus !"
@@ -135,7 +133,7 @@ export function initClicker(socket) {
 
   resetBtn?.addEventListener("click", resetProgress);
 
-  // -------------------- Click principal --------------------
+  // Click
   if (zone) {
     zone.addEventListener("click", () => {
       socket.emit("clicker:click");
@@ -174,14 +172,13 @@ export function initClicker(socket) {
       }
     });
 
-    // Met à jour l’auto-click selon la médaille la plus haute
-    const best = medalsList
+    const medaillePlusHaute = medalsList
       .filter((m) => userMedals.includes(m.nom))
-      .sort((a, b) => b.pallier - a.pallier)[0];
-    if (best) setAutoClick(best.cps);
+      .sort((actuel, plusHaute) => plusHaute.pallier - actuel.pallier)[0];
+    if (medaillePlusHaute) setAutoClick(medaillePlusHaute.cps);
   });
 
-  // -------------------- CPS humain affichage --------------------
+  // cps humain
   setInterval(() => {
     if (cpsHumainEl)
       cpsHumainEl.textContent =

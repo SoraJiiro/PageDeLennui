@@ -1,4 +1,3 @@
-// ==================== CLICKER LEADERBOARD ====================
 export function initClickerLeaderboard(socket) {
   const leaderboardBody = document.querySelector("#clicker-leaderboard tbody");
 
