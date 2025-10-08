@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 set NODE_VERSION=22.20.0
 
 :: Définit le répertoire d'installation
-set INSTALL_DIR=%USERPROFILE%\nodejs
+set INSTALL_DIR=%USERPROFILE%\AppData\Local\
 
 :: Définit l'URL du paquet Node.js à télécharger
 set NODE_URL=https://nodejs.org/dist/v%NODE_VERSION%/node-v%NODE_VERSION%-win-x64.zip
@@ -37,12 +37,6 @@ for /d %%i in ("%INSTALL_DIR%\node-v%NODE_VERSION%-win-x64") do set NODE_DIR=%%i
 move "%NODE_DIR%\*" "%INSTALL_DIR%" >nul 2>&1  :: déplace fichiers sans afficher les messages
 :: Supprime le sous-dossier devenu vide
 rd "%NODE_DIR%" >nul 2>&1  :: supprime le dossier vide
-
-:: Ajoute Node.js et npm au PATH utilisateur
-setx PATH "%INSTALL_DIR%;%INSTALL_DIR%\node_modules\.bin;%PATH%"  :: met à jour PATH de Windows
-
-:: Met à jour le PATH courant pour cette session
-set PATH=%INSTALL_DIR%;%INSTALL_DIR%\node_modules\.bin;%PATH%
 
 echo.
 echo Node.js a été installé localement dans :

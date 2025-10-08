@@ -6,7 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const PORT = process.env.PORT || 7550;
-const HOTE = "10.166.176.200"; // Ip de la machine --> ipconig sur windows (adresse ipv4)
+const HOTE = ""; // Ip de la machine --> ipconig sur windows (adresse ipv4)
 //                                   --> hostname -I sur linux
 
 const HOTEIP = HOTE;
