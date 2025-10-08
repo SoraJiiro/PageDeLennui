@@ -15,7 +15,7 @@ const app = express();
 const serveur = http.createServer(app);
 const io = new Server(serveur, {}); // RIEN METTRE ICI SINON BUG
 
-var blacklist = ["192.168.197.197", "192.168.197.1", "192.168.1.51"];
+var blacklist = ["192.168.197.197", "192.168.197.1"];
 
 const WEBROOT = path.join(__dirname, "Public");
 
@@ -35,7 +35,7 @@ app.use((req, res, next) => {
         <meta name="theme-color" content="#fff">
         <meta name="viewport" content="width=device-width, initial-scale=1.0,
                                  maximum-scale=1.0, user-scalable=no">
-        <title>192.168.1.70</title>
+        <title>${HOSTIP}</title>
         <style>
 
 a {
