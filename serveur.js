@@ -6,7 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const PORT = process.env.PORT || 7550;
-const HOTE = ""; // Ip de la machine --> ipconig sur windows (adresse ipv4)
+const HOTE = "10.166.176.200"; // Ip de la machine --> ipconig sur windows (adresse ipv4)
 //                                   --> hostname -I sur linux
 
 const HOTEIP = HOTE;
@@ -19,7 +19,6 @@ var blacklist = ["192.168.197.197", "192.168.197.1"];
 
 const WEBROOT = path.join(__dirname, "Public");
 
-// --- Middleware anti-blacklist HTTP ---
 app.use((req, res, next) => {
   const ip = (
     req.headers["x-forwarded-for"] ||
@@ -35,7 +34,7 @@ app.use((req, res, next) => {
         <meta name="theme-color" content="#fff">
         <meta name="viewport" content="width=device-width, initial-scale=1.0,
                                  maximum-scale=1.0, user-scalable=no">
-        <title>${HOSTIP}</title>
+        <title>${HOTEIP}</title>
         <style>
 
 a {
@@ -1462,7 +1461,7 @@ function normalizeIp(addr) {
 }
 function leaderboardClasse() {
   const arr = Object.entries(scores).map(([ip, score]) => ({
-    ip: ip === HOTEIP ? "-Hôte-" : ip,
+    ip: ip === HOTEIP ? "Hôte" : ip,
     score: Number(score) || 0,
   }));
   arr.sort((a, b) => b.score - a.score || a.ip.localeCompare(b.ip));
@@ -1499,11 +1498,10 @@ io.on("connection", (socket) => {
         new Date().toLocaleString("fr-FR")
     );
     socket.disconnect(true);
-    // window.location.replace("about:blank");
     return;
   }
 
-  let displayName = ip === HOTEIP ? "-Hôte-" : ip;
+  let displayName = ip === HOTEIP ? "Hôte" : ip;
   let estHote = ip === HOTEIP;
 
   socket.emit("you:role", { estHote }); // Envoie le role clientside?
@@ -1570,11 +1568,12 @@ io.on("connection", (socket) => {
 
 serveur.listen(PORT, HOTE, () => {
   console.log(
-    `>>> ✅ Serveur : http://${HOTE}:${PORT} à`,
-    new Date().toLocaleDateString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
+    `>>> ✅ Serveur : http://${HOTE}:${PORT} (` +
+      new Date().toLocaleDateString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }) +
+      ")"
   );
 });
