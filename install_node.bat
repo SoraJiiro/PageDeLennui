@@ -43,16 +43,12 @@ echo Node.js a été installé localement dans :
 echo   %INSTALL_DIR%
 echo.
 
-:: Affiche la version de Node.js installée
-echo Version de Node :
-node -v
-
-:: Affiche la version de npm installée
-echo Version de npm :
-npm -v
-
 :: Fin programme 
 echo.
 echo ✅ Installation terminée !
 echo (Fermez et rouvrez votre terminal pour appliquer les changements.)
 pause
+
+
+
+:: MODIFIER LES VAR D'ENVIRONNEMENT APRES AVOIR FERME LE TERMINAL
