@@ -166,7 +166,6 @@ io.on("connection", (socket) => {
 
   const username = user.username;
 
-  // 🔥 CRITICAL: Déconnecter les anciennes sockets du même user
   if (userSockets.has(username)) {
     const oldSockets = userSockets.get(username);
     oldSockets.forEach((oldSocketId) => {
@@ -305,7 +304,7 @@ io.on("connection", (socket) => {
 // Auto reload
 // -----------------------------
 const watchDir = path.join(__dirname, "Public");
-console.log("[AUTO RELOAD : OK]\n");
+console.log("\n[AUTO RELOAD : OK]\n");
 let reloadTimer = null;
 
 fs.watch(watchDir, { recursive: true }, (eventType, filename) => {

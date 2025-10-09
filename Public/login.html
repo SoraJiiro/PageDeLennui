@@ -3,20 +3,90 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      *,
+::before,
+::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    color: #00FF00;
+    font-family: monospace, monospace;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+::selection {
+    background: #00FF00;
+    color: #000;
+}
+ body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background: #111;
+      padding: 25px 35px;
+      border: 4px solid #00ff00;
+    }
+    input {
+      background: #000;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      filter: brightness(1.2);
+    }
+    p {
+        margin-top: 50px;
+        color: #fff;
+    }
+    a {
+      color: #00ff00;
+      text-decoration: underline;
+      font-size: 14px;
+      text-align: center;
+    }
+
+
+    </style>
     <title>Connexion</title>
   </head>
   <body>
-    <h1>🔐 Connexion</h1>
+    <h1>Connexion</h1>
 
     <form>
-      <input type="text" name="pseudo" placeholder="Nom d'utilisateur"
+      <input type="text" name="pseudo" placeholder="Pseudo"
         required />
       <input type="password" name="password" placeholder="Mot de passe"
         required />
       <button type="submit">Se connecter</button>
     </form>
 
-    <p>Pas encore de compte ? <a href="/register">Créer un compte</a></p>
+    <p>T'as pas ton compte ? <a href="/register">Créer un compte</a></p>
 
     <script>
     document.addEventListener("DOMContentLoaded", () => {
