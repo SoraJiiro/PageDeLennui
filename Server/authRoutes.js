@@ -29,6 +29,9 @@ function verifNombreCompte(ip) {
   return users.filter((u) => u.creeDepuis === ip).length;
 }
 
+// ===============================
+// 🔹 POST /api/register
+// ===============================
 router.post("/register", async (req, res) => {
   const { pseudo, password } = req.body;
   const ip = (
@@ -42,7 +45,8 @@ router.post("/register", async (req, res) => {
 
   const users = readUsers();
 
-  if (users.find((u) => u.pseudo === pseudo)) {
+  // Vérifier par "username" pour cohérence
+  if (users.find((u) => u.username === pseudo)) {
     return res.status(400).json({ message: "Nom d'utilisateur déjà pris." });
   }
 
@@ -55,7 +59,7 @@ router.post("/register", async (req, res) => {
   const passHash = await bcrypt.hash(password, 12);
   const newUser = {
     id: uuidv4(),
-    pseudo,
+    username: pseudo, // ⚠️ Stocker comme "username"
     passHash,
     creeDepuis: ip,
     creeAt: new Date().toISOString(),
@@ -64,18 +68,24 @@ router.post("/register", async (req, res) => {
   users.push(newUser);
   setUtilisateur(users);
 
-  req.session.user = { id: newUser.id, username: newUser.pseudo };
-  res.json({ message: "Compte créé avec succès.", pseudo });
+  // ⚠️ CRITICAL: Session avec "username"
+  req.session.user = { id: newUser.id, username: newUser.username };
+  res.json({ message: "Compte créé avec succès.", username: newUser.username });
 });
 
+// ===============================
+// 🔹 POST /api/login
+// ===============================
 router.post("/login", async (req, res) => {
   const { pseudo, password } = req.body;
   if (!pseudo || !password)
     return res.status(400).json({ message: "Champs manquants." });
 
   const users = readUsers();
+
+  // Chercher par "username"
   const user = users.find(
-    (u) => u.pseudo.toLowerCase() === pseudo.toLowerCase()
+    (u) => u.username && u.username.toLowerCase() === pseudo.toLowerCase()
   );
 
   if (!user) {
@@ -87,18 +97,26 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ message: "Mot de passe incorrect." });
   }
 
-  req.session.user = { id: user.id, username: user.pseudo };
-  res.json({ message: "Connexion réussie.", username: user.pseudo });
+  // ⚠️ CRITICAL: Session avec "username"
+  req.session.user = { id: user.id, username: user.username };
+  res.json({ message: "Connexion réussie.", username: user.username });
 });
 
+// ===============================
+// 🔹 GET /api/session
+// ===============================
 router.get("/session", (req, res) => {
-  if (req.session && req.session.user) {
-    res.json({ username: req.session.user.pseudo });
+  if (req.session && req.session.user && req.session.user.username) {
+    // ⚠️ CRITICAL: Renvoyer "username"
+    res.json({ username: req.session.user.username });
   } else {
     res.status(401).json({ error: "Non connecté" });
   }
 });
 
+// ===============================
+// 🔹 POST /api/logout
+// ===============================
 router.post("/logout", (req, res) => {
   req.session.destroy(() => {
     res.json({ message: "Déconnecté." });
