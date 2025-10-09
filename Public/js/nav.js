@@ -1,8 +1,6 @@
 document.addEventListener("click", () => {
   function goTo(section) {
-    document
-      .querySelector("#" + section)
-      .scrollIntoView({ behavior: "smooth" });
+    document.querySelector("#" + section).scrollIntoView();
   }
 
   const sec1 = document.querySelector(".sec1");
