@@ -64,7 +64,7 @@ router.post("/register", async (req, res) => {
   users.push(newUser);
   setUtilisateur(users);
 
-  req.session.user = { id: newUser.id, pseudo: newUser.pseudo };
+  req.session.user = { id: newUser.id, username: newUser.pseudo };
   res.json({ message: "Compte créé avec succès.", pseudo });
 });
 
@@ -87,13 +87,13 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ message: "Mot de passe incorrect." });
   }
 
-  req.session.user = { id: user.id, pseudo: user.pseudo };
-  res.json({ message: "Connexion réussie.", pseudo: user.pseudo });
+  req.session.user = { id: user.id, username: user.pseudo };
+  res.json({ message: "Connexion réussie.", username: user.pseudo });
 });
 
 router.get("/session", (req, res) => {
   if (req.session && req.session.user) {
-    res.json({ pseudo: req.session.user.pseudo });
+    res.json({ username: req.session.user.pseudo });
   } else {
     res.status(401).json({ error: "Non connecté" });
   }

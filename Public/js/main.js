@@ -24,7 +24,6 @@
   window.username = username;
 
   socket.on("reload", () => {
-    console.log("♻️ Reload détecté, rechargement de la page...");
     window.location.reload();
   });
 
@@ -47,7 +46,7 @@
     if (dinoLeaderboard?.initDinoLeaderboard)
       dinoLeaderboard.initDinoLeaderboard(socket);
 
-    console.log("Modules chargés");
+    //console.log("Modules chargés");
   } catch (err) {
     console.error("Erreur modules : ", err);
   }

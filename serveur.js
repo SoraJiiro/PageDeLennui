@@ -159,7 +159,7 @@ io.on("connection", (socket) => {
   const user = socket.handshake.session?.user;
 
   if (!user || !user.username) {
-    console.log("❌ Connexion refusée : pas d'utilisateur en session");
+    console.log("❌ Connexion refusée : " + socket.id);
     socket.disconnect(true);
     return;
   }
@@ -187,7 +187,7 @@ io.on("connection", (socket) => {
   userSockets.get(username).add(socket.id);
   users.set(socket.id, { name: username });
 
-  console.log(`>> [${username}] connecté (socket: ${socket.id})`);
+  console.log(`>> [${username}] connecté`);
 
   // Envoyer infos initiales
   socket.emit("you:name", username);
@@ -236,7 +236,7 @@ io.on("connection", (socket) => {
     socket.emit("clicker:you", { score: 0 });
     socket.emit("clicker:medals", []);
     broadcastClickerLeaderboard();
-    console.log(`🔄 Reset Clicker pour ${username}`);
+    console.log(`\n🔄 Reset Clicker pour [${username}]\n`);
   });
 
   socket.on("clicker:medalUnlock", ({ medalName }) => {
@@ -255,7 +255,7 @@ io.on("connection", (socket) => {
       userMedals.push(medalName);
       medals[username] = userMedals;
       writeJSON(files.medals, medals);
-      console.log(`🏅 ${username} a débloqué ${medalName}`);
+      console.log(`\n🏅 ${username} a débloqué ${medalName}\n`);
       socket.emit("clicker:medals", medals[username]);
     }
   });
@@ -268,7 +268,7 @@ io.on("connection", (socket) => {
     if (s > current) {
       dinoScores[username] = s;
       writeJSON(files.dinoScores, dinoScores);
-      console.log(`🦖 Nouveau score Dino pour ${username}: ${s}`);
+      console.log(`\n🦖 Nouveau score Dino pour [${username}] ::: ${s}\n`);
     }
     const arr = Object.entries(dinoScores)
       .map(([u, sc]) => ({ username: u, score: sc }))
@@ -279,18 +279,16 @@ io.on("connection", (socket) => {
   });
 
   // ===== Déconnexion =====
-  socket.on("disconnect", (reason) => {
+  socket.on("disconnect", () => {
     users.delete(socket.id);
     clickBuckets.delete(socket.id);
 
-    // Retirer cette socket du Set
     if (userSockets.has(username)) {
       userSockets.get(username).delete(socket.id);
-      // Si plus aucune socket pour cet user
       if (userSockets.get(username).size === 0) {
         userSockets.delete(username);
         io.emit("system:info", `${username} a quitté le chat`);
-        console.log(`>> ${username} déconnecté (${reason})`);
+        console.log(`>> [${username}] déconnecté`);
       }
     }
 
@@ -311,7 +309,7 @@ fs.watch(watchDir, { recursive: true }, (eventType, filename) => {
   if (!filename) return;
   if (reloadTimer) clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => {
-    console.log(`♻️ Modification détectée : ${filename}`);
+    console.log(`\n♻️  Modification détectée : ${filename}\n`);
     io.emit("reload");
     reloadTimer = null;
   }, 500);
@@ -321,5 +319,7 @@ fs.watch(watchDir, { recursive: true }, (eventType, filename) => {
 // Lancement du serveur
 // -----------------------------
 serveur.listen(PORT, HOTE, () => {
-  console.log(`>>> ✅ Serveur lancé sur http://${HOTE || "localhost"}:${PORT}`);
+  console.log(
+    `>>> ✅ Serveur lancé sur http://${HOTE || "localhost"}:${PORT}\n`
+  );
 });

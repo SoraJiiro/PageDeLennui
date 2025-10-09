@@ -155,7 +155,7 @@ export function initDino(socket) {
       }
       if (cx.x + cx.width < 0) {
         score++;
-        gameSpeed += 0.02;
+        gameSpeed += 0.0025;
       }
       return true;
     });
@@ -164,7 +164,7 @@ export function initDino(socket) {
     c.fillStyle = "#00FF00";
     c.font = "20px Arial";
     c.textAlign = "left";
-    c.fillText(`Score: ${score}`, 10, 10);
+    c.fillText(`Score: ${score}`, 20, 20);
 
     requestAnimationFrame(loop);
   }
