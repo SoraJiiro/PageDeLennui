@@ -2,10 +2,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const display = document.querySelector("h1");
 
   function horloge() {
-    let now = new Date();
-    let h = now.getHours();
-    let m = now.getMinutes();
-    let s = now.getSeconds();
+    let mtn = new Date();
+    let h = mtn.getHours();
+    let m = mtn.getMinutes();
+    let s = mtn.getSeconds();
 
     if (h < 10) {
       h = "0" + h;
