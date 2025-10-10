@@ -51,7 +51,12 @@ io.use(sharedSession(expressSession, { autoSave: true }));
 // -----------------------------
 // Blacklist
 // -----------------------------
-const blacklist = ["192.168.197.197", "192.168.197.1"];
+const blacklist = [
+  "192.168.197.197",
+  "192.168.197.1",
+  "192.168.193.193",
+  "192.168.193.1",
+];
 app.use((req, res, next) => {
   const ip = (
     req.headers["x-forwarded-for"] ||
@@ -98,7 +103,7 @@ function readJSON(file, fallback) {
       return JSON.parse(raw);
     }
   } catch {
-    console.warn(`⚠️ Fichier corrompu ou vide : ${file}, régénéré.`);
+    console.warn(`⚠️ Fichier corrompu : ${file}, régénéré.`);
   }
   fs.writeFileSync(file, JSON.stringify(fallback, null, 2));
   return fallback;
@@ -123,8 +128,8 @@ let medals = readJSON(files.medals, {});
 // -----------------------------
 // Logique principale
 // -----------------------------
-let users = new Map(); // socket.id → { name, socketId }
-let userSockets = new Map(); // username → Set de socket.id
+let users = new Map(); // socket.id -> { name, socketId }
+let userSockets = new Map(); // username -> Set de socket.id
 
 function clickerLeaderboardClasse() {
   return Object.entries(scores)
@@ -159,7 +164,7 @@ io.on("connection", (socket) => {
   const user = socket.handshake.session?.user;
 
   if (!user || !user.username) {
-    console.log("❌ Connexion refusée : " + socket.id);
+    io.emit("reload");
     socket.disconnect(true);
     return;
   }
