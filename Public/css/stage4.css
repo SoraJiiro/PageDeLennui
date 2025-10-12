@@ -6,8 +6,7 @@
   bottom: auto;
   width: 100dvw;
   height: 100dvh;
-  display: grid;
-  place-items: center;
+  display: flex;
   padding: 2rem;
 }
 
@@ -18,6 +17,7 @@
   border: 1px solid #000;
   border-radius: 16px;
   padding: 1rem;
+  transform: translateY(-(calc(100dvh - 90%)));
 }
 
 .leaderboard-card .leaderboard-header {
@@ -61,17 +61,4 @@
 }
 .board tr:nth-child(odd) td {
   background: #000;
-}
-
-.fifth-stage {
-  position: absolute;
-  top: calc(4 * 100dvh);
-  left: 0;
-  right: 0;
-  bottom: auto;
-  width: 100dvw;
-  height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 2rem;
 }

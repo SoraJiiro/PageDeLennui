@@ -6,6 +6,26 @@ export function initChat(socket) {
   const messages = document.getElementById("chat-messages");
   const submit = document.querySelector(".submit");
 
+  function showNotif(text, duration = 4000) {
+    const notif = document.createElement("div");
+    notif.className = "notif";
+    notif.textContent = text;
+    notif.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #00ff00;
+    opacity: 0.8;
+    color: #000;
+    padding: 15px 25px;
+    font-weight: bold;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+  `;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), duration);
+  }
+
   function addMessage({ auteur, text, at, type = "user" }) {
     const el = document.createElement("div");
     el.className = `msg ${type}`;
@@ -47,13 +67,20 @@ export function initChat(socket) {
       usersCount.textContent = `Utilisateurs en ligne: ${l.length}`;
   });
 
-  socket.on("chat:message", (payload) =>
+  socket.on("chat:message", (payload) => {
     addMessage({
       auteur: payload.name,
       text: payload.text,
       at: payload.at,
-    })
-  );
+    });
+
+    if (
+      payload.name !==
+      meSpan.textContent.replace("Connecté en tant que : ", "").split(" | ")[0]
+    ) {
+      showNotif(`💬 Nouveau message de ${payload.name} dans le Chat`);
+    }
+  });
 
   if (form) {
     form.addEventListener("submit", (event) => {

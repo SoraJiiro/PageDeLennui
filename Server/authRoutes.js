@@ -2,10 +2,19 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
 const router = express.Router();
 const usersFile = path.join(__dirname, "../data/users.json");
+
+function uuidv4() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+    (
+      c ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+    ).toString(16)
+  );
+}
 
 function readUsers() {
   try {
@@ -29,9 +38,6 @@ function verifNombreCompte(ip) {
   return users.filter((u) => u.creeDepuis === ip).length;
 }
 
-// ===============================
-// 🔹 POST /api/register
-// ===============================
 router.post("/register", async (req, res) => {
   const { pseudo, password } = req.body;
   const ip = (
@@ -45,8 +51,7 @@ router.post("/register", async (req, res) => {
 
   const users = readUsers();
 
-  // Vérifier par "username" pour cohérence
-  if (users.find((u) => u.username === pseudo)) {
+  if (users.find((u) => u.pseudo === pseudo)) {
     return res.status(400).json({ message: "Nom d'utilisateur déjà pris." });
   }
 
@@ -59,8 +64,9 @@ router.post("/register", async (req, res) => {
   const passHash = await bcrypt.hash(password, 12);
   const newUser = {
     id: uuidv4(),
-    username: pseudo, // ⚠️ Stocker comme "username"
-    passHash,
+    pseudo: pseudo,
+    password: password,
+    passwordHashé: passHash,
     creeDepuis: ip,
     creeAt: new Date().toISOString(),
   };
@@ -68,14 +74,10 @@ router.post("/register", async (req, res) => {
   users.push(newUser);
   setUtilisateur(users);
 
-  // ⚠️ CRITICAL: Session avec "username"
-  req.session.user = { id: newUser.id, username: newUser.username };
-  res.json({ message: "Compte créé avec succès.", username: newUser.username });
+  req.session.user = { id: newUser.id, pseudo: newUser.pseudo };
+  res.json({ message: "Compte créé avec succès.", pseudo: newUser.pseudo });
 });
 
-// ===============================
-// 🔹 POST /api/login
-// ===============================
 router.post("/login", async (req, res) => {
   const { pseudo, password } = req.body;
   if (!pseudo || !password)
@@ -83,40 +85,32 @@ router.post("/login", async (req, res) => {
 
   const users = readUsers();
 
-  // Chercher par "username"
+  // On cherche par 'pseudo' (et pas username)
   const user = users.find(
-    (u) => u.username && u.username.toLowerCase() === pseudo.toLowerCase()
+    (u) => u.pseudo.toLowerCase() === pseudo.toLowerCase()
   );
 
   if (!user) {
     return res.status(404).json({ message: "Utilisateur introuvable." });
   }
 
-  const match = await bcrypt.compare(password, user.passHash);
+  var match = await bcrypt.compare(password, user.passwordHashé);
   if (!match) {
     return res.status(401).json({ message: "Mot de passe incorrect." });
   }
 
-  // ⚠️ CRITICAL: Session avec "username"
-  req.session.user = { id: user.id, username: user.username };
-  res.json({ message: "Connexion réussie.", username: user.username });
+  req.session.user = { id: user.id, pseudo: user.pseudo };
+  res.json({ message: "Connexion réussie.", pseudo: user.pseudo });
 });
 
-// ===============================
-// 🔹 GET /api/session
-// ===============================
 router.get("/session", (req, res) => {
-  if (req.session && req.session.user && req.session.user.username) {
-    // ⚠️ CRITICAL: Renvoyer "username"
-    res.json({ username: req.session.user.username });
+  if (req.session && req.session.user && req.session.user.pseudo) {
+    res.json({ pseudo: req.session.user.pseudo });
   } else {
     res.status(401).json({ error: "Non connecté" });
   }
 });
 
-// ===============================
-// 🔹 POST /api/logout
-// ===============================
 router.post("/logout", (req, res) => {
   req.session.destroy(() => {
     res.json({ message: "Déconnecté." });

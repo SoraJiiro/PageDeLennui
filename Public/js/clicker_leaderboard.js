@@ -9,7 +9,7 @@ export function initClickerLeaderboard(socket) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
       <td>${i + 1}</td>
-      <td>${row.username}</td>
+      <td>${row.pseudo}</td>
       <td>${row.score}</td>
     `;
       leaderboardBody.appendChild(tr);

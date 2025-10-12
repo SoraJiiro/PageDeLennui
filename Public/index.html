@@ -14,6 +14,8 @@
         <link rel="stylesheet" type="text/css" href="css/stage2.css" />
         <link rel="stylesheet" type="text/css" href="css/stage3.css" />
         <link rel="stylesheet" type="text/css" href="css/stage4.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage5.css" />
+
         <link rel='shortcut icon' type="img/png" href="icon.png" />
 
         <script src="/socket.io/socket.io.js"></script>
@@ -37,8 +39,8 @@
                 <button class="sec1">Clicker</button>
                 <button class="sec2">Dino</button>
                 <button class="sec3">Chat</button>
-                <button class="sec4">Leaderboard Clicker</button>
-                <button class="sec5">Leaderboard Dino</button>
+                <button class="sec4">Leaderboards</button>
+                <button class="sec5">UNO</button>
             </div>
 
             <div class="zone-wrap">
@@ -99,7 +101,9 @@
                 </form>
             </div>
         </section>
+
         <section id="stage4" class="fourth-stage">
+            <!--LEADERBOARD CLICKER-->
             <div class="leaderboard-card">
                 <div class="leaderboard-header"><h2>Clicker Leaderboard.exe</h2>
                     <div class="you-score">Votre score : <span
@@ -109,17 +113,59 @@
                     <tbody></tbody>
                 </table>
             </div>
-        </section>
-
-        <section id="stage5" class="fifth-stage">
+            <!--LEADERBOARD DINO-->
             <div class="leaderboard-card">
                 <div class="leaderboard-header">
                     <h2>Dino Leaderboard.exe</h2>
-                </div>
+                    <div class="you-score">Votre score : <span
+                            id="your-score">0</span></div></div>
                 <table class="board" id="dino-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </section>
+
+        <section id="stage5" class="fifth-stage">
+            <div class="uno-card">
+                <div class="uno-header">
+                    <h2>UNO.exe</h2>
+                    <div class="uno-status"></div>
+                </div>
+
+                <div class="uno-lobby">
+                    <h3>Lobby UNO</h3>
+                    <div class="uno-joueurs"></div>
+                    <div class="uno-spectators"></div>
+                    <div class="uno-btn-wrapper">
+                        <button class="uno-rej">Rejoindre le lobby</button>
+                        <button class="uno-quitter"
+                            style="display: none;">Quitter le lobby</button>
+                        <button class="uno-start-game" style="display: none;">En
+                            attente...</button>
+                    </div>
+                </div>
+
+                <div class="uno-game">
+                    <div class="uno-mode-spec"
+                        style="display: none;"></div>
+                    <div class="uno-adversaires"></div>
+
+                    <div class="uno-ecran">
+                        <div class="uno-pile">
+                            <div style="color: #00ff00;">PIOCHE</div>
+                        </div>
+                        <div class="uno-discard"></div>
+                    </div>
+
+                    <div class="uno-deck"></div>
+                    <div class="uno-info"></div>
+                </div>
+
+                <div class="uno-color-picker">
+                    <h3>Choisis une couleur</h3>
+                    <div class="uno-color-options"></div>
+                </div>
             </div>
         </section>
 
@@ -128,4 +174,4 @@
 </html>
 
 <script
-    defer>setTimeout(function () {document.querySelector('.zone').click();document.querySelector('.zone').click = () => {return "Nique ta mère toi et ton AutoClicker."};},355);</script>
+    defer>setTimeout(function () {document.querySelector('.zone').click = () => {return "Nique ta mère toi et ton AutoClicker."};},400);</script>

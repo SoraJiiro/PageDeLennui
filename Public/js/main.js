@@ -34,9 +34,11 @@
       import("./clicker_leaderboard.js"),
       import("./dino.js"),
       import("./dino_leaderboard.js"),
+      import("./uno.js"),
     ]);
 
-    const [chat, clicker, clickerLeaderboard, dino, dinoLeaderboard] = modules;
+    const [chat, clicker, clickerLeaderboard, dino, dinoLeaderboard, uno] =
+      modules;
 
     if (chat?.initChat) chat.initChat(socket);
     if (clicker?.initClicker) clicker.initClicker(socket);
@@ -45,6 +47,7 @@
     if (dino?.initDino) dino.initDino(socket);
     if (dinoLeaderboard?.initDinoLeaderboard)
       dinoLeaderboard.initDinoLeaderboard(socket);
+    if (uno?.initUno) uno.initUno(socket);
 
     //console.log("Modules chargés");
   } catch (err) {

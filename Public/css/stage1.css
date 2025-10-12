@@ -144,6 +144,7 @@ p.cps-humain {
   padding: 10px;
   border: 4px solid #00ff00;
   overflow: auto;
+  background: #000;
 }
 
 .medals-wrap .medal {
@@ -161,7 +162,7 @@ p.cps-humain {
 
 .medals-wrap .medal.hidden {
   border: 5px dotted gray;
-  background: none;
+  background: #000;
 }
 
 .medals-wrap .medal.hidden::after {

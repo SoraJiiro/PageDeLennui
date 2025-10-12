@@ -89,6 +89,8 @@
   border: 2px solid #00ff00;
   background: #000;
   color: #fff;
+  max-height: 240px;
+  min-height: 47.5px;
 }
 .chat-form button {
   padding: 0.8rem 1rem;
@@ -97,11 +99,11 @@
   color: #fff;
   cursor: pointer;
   font-weight: 600;
-  transition: 750ms;
+  transition: 350ms ease;
 }
 .chat-form button:hover {
   filter: brightness(1.1);
-  background: linear-gradient(20deg, #000, #37ff1d);
+  background: #37ff1d;
 }
 
 @media (max-width: 600px) {

@@ -2,6 +2,8 @@ export function initDino(socket) {
   const canvas = document.querySelector(".game");
   if (!canvas) return;
   const c = canvas.getContext("2d");
+  const yourScoreEl = document.getElementById("your-score");
+  if (yourScoreEl) yourScoreEl.textContent = "0";
 
   function resizeCanvas() {
     canvas.width = canvas.clientWidth;
@@ -11,7 +13,8 @@ export function initDino(socket) {
   window.addEventListener("resize", resizeCanvas);
 
   const GRAVITY = 0.8;
-  const INITIAL_SPEED = 8;
+  const INITIAL_SPEED = 4;
+  const MAX_SPEED = 42;
   let gameSpeed = INITIAL_SPEED;
   let score = 0;
   let gameOver = false;
@@ -151,11 +154,14 @@ export function initDino(socket) {
         gameOver = true;
         socket.emit("dino:score", { score });
         showGameOver();
+
         return false;
       }
       if (cx.x + cx.width < 0) {
         score++;
-        gameSpeed += 0.0025;
+        if (gameSpeed < MAX_SPEED) {
+          gameSpeed += 0.0018;
+        }
       }
       return true;
     });

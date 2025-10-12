@@ -60,10 +60,9 @@ export function initClicker(socket) {
     top: 20px;
     right: 20px;
     background: #00ff00;
-    opacity: 0.87;
+    opacity: 0.8;
     color: #000;
     padding: 15px 25px;
-    border-radius: 8px;
     font-weight: bold;
     z-index: 9999;
     animation: slideIn 0.3s ease;
@@ -121,7 +120,7 @@ export function initClicker(socket) {
     scoreActuel = 0;
     medalsDebloquees.clear();
 
-    if (yourScoreEl) yourScoreEl.textContent = "0";
+    if (yourScoreEl) yourScoreEl.textContent = '0';
     if (acpsEl) acpsEl.textContent = "";
     medalsWrap?.querySelectorAll(".medal").forEach((m) => {
       m.classList.remove("shown");

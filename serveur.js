@@ -15,6 +15,7 @@ const { Server } = require("socket.io");
 // -----------------------------
 const authRoutes = require("./Server/authRoutes");
 const requireAuth = require("./Server/requireAuth");
+const UnoGame = require("./Server/unoGame");
 
 // -----------------------------
 // Config
@@ -64,7 +65,7 @@ app.use((req, res, next) => {
     ""
   ).replace("::ffff:", "");
   if (blacklist.includes(ip)) {
-    console.log(`🚫 Accès refusé à ${ip} (HTTP blacklist)`);
+    console.log(`\n🚫 Accès refusé à ${ip} (HTTP blacklist)\n`);
     res
       .status(403)
       .send(
@@ -128,13 +129,15 @@ let medals = readJSON(files.medals, {});
 // -----------------------------
 // Logique principale
 // -----------------------------
-let users = new Map(); // socket.id -> { name, socketId }
-let userSockets = new Map(); // username -> Set de socket.id
+let users = new Map();
+let userSockets = new Map(); // pseudo -> Set de socket.id
+let unoGames = new Map();
+let gameActuelle = new UnoGame();
 
 function clickerLeaderboardClasse() {
   return Object.entries(scores)
-    .map(([username, score]) => ({ username, score: Number(score) || 0 }))
-    .sort((a, b) => b.score - a.score || a.username.localeCompare(b.username));
+    .map(([pseudo, score]) => ({ pseudo, score: Number(score) || 0 }))
+    .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
 }
 function broadcastClickerLeaderboard() {
   io.emit("clicker:leaderboard", clickerLeaderboardClasse());
@@ -163,22 +166,20 @@ function allowClick(socketId) {
 io.on("connection", (socket) => {
   const user = socket.handshake.session?.user;
 
-  if (!user || !user.username) {
+  if (!user || !user.pseudo) {
     io.emit("reload");
     socket.disconnect(true);
     return;
   }
 
-  const username = user.username;
+  const pseudo = user.pseudo;
 
-  if (userSockets.has(username)) {
-    const oldSockets = userSockets.get(username);
+  if (userSockets.has(pseudo)) {
+    const oldSockets = userSockets.get(pseudo);
     oldSockets.forEach((oldSocketId) => {
       const oldSocket = io.sockets.sockets.get(oldSocketId);
       if (oldSocket && oldSocket.id !== socket.id) {
-        console.log(
-          `🔄 Déconnexion de l'ancienne socket ${oldSocketId} pour ${username}`
-        );
+        console.log(`\n🔄 Reset socket (${oldSocketId}) ->  ${pseudo}\n`);
         oldSocket.disconnect(true);
       }
     });
@@ -186,37 +187,44 @@ io.on("connection", (socket) => {
   }
 
   // Enregistrer la nouvelle socket
-  if (!userSockets.has(username)) {
-    userSockets.set(username, new Set());
+  if (!userSockets.has(pseudo)) {
+    userSockets.set(pseudo, new Set());
   }
-  userSockets.get(username).add(socket.id);
-  users.set(socket.id, { name: username });
+  userSockets.get(pseudo).add(socket.id);
+  users.set(socket.id, { name: pseudo });
 
-  console.log(`>> [${username}] connecté`);
+  console.log(`>> [${pseudo}] connecté`);
 
   // Envoyer infos initiales
-  socket.emit("you:name", username);
+  socket.emit("you:name", pseudo);
   socket.emit("chat:history", historique);
-  socket.emit("clicker:you", { score: scores[username] || 0 });
+  socket.emit("clicker:you", { score: scores[pseudo] || 0 });
   socket.emit("clicker:leaderboard", clickerLeaderboardClasse());
-  socket.emit("clicker:medals", medals[username] || []);
+  socket.emit("clicker:medals", medals[pseudo] || []);
   socket.emit(
     "dino:leaderboard",
     Object.entries(dinoScores)
-      .map(([u, s]) => ({ username: u, score: s }))
+      .map(([u, s]) => ({ pseudo: u, score: s }))
       .sort((a, b) => b.score - a.score)
   );
+  socket.emit("clicker:click", () => {
+    // On verra ?
+    scores[pseudo] += 1;
+    setTimeout(function () {
+      scores[pseudo] -= 1;
+    }, 100);
+  });
 
   // Broadcast liste (utilisateurs uniques)
   const uniqueUsers = Array.from(userSockets.keys());
   io.emit("users:list", uniqueUsers);
-  io.emit("system:info", `${username} a rejoint le chat`);
+  io.emit("system:info", `${pseudo} a rejoint le chat`);
 
   // ===== Chat =====
   socket.on("chat:message", ({ text }) => {
     const msg = String(text || "").trim();
     if (!msg) return;
-    const payload = { name: username, text: msg, at: new Date().toISOString() };
+    const payload = { name: pseudo, text: msg, at: new Date().toISOString() };
     historique.push(payload);
     if (historique.length > 200) historique = historique.slice(-200);
     writeJSON(files.historique, historique);
@@ -227,21 +235,21 @@ io.on("connection", (socket) => {
   // ===== Clicker =====
   socket.on("clicker:click", () => {
     if (!allowClick(socket.id)) return;
-    scores[username] = (scores[username] || 0) + 1;
+    scores[pseudo] = (scores[pseudo] || 0) + 1;
     writeJSON(files.leaderboard, scores);
-    socket.emit("clicker:you", { score: scores[username] });
+    socket.emit("clicker:you", { score: scores[pseudo] });
     broadcastClickerLeaderboard();
   });
 
   socket.on("clicker:reset", () => {
-    scores[username] = 0;
-    medals[username] = [];
+    scores[pseudo] = 0;
+    medals[pseudo] = [];
     writeJSON(files.leaderboard, scores);
     writeJSON(files.medals, medals);
     socket.emit("clicker:you", { score: 0 });
     socket.emit("clicker:medals", []);
     broadcastClickerLeaderboard();
-    console.log(`\n🔄 Reset Clicker pour [${username}]\n`);
+    console.log(`\n🔄 Reset Clicker pour [${pseudo}]\n`);
   });
 
   socket.on("clicker:medalUnlock", ({ medalName }) => {
@@ -255,13 +263,13 @@ io.on("connection", (socket) => {
       "Légendaire",
     ];
     if (!validMedals.includes(medalName)) return;
-    const userMedals = medals[username] || [];
+    const userMedals = medals[pseudo] || [];
     if (!userMedals.includes(medalName)) {
       userMedals.push(medalName);
-      medals[username] = userMedals;
+      medals[pseudo] = userMedals;
       writeJSON(files.medals, medals);
-      console.log(`\n🏅 ${username} a débloqué ${medalName}\n`);
-      socket.emit("clicker:medals", medals[username]);
+      console.log(`\n🏅 ${pseudo} a débloqué ${medalName}\n`);
+      socket.emit("clicker:medals", medals[pseudo]);
     }
   });
 
@@ -269,37 +277,325 @@ io.on("connection", (socket) => {
   socket.on("dino:score", ({ score }) => {
     const s = Number(score);
     if (isNaN(s) || s < 0) return;
-    const current = dinoScores[username] || 0;
+    const current = dinoScores[pseudo] || 0;
     if (s > current) {
-      dinoScores[username] = s;
+      dinoScores[pseudo] = s;
       writeJSON(files.dinoScores, dinoScores);
-      console.log(`\n🦖 Nouveau score Dino pour [${username}] ::: ${s}\n`);
+      console.log(`\n🦖 Nouveau score Dino pour [${pseudo}] ::: ${s}\n`);
     }
     const arr = Object.entries(dinoScores)
-      .map(([u, sc]) => ({ username: u, score: sc }))
-      .sort(
-        (a, b) => b.score - a.score || a.username.localeCompare(b.username)
-      );
+      .map(([u, sc]) => ({ pseudo: u, score: sc }))
+      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("dino:leaderboard", arr);
   });
 
-  // ===== Déconnexion =====
+  // ===== UNO =====
+  function majSocketIds() {
+    if (!gameActuelle) return;
+
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+      const clientUsername = clientUser.pseudo;
+
+      const joueur = gameActuelle.joueurs.find(
+        (p) => p.pseudo === clientUsername
+      );
+      if (joueur) {
+        joueur.socketId = clientSocket.id;
+      }
+
+      const spectator = gameActuelle.spectators.find(
+        (s) => s.pseudo === clientUsername
+      );
+      if (spectator) {
+        spectator.socketId = clientSocket.id;
+      }
+    });
+  }
+
+  // Fonction pour broadcast le lobby au utilisateurs connectés
+  function broadcastUnoLobby() {
+    if (!gameActuelle) {
+      gameActuelle = new UnoGame();
+    }
+
+    majSocketIds();
+
+    const lobbyState = gameActuelle.getLobbyState();
+
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+
+      const clientUsername = clientUser.pseudo;
+      const estAuLobby = gameActuelle.joueurs.some(
+        (p) => p.pseudo === clientUsername
+      );
+
+      clientSocket.emit("uno:lobby", {
+        ...lobbyState,
+        myUsername: clientUsername,
+        estAuLobby,
+      });
+    });
+  }
+
+  // Fonction pour broadcast le jeu au joueurs et spectateurs
+  function broadcastUno(message = "") {
+    if (!gameActuelle || !gameActuelle.gameStarted) return;
+
+    majSocketIds();
+
+    [...gameActuelle.joueurs, ...gameActuelle.spectators].forEach((p) => {
+      const pSocket = io.sockets.sockets.get(p.socketId);
+      if (pSocket) {
+        const state = gameActuelle.getState(p.pseudo);
+        if (message) state.message = message;
+        pSocket.emit("uno:update", state);
+      }
+    });
+  }
+
+  socket.on("uno:getState", () => {
+    if (!gameActuelle) {
+      gameActuelle = new UnoGame();
+    }
+
+    majSocketIds();
+
+    const lobbyState = gameActuelle.getLobbyState();
+    const estAuLobby = gameActuelle.joueurs.some((p) => p.pseudo === pseudo);
+
+    socket.emit("uno:lobby", {
+      ...lobbyState,
+      myUsername: pseudo,
+      estAuLobby,
+    });
+
+    if (gameActuelle.gameStarted) {
+      const gameState = gameActuelle.getState(pseudo);
+      socket.emit("uno:update", gameState);
+    }
+  });
+
+  socket.on("uno:join", () => {
+    if (!gameActuelle) {
+      gameActuelle = new UnoGame();
+    }
+
+    if (gameActuelle.gameStarted) {
+      socket.emit("uno:error", "La partie a déjà commencé");
+      gameActuelle.addSpectator(pseudo, socket.id);
+      broadcastUnoLobby();
+      return;
+    }
+
+    // Retirer des spectateurs si présent
+    gameActuelle.removeSpectator(pseudo);
+
+    const res = gameActuelle.addPlayer(pseudo, socket.id);
+
+    if (!res.success) {
+      if (res.reason === "full") {
+        socket.emit("uno:error", "Le lobby est plein (4/4)");
+      } else if (res.reason === "gameStarted") {
+        socket.emit("uno:error", "La partie a déjà commencé");
+      } else if (res.reason === "alreadyIn") {
+        console.log(`\n⚠️  ${pseudo} est déjà dans le lobby UNO\n`);
+      }
+      broadcastUnoLobby();
+      return;
+    }
+
+    console.log(
+      `\n✅ ${pseudo} a rejoint le lobby UNO (${gameActuelle.joueurs.length}/4)\n`
+    );
+
+    broadcastUnoLobby();
+  });
+
+  socket.on("uno:leave", () => {
+    if (!gameActuelle) return;
+
+    const etaitJoueur = gameActuelle.removePlayer(pseudo);
+
+    if (etaitJoueur) {
+      console.log(`\n🚪 ${pseudo} a quitté le lobby UNO\n`);
+
+      // Si partie en cours et joueur quitte
+      if (gameActuelle.gameStarted) {
+        // Vérifier s'il reste assez de joueurs
+        if (gameActuelle.joueurs.length < 2) {
+          console.log(`\n⚠️  Partie UNO annulée (pas assez de joueurs)\n`);
+
+          gameActuelle = new UnoGame();
+          broadcastUnoLobby();
+          return;
+        }
+
+        // Continuer la partie
+        broadcastUno(`${pseudo} a quitté la partie`);
+      }
+
+      // Ajouter comme spectateur
+      gameActuelle.addSpectator(pseudo, socket.id);
+
+      // Broadcast à tout le monde
+      broadcastUnoLobby();
+    }
+  });
+
+  socket.on("uno:start", () => {
+    if (!gameActuelle) return;
+
+    const isPlayer = gameActuelle.joueurs.some((p) => p.pseudo === pseudo);
+    if (!isPlayer) {
+      socket.emit("uno:error", "Tu n'es pas dans le lobby");
+      return;
+    }
+
+    if (!gameActuelle.canStart()) {
+      socket.emit("uno:error", "Impossible de démarrer (2-4 joueurs requis)");
+      return;
+    }
+
+    gameActuelle.startGame();
+    let joueursActu = [];
+    gameActuelle.joueurs.forEach((j) => {
+      joueursActu.push(j.pseudo);
+    });
+    console.log(
+      `🎮 Partie UNO démarrée avec ${gameActuelle.joueurs.length} joueurs  (${joueursActu})`
+    );
+
+    majSocketIds();
+
+    // Envoyer l'état à tous les joueurs
+    gameActuelle.joueurs.forEach((p) => {
+      const joueurSocket = io.sockets.sockets.get(p.socketId);
+      if (joueurSocket) {
+        const state = gameActuelle.getState(p.pseudo);
+        joueurSocket.emit("uno:gameStart", state);
+      }
+    });
+
+    // Les autres deviennent spectateurs automatiquement
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+
+      const clientUsername = clientUser.pseudo;
+      const isPlayer = gameActuelle.joueurs.some(
+        (p) => p.pseudo === clientUsername
+      );
+
+      if (!isPlayer) {
+        gameActuelle.addSpectator(clientUsername, clientSocket.id);
+        const state = gameActuelle.getState(clientUsername);
+        clientSocket.emit("uno:gameStart", state);
+      }
+    });
+
+    // Broadcast le nouveau lobby state
+    broadcastUnoLobby();
+  });
+
+  socket.on("uno:play", ({ cardIndex, color }) => {
+    if (!gameActuelle || !gameActuelle.gameStarted) {
+      socket.emit("uno:error", "Aucune partie en cours");
+      return;
+    }
+
+    const joueur = gameActuelle.joueurs.find((p) => p.pseudo === pseudo);
+    if (!joueur) {
+      socket.emit("uno:error", "Tu n'es pas dans la partie");
+      return;
+    }
+
+    const res = gameActuelle.jouerCarte(joueur, cardIndex, color);
+
+    if (!res.success) {
+      socket.emit("uno:error", res.message);
+      return;
+    }
+
+    if (res.winner) {
+      console.log(`\n🏆 ${res.winner} a gagné la partie de UNO !\n`);
+
+      io.emit("uno:gameEnd", { winner: res.winner });
+
+      gameActuelle = new UnoGame();
+      broadcastUnoLobby();
+      return;
+    }
+
+    // Broadcast à tous
+    broadcastUno(res.message);
+  });
+
+  socket.on("uno:draw", () => {
+    if (!gameActuelle || !gameActuelle.gameStarted) return;
+
+    const joueur = gameActuelle.joueurs.find((p) => p.pseudo === pseudo);
+    if (!joueur) {
+      socket.emit("uno:error", "Tu n'es pas dans la partie");
+      return;
+    }
+
+    const res = gameActuelle.drawCard(joueur);
+
+    if (!res.success) {
+      socket.emit("uno:error", res.message);
+      return;
+    }
+
+    // Broadcast à tous
+    broadcastUno(res.message);
+  });
+
   socket.on("disconnect", () => {
     users.delete(socket.id);
     clickBuckets.delete(socket.id);
 
-    if (userSockets.has(username)) {
-      userSockets.get(username).delete(socket.id);
-      if (userSockets.get(username).size === 0) {
-        userSockets.delete(username);
-        io.emit("system:info", `${username} a quitté le chat`);
-        console.log(`>> [${username}] déconnecté`);
+    if (userSockets.has(pseudo)) {
+      userSockets.get(pseudo).delete(socket.id);
+      if (userSockets.get(pseudo).size === 0) {
+        userSockets.delete(pseudo);
+        io.emit("system:info", `${pseudo} a quitté le chat`);
+        console.log(`>> [${pseudo}] déconnecté`);
       }
     }
 
     // Mise à jour liste utilisateurs
     const uniqueUsers = Array.from(userSockets.keys());
     io.emit("users:list", uniqueUsers);
+
+    // Gestion UNO
+    if (gameActuelle) {
+      const etaitJoueur = gameActuelle.joueurs.some((p) => p.pseudo === pseudo);
+
+      if (etaitJoueur) {
+        gameActuelle.removePlayer(pseudo);
+
+        if (gameActuelle.gameStarted && gameActuelle.joueurs.length < 2) {
+          console.log(`\n⚠️  Partie UNO annulée (${pseudo} déconnecté)\n`);
+
+          io.emit("uno:gameEnd", {
+            winner: "Partie annulée !",
+            reason: `${pseudo} s'est déconnecté`,
+          });
+
+          gameActuelle = new UnoGame();
+        } else if (gameActuelle.gameStarted) {
+          broadcastUno(`${pseudo} s'est déconnecté`);
+        }
+
+        broadcastUnoLobby();
+      } else {
+        gameActuelle.removeSpectator(pseudo);
+      }
+    }
   });
 });
 

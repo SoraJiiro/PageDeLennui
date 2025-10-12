@@ -1,22 +1,23 @@
 *,
 ::before,
 ::after {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    background: #000;
-    color: #00FF00;
-    font-family: monospace, monospace;
+  background: #000;
+  color: #00ff00;
+  font-family: monospace, monospace;
+  width: 100dvw;
 }
 
 ::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 ::selection {
-    background: #00FF00;
-    color: #000;
+  background: #00ff00;
+  color: #000;
 }
