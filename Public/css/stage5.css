@@ -134,7 +134,7 @@ html {
 .uno-pile {
   width: 80px;
   height: 120px;
-  border: 2px solid #00ff00;
+  border: thick double #00ff00;
   display: grid;
   place-items: center;
   background: #000;
@@ -149,7 +149,6 @@ html {
 .uno-discard {
   width: 80px;
   height: 120px;
-  border: 2px solid #00ff00;
   display: grid;
   place-items: center;
 }
@@ -162,7 +161,8 @@ html {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  border: thick double #000;
 }
 
 .uno-deck {
@@ -177,7 +177,7 @@ html {
 .uno-deck-card {
   width: 80px;
   height: 115px;
-  border: 2px solid #00ff00;
+  border: thick double #000;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -185,6 +185,7 @@ html {
   cursor: pointer;
   font-weight: bold;
   flex-shrink: 0;
+  transition: transform cubic-bezier(1, 0, 0, 1) 255ms;
 }
 
 .uno-deck-card:hover {
@@ -194,6 +195,9 @@ html {
 .uno-deck-card.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  border: dashed 1.5px #000;
+  outline: dashed 1.5px #000;
+  outline-offset: -3.5px;
 }
 
 .uno-deck-card.disabled:hover {
@@ -245,6 +249,7 @@ html {
 .color-black {
   background: radial-gradient(circle, rgba(255, 255, 255, 1) 65%, #000 55%);
   color: #000;
+  border: thick double #fff;
 }
 
 .uno-color-picker {
@@ -318,5 +323,17 @@ html {
 .highlight {
   font-weight: bold;
   background: #00ff00;
+  color: #000;
+}
+
+.uno-pile.tonTour {
+  background: #00ff00;
+  filter: brightness(0.9);
+  border: thick double #000;
+  -webkit-box-shadow: 0px 0px 10px 2px #00ff00;
+  box-shadow: 0px 0px 10px 2px #00ff00;
+}
+
+.uno-pile.tonTour div {
   color: #000;
 }

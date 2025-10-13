@@ -195,9 +195,13 @@ export function initUno(socket) {
     if (statusEl) {
       const tourDuJoueur = state.currentPlayer;
       const estMonTour = state.estMonTour && !estSpec;
-      statusEl.textContent = estMonTour
-        ? "C'est ton tour !"
-        : `Tour de ${tourDuJoueur}`;
+      if (estMonTour) {
+        statusEl.textContent = "C'est ton tour !";
+        pileEl.classList.add("tonTour");
+      } else {
+        statusEl.textContent = `Tour de ${tourDuJoueur}`;
+        pileEl.classList.remove("tonTour");
+      }
     }
 
     // Carte défaussée
@@ -290,6 +294,7 @@ export function initUno(socket) {
     }
     game.classList.remove("active");
     lobby.style.display = "block";
+    statusEl.textContent = "";
     socket.emit("uno:getState");
   });
 

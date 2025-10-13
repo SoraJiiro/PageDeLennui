@@ -48,8 +48,6 @@
     if (dinoLeaderboard?.initDinoLeaderboard)
       dinoLeaderboard.initDinoLeaderboard(socket);
     if (uno?.initUno) uno.initUno(socket);
-
-    //console.log("Modules chargés");
   } catch (err) {
     console.error("Erreur modules : ", err);
   }

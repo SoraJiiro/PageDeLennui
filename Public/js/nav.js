@@ -8,6 +8,7 @@ document.addEventListener("click", () => {
   const sec3 = document.querySelector(".sec3");
   const sec4 = document.querySelector(".sec4");
   const sec5 = document.querySelector(".sec5");
+  const sec6 = document.querySelector(".sec6");
 
   sec1.addEventListener("click", () => {
     goTo("stage1");
@@ -23,5 +24,10 @@ document.addEventListener("click", () => {
   });
   sec5.addEventListener("click", () => {
     goTo("stage5");
+  });
+  sec6.addEventListener("click", () => {
+    window.open("https://supermario-game.com/mario-game/mario.html", {
+      target: "_blank",
+    });
   });
 });

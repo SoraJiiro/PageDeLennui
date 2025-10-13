@@ -20,7 +20,7 @@ const UnoGame = require("./Server/unoGame");
 // -----------------------------
 // Config
 // -----------------------------
-const PORT = process.env.PORT || 7550;
+const PORT = process.env.PORT || 7750;
 const HOTE = "";
 const SESSION_SECRET = process.env.CLE_SID;
 
@@ -461,12 +461,15 @@ io.on("connection", (socket) => {
     }
 
     gameActuelle.startGame();
+
     let joueursActu = [];
     gameActuelle.joueurs.forEach((j) => {
       joueursActu.push(j.pseudo);
     });
     console.log(
-      `🎮 Partie UNO démarrée avec ${gameActuelle.joueurs.length} joueurs  (${joueursActu})`
+      `🎮 Partie UNO démarrée avec ${
+        gameActuelle.joueurs.length
+      } joueurs  (${joueursActu.join(", ")})`
     );
 
     majSocketIds();
