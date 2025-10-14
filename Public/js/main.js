@@ -35,10 +35,22 @@
       import("./dino.js"),
       import("./dino_leaderboard.js"),
       import("./uno.js"),
+      import("./flappy.js"),
+      import("./flappy_leaderboard.js"),
+      import("./uno_leaderboard.js"),
     ]);
 
-    const [chat, clicker, clickerLeaderboard, dino, dinoLeaderboard, uno] =
-      modules;
+    const [
+      chat,
+      clicker,
+      clickerLeaderboard,
+      dino,
+      dinoLeaderboard,
+      uno,
+      flappy,
+      flappyLeaderboard,
+      unoLeaderboard,
+    ] = modules;
 
     if (chat?.initChat) chat.initChat(socket);
     if (clicker?.initClicker) clicker.initClicker(socket);
@@ -48,6 +60,11 @@
     if (dinoLeaderboard?.initDinoLeaderboard)
       dinoLeaderboard.initDinoLeaderboard(socket);
     if (uno?.initUno) uno.initUno(socket);
+    if (flappy?.initFlappy) flappy.initFlappy(socket);
+    if (flappyLeaderboard?.initFlappyLeaderboard)
+      flappyLeaderboard.initFlappyLeaderboard(socket);
+    if (unoLeaderboard?.initUnoLeaderboard)
+      unoLeaderboard.initUnoLeaderboard(socket);
   } catch (err) {
     console.error("Erreur modules : ", err);
   }

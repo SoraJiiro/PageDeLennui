@@ -8,7 +8,7 @@ html {
 
 .fifth-stage {
   position: absolute;
-  top: calc(5 * 100dvh);
+  top: calc(4 * 100dvh);
   left: 0;
   right: 0;
   bottom: auto;

@@ -118,6 +118,8 @@ const files = {
   historique: path.join(dataDir, "chat_history.json"),
   chatLogs: path.join(dataDir, "chat_logs.jsonl"),
   dinoScores: path.join(dataDir, "dino_scores.json"),
+  flappyScores: path.join(dataDir, "flappy_scores.json"),
+  unoWins: path.join(dataDir, "uno_wins.json"),
   medals: path.join(dataDir, "medals.json"),
 };
 
@@ -125,6 +127,8 @@ let scores = readJSON(files.leaderboard, {});
 let historique = readJSON(files.historique, []);
 let dinoScores = readJSON(files.dinoScores, {});
 let medals = readJSON(files.medals, {});
+let flappyScores = readJSON(files.flappyScores, {});
+let unoWins = readJSON(files.unoWins, {});
 
 // -----------------------------
 // Logique principale
@@ -287,6 +291,29 @@ io.on("connection", (socket) => {
       .map(([u, sc]) => ({ pseudo: u, score: sc }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("dino:leaderboard", arr);
+  });
+
+  // ===== FLAPPY =====
+  socket.emit(
+    "flappy:leaderboard",
+    Object.entries(flappyScores)
+      .map(([u, s]) => ({ pseudo: u, score: s }))
+      .sort((a, b) => b.score - a.score)
+  );
+
+  socket.on("flappy:score", ({ score }) => {
+    const s = Number(score);
+    if (isNaN(s) || s < 0) return;
+    const current = flappyScores[pseudo] || 0;
+    if (s > current) {
+      flappyScores[pseudo] = s;
+      writeJSON(files.flappyScores, flappyScores);
+      console.log(`\n🐤 Nouveau score Flappy pour [${pseudo}] ::: ${s}\n`);
+    }
+    const arr = Object.entries(flappyScores)
+      .map(([u, sc]) => ({ pseudo: u, score: sc }))
+      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    io.emit("flappy:leaderboard", arr);
   });
 
   // ===== UNO =====
@@ -525,6 +552,16 @@ io.on("connection", (socket) => {
 
     if (res.winner) {
       console.log(`\n🏆 ${res.winner} a gagné la partie de UNO !\n`);
+
+      // ✅ Ajouter 1 victoire
+      unoWins[res.winner] = (unoWins[res.winner] || 0) + 1;
+      writeJSON(files.unoWins, unoWins);
+
+      // Broadcast leaderboard UNO
+      const arr = Object.entries(unoWins)
+        .map(([u, w]) => ({ pseudo: u, wins: w }))
+        .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
+      io.emit("uno:leaderboard", arr);
 
       io.emit("uno:gameEnd", { winner: res.winner });
 

@@ -15,6 +15,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage3.css" />
         <link rel="stylesheet" type="text/css" href="css/stage4.css" />
         <link rel="stylesheet" type="text/css" href="css/stage5.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage6.css" />
 
         <link rel='shortcut icon' type="img/png" href="icon.png" />
 
@@ -41,7 +42,8 @@
                 <button class="sec3">Chat</button>
                 <button class="sec4">Leaderboards</button>
                 <button class="sec5">UNO</button>
-                <button class="sec6">Mario</button>
+                <button class="mario">Mario</button>
+                <button class="sec6">Flappy bird</button>
             </div>
 
             <div class="zone-wrap">
@@ -125,6 +127,27 @@
                     <tbody></tbody>
                 </table>
             </div>
+            <!-- LEADERBOARD FLAPPY -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Flappy Bird Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="flappy-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- LEADERBOARD UNO -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>UNO Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="uno-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Victoires</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </section>
 
         <section id="stage5" class="fifth-stage">
@@ -167,6 +190,17 @@
                     <h3>Choisis une couleur</h3>
                     <div class="uno-color-options"></div>
                 </div>
+            </div>
+        </section>
+
+        <section id="stage6" class="sixth-stage">
+            <div class="flappy-card">
+                <h2>Flappy Bird.exe</h2>
+                <div class="flappy-container">
+                    <canvas id="flappyCanvas"></canvas>
+                    <div id="flappyScore">Score : 0</div>
+                </div>
+                <button id="flappyScore" class="flappyStartBtn">Jouer</button>
             </div>
         </section>
 

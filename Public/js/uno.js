@@ -185,7 +185,8 @@ export function initUno(socket) {
     if (modeSpec) {
       if (estSpec) {
         modeSpec.style.display = "block";
-        modeSpec.textContent = "👁️ Mode spectateur - Tu regardes la partie";
+        modeSpec.textContent =
+          "👁️ Mode spectateur - Tu regardes la partie - CTRL + R quand la partie est finie";
       } else {
         modeSpec.style.display = "none";
       }
