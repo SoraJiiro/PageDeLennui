@@ -18,6 +18,10 @@
   padding: 2.5px 7.5px;
   border-radius: 25px;
   width: fit-content;
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, 0%);
 }
 
 .flappy-container {
@@ -27,8 +31,8 @@
 #flappyCanvas {
   border: 3px solid #00ff00;
   background: #000;
-  width: 85dvw;
-  height: 85dvh;
+  width: 80dvw;
+  height: 80dvh;
 }
 
 #flappyScore {
@@ -38,14 +42,25 @@
   margin-top: 10px;
 }
 
-button#flappyScore.flappyStartBtn {
-  transform: translate(-50%, -50%);
+button.flappyStartBtn {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translate(-50%, -10px);
+  width: 120px;
+  height: 60px;
   padding: 12px 20px;
   font-size: 18px;
   border: none;
-  background-color: #ffcc00;
-  color: #333;
-  border-radius: 8px;
+  background: #000;
+  color: #00ff00;
+  border: 2px solid #00ff00;
   cursor: pointer;
   display: none;
+  transition: color cubic-bezier(1, 2, 0, 1) 235ms,
+    background-color cubic-bezier(1, 0, 0, 0) 235ms;
+}
+button.flappyStartBtn:hover {
+  background: #00ff00;
+  color: #000;
 }

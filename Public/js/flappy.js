@@ -83,10 +83,12 @@ export function initFlappy(socket) {
     }
 
     pipes.forEach((p) => {
+      // Pipe passé
       p.x -= pipeSpeed;
       if (!p.passed && p.x + pipeWidth < bird.x - bird.radius) {
         score++;
         p.passed = true;
+        flappyScore.textContent = `Score : ${score}`;
       }
     });
 
@@ -110,10 +112,6 @@ export function initFlappy(socket) {
       gameOver();
     }
 
-    ctx.fillStyle = "#00FF00";
-    ctx.font = `${Math.max(16, canvas.height * 0.04)}px monospace`;
-    ctx.fillText(`Score: ${score}`, 20, 30);
-
     requestAnimationFrame(update);
   }
 
@@ -122,6 +120,8 @@ export function initFlappy(socket) {
     startBtn.style.display = "block";
     startBtn.textContent = "Rejouer";
     if (socket) socket.emit("flappy:score", { score });
+    score = 0;
+    flappyScore.textContent = `Score : ${score}`;
   }
 
   document.addEventListener("keydown", (e) => {

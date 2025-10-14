@@ -300,16 +300,54 @@ p.cps-humain {
   position: fixed;
   left: 25px;
   top: 50px;
-  width: 300px;
+  width: 350px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 5.5px;
-  padding: 15px;
+  padding: 22.5px;
   background: #000;
   border: 2px solid #00ff00;
   z-index: 9999;
+}
+
+.btns-wrap .hide-nav {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  color: #00ff00;
+  font-style: italic;
+  border-left: 2px solid #00ff00;
+  border-top: 2px solid #00ff00;
+  padding: 3.5px;
+  width: fit-content;
+  cursor: pointer;
+  background: #000;
+}
+
+.show-nav {
+  position: fixed;
+  left: 25px;
+  top: 50px;
+  width: fit-content;
+  height: fit-content;
+  background: #000;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  padding: 15px;
+  z-index: 9998;
+  cursor: pointer;
+}
+
+.show-nav:hover {
+  color: #000;
+  background: #00ff00;
+}
+
+.btns-wrap .hide-nav:hover {
+  color: #000;
+  background: #00ff00;
 }
 
 .btns-wrap::before {

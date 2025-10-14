@@ -154,11 +154,44 @@ export function initUno(socket) {
       <button class="uno-color-btn color-pink" data-color="pink">Rose</button>
     `;
 
+    // Désactiver la pioche et les cartes
+    pileEl.classList.add("disabled");
+    deckEl.querySelectorAll(".uno-deck-card").forEach((card) => {
+      card.classList.add("disabled");
+    });
+
+    // Fonction pour fermer le color picker
+    function closeColorPicker() {
+      colorPicker.classList.remove("active");
+      pileEl.classList.remove("disabled");
+      deckEl.querySelectorAll(".uno-deck-card").forEach((card) => {
+        card.classList.remove("disabled");
+      });
+      document.removeEventListener("click", handleOutsideClick);
+    }
+
+    // Gestion du clic à l'extérieur
+    function handleOutsideClick(event) {
+      // On ignore les clics à l'intérieur du color picker
+      if (!colorPicker.contains(event.target)) {
+        closeColorPicker();
+      }
+    }
+
+    // Empêcher plusieurs listeners accumulés
+    document.removeEventListener("click", handleOutsideClick);
+    // Délai pour éviter que le clic d’ouverture ferme immédiatement le menu
+    setTimeout(() => {
+      document.addEventListener("click", handleOutsideClick);
+    }, 0);
+
+    // Choix d'une couleur
     colorOptions.querySelectorAll(".uno-color-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation(); // Empêche la fermeture immédiate
         const color = btn.dataset.color;
         socket.emit("uno:play", { cardIndex, color });
-        colorPicker.classList.remove("active");
+        closeColorPicker();
       });
     });
   }

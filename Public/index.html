@@ -36,6 +36,9 @@
 
         <section id="stage1" class="first-stage">
             <h1 class="display"></h1>
+            <div class="show-nav"
+                onclick="document.querySelector('.btns-wrap').style.display = '';">Afficher
+                Navigation</div>
             <div class="btns-wrap">
                 <button class="sec1">Clicker</button>
                 <button class="sec2">Dino</button>
@@ -44,6 +47,8 @@
                 <button class="sec5">UNO</button>
                 <button class="mario">Mario</button>
                 <button class="sec6">Flappy bird</button>
+                <p class="hide-nav"
+                    onclick="document.querySelector('.btns-wrap').style.display = 'none';">Cacher</p>
             </div>
 
             <div class="zone-wrap">
@@ -108,9 +113,8 @@
         <section id="stage4" class="fourth-stage">
             <!--LEADERBOARD CLICKER-->
             <div class="leaderboard-card">
-                <div class="leaderboard-header"><h2>Clicker Leaderboard.exe</h2>
-                    <div class="you-score">Votre score : <span
-                            id="your-score">0</span></div></div>
+                <div class="leaderboard-header"><h2>Clicker
+                        Leaderboard.exe</h2></div>
                 <table class="board" id="clicker-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
                     <tbody></tbody>
@@ -119,9 +123,7 @@
             <!--LEADERBOARD DINO-->
             <div class="leaderboard-card">
                 <div class="leaderboard-header">
-                    <h2>Dino Leaderboard.exe</h2>
-                    <div class="you-score">Votre score : <span
-                            id="your-score">0</span></div></div>
+                    <h2>Dino Leaderboard.exe</h2></div>
                 <table class="board" id="dino-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
                     <tbody></tbody>
@@ -130,7 +132,7 @@
             <!-- LEADERBOARD FLAPPY -->
             <div class="leaderboard-card">
                 <div class="leaderboard-header">
-                    <h2>Flappy Bird Leaderboard.exe</h2>
+                    <h2>Flappy Leaderboard.exe</h2>
                 </div>
                 <table class="board" id="flappy-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
@@ -200,7 +202,7 @@
                     <canvas id="flappyCanvas"></canvas>
                     <div id="flappyScore">Score : 0</div>
                 </div>
-                <button id="flappyScore" class="flappyStartBtn">Jouer</button>
+                <button class="flappyStartBtn">Jouer</button>
             </div>
         </section>
 

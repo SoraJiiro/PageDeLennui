@@ -334,6 +334,14 @@ html {
   box-shadow: 0px 0px 10px 2px #00ff00;
 }
 
+.uno-pile {
+  user-select: none;
+}
+
+.uno-pile::selection {
+  background: none;
+}
+
 .uno-pile.tonTour div {
   color: #000;
 }
