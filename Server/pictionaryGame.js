@@ -7,12 +7,12 @@ class PictionaryGame {
     this.currentWord = null;
     this.words = [
       "chat",
-      "voiture",
-      "maison",
-      "arbre",
+      "chien",
+      "mr francois",
       "ordinateur",
-      "pizza",
-      "soleil",
+      "discord",
+      "snapchat",
+      "instagram",
     ];
     this.strokes = [];
     this.timeLeft = 0;
