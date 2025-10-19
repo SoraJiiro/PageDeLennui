@@ -38,6 +38,7 @@
       import("./flappy.js"),
       import("./flappy_leaderboard.js"),
       import("./uno_leaderboard.js"),
+      import("./pictionary.js"),
     ]);
 
     const [
@@ -50,6 +51,7 @@
       flappy,
       flappyLeaderboard,
       unoLeaderboard,
+      pictionary,
     ] = modules;
 
     if (chat?.initChat) chat.initChat(socket);
@@ -65,6 +67,7 @@
       flappyLeaderboard.initFlappyLeaderboard(socket);
     if (unoLeaderboard?.initUnoLeaderboard)
       unoLeaderboard.initUnoLeaderboard(socket);
+    if (pictionary?.initPictionary) pictionary.initPictionary(socket);
   } catch (err) {
     console.error("Erreur modules : ", err);
   }

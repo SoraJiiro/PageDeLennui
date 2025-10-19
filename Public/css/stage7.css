@@ -1,0 +1,281 @@
+/* Styles pour stage7 - Pictionary */
+.seventh-stage {
+  position: absolute;
+  top: calc(6 * 100dvh);
+  left: 0;
+  right: 0;
+  bottom: auto;
+  width: 100dvw;
+  height: 100dvh;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pictionary-card {
+  width: 95vw;
+  background: #000;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  padding: 1rem;
+}
+
+.pictionary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.pictionary-header h2 {
+  margin: 0;
+  background: #00ff00;
+  color: #000;
+  padding: 2.5px 7.5px;
+  border-radius: 25px;
+}
+
+.pictionary-status {
+  color: #000;
+  background: #00ff00;
+  font-size: 0.9rem;
+  padding: 7.5px;
+}
+
+.pictionary-lobby {
+  border: 2px solid #00ff00;
+  padding: 1rem;
+  text-align: center;
+}
+
+.pictionary-lobby h3 {
+  color: #00ff00;
+  margin-bottom: 1rem;
+}
+
+.pictionary-joueurs {
+  margin: 1rem 0;
+  padding: 0.5rem;
+  border: 1px solid #00ff00;
+  min-height: 100px;
+}
+
+.pictionary-btn-wrapper {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.pictionary-lobby button {
+  padding: 0.8rem 1.5rem;
+  border: 2px solid #00ff00;
+  background: #000;
+  color: #00ff00;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pictionary-lobby button:hover {
+  background: #00ff00;
+  color: #000;
+}
+
+.pictionary-lobby button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pictionary-lobby button:disabled:hover {
+  background: #000;
+  color: #00ff00;
+}
+
+.pictionary-game {
+  display: none;
+  height: 80vh;
+}
+
+.pictionary-game.active {
+  display: block;
+}
+
+.pictionary-mode-spec {
+  text-align: center;
+  padding: 1rem;
+  border: 2px dashed #00ff00;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.pictionary-joueurs div,
+.pictionary-spectators div {
+  padding: 4px 2px;
+}
+.pictionary-actions {
+  margin-top: 8px;
+}
+.pictionary-actions button {
+  margin-right: 8px;
+}
+.pictionary-actions button {
+  padding: 0.8rem 1.5rem;
+  border: 2px solid #00ff00;
+  background: #000;
+  color: #00ff00;
+  cursor: pointer;
+  font-weight: 600;
+}
+.pictionary-actions button:hover {
+  background: #00ff00;
+  color: #000;
+}
+.pictionary-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pictionary-info {
+  min-height: 24px;
+  margin-bottom: 8px;
+  color: #ffd;
+}
+
+/* spaced word display for pictionary */
+.pictionary-word {
+  display: inline-block;
+  font-family: monospace;
+  letter-spacing: 0.12em;
+  font-size: 1.05rem;
+}
+.pictionary-word.drawer {
+  color: #0f0;
+}
+.pictionary-canvas {
+  background: #222;
+  border: 1px solid #444;
+  display: block;
+  margin: 0 auto 12px;
+  max-width: 100%;
+  width: 100%;
+  /* make canvas occupy the available vertical space inside the game column */
+  height: calc(100% - 160px); /* leave space for controls and players */
+}
+.pictionary-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pictionary-controls input {
+  flex: 1;
+  padding: 6px 8px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+.pictionary-controls button {
+  padding: 6px 10px;
+  background: #2b6;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pic-clear-btn {
+  background: #c33;
+  color: #fff;
+}
+.pictionary-players {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.pictionary-players > div {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+@media (max-width: 900px) {
+  .pictionary-card {
+    grid-template-columns: 1fr;
+    width: 95vw;
+    height: auto;
+  }
+}
+
+/* Palette and brush */
+.pictionary-palette {
+  display: flex;
+  gap: 6px;
+  margin-right: 8px;
+}
+.pictionary-palette > button {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+.pictionary-brushsize {
+  width: 100px;
+}
+.pictionary-colorpicker {
+  width: 40px;
+  height: 28px;
+  border: none;
+  padding: 0;
+  margin-right: 8px;
+}
+.pictionary-eraser {
+  padding: 6px 8px;
+  background: #333;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.pictionary-timer {
+  font-size: 1.05rem;
+  color: #ffd;
+}
+
+/* In-game chat */
+.pictionary-chatbox {
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px;
+  border-radius: 6px;
+  max-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+.pictionary-chat-messages {
+  overflow: auto;
+  flex: 1;
+  margin-bottom: 6px;
+  color: #fff;
+}
+.pictionary-chat-messages .sys {
+  color: #ffda74;
+  font-weight: 600;
+}
+.pictionary-chat-messages .msg {
+  color: #eee;
+}
+.pictionary-chat-form {
+  display: flex;
+  gap: 6px;
+}
+.pictionary-chat-input {
+  flex: 1;
+  padding: 6px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+}

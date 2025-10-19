@@ -16,6 +16,7 @@ const { Server } = require("socket.io");
 const authRoutes = require("./Server/authRoutes");
 const requireAuth = require("./Server/requireAuth");
 const UnoGame = require("./Server/unoGame");
+const PictionaryGame = require("./Server/pictionaryGame");
 
 // -----------------------------
 // Config
@@ -137,6 +138,94 @@ let users = new Map();
 let userSockets = new Map(); // pseudo -> Set de socket.id
 let unoGames = new Map();
 let gameActuelle = new UnoGame();
+let pictionaryGame = new PictionaryGame();
+let pictionaryTimer = null; // interval id
+
+// -----------------------------
+// Helpers Pictionary
+// -----------------------------
+function broadcastPictionaryLobbyGlobal() {
+  if (!pictionaryGame) pictionaryGame = new PictionaryGame();
+  const lobbyState = pictionaryGame.getLobbyState();
+  io.sockets.sockets.forEach((clientSocket) => {
+    const clientUser = clientSocket.handshake.session?.user;
+    if (!clientUser || !clientUser.pseudo) return;
+    const clientUsername = clientUser.pseudo;
+    const estAuLobby = pictionaryGame.joueurs.some(
+      (p) => p.pseudo === clientUsername
+    );
+    clientSocket.emit("pictionary:lobby", {
+      ...lobbyState,
+      myUsername: clientUsername,
+      estAuLobby,
+    });
+  });
+}
+
+function broadcastPictionaryGameGlobal(message = "") {
+  if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+  [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
+    const pSocket = io.sockets.sockets.get(p.socketId);
+    if (pSocket) {
+      const state = pictionaryGame.getState(p.pseudo);
+      if (message) state.message = message;
+      pSocket.emit("pictionary:update", state);
+    }
+  });
+}
+
+function startPictionaryTimer() {
+  if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+  stopPictionaryTimer();
+  pictionaryTimer = setInterval(() => {
+    tickPictionary();
+  }, 1000);
+}
+
+function stopPictionaryTimer() {
+  if (pictionaryTimer) {
+    clearInterval(pictionaryTimer);
+    pictionaryTimer = null;
+  }
+}
+
+function tickPictionary() {
+  if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+  if (typeof pictionaryGame.timeLeft !== "number")
+    pictionaryGame.timeLeft = pictionaryGame.roundDuration;
+  pictionaryGame.timeLeft -= 1;
+  if (pictionaryGame.timeLeft < 0) pictionaryGame.timeLeft = 0;
+
+  [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
+    const s = io.sockets.sockets.get(p.socketId);
+    if (s) s.emit("pictionary:tick", { timeLeft: pictionaryGame.timeLeft });
+  });
+
+  if (pictionaryGame.timeLeft > 0 && pictionaryGame.timeLeft % 10 === 0) {
+    pictionaryGame.revealNextLetter();
+    broadcastPictionaryGameGlobal("Indice dévoilé");
+  }
+
+  if (pictionaryGame.timeLeft <= 0) {
+    pictionaryGame.revealAll();
+    io.emit("pictionary:reveal", { word: pictionaryGame.currentWord });
+    const res = pictionaryGame.nextRound();
+    if (res.finished) {
+      const sorted = [...pictionaryGame.joueurs].sort(
+        (a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo)
+      );
+      const winner = sorted.length > 0 ? sorted[0].pseudo : null;
+      io.emit("pictionary:gameEnd", { winner });
+      pictionaryGame = new PictionaryGame();
+      stopPictionaryTimer();
+      broadcastPictionaryLobbyGlobal();
+    } else {
+      broadcastPictionaryGameGlobal("Nouvelle manche : nouveau dessinateur");
+      io.emit("pictionary:clear");
+      startPictionaryTimer();
+    }
+  }
+}
 
 function clickerLeaderboardClasse() {
   return Object.entries(scores)
@@ -406,6 +495,246 @@ io.on("connection", (socket) => {
     }
   });
 
+  // ===== PICTIONARY =====
+  function majPictionarySocketIds() {
+    if (!pictionaryGame) return;
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+      const clientUsername = clientUser.pseudo;
+      pictionaryGame.updateSocketId(clientUsername, clientSocket.id);
+    });
+  }
+
+  function broadcastPictionaryLobby() {
+    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
+    majPictionarySocketIds();
+    const lobbyState = pictionaryGame.getLobbyState();
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+      const clientUsername = clientUser.pseudo;
+      const estAuLobby = pictionaryGame.joueurs.some(
+        (p) => p.pseudo === clientUsername
+      );
+      clientSocket.emit("pictionary:lobby", {
+        ...lobbyState,
+        myUsername: clientUsername,
+        estAuLobby,
+      });
+    });
+  }
+
+  function broadcastPictionaryGame(message = "") {
+    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+    majPictionarySocketIds();
+    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
+      const pSocket = io.sockets.sockets.get(p.socketId);
+      if (pSocket) {
+        const state = pictionaryGame.getState(p.pseudo);
+        if (message) state.message = message;
+        pSocket.emit("pictionary:update", state);
+      }
+    });
+  }
+
+  socket.on("pictionary:getState", () => {
+    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
+    majPictionarySocketIds();
+    const lobbyState = pictionaryGame.getLobbyState();
+    const estAuLobby = pictionaryGame.joueurs.some((p) => p.pseudo === pseudo);
+    socket.emit("pictionary:lobby", {
+      ...lobbyState,
+      myUsername: pseudo,
+      estAuLobby,
+    });
+    if (pictionaryGame.gameStarted) {
+      const gameState = pictionaryGame.getState(pseudo);
+      socket.emit("pictionary:update", gameState);
+      // send replay strokes to this client so they see the current drawing
+      try {
+        socket.emit("pictionary:replay", pictionaryGame.getStrokes());
+      } catch (e) {}
+    }
+  });
+
+  socket.on("pictionary:join", () => {
+    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
+    if (pictionaryGame.gameStarted) {
+      socket.emit("pictionary:error", "La partie a déjà commencé");
+      pictionaryGame.addSpectator(pseudo, socket.id);
+      broadcastPictionaryLobby();
+      return;
+    }
+    pictionaryGame.removeSpectator(pseudo);
+    const res = pictionaryGame.addPlayer(pseudo, socket.id);
+    if (!res.success) {
+      if (res.reason === "alreadyIn")
+        console.log(`\n⚠️  ${pseudo} est déjà dans le lobby PICTIONARY\n`);
+      broadcastPictionaryLobby();
+      return;
+    }
+    console.log(
+      `\n✅ ${pseudo} a rejoint le lobby PICTIONARY (${pictionaryGame.joueurs.length})\n`
+    );
+    broadcastPictionaryLobby();
+  });
+
+  socket.on("pictionary:leave", () => {
+    if (!pictionaryGame) return;
+    const etaitJoueur = pictionaryGame.removePlayer(pseudo);
+    if (etaitJoueur) {
+      console.log(`\n🚪 ${pseudo} a quitté le lobby PICTIONARY\n`);
+      if (pictionaryGame.gameStarted) {
+        if (pictionaryGame.joueurs.length < 2) {
+          console.log(
+            `\n⚠️  Partie PICTIONARY annulée (pas assez de joueurs)\n`
+          );
+          io.emit("pictionary:gameEnd", {
+            winner: "Partie annulée !",
+            reason: `${pseudo} est parti`,
+          });
+          pictionaryGame = new PictionaryGame();
+          broadcastPictionaryLobby();
+          return;
+        }
+        broadcastPictionaryGame(`${pseudo} a quitté la partie`);
+      }
+      pictionaryGame.addSpectator(pseudo, socket.id);
+      broadcastPictionaryLobby();
+    } else {
+      pictionaryGame.removeSpectator(pseudo);
+    }
+  });
+
+  socket.on("pictionary:start", () => {
+    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
+    const isPlayer = pictionaryGame.joueurs.some((p) => p.pseudo === pseudo);
+    if (!isPlayer) {
+      socket.emit("pictionary:error", "Tu n'es pas dans le lobby");
+      return;
+    }
+    if (!pictionaryGame.canStart()) {
+      socket.emit(
+        "pictionary:error",
+        "Impossible de démarrer (3 joueurs minimum)"
+      );
+      return;
+    }
+    pictionaryGame.startGame();
+    console.log(
+      `🎨 Partie PICTIONARY démarrée avec ${pictionaryGame.joueurs.length} joueurs`
+    );
+
+    startPictionaryTimer();
+    majPictionarySocketIds();
+    pictionaryGame.joueurs.forEach((p) => {
+      const s = io.sockets.sockets.get(p.socketId);
+      if (s) s.emit("pictionary:gameStart", pictionaryGame.getState(p.pseudo));
+    });
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+      const clientUsername = clientUser.pseudo;
+      const isPlayer = pictionaryGame.joueurs.some(
+        (p) => p.pseudo === clientUsername
+      );
+      if (!isPlayer) {
+        pictionaryGame.addSpectator(clientUsername, clientSocket.id);
+        clientSocket.emit(
+          "pictionary:gameStart",
+          pictionaryGame.getState(clientUsername)
+        );
+        // send strokes for replay so spectators see the current drawing
+        try {
+          clientSocket.emit("pictionary:replay", pictionaryGame.getStrokes());
+        } catch (e) {}
+      }
+    });
+    broadcastPictionaryLobby();
+  });
+
+  socket.on("pictionary:guess", ({ text }) => {
+    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+    const guess = String(text || "")
+      .trim()
+      .toLowerCase();
+    if (!guess) return;
+    const drawer = pictionaryGame.getCurrentDrawer();
+    if (drawer && drawer.pseudo === pseudo) return;
+    if (guess === String(pictionaryGame.currentWord).toLowerCase()) {
+      const scored = pictionaryGame.handleCorrectGuess(pseudo);
+      if (scored) {
+        io.emit("pictionary:chat", {
+          system: true,
+          text: `${pseudo} a deviné !`,
+        });
+        broadcastPictionaryGame(`${pseudo} a deviné le mot`);
+      }
+      const nonDrawers = pictionaryGame.joueurs.filter(
+        (p) => p.pseudo !== drawer.pseudo
+      ).length;
+      if (pictionaryGame.guessedThisRound.size >= nonDrawers) {
+        const res = pictionaryGame.nextRound();
+        if (res.finished) {
+          const sorted = [...pictionaryGame.joueurs].sort(
+            (a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo)
+          );
+          const winner = sorted.length > 0 ? sorted[0].pseudo : null;
+          io.emit("pictionary:gameEnd", { winner });
+          pictionaryGame = new PictionaryGame();
+          stopPictionaryTimer();
+          broadcastPictionaryLobby();
+          return;
+        } else {
+          // Start new round: notify clients and request canvas clear from all
+          broadcastPictionaryGame("Nouvelle manche : nouveau dessinateur");
+          io.emit("pictionary:clear");
+          // start timer for new round
+          startPictionaryTimer();
+          return;
+        }
+      }
+    } else {
+      io.emit("pictionary:chat", {
+        name: pseudo,
+        text: guess,
+        at: new Date().toISOString(),
+      });
+    }
+  });
+
+  socket.on("pictionary:draw", (data) => {
+    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+    const drawer = pictionaryGame.getCurrentDrawer();
+    if (!drawer || drawer.pseudo !== pseudo) return;
+    try {
+      pictionaryGame.addStroke(data);
+    } catch (e) {}
+    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
+      const pSocket = io.sockets.sockets.get(p.socketId);
+      if (pSocket && p.pseudo !== pseudo)
+        pSocket.emit("pictionary:stroke", data);
+    });
+  });
+
+  socket.on("pictionary:clear", () => {
+    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+    const drawer = pictionaryGame.getCurrentDrawer();
+    if (!drawer || drawer.pseudo !== pseudo) return;
+    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
+      const pSocket = io.sockets.sockets.get(p.socketId);
+      if (pSocket) pSocket.emit("pictionary:clear");
+    });
+  });
+
+  socket.on("pictionary:backToLobby", () => {
+    io.emit("pictionary:gameEnd", { winner: "Retour au lobby" });
+    pictionaryGame = new PictionaryGame();
+    stopPictionaryTimer();
+    broadcastPictionaryLobbyGlobal();
+  });
+
   socket.on("uno:join", () => {
     if (!gameActuelle) {
       gameActuelle = new UnoGame();
@@ -634,6 +963,33 @@ io.on("connection", (socket) => {
         broadcastUnoLobby();
       } else {
         gameActuelle.removeSpectator(pseudo);
+      }
+    }
+
+    // --- Gestion PICTIONARY ---
+    if (pictionaryGame) {
+      const etaitJoueurPic = pictionaryGame.joueurs.some(
+        (p) => p.pseudo === pseudo
+      );
+      if (etaitJoueurPic) {
+        pictionaryGame.removePlayer(pseudo);
+        if (pictionaryGame.gameStarted && pictionaryGame.joueurs.length < 2) {
+          console.log(
+            `\n⚠️  Partie PICTIONARY annulée (${pseudo} déconnecté)\n`
+          );
+          io.emit("pictionary:gameEnd", {
+            winner: "Partie annulée !",
+            reason: `${pseudo} s'est déconnecté`,
+          });
+          stopPictionaryTimer();
+          pictionaryGame = new PictionaryGame();
+          broadcastPictionaryLobbyGlobal();
+        } else if (pictionaryGame.gameStarted) {
+          broadcastPictionaryGameGlobal(`${pseudo} s'est déconnecté`);
+        }
+        broadcastPictionaryLobbyGlobal();
+      } else {
+        pictionaryGame.removeSpectator(pseudo);
       }
     }
   });

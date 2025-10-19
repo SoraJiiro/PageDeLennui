@@ -16,6 +16,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage4.css" />
         <link rel="stylesheet" type="text/css" href="css/stage5.css" />
         <link rel="stylesheet" type="text/css" href="css/stage6.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage7.css" />
 
         <link rel='shortcut icon' type="img/png" href="icon.png" />
 
@@ -26,7 +27,7 @@
 
     <script>
         document.addEventListener("keydown", (event) => {
-            if (event.key === "Space" || event.key === "ArrowUp" || event.key === "Enter") {
+            if (event.key === " " || event.key === "ArrowUp" || event.key === "Enter") {
                 event.preventDefault();
             }
         });
@@ -47,6 +48,7 @@
                 <button class="sec5">UNO</button>
                 <button class="mario">Mario</button>
                 <button class="sec6">Flappy bird</button>
+                <button class="sec7">Pictionary</button>
                 <p class="hide-nav"
                     onclick="document.querySelector('.btns-wrap').style.display = 'none';">Cacher</p>
             </div>
@@ -203,6 +205,63 @@
                     <div id="flappyScore">Score : 0</div>
                 </div>
                 <button class="flappyStartBtn">Jouer</button>
+            </div>
+        </section>
+
+        <section id="stage7" class="seventh-stage">
+            <div class="pictionary-card">
+                <div class="pictionary-header">
+                    <h2>Pictionary</h2>
+                    <div class="pictionary-status"></div>
+                </div>
+
+                <div class="pictionary-lobby">
+                    <h3>Lobby</h3>
+                    <div class="pictionary-joueurs"></div>
+                    <div class="pictionary-spectators"></div>
+                    <div class="pictionary-actions">
+                        <button class="pic-join">Rejoindre le lobby</button>
+                        <button class="pic-leave" style="display:none">Quitter
+                            le lobby</button>
+                        <button class="pic-start"
+                            style="display:none">Démarrer</button>
+                    </div>
+                </div>
+
+                <div class="pictionary-game">
+                    <div class="pictionary-mode-spec"
+                        style="display:none;"></div>
+                    <div class="pictionary-info"></div>
+                    <canvas class="pictionary-canvas" width="700"
+                        height="450"></canvas>
+                    <div class="pictionary-controls">
+                        <div class="pictionary-palette">
+                            <button style="background:#fff"
+                                title="#fff"></button>
+                            <button style="background:#f00"
+                                title="#f00"></button>
+                            <button style="background:#0f0"
+                                title="#0f0"></button>
+                            <button style="background:#00f"
+                                title="#00f"></button>
+                            <button style="background:#ff0"
+                                title="#ff0"></button>
+                            <button style="background:#f0f"
+                                title="#f0f"></button>
+                        </div>
+                        <input type="color" class="pictionary-colorpicker"
+                            value="#ffffff" />
+                        <input type="range" class="pictionary-brushsize" min="1"
+                            max="40" value="3" />
+                        <button class="pictionary-eraser">Gomme</button>
+
+                        <input class="pic-guess-input"
+                            placeholder="Devine le mot..." />
+                        <button class="pic-guess-btn">Proposer</button>
+                        <button class="pic-clear-btn">Effacer</button>
+                    </div>
+                    <div class="pictionary-players"></div>
+                </div>
             </div>
         </section>
 

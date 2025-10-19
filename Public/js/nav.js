@@ -10,6 +10,7 @@ document.addEventListener("click", () => {
   const sec5 = document.querySelector(".sec5");
   const mario = document.querySelector(".mario");
   const sec6 = document.querySelector(".sec6");
+  const sec7 = document.querySelector(".sec7");
 
   sec1.addEventListener("click", () => {
     goTo("stage1");
@@ -34,4 +35,8 @@ document.addEventListener("click", () => {
   sec6.addEventListener("click", () => {
     goTo("stage6");
   });
+  if (sec7)
+    sec7.addEventListener("click", () => {
+      goTo("stage7");
+    });
 });
