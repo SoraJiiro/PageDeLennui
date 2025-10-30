@@ -14,6 +14,7 @@ class PictionaryGame {
       "discord",
       "snapchat",
       "instagram",
+      "tung tung sahur",
     ];
     this.strokes = [];
     this.timeLeft = 0;

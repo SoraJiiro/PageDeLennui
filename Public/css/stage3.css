@@ -95,15 +95,15 @@
 .chat-form button {
   padding: 0.8rem 1rem;
   border: 2px solid #0f0;
-  background: linear-gradient(20deg, #37ff1d, #000000);
+  background: #000000;
   color: #fff;
   cursor: pointer;
   font-weight: 600;
   transition: 350ms ease;
 }
 .chat-form button:hover {
-  filter: brightness(1.1);
-  background: #37ff1d;
+  color: #000;
+  background: #0f0;
 }
 
 @media (max-width: 600px) {
