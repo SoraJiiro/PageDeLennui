@@ -14,7 +14,7 @@ export function initChat(socket) {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #00ff00;
+    background: #0f0;
     opacity: 0.8;
     color: #000;
     padding: 15px 25px;

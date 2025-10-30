@@ -30,7 +30,7 @@ export function initDino(socket) {
     frame: 0,
 
     draw() {
-      c.fillStyle = "#00FF00";
+      c.fillStyle = "#0f0";
       c.fillRect(
         this.x,
         canvas.height - this.y - this.height,
@@ -75,7 +75,7 @@ export function initDino(socket) {
     }
 
     draw() {
-      c.fillStyle = "#00FF00";
+      c.fillStyle = "#0f0";
       c.fillRect(this.x, this.y, this.width, this.height);
     }
 
@@ -93,7 +93,7 @@ export function initDino(socket) {
     }
 
     draw() {
-      c.fillStyle = "#00FF00";
+      c.fillStyle = "#0f0";
       c.fillRect(this.x, canvas.height - this.height, this.width, this.height);
     }
 
@@ -136,7 +136,7 @@ export function initDino(socket) {
     });
 
     // Sol
-    c.fillStyle = "#00FF00";
+    c.fillStyle = "#0f0";
     c.fillRect(0, canvas.height - 10, canvas.width, 10);
 
     // Dino
@@ -167,7 +167,7 @@ export function initDino(socket) {
     });
 
     // Score
-    c.fillStyle = "#00FF00";
+    c.fillStyle = "#0f0";
     c.font = "20px Arial";
     c.textAlign = "left";
     c.fillText(`Score: ${score}`, 20, 20);
@@ -178,7 +178,7 @@ export function initDino(socket) {
   function showGameOver() {
     c.fillStyle = "#000";
     c.fillRect(0, 0, canvas.width, canvas.height);
-    c.fillStyle = "#00FF00";
+    c.fillStyle = "#0f0";
     c.font = "30px Arial";
     c.textAlign = "center";
     c.fillText("Game Over", canvas.width / 2, canvas.height / 2);
@@ -207,7 +207,22 @@ export function initDino(socket) {
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key.toLowerCase() === "z") {
+    // ignore when typing in inputs or editable elements
+    const active = document.activeElement;
+    const tag = active && active.tagName;
+    const isTyping =
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      (active && active.isContentEditable);
+    if (isTyping) return;
+
+    // Support Z (for AZERTY players) and Space for jump/start
+    if (e.key && e.key.toLowerCase() === "z") {
+      if (isFirstStart || gameOver) startGame();
+      else dino.jump();
+    } else if (e.code === "Space") {
+      // prevent page scrolling when space triggers a jump
+      e.preventDefault();
       if (isFirstStart || gameOver) startGame();
       else dino.jump();
     }

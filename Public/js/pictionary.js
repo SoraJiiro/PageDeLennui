@@ -54,11 +54,26 @@ export function initPictionary(socket) {
     }
   });
 
+  // Submit guess on Enter and avoid bubbling to global handlers
+  if (guessInput) {
+    guessInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        const text = guessInput.value.trim();
+        if (text) {
+          socket.emit("pictionary:guess", { text });
+          guessInput.value = "";
+        }
+      }
+    });
+  }
+
   // === Dessin ===
-  // drawing state
   let strokeColor = "#fff";
   let strokeSize = 3;
   let eraser = false;
+  let currentTool = "brush"; // 'brush' or 'fill'
 
   function sendStroke(x, y, type) {
     socket.emit("pictionary:draw", {
@@ -69,6 +84,87 @@ export function initPictionary(socket) {
       size: strokeSize,
       eraser,
     });
+  }
+
+  function sendFill(x, y, color) {
+    socket.emit("pictionary:fill", { x, y, color });
+  }
+
+  // helper: hex to rgba array
+  function hexToRgba(hex) {
+    if (!hex) return [0, 0, 0, 255];
+    const h = hex.replace("#", "");
+    const bigint = parseInt(h, 16);
+    if (h.length === 3) {
+      const r = parseInt(h[0] + h[0], 16);
+      const g = parseInt(h[1] + h[1], 16);
+      const b = parseInt(h[2] + h[2], 16);
+      return [r, g, b, 255];
+    }
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return [r, g, b, 255];
+  }
+
+  // Flood fill implementation (works on device pixels). x,y are CSS pixels.
+  function fillAt(x, y, fillColor) {
+    if (!canvas || !ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const px = Math.floor(x * dpr);
+    const py = Math.floor(y * dpr);
+    const w = canvas.width;
+    const h = canvas.height;
+    let img;
+    try {
+      img = ctx.getImageData(0, 0, w, h);
+    } catch (e) {
+      return;
+    }
+    const data = img.data;
+    const targetIndex = (py * w + px) * 4;
+    const targetR = data[targetIndex];
+    const targetG = data[targetIndex + 1];
+    const targetB = data[targetIndex + 2];
+    const targetA = data[targetIndex + 3];
+    const [fr, fg, fb, fa] = hexToRgba(fillColor);
+    // If target color already equals fillColor, do nothing
+    if (targetR === fr && targetG === fg && targetB === fb && targetA === fa) {
+      return;
+    }
+
+    const stack = [[px, py]];
+    const visited = new Uint8Array(w * h);
+
+    function matchColor(ix) {
+      return (
+        data[ix] === targetR &&
+        data[ix + 1] === targetG &&
+        data[ix + 2] === targetB &&
+        data[ix + 3] === targetA
+      );
+    }
+
+    while (stack.length) {
+      const [cx, cy] = stack.pop();
+      if (cx < 0 || cy < 0 || cx >= w || cy >= h) continue;
+      const idx = cy * w + cx;
+      if (visited[idx]) continue;
+      const di = idx * 4;
+      if (!matchColor(di)) continue;
+      // set new color
+      data[di] = fr;
+      data[di + 1] = fg;
+      data[di + 2] = fb;
+      data[di + 3] = fa;
+      visited[idx] = 1;
+      stack.push([cx + 1, cy]);
+      stack.push([cx - 1, cy]);
+      stack.push([cx, cy + 1]);
+      stack.push([cx, cy - 1]);
+    }
+
+    ctx.putImageData(img, 0, 0);
   }
 
   // Resize canvas to match display size and devicePixelRatio to avoid coord mismatch
@@ -161,10 +257,6 @@ export function initPictionary(socket) {
       const eraserBtn = document.createElement("button");
       eraserBtn.className = "pictionary-eraser";
       eraserBtn.textContent = "Gomme";
-      eraserBtn.addEventListener("click", () => {
-        eraser = !eraser;
-        eraserBtn.style.opacity = eraser ? "1" : "0.7";
-      });
 
       const leftGroup = document.createElement("div");
       leftGroup.style.display = "flex";
@@ -183,56 +275,90 @@ export function initPictionary(socket) {
       const colorpicker = controls.querySelector(".pictionary-colorpicker");
       const brush = controls.querySelector(".pictionary-brushsize");
       const eraserBtn = controls.querySelector(".pictionary-eraser");
+      const fillBtn = controls.querySelector(".pictionary-fill");
+      const clearBtnEl = controls.querySelector(".pic-clear-btn");
 
-      function clearOutlines() {
+      let selectedTool = "brush"; // 'brush' | 'fill' | 'eraser'
+
+      function clearSelectionVisuals() {
         if (palette)
-          Array.from(palette.children).forEach((b) => (b.style.outline = ""));
+          Array.from(palette.children).forEach((b) => {
+            b.style.outline = "";
+            b.style.boxShadow = "";
+          });
         if (colorpicker) colorpicker.style.outline = "";
+        if (eraserBtn) {
+          eraserBtn.style.outline = "";
+          eraserBtn.style.boxShadow = "";
+        }
+        if (fillBtn) {
+          fillBtn.style.outline = "";
+          fillBtn.style.boxShadow = "";
+        }
       }
 
       function markSelected(elem) {
-        clearOutlines();
+        clearSelectionVisuals();
         if (!elem) return;
         elem.style.outline = "2px solid #fff";
         elem.style.outlineOffset = "2px";
       }
 
+      function selectTool(tool, visualElem) {
+        selectedTool = tool;
+        currentTool =
+          tool === "brush" ? "brush" : tool === "fill" ? "fill" : "brush";
+        eraser = tool === "eraser";
+        if (visualElem) markSelected(visualElem);
+      }
+
+      // palette buttons -> brush
       if (palette) {
         Array.from(palette.children).forEach((btn) => {
-          // ensure cursor
           btn.style.cursor = "pointer";
           btn.addEventListener("click", () => {
             strokeColor = btn.title || btn.style.background;
-            eraser = false;
-            markSelected(btn);
+            selectTool("brush", btn);
           });
         });
       }
 
+      // colorpicker selects brush and sets color
       if (colorpicker) {
         colorpicker.addEventListener("input", (e) => {
           strokeColor = e.target.value;
-          eraser = false;
-          markSelected(colorpicker);
+          selectTool("brush", colorpicker);
         });
       }
 
+      // brush size
       if (brush) {
         brush.addEventListener("input", (e) => {
           strokeSize = Number(e.target.value) || 3;
         });
       }
 
+      // fill button selects fill tool
+      if (fillBtn) {
+        fillBtn.addEventListener("click", () => {
+          selectTool("fill", fillBtn);
+        });
+      }
+
+      // eraser selects eraser tool
       if (eraserBtn) {
         eraserBtn.addEventListener("click", () => {
-          eraser = !eraser;
-          // visual state for eraser
-          eraserBtn.style.opacity = eraser ? "1" : "0.7";
-          if (eraser) {
-            clearOutlines();
-            eraserBtn.style.boxShadow = "inset 0 0 0 2px rgba(255,255,255,0.2)";
-          } else {
-            eraserBtn.style.boxShadow = "";
+          selectTool("eraser", eraserBtn);
+        });
+      }
+
+      // clear canvas
+      if (clearBtnEl) {
+        clearBtnEl.addEventListener("click", () => {
+          if (!estDessinateur) return;
+          if (confirm("Effacer le canevas pour tous les joueurs ?")) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            socket.emit("pictionary:clear");
           }
         });
       }
@@ -245,18 +371,28 @@ export function initPictionary(socket) {
             const bg = (b.style.background || "").toLowerCase();
             return bg === (initial || "").toLowerCase();
           });
-          if (match) return markSelected(match);
+          if (match) {
+            selectTool("brush", match);
+            return;
+          }
         }
-        if (colorpicker) markSelected(colorpicker);
+        if (colorpicker) {
+          selectTool("brush", colorpicker);
+        }
       })();
     })();
     canvas.addEventListener("mousedown", (e) => {
       if (!estDessinateur) return;
-      drawing = true;
       const rect = canvas.getBoundingClientRect();
-      // since ctx has setTransform(dpr,..) we can use CSS pixels directly
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+      if (currentTool === "fill") {
+        // perform fill locally and notify server
+        fillAt(x, y, strokeColor);
+        sendFill(x, y, strokeColor);
+        return;
+      }
+      drawing = true;
       ctx.beginPath();
       ctx.moveTo(x, y);
       sendStroke(x, y, "start");
@@ -295,7 +431,7 @@ export function initPictionary(socket) {
     estSpectateur = !data.estAuLobby && data.gameStarted;
 
     joueursList.innerHTML = `
-      <p>Joueurs (${data.joueurs.length}) :</p>
+      <p>Joueurs dans le lobby (${data.joueurs.length}/6) :</p>
       ${
         data.joueurs.length > 0
           ? data.joueurs.map((p) => `<div>${p}</div>`).join("")
@@ -375,6 +511,17 @@ export function initPictionary(socket) {
     }
   });
 
+  socket.on("pictionary:fill", (data) => {
+    try {
+      if (!ctx) return;
+      const rect = canvas.getBoundingClientRect();
+      // data.x/y are CSS pixels already
+      fillAt(data.x, data.y, data.color);
+    } catch (e) {
+      // noop
+    }
+  });
+
   socket.on("pictionary:gameEnd", (data) => {
     alert(`🎉 ${data.winner || "Partie terminée"} !`);
     gameWrap.classList.remove("active");
@@ -393,6 +540,16 @@ export function initPictionary(socket) {
     if (!state) return;
     estDessinateur = state.estDessinateur;
     estSpectateur = state.estSpec;
+
+    // Met à jour l'indicateur du dessinateur
+    try {
+      const curEl = document.querySelector(".pictionary-current-player");
+      if (curEl) {
+        curEl.textContent = state.currentDrawer || "—";
+      }
+    } catch (e) {
+      // noop
+    }
 
     if (modeSpec) {
       if (estSpectateur) {
@@ -446,12 +603,10 @@ export function initPictionary(socket) {
 
     if (playersEl) {
       playersEl.innerHTML = state.joueurs
-        .map(
-          (p) =>
-            `<div ${
-              p.pseudo === state.currentDrawer ? 'style="color:#0f0"' : ""
-            }>${p.pseudo} (${p.score})</div>`
-        )
+        .map((p) => {
+          const cls = p.pseudo === state.currentDrawer ? ' class="drawer"' : "";
+          return `<div${cls}>${p.pseudo} (${p.score})</div>`;
+        })
         .join("");
     }
 
@@ -459,40 +614,48 @@ export function initPictionary(socket) {
     try {
       const controls = document.querySelector(".pictionary-controls");
       if (controls) {
-        const palette = controls.querySelector(".pictionary-palette");
-        const colorpicker = controls.querySelector(".pictionary-colorpicker");
-        const brush = controls.querySelector(".pictionary-brushsize");
-        const eraserBtn = controls.querySelector(".pictionary-eraser");
-        const guessInputEl = controls.querySelector(".pic-guess-input");
-        const guessBtnEl = controls.querySelector(".pic-guess-btn");
+        const toolbar = controls.querySelector(".pictionary-toolbar");
+        const guessGroup = controls.querySelector(".pictionary-guess");
         const clearBtnEl = controls.querySelector(".pic-clear-btn");
 
         if (estSpectateur) {
-          // spectateur : rien (ni outils ni barre de proposition)
-          if (palette) palette.style.display = "none";
-          if (colorpicker) colorpicker.style.display = "none";
-          if (brush) brush.style.display = "none";
-          if (eraserBtn) eraserBtn.style.display = "none";
-          if (guessInputEl) guessInputEl.style.display = "none";
-          if (guessBtnEl) guessBtnEl.style.display = "none";
+          // spectateur : tout caché
+          if (toolbar) toolbar.style.display = "none";
+          if (guessGroup) guessGroup.style.display = "none";
           if (clearBtnEl) clearBtnEl.style.display = "none";
         } else if (estDessinateur) {
-          // dessinateur : outils visibles, barre de proposition cachée, clear visible
-          if (palette) palette.style.display = "flex";
-          if (colorpicker) colorpicker.style.display = "inline-block";
-          if (brush) brush.style.display = "inline-block";
-          if (eraserBtn) eraserBtn.style.display = "inline-block";
-          if (guessInputEl) guessInputEl.style.display = "none";
-          if (guessBtnEl) guessBtnEl.style.display = "none";
+          // dessinateur : toolbar visible, guess hidden, clear visible
+          if (toolbar) toolbar.style.display = "flex";
+          if (guessGroup) guessGroup.style.display = "none";
           if (clearBtnEl) clearBtnEl.style.display = "inline-block";
+          // Ensure a visible selection when toolbar appears: prefer palette match, else colorpicker.
+          try {
+            const palette = controls.querySelector(".pictionary-palette");
+            const colorpicker = controls.querySelector(
+              ".pictionary-colorpicker"
+            );
+            const desired = (colorpicker && colorpicker.value) || strokeColor;
+            if (palette) {
+              const match = Array.from(palette.children).find(
+                (b) =>
+                  (b.style.background || "").toLowerCase() ===
+                  (desired || "").toLowerCase()
+              );
+              if (match) match.click();
+              else if (colorpicker)
+                colorpicker.dispatchEvent(
+                  new Event("input", { bubbles: true })
+                );
+            } else if (colorpicker) {
+              colorpicker.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+          } catch (e) {
+            // noop
+          }
         } else {
-          // joueur normal : outils cachés, barre de proposition visible, clear caché
-          if (palette) palette.style.display = "none";
-          if (colorpicker) colorpicker.style.display = "none";
-          if (brush) brush.style.display = "none";
-          if (eraserBtn) eraserBtn.style.display = "none";
-          if (guessInputEl) guessInputEl.style.display = "inline-block";
-          if (guessBtnEl) guessBtnEl.style.display = "inline-block";
+          // joueur normal : toolbar hidden, guess visible
+          if (toolbar) toolbar.style.display = "none";
+          if (guessGroup) guessGroup.style.display = "flex";
           if (clearBtnEl) clearBtnEl.style.display = "none";
         }
       }

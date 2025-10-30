@@ -8,7 +8,7 @@
 
 body {
   background: #000;
-  color: #00ff00;
+  color: #0f0;
   font-family: monospace, monospace;
   width: 100dvw;
 }
@@ -18,6 +18,6 @@ body {
 }
 
 ::selection {
-  background: #00ff00;
+  background: #0f0;
   color: #000;
 }

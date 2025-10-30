@@ -203,7 +203,6 @@ function tickPictionary() {
 
   if (pictionaryGame.timeLeft > 0 && pictionaryGame.timeLeft % 10 === 0) {
     pictionaryGame.revealNextLetter();
-    broadcastPictionaryGameGlobal("Indice dévoilé");
   }
 
   if (pictionaryGame.timeLeft <= 0) {
@@ -569,8 +568,14 @@ io.on("connection", (socket) => {
     pictionaryGame.removeSpectator(pseudo);
     const res = pictionaryGame.addPlayer(pseudo, socket.id);
     if (!res.success) {
-      if (res.reason === "alreadyIn")
+      if (res.reason === "alreadyIn") {
         console.log(`\n⚠️  ${pseudo} est déjà dans le lobby PICTIONARY\n`);
+      } else if (res.reason === "full") {
+        socket.emit(
+          "pictionary:error",
+          `Le lobby est plein (${pictionaryGame.maxPlayers}/6)`
+        );
+      }
       broadcastPictionaryLobby();
       return;
     }
@@ -715,6 +720,19 @@ io.on("connection", (socket) => {
       const pSocket = io.sockets.sockets.get(p.socketId);
       if (pSocket && p.pseudo !== pseudo)
         pSocket.emit("pictionary:stroke", data);
+    });
+  });
+
+  socket.on("pictionary:fill", (data) => {
+    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
+    const drawer = pictionaryGame.getCurrentDrawer();
+    if (!drawer || drawer.pseudo !== pseudo) return;
+    try {
+      pictionaryGame.addStroke({ ...data, type: "fill" });
+    } catch (e) {}
+    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
+      const pSocket = io.sockets.sockets.get(p.socketId);
+      if (pSocket && p.pseudo !== pseudo) pSocket.emit("pictionary:fill", data);
     });
   });
 

@@ -59,7 +59,7 @@ export function initClicker(socket) {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #00ff00;
+    background: #0f0;
     opacity: 0.8;
     color: #000;
     padding: 15px 25px;
@@ -120,7 +120,7 @@ export function initClicker(socket) {
     scoreActuel = 0;
     medalsDebloquees.clear();
 
-    if (yourScoreEl) yourScoreEl.textContent = '0';
+    if (yourScoreEl) yourScoreEl.textContent = "0";
     if (acpsEl) acpsEl.textContent = "";
     medalsWrap?.querySelectorAll(".medal").forEach((m) => {
       m.classList.remove("shown");

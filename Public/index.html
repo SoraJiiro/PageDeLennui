@@ -6,6 +6,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+        <script defer type="text/javascript" src="js/display_lb.js"></script>
         <script defer type="text/javascript" src="js/horloge.js"></script>
         <script defer type="text/javascript" src="js/nav.js"></script>
 
@@ -113,6 +114,14 @@
         </section>
 
         <section id="stage4" class="fourth-stage">
+
+            <div class="leaderboard-buttons">
+                <button data-board="clicker">Clicker</button>
+                <button data-board="dino">Dino</button>
+                <button data-board="flappy">Flappy Bird</button>
+                <button data-board="uno">UNO</button>
+            </div>
+
             <!--LEADERBOARD CLICKER-->
             <div class="leaderboard-card">
                 <div class="leaderboard-header"><h2>Clicker
@@ -211,12 +220,12 @@
         <section id="stage7" class="seventh-stage">
             <div class="pictionary-card">
                 <div class="pictionary-header">
-                    <h2>Pictionary</h2>
+                    <h2>Pictionary.exe</h2>
                     <div class="pictionary-status"></div>
                 </div>
 
                 <div class="pictionary-lobby">
-                    <h3>Lobby</h3>
+                    <h3>Lobby Pictionary</h3>
                     <div class="pictionary-joueurs"></div>
                     <div class="pictionary-spectators"></div>
                     <div class="pictionary-actions">
@@ -232,42 +241,146 @@
                     <div class="pictionary-mode-spec"
                         style="display:none;"></div>
                     <div class="pictionary-info"></div>
+
+                    <div class="pictionary-current">Dessinateur : <span
+                            class="pictionary-current-player">?</span></div>
+
+                    <div class="pictionary-players"></div>
                     <canvas class="pictionary-canvas" width="700"
                         height="450"></canvas>
                     <div class="pictionary-controls">
-                        <div class="pictionary-palette">
-                            <button style="background:#fff"
-                                title="#fff"></button>
-                            <button style="background:#f00"
-                                title="#f00"></button>
-                            <button style="background:#0f0"
-                                title="#0f0"></button>
-                            <button style="background:#00f"
-                                title="#00f"></button>
-                            <button style="background:#ff0"
-                                title="#ff0"></button>
-                            <button style="background:#f0f"
-                                title="#f0f"></button>
-                        </div>
-                        <input type="color" class="pictionary-colorpicker"
-                            value="#ffffff" />
-                        <input type="range" class="pictionary-brushsize" min="1"
-                            max="40" value="3" />
-                        <button class="pictionary-eraser">Gomme</button>
+                        <div class="pictionary-toolbar" role="toolbar"
+                            aria-label="Outils dessin">
+                            <div class="pictionary-palette" role="group"
+                                aria-label="Palette de couleurs">
+                                <button
+                                    style="background:#000;border:1.5px solid #fff"
+                                    title="#000"
+                                    aria-label="Couleur noir"></button>
+                                <button style="background:#fff" title="#fff"
+                                    aria-label="Couleur blanc"></button>
+                                <button style="background:#f00" title="#f00"
+                                    aria-label="Couleur rouge"></button>
+                                <button style="background:#0f0" title="#0f0"
+                                    aria-label="Couleur vert"></button>
+                                <button style="background:#00f" title="#00f"
+                                    aria-label="Couleur bleu"></button>
+                                <button style="background:#ff0" title="#ff0"
+                                    aria-label="Couleur jaune"></button>
+                                <button style="background:#f0f" title="#f0f"
+                                    aria-label="Couleur magenta"></button>
+                            </div>
 
-                        <input class="pic-guess-input"
-                            placeholder="Devine le mot..." />
-                        <button class="pic-guess-btn">Proposer</button>
-                        <button class="pic-clear-btn">Effacer</button>
+                            <label class="pictionary-color-label"
+                                title="Choisir une couleur">
+                                Couleur
+                                <input type="color"
+                                    class="pictionary-colorpicker"
+                                    value="#ffffff"
+                                    aria-label="Choisir la couleur" />
+                            </label>
+
+                            <label class="pictionary-brush-label"
+                                title="Taille du crayon">
+
+                                <input type="range" class="pictionary-brushsize"
+                                    min="1" max="40" value="3"
+                                    aria-label="Taille du pinceau" />
+                            </label>
+
+                            <button class="pictionary-eraser" title="Gomme"
+                                aria-label="Gomme">Gomme</button>
+                            <button class="pictionary-fill" title="Remplissage"
+                                aria-label="Remplissage">Remplissage</button>
+                            <button class="pic-clear-btn"
+                                title="Effacer le canevas"
+                                aria-label="Effacer le canevas">Effacer</button>
+                        </div>
+
+                        <!-- Zone de proposition (visible seulement pour les devineurs) -->
+                        <div class="pictionary-guess" role="group"
+                            aria-label="Propositions de mot">
+                            <input class="pic-guess-input"
+                                placeholder="Devine le mot..."
+                                aria-label="Champ de proposition" />
+                            <button class="pic-guess-btn"
+                                aria-label="Proposer le mot">Proposer</button>
+                        </div>
                     </div>
-                    <div class="pictionary-players"></div>
                 </div>
             </div>
         </section>
 
     </body>
 
-</html>
+    <script defer>
+                (function () {
+                    function protectZone() {
+                        const z = document.querySelector('.zone');
+                        if (!z) return;
 
-<script
-    defer>setTimeout(function () {document.querySelector('.zone').click = () => {return "Nique ta mère toi et ton AutoClicker."};},400);</script>
+                        const blocker = function () { return 'Action bloquée'; };
+
+                        const captureHandler = function (e) {
+                            if (!e.isTrusted) {
+                                try { e.stopImmediatePropagation(); } catch (ie) {}
+                                e.preventDefault();
+                                console.warn('Clic synthétique bloqué sur .zone');
+                            }
+                        };
+
+                        const bubbleHandler = function (e) {
+                            e.preventDefault();
+                        };
+
+                        try {
+                            Object.defineProperty(z, 'onclick', {
+                                configurable: false,
+                                writable: false,
+                                value: blocker
+                            });
+                        } catch (err) {
+                             
+                        }
+
+                        try {
+                            if (!z.__zone_protection) {
+                                z.addEventListener('click', bubbleHandler, false);
+                                z.addEventListener('click', captureHandler, true);
+                                z.__zone_protection = { captureHandler: captureHandler, bubbleHandler: bubbleHandler, blocker: blocker };
+                            }
+                        } catch (err) {
+                        }
+
+                        try {
+                            if (z.onclick !== blocker) {
+                                try {
+                                    Object.defineProperty(z, 'onclick', {
+                                        configurable: false,
+                                        writable: false,
+                                        value: blocker
+                                    });
+                                } catch (err) {
+                                    z.onclick = blocker;
+                                }
+                            }
+                        } catch (err) {
+                        }
+                    }
+
+                    setTimeout(function () {
+                        protectZone();
+
+                        const observer = new MutationObserver(function (mutations) {
+                            protectZone();
+                        });
+                        observer.observe(document.documentElement || document.body, { childList: true, subtree: true, attributes: true });
+
+                        const periodic = setInterval(protectZone, 1500);
+
+                        window.addEventListener('beforeunload', function () { observer.disconnect(); clearInterval(periodic); });
+                    }, 400);
+                })();
+                </script>
+
+</html>

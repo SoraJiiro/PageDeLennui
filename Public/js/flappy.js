@@ -35,7 +35,7 @@ export function initFlappy(socket) {
       return this.radiusRatio * canvas.height;
     },
     draw() {
-      ctx.fillStyle = "#00FF00";
+      ctx.fillStyle = "#0f0";
       ctx.beginPath();
       ctx.arc(this.x, birdY, this.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -44,7 +44,7 @@ export function initFlappy(socket) {
 
   function resetGame() {
     updateScales();
-    birdY = canvas.height / 2;
+    birdY = canvas.height / 3.55;
     birdVel = 0;
     pipes = [];
     score = 0;
@@ -53,7 +53,7 @@ export function initFlappy(socket) {
   }
 
   function drawPipes() {
-    ctx.fillStyle = "#00FF00";
+    ctx.fillStyle = "#0f0";
     pipes.forEach((p) => {
       // Tuyau du haut
       ctx.fillRect(p.x, 0, pipeWidth, p.top);
@@ -125,7 +125,20 @@ export function initFlappy(socket) {
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.code === "Space" && gameRunning) birdVel = jump;
+    // ignore when typing in inputs or editable elements
+    const active = document.activeElement;
+    const tag = active && active.tagName;
+    const isTyping =
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      (active && active.isContentEditable);
+    if (isTyping) return;
+
+    if (e.code === "Space" && gameRunning) {
+      // prevent page scrolling when space triggers a jump
+      e.preventDefault();
+      birdVel = jump;
+    }
   });
 
   startBtn.addEventListener("click", () => {

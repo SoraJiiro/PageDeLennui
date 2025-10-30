@@ -2,6 +2,7 @@ class PictionaryGame {
   constructor() {
     this.joueurs = [];
     this.spectators = [];
+    this.maxPlayers = 6;
     this.gameStarted = false;
     this.currentDrawerIndex = 0;
     this.currentWord = null;
@@ -23,6 +24,8 @@ class PictionaryGame {
   addPlayer(pseudo, socketId) {
     if (this.joueurs.find((p) => p.pseudo === pseudo))
       return { success: false, reason: "alreadyIn" };
+    if (this.joueurs.length >= this.maxPlayers)
+      return { success: false, reason: "full" };
     this.joueurs.push({ pseudo, socketId, score: 0 });
     return { success: true };
   }
@@ -48,7 +51,8 @@ class PictionaryGame {
   }
 
   canStart() {
-    return this.joueurs.length >= 1;
+    // Require at least 3 players to start a Pictionary game
+    return this.joueurs.length >= 3;
   }
 
   startGame() {
@@ -64,7 +68,14 @@ class PictionaryGame {
     this.guessedThisRound.clear();
     this.timeLeft = this.roundDuration;
     this.strokes = [];
-    this._revealedMask = "_ ".repeat(this.currentWord.length);
+    // Initialize revealed mask: keep spaces revealed, hide letters with '_'
+    if (this.currentWord) {
+      this._revealedMask = Array.from(this.currentWord)
+        .map((ch) => (ch === " " ? " " : "_"))
+        .join("");
+    } else {
+      this._revealedMask = "";
+    }
   }
 
   getCurrentDrawer() {
@@ -111,7 +122,9 @@ class PictionaryGame {
   getWordProgress() {
     if (!this.currentWord) return "";
     if (!this._revealedMask) {
-      this._revealedMask = "_".repeat(this.currentWord.length);
+      this._revealedMask = Array.from(this.currentWord)
+        .map((ch) => (ch === " " ? " " : "_"))
+        .join("");
     }
     return this._revealedMask;
   }

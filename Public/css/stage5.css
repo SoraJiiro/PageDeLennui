@@ -22,8 +22,8 @@ html {
 .uno-card {
   width: min(1200px, 95vw);
   background: #000;
-  color: #00ff00;
-  border: 2px solid #00ff00;
+  color: #0f0;
+  border: 2px solid #0f0;
   padding: 1rem;
 }
 
@@ -37,7 +37,7 @@ html {
 
 .uno-header h2 {
   margin: 0;
-  background: #00ff00;
+  background: #0f0;
   color: #000;
   padding: 2.5px 7.5px;
   border-radius: 25px;
@@ -45,26 +45,26 @@ html {
 
 .uno-status {
   color: #000;
-  background: #00ff00;
+  background: #0f0;
   font-size: 0.9rem;
   padding: 7.5px;
 }
 
 .uno-lobby {
-  border: 2px solid #00ff00;
+  border: 2px solid #0f0;
   padding: 1rem;
   text-align: center;
 }
 
 .uno-lobby h3 {
-  color: #00ff00;
+  color: #0f0;
   margin-bottom: 1rem;
 }
 
 .uno-joueurs {
   margin: 1rem 0;
   padding: 0.5rem;
-  border: 1px solid #00ff00;
+  border: 1px solid #0f0;
   min-height: 100px;
 }
 
@@ -77,15 +77,15 @@ html {
 
 .uno-lobby button {
   padding: 0.8rem 1.5rem;
-  border: 2px solid #00ff00;
+  border: 2px solid #0f0;
   background: #000;
-  color: #00ff00;
+  color: #0f0;
   cursor: pointer;
   font-weight: 600;
 }
 
 .uno-lobby button:hover {
-  background: #00ff00;
+  background: #0f0;
   color: #000;
 }
 
@@ -96,7 +96,7 @@ html {
 
 .uno-lobby button:disabled:hover {
   background: #000;
-  color: #00ff00;
+  color: #0f0;
 }
 
 .uno-game {
@@ -110,7 +110,7 @@ html {
 .uno-mode-spec {
   text-align: center;
   padding: 1rem;
-  border: 2px dashed #00ff00;
+  border: 2px dashed #0f0;
   margin-bottom: 1rem;
   color: #fff;
 }
@@ -128,13 +128,13 @@ html {
   align-items: center;
   gap: 2rem;
   padding: 1rem;
-  border: 2px solid #00ff00;
+  border: 2px solid #0f0;
 }
 
 .uno-pile {
   width: 80px;
   height: 120px;
-  border: thick double #00ff00;
+  border: thick double #0f0;
   display: grid;
   place-items: center;
   background: #000;
@@ -169,7 +169,7 @@ html {
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 2px solid #00ff00;
+  border: 2px solid #0f0;
   overflow-x: scroll;
   min-height: 150px;
 }
@@ -206,7 +206,7 @@ html {
 
 .uno-info {
   padding: 0.5rem;
-  border: 2px solid #00ff00;
+  border: 2px solid #0f0;
   margin-top: 1rem;
 }
 
@@ -258,7 +258,7 @@ html {
   left: 50%;
   transform: translate(-50%, -50%);
   background: #000;
-  border: 3px solid #00ff00;
+  border: 3px solid #0f0;
   padding: 2rem;
   z-index: 1000;
   display: none;
@@ -269,7 +269,7 @@ html {
 }
 
 .uno-color-picker h3 {
-  color: #00ff00;
+  color: #0f0;
   margin-bottom: 1rem;
   text-align: center;
 }
@@ -283,7 +283,7 @@ html {
 .uno-color-btn {
   width: 100px;
   height: 100px;
-  border: 2px solid #00ff00;
+  border: 2px solid #0f0;
   cursor: pointer;
   font-weight: bold;
   font-size: 1rem;
@@ -293,7 +293,7 @@ html {
   display: flex;
   justify-content: space-around;
   padding: 0.5rem;
-  border: 2px solid #00ff00;
+  border: 2px solid #0f0;
   margin-bottom: 1rem;
 }
 
@@ -302,7 +302,7 @@ html {
 }
 
 .uno-opponent-name {
-  color: #00ff00;
+  color: #0f0;
   font-weight: bold;
   margin-bottom: 0.25rem;
 }
@@ -315,23 +315,23 @@ html {
 .uno-spectators {
   margin-top: 1rem;
   padding: 0.5rem;
-  border: 2px dashed #00ff00;
+  border: 2px dashed #0f0;
   text-align: center;
   font-size: 0.85rem;
 }
 
 .highlight {
   font-weight: bold;
-  background: #00ff00;
+  background: #0f0;
   color: #000;
 }
 
 .uno-pile.tonTour {
-  background: #00ff00;
+  background: #0f0;
   filter: brightness(0.9);
   border: thick double #000;
-  -webkit-box-shadow: 0px 0px 10px 2px #00ff00;
-  box-shadow: 0px 0px 10px 2px #00ff00;
+  -webkit-box-shadow: 0px 0px 10px 2px #0f0;
+  box-shadow: 0px 0px 10px 2px #0f0;
 }
 
 .uno-pile {
