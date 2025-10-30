@@ -32,7 +32,7 @@ echo.
 
 :: Fin programme 
 echo.
-echo ✅ Installation terminée !
+echo >> Installation terminée !
 echo (Fermez et rouvrez votre terminal pour appliquer les changements.)
 pause
 
