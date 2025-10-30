@@ -3,17 +3,16 @@ setlocal enabledelayedexpansion
 
 set "L=26"
 
-rem Générer des octets aléatoires et les encoder en base64
-for /f "delims=" %%A in ('powershell -NoProfile -Command "[Convert]::ToBase64String((1..%L% | ForEach-Object {Get-Random -Maximum 256} ))"') do set "key=%%A"
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$bytes = New-Object byte[] 64; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes); $b64 = [Convert]::ToBase64String($bytes) -replace '[^A-Za-z0-9]',''; $b64.Substring(0,%L%)"`) do (
+  set "cle=%%A"
+)
 
-rem Supprimer les caractères + / =
-set "key=%key:+=%"
-set "key=%key:/=%"
-set "key=%key:=%%"
+if not defined cle (
+  echo Erreur: generation de la cle a echoue.
+  pause
+  exit /b 1
+)
 
-rem Couper à 26 caractères
-set "key=%key:~0,%L%"
-
-echo %key%
-endlocal
+echo %cle%
 pause
