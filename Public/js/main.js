@@ -39,6 +39,7 @@
       import("./flappy_leaderboard.js"),
       import("./uno_leaderboard.js"),
       import("./pictionary.js"),
+      import("./pictionary_leaderboard.js"),
       import("./puissance4.js"),
       import("./p4_leaderboard.js"),
     ]);
@@ -54,6 +55,7 @@
       flappyLeaderboard,
       unoLeaderboard,
       pictionary,
+      pictionaryLeaderboard,
       puissance4,
       p4Leaderboard,
     ] = modules;
@@ -72,6 +74,8 @@
     if (unoLeaderboard?.initUnoLeaderboard)
       unoLeaderboard.initUnoLeaderboard(socket);
     if (pictionary?.initPictionary) pictionary.initPictionary(socket);
+    if (pictionaryLeaderboard?.initPictionaryLeaderboard)
+      pictionaryLeaderboard.initPictionaryLeaderboard(socket);
     if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
     if (p4Leaderboard?.initP4Leaderboard)
       p4Leaderboard.initP4Leaderboard(socket);

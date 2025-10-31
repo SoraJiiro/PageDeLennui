@@ -124,6 +124,7 @@ const files = {
   unoWins: path.join(dataDir, "uno_wins.json"),
   medals: path.join(dataDir, "medals.json"),
   p4Wins: path.join(dataDir, "p4_wins.json"),
+  pictionaryWins: path.join(dataDir, "pictionary_wins.json"),
 };
 
 let scores = readJSON(files.leaderboard, {});
@@ -133,16 +134,17 @@ let medals = readJSON(files.medals, {});
 let flappyScores = readJSON(files.flappyScores, {});
 let unoWins = readJSON(files.unoWins, {});
 let p4Wins = readJSON(files.p4Wins, {});
+let pictionaryWins = readJSON(files.pictionaryWins, {});
 
 // -----------------------------
 // Logique principale
 // -----------------------------
 let users = new Map();
-let userSockets = new Map(); // pseudo -> Set de socket.id
+let userSockets = new Map();
 let unoGames = new Map();
 let gameActuelle = new UnoGame();
 let pictionaryGame = new PictionaryGame();
-let pictionaryTimer = null; // interval id
+let pictionaryTimer = null;
 let p4Game = new Puissance4Game();
 
 // -----------------------------
@@ -218,6 +220,21 @@ function tickPictionary() {
         (a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo)
       );
       const winner = sorted.length > 0 ? sorted[0].pseudo : null;
+
+      // ✅ Ajouter 1 victoire au gagnant
+      if (winner) {
+        pictionaryWins[winner] = (pictionaryWins[winner] || 0) + 1;
+        writeJSON(files.pictionaryWins, pictionaryWins);
+
+        // Broadcast leaderboard Pictionary
+        const arr = Object.entries(pictionaryWins)
+          .map(([u, p]) => ({ pseudo: u, points: p }))
+          .sort(
+            (a, b) => b.points - a.points || a.pseudo.localeCompare(b.pseudo)
+          );
+        io.emit("pictionary:leaderboard", arr);
+      }
+
       io.emit("pictionary:gameEnd", { winner });
       pictionaryGame = new PictionaryGame();
       stopPictionaryTimer();
@@ -310,6 +327,13 @@ io.on("connection", (socket) => {
       scores[pseudo] -= 1;
     }, 100);
   });
+  socket.emit(
+    "pictionary:leaderboard",
+    Object.entries(pictionaryWins)
+      .map(([u, p]) => ({ pseudo: u, points: p }))
+      .sort((a, b) => b.points - a.points || a.pseudo.localeCompare(b.pseudo))
+  );
+
   socket.emit(
     "p4:leaderboard",
     Object.entries(p4Wins)
@@ -702,6 +726,28 @@ io.on("connection", (socket) => {
             (a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo)
           );
           const winner = sorted.length > 0 ? sorted[0].pseudo : null;
+
+          // ✅ Ajouter le score total du joueur au leaderboard
+          if (winner) {
+            const winnerData = pictionaryGame.joueurs.find(
+              (p) => p.pseudo === winner
+            );
+            const scoreToAdd = winnerData ? winnerData.score : 0;
+
+            pictionaryWins[winner] = (pictionaryWins[winner] || 0) + scoreToAdd;
+            writeJSON(files.pictionaryWins, pictionaryWins);
+
+            // Broadcast leaderboard Pictionary (basé sur les scores cumulés)
+            const arr = Object.entries(pictionaryWins)
+              .map(([u, p]) => ({ pseudo: u, points: p }))
+              .sort(
+                (a, b) =>
+                  b.points - a.points || a.pseudo.localeCompare(b.pseudo)
+              );
+
+            io.emit("pictionary:leaderboard", arr);
+          }
+
           io.emit("pictionary:gameEnd", { winner });
           pictionaryGame = new PictionaryGame();
           stopPictionaryTimer();
