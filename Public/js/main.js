@@ -39,6 +39,8 @@
       import("./flappy_leaderboard.js"),
       import("./uno_leaderboard.js"),
       import("./pictionary.js"),
+      import("./puissance4.js"),
+      import("./p4_leaderboard.js"),
     ]);
 
     const [
@@ -52,6 +54,8 @@
       flappyLeaderboard,
       unoLeaderboard,
       pictionary,
+      puissance4,
+      p4Leaderboard,
     ] = modules;
 
     if (chat?.initChat) chat.initChat(socket);
@@ -68,6 +72,9 @@
     if (unoLeaderboard?.initUnoLeaderboard)
       unoLeaderboard.initUnoLeaderboard(socket);
     if (pictionary?.initPictionary) pictionary.initPictionary(socket);
+    if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
+    if (p4Leaderboard?.initP4Leaderboard)
+      p4Leaderboard.initP4Leaderboard(socket);
   } catch (err) {
     console.error("Erreur modules : ", err);
   }

@@ -17,6 +17,7 @@ const authRoutes = require("./Server/authRoutes");
 const requireAuth = require("./Server/requireAuth");
 const UnoGame = require("./Server/unoGame");
 const PictionaryGame = require("./Server/pictionaryGame");
+const Puissance4Game = require("./Server/puissance4Game");
 
 // -----------------------------
 // Config
@@ -122,6 +123,7 @@ const files = {
   flappyScores: path.join(dataDir, "flappy_scores.json"),
   unoWins: path.join(dataDir, "uno_wins.json"),
   medals: path.join(dataDir, "medals.json"),
+  p4Wins: path.join(dataDir, "p4_wins.json"),
 };
 
 let scores = readJSON(files.leaderboard, {});
@@ -130,6 +132,7 @@ let dinoScores = readJSON(files.dinoScores, {});
 let medals = readJSON(files.medals, {});
 let flappyScores = readJSON(files.flappyScores, {});
 let unoWins = readJSON(files.unoWins, {});
+let p4Wins = readJSON(files.p4Wins, {});
 
 // -----------------------------
 // Logique principale
@@ -140,6 +143,7 @@ let unoGames = new Map();
 let gameActuelle = new UnoGame();
 let pictionaryGame = new PictionaryGame();
 let pictionaryTimer = null; // interval id
+let p4Game = new Puissance4Game();
 
 // -----------------------------
 // Helpers Pictionary
@@ -306,6 +310,18 @@ io.on("connection", (socket) => {
       scores[pseudo] -= 1;
     }, 100);
   });
+  socket.emit(
+    "p4:leaderboard",
+    Object.entries(p4Wins)
+      .map(([u, w]) => ({ pseudo: u, wins: w }))
+      .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo))
+  );
+  socket.emit(
+    "uno:leaderboard",
+    Object.entries(unoWins)
+      .map(([u, w]) => ({ pseudo: u, wins: w }))
+      .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo))
+  );
 
   // Broadcast liste (utilisateurs uniques)
   const uniqueUsers = Array.from(userSockets.keys());
@@ -692,10 +708,8 @@ io.on("connection", (socket) => {
           broadcastPictionaryLobby();
           return;
         } else {
-          // Start new round: notify clients and request canvas clear from all
           broadcastPictionaryGame("Nouvelle manche : nouveau dessinateur");
           io.emit("pictionary:clear");
-          // start timer for new round
           startPictionaryTimer();
           return;
         }
@@ -900,17 +914,15 @@ io.on("connection", (socket) => {
     if (res.winner) {
       console.log(`\n🏆 ${res.winner} a gagné la partie de UNO !\n`);
 
-      // ✅ Ajouter 1 victoire
       unoWins[res.winner] = (unoWins[res.winner] || 0) + 1;
       writeJSON(files.unoWins, unoWins);
 
-      // Broadcast leaderboard UNO
+      io.emit("uno:gameEnd", { winner: res.winner });
+
       const arr = Object.entries(unoWins)
         .map(([u, w]) => ({ pseudo: u, wins: w }))
         .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
       io.emit("uno:leaderboard", arr);
-
-      io.emit("uno:gameEnd", { winner: res.winner });
 
       gameActuelle = new UnoGame();
       broadcastUnoLobby();
@@ -939,6 +951,190 @@ io.on("connection", (socket) => {
 
     // Broadcast à tous
     broadcastUno(res.message);
+  });
+
+  // ===== PUISSANCE 4 =====
+  function majP4SocketIds() {
+    if (!p4Game) return;
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+      const clientUsername = clientUser.pseudo;
+      p4Game.updateSocketId(clientUsername, clientSocket.id);
+    });
+  }
+
+  function broadcastP4Lobby() {
+    if (!p4Game) p4Game = new Puissance4Game();
+    majP4SocketIds();
+    const lobbyState = p4Game.getLobbyState();
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+      const clientUsername = clientUser.pseudo;
+      const estAuLobby = p4Game.joueurs.some(
+        (p) => p.pseudo === clientUsername
+      );
+      clientSocket.emit("p4:lobby", {
+        ...lobbyState,
+        myUsername: clientUsername,
+        estAuLobby,
+      });
+    });
+  }
+
+  function broadcastP4Game(message = "") {
+    if (!p4Game || !p4Game.gameStarted) return;
+    majP4SocketIds();
+    [...p4Game.joueurs, ...p4Game.spectators].forEach((p) => {
+      const pSocket = io.sockets.sockets.get(p.socketId);
+      if (pSocket) {
+        const state = p4Game.getState(p.pseudo);
+        if (message) state.message = message;
+        pSocket.emit("p4:update", state);
+      }
+    });
+  }
+
+  socket.on("p4:getState", () => {
+    if (!p4Game) p4Game = new Puissance4Game();
+    majP4SocketIds();
+    const lobbyState = p4Game.getLobbyState();
+    const estAuLobby = p4Game.joueurs.some((p) => p.pseudo === pseudo);
+    socket.emit("p4:lobby", {
+      ...lobbyState,
+      myUsername: pseudo,
+      estAuLobby,
+    });
+    if (p4Game.gameStarted) {
+      const gameState = p4Game.getState(pseudo);
+      socket.emit("p4:update", gameState);
+    }
+  });
+
+  socket.on("p4:join", () => {
+    if (!p4Game) p4Game = new Puissance4Game();
+    if (p4Game.gameStarted) {
+      socket.emit("p4:error", "La partie a déjà commencé");
+      p4Game.addSpectator(pseudo, socket.id);
+      broadcastP4Lobby();
+      return;
+    }
+    p4Game.removeSpectator(pseudo);
+    const res = p4Game.addPlayer(pseudo, socket.id);
+    if (!res.success) {
+      if (res.reason === "alreadyIn") {
+        console.log(`\n⚠️  ${pseudo} est déjà dans le lobby P4\n`);
+      } else if (res.reason === "full") {
+        socket.emit("p4:error", "Le lobby est plein (2/2)");
+      }
+      broadcastP4Lobby();
+      return;
+    }
+    console.log(
+      `\n✅ ${pseudo} a rejoint le lobby P4 (${p4Game.joueurs.length}/2)\n`
+    );
+    broadcastP4Lobby();
+  });
+
+  socket.on("p4:leave", () => {
+    if (!p4Game) return;
+    const etaitJoueur = p4Game.removePlayer(pseudo);
+    if (etaitJoueur) {
+      console.log(`\n🚪 ${pseudo} a quitté le lobby P4\n`);
+      if (p4Game.gameStarted) {
+        console.log(`\n⚠️  Partie P4 annulée (joueur parti)\n`);
+        io.emit("p4:gameEnd", {
+          winner: "Partie annulée !",
+          reason: `${pseudo} est parti`,
+        });
+        p4Game = new Puissance4Game();
+        broadcastP4Lobby();
+        return;
+      }
+      p4Game.addSpectator(pseudo, socket.id);
+      broadcastP4Lobby();
+    } else {
+      p4Game.removeSpectator(pseudo);
+    }
+  });
+
+  socket.on("p4:start", () => {
+    if (!p4Game) p4Game = new Puissance4Game();
+    const isPlayer = p4Game.joueurs.some((p) => p.pseudo === pseudo);
+    if (!isPlayer) {
+      socket.emit("p4:error", "Tu n'es pas dans le lobby");
+      return;
+    }
+    if (!p4Game.canStart()) {
+      socket.emit("p4:error", "Impossible de démarrer (2 joueurs requis)");
+      return;
+    }
+    p4Game.startGame();
+    console.log(`🎮 Partie P4 démarrée avec ${p4Game.joueurs.length} joueurs`);
+    majP4SocketIds();
+    p4Game.joueurs.forEach((p) => {
+      const s = io.sockets.sockets.get(p.socketId);
+      if (s) s.emit("p4:gameStart", p4Game.getState(p.pseudo));
+    });
+    io.sockets.sockets.forEach((clientSocket) => {
+      const clientUser = clientSocket.handshake.session?.user;
+      if (!clientUser || !clientUser.pseudo) return;
+      const clientUsername = clientUser.pseudo;
+      const isPlayer = p4Game.joueurs.some((p) => p.pseudo === clientUsername);
+      if (!isPlayer) {
+        p4Game.addSpectator(clientUsername, clientSocket.id);
+        clientSocket.emit("p4:gameStart", p4Game.getState(clientUsername));
+      }
+    });
+    broadcastP4Lobby();
+  });
+
+  socket.on("p4:play", ({ col }) => {
+    if (!p4Game || !p4Game.gameStarted) return;
+    const joueur = p4Game.joueurs.find((p) => p.pseudo === pseudo);
+    if (!joueur) {
+      socket.emit("p4:error", "Tu n'es pas dans la partie");
+      return;
+    }
+    const res = p4Game.playMove(joueur, col);
+    if (!res.success) {
+      socket.emit("p4:error", res.message);
+      return;
+    }
+    if (res.winner) {
+      console.log(`\n🏆 ${res.winner} a gagné la partie de P4 !\n`);
+
+      p4Wins[res.winner] = (p4Wins[res.winner] || 0) + 1;
+      writeJSON(files.p4Wins, p4Wins);
+
+      // Broadcast leaderboard P4
+      const arr = Object.entries(p4Wins)
+        .map(([u, w]) => ({ pseudo: u, wins: w }))
+        .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
+      io.emit("p4:leaderboard", arr);
+
+      broadcastP4Game();
+      // Délai de 3s pour voir le message avant alert et retour lobby
+      setTimeout(() => {
+        io.emit("p4:gameEnd", { winner: res.winner });
+        p4Game = new Puissance4Game();
+        broadcastP4Lobby();
+      }, 100);
+      return;
+    }
+    if (res.draw) {
+      console.log(`\n🤝 Match nul P4 !\n`);
+      broadcastP4Game();
+      // Délai de 3s pour voir le message avant alert et retour lobby
+      setTimeout(() => {
+        io.emit("p4:gameEnd", { draw: true });
+        p4Game = new Puissance4Game();
+        broadcastP4Lobby();
+      }, 100);
+      return;
+    }
+    broadcastP4Game();
   });
 
   socket.on("disconnect", () => {
@@ -1011,6 +1207,23 @@ io.on("connection", (socket) => {
       }
     }
   });
+  // Gestion p4
+  if (p4Game) {
+    const etaitJoueurP4 = p4Game.joueurs.some((p) => p.pseudo === pseudo);
+    if (etaitJoueurP4) {
+      console.log(`\n⚠️  Partie P4 annulée (${pseudo} déconnecté)\n`);
+      if (p4Game.gameStarted) {
+        io.emit("p4:gameEnd", {
+          winner: "Partie annulée !",
+          reason: `${pseudo} s'est déconnecté`,
+        });
+      }
+      p4Game = new Puissance4Game();
+      broadcastP4Lobby();
+    } else {
+      p4Game.removeSpectator(pseudo);
+    }
+  }
 });
 
 // -----------------------------

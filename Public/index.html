@@ -18,6 +18,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage5.css" />
         <link rel="stylesheet" type="text/css" href="css/stage6.css" />
         <link rel="stylesheet" type="text/css" href="css/stage7.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage8.css" />
 
         <link rel='icon' type="img/png" href="imgs/icon_d.png"
             media="(prefers-color-scheme: dark)" />
@@ -53,6 +54,7 @@
                 <button class="mario">Mario</button>
                 <button class="sec6">Flappy bird</button>
                 <button class="sec7">Pictionary</button>
+                <button class="sec8">Puissance 4</button>
                 <p class="hide-nav"
                     onclick="document.querySelector('.btns-wrap').style.display = 'none';">Cacher</p>
             </div>
@@ -123,6 +125,7 @@
                 <button data-board="dino">Dino</button>
                 <button data-board="flappy">Flappy Bird</button>
                 <button data-board="uno">UNO</button>
+                <button data-board="p4">Puissance 4</button>
             </div>
 
             <!--LEADERBOARD CLICKER-->
@@ -153,13 +156,22 @@
                     <tbody></tbody>
                 </table>
             </div>
-
             <!-- LEADERBOARD UNO -->
             <div class="leaderboard-card">
                 <div class="leaderboard-header">
                     <h2>UNO Leaderboard.exe</h2>
                 </div>
                 <table class="board" id="uno-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Victoires</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD PUISSANCE 4 -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Puissance 4 Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="p4-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Victoires</th></tr></thead>
                     <tbody></tbody>
                 </table>
@@ -310,6 +322,35 @@
                                 aria-label="Proposer le mot">Proposer</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+        <section id="stage8" class="eighth-stage">
+            <div class="p4-card">
+                <div class="p4-header">
+                    <h2>Puissance 4.exe</h2>
+                    <div class="p4-status"></div>
+                </div>
+
+                <div class="p4-lobby">
+                    <h3>Lobby Puissance 4</h3>
+                    <div class="p4-joueurs"></div>
+                    <div class="p4-spectators"></div>
+                    <div class="p4-btn-wrapper">
+                        <button class="p4-join">Rejoindre le lobby</button>
+                        <button class="p4-leave" style="display: none;">Quitter
+                            le lobby</button>
+                        <button class="p4-start" style="display: none;">En
+                            attente...</button>
+                    </div>
+                </div>
+
+                <div class="p4-game">
+                    <div class="p4-info"></div>
+                    <div class="p4-board-container">
+                        <div class="p4-board"></div>
+                    </div>
+                    <div class="p4-mode-spec" style="display: none;"></div>
                 </div>
             </div>
         </section>

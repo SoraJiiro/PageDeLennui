@@ -11,6 +11,7 @@ function showLeaderboard(name) {
     dino: "#dino-leaderboard",
     flappy: "#flappy-leaderboard",
     uno: "#uno-leaderboard",
+    p4: "#p4-leaderboard",
   };
 
   const table = document.querySelector(idMap[name]);
