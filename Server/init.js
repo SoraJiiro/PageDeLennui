@@ -56,7 +56,7 @@ fs.watch(config.WEBROOT, { recursive: true }, (_, filename) => {
   if (!filename) return;
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => {
-    console.log(`[EDIT]  Fichier modifié - Public\\${filename}`);
+    console.log(`\n[!]  Fichier modifié - Public\\${filename}\n`);
     io.emit("reload");
   }, 500);
 });
