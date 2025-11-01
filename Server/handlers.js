@@ -13,7 +13,7 @@ let p4Game = new Puissance4Game(); // Puissance 4
 // ==== HELPERS GÉNÉRAUX (leaderboards, etc.) ====
 const helpers = {
   broadcastClickerLB(io) {
-    const arr = Object.entries(FileService.data.scores)
+    const arr = Object.entries(FileService.data.clicks)
       .map(([pseudo, score]) => ({ pseudo, score: Number(score) || 0 }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("clicker:leaderboard", arr);
@@ -66,7 +66,7 @@ function initSocketHandlers(io, socket, gameState) {
   // ---- Envoi initial au client ----
   socket.emit("you:name", pseudo);
   socket.emit("chat:history", FileService.data.historique);
-  socket.emit("clicker:you", { score: FileService.data.scores[pseudo] || 0 });
+  socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
   socket.emit("clicker:medals", FileService.data.medals[pseudo] || []);
   helpers.broadcastClickerLB(io);
   helpers.broadcastDinoLB(io);
@@ -100,17 +100,17 @@ function initSocketHandlers(io, socket, gameState) {
   // =========================
   socket.on("clicker:click", () => {
     if (!AntiSpam.allow(socket.id)) return;
-    FileService.data.scores[pseudo] =
-      (FileService.data.scores[pseudo] || 0) + 1;
-    FileService.save("scores", FileService.data.scores);
-    socket.emit("clicker:you", { score: FileService.data.scores[pseudo] });
+    FileService.data.clicks[pseudo] =
+      (FileService.data.clicks[pseudo] || 0) + 1;
+    FileService.save("scores", FileService.data.clicks);
+    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
     helpers.broadcastClickerLB(io);
   });
 
   socket.on("clicker:reset", () => {
-    FileService.data.scores[pseudo] = 0;
+    FileService.data.clicks[pseudo] = 0;
     FileService.data.medals[pseudo] = [];
-    FileService.save("scores", FileService.data.scores);
+    FileService.save("scores", FileService.data.clicks);
     FileService.save("medals", FileService.data.medals);
     socket.emit("clicker:you", { score: 0 });
     socket.emit("clicker:medals", []);
@@ -118,24 +118,34 @@ function initSocketHandlers(io, socket, gameState) {
     console.log(`🔄 Reset Clicker pour [${pseudo}]`);
   });
 
-  socket.on("clicker:medalUnlock", ({ medalName }) => {
-    const valid = [
-      "Bronze",
-      "Argent",
-      "Or",
-      "Diamant",
-      "Rubis",
-      "Saphir",
-      "Légendaire",
-    ];
-    if (!valid.includes(medalName)) return;
-    const userMedals = FileService.data.medals[pseudo] || [];
-    if (!userMedals.includes(medalName)) {
-      userMedals.push(medalName);
-      FileService.data.medals[pseudo] = userMedals;
-      FileService.save("medals", FileService.data.medals);
+  socket.on("clicker:medalUnlock", ({ medalName, colors }) => {
+    if (typeof medalName !== "string" || medalName.trim() === "") return;
+
+    // Récupère ou crée la structure de médailles pour ce joueur
+    const allMedals = FileService.data.medals;
+    const userMedals = allMedals[pseudo] || [];
+
+    // Si la médaille n'est pas déjà débloquée
+    if (
+      !userMedals.find((m) =>
+        typeof m === "string" ? m === medalName : m.name === medalName
+      )
+    ) {
+      const newEntry =
+        Array.isArray(colors) && colors.length >= 3
+          ? { name: medalName, colors }
+          : medalName; // compatibilité ancienne version
+
+      userMedals.push(newEntry);
+      allMedals[pseudo] = userMedals;
+
+      FileService.save("medals", allMedals);
       console.log(`🏅 ${pseudo} a débloqué ${medalName}`);
-      socket.emit("clicker:medals", FileService.data.medals[pseudo]);
+
+      socket.emit(
+        "clicker:medals",
+        userMedals.map((m) => (typeof m === "string" ? m : m.name))
+      );
     }
   });
 

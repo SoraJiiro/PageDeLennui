@@ -41,7 +41,7 @@ class FileService {
     }
 
     this.files = {
-      leaderboard: path.join(config.DATA_DIR, "leaderboard.json"),
+      clicks: path.join(config.DATA_DIR, "clicks.json"),
       historique: path.join(config.DATA_DIR, "chat_history.json"),
       chatLogs: path.join(config.DATA_DIR, "chat_logs.jsonl"),
       dinoScores: path.join(config.DATA_DIR, "dino_scores.json"),
@@ -75,7 +75,7 @@ class FileService {
 
   loadAll() {
     return {
-      scores: this.readJSON(this.files.leaderboard, {}),
+      clicks: this.readJSON(this.files.clicks, {}),
       historique: this.readJSON(this.files.historique, []),
       dinoScores: this.readJSON(this.files.dinoScores, {}),
       medals: this.readJSON(this.files.medals, {}),
@@ -89,7 +89,7 @@ class FileService {
   save(key, data) {
     this.data[key] = data;
     const fileMap = {
-      scores: this.files.leaderboard,
+      clicks: this.files.clicks,
       historique: this.files.historique,
       dinoScores: this.files.dinoScores,
       medals: this.files.medals,

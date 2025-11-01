@@ -1,384 +1,17 @@
-.first-stage {
-  position: absolute;
-  inset: 0;
-  width: 100dvw;
-  height: 100dvh;
+/* ==========================================================
+   VARIABLES CSS
+   ========================================================== */
+:root {
+  --primary-color: #0f0;
+  --bg-color: #000;
+  --border-width: 3px;
+  --transition-speed: 185ms;
+  --transition-ease: ease;
 }
 
-.first-stage h1 {
-  position: absolute;
-  left: 50%;
-  top: 45px;
-  transform: translateX(-50%);
-  width: fit-content;
-  font-size: 6.5rem;
-  margin: 0;
-}
-
-.first-stage h1::before {
-  content: "Horloge.exe";
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 1px 8.5px;
-  font-size: 1.15rem;
-  font-weight: normal;
-  border-radius: 25px;
-  background: #0f0;
-  color: #000;
-}
-
-.zone-wrap {
-  position: absolute;
-  left: 25px;
-  bottom: 140px;
-  width: 300px;
-}
-
-.zone {
-  position: relative;
-  width: 100%;
-  height: 235px;
-  border: 3px solid #0f0;
-  background: #000;
-  color: #0f0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: all 185ms ease;
-  z-index: 5;
-}
-
-.zone::before {
-  content: "Clicker.exe";
-  position: absolute;
-  top: -35px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 1px 8.5px;
-  font-size: 1.15rem;
-  border-radius: 25px;
-  background: #0f0;
-  color: #000;
-  font-weight: normal;
-  pointer-events: none;
-  user-select: none;
-  transition: all 185ms;
-}
-
-.zone i {
-  font-style: normal;
-  font-weight: bold;
-  font-size: 1.85rem;
-}
-
-.zone i::selection {
-  background: none;
-  color: #0f0;
-}
-
-.zone.temp {
-  scale: 1.075;
-  transition: all 185ms;
-}
-
-p.cps-humain {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  font-size: 0.85rem;
-  color: #0f0;
-  font-weight: bold;
-  font-style: italic;
-  pointer-events: none;
-  user-select: none;
-  z-index: 10;
-}
-
-.zone-wrap .acps {
-  position: absolute;
-  left: 40%;
-  bottom: -30px;
-  width: 100%;
-  font-size: 14px;
-}
-
-.reset {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translate(-50%, 110px);
-  width: 40%;
-  height: 65px;
-  font-size: x-large;
-  font-weight: bold;
-  letter-spacing: 1.25px;
-  background: #000;
-  color: #0f0;
-  border: 3px solid #0f0;
-  cursor: pointer;
-  transition: all 325ms ease-out;
-}
-
-.reset:hover {
-  background: #0f0;
-  color: #000;
-  border: 2px solid #000;
-  outline: 2px solid #0f0;
-}
-
-.medals-wrap {
-  position: absolute;
-  right: 25px;
-  top: 40px;
-  height: 92.5dvh;
-  width: 22.5dvw;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  padding: 10px;
-  border: 4px solid #0f0;
-  overflow: auto;
-  background: #000;
-}
-
-.medals-wrap .medal {
-  width: 45%;
-  height: 22.5%;
-  border-radius: 50%;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.medals-wrap .medal.shown:hover {
-  cursor: pointer;
-  animation: spin 0.45s ease;
-}
-
-.medals-wrap .medal.hidden {
-  border: 5px dotted gray;
-  background: #000;
-}
-
-.medals-wrap .medal.hidden::after {
-  content: "?";
-  color: gray;
-  position: absolute;
-  left: 52%;
-  top: 50%;
-  transform: translate(-48%, -50%);
-  font-weight: bold;
-  font-size: 6.5rem;
-  font-family: "Liberation Serif", monospace;
-}
-
-.medals-wrap .medal.shown::after {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: bold;
-  font-size: 2.5rem;
-  font-family: "Liberation Serif", monospace;
-}
-
-.medal[data-name="Bronze"].shown {
-  background: linear-gradient(120deg, #b77641 30%, #ffb476 60%);
-  border: 5px solid #0a5254;
-}
-.medal[data-name="Bronze"]::after {
-  content: "1";
-  color: #0a5254;
-}
-
-.medal[data-name="Argent"].shown {
-  background: linear-gradient(120deg, #57aeb7 30%, #95fffa 60%);
-  border: 5px solid #1e6d4d;
-}
-.medal[data-name="Argent"]::after {
-  content: "2";
-  color: #1e6d4d;
-}
-
-.medal[data-name="Or"].shown {
-  background: linear-gradient(120deg, #ffd700 30%, #fff8dc 60%);
-  border: 5px solid #b8860b;
-}
-.medal[data-name="Or"]::after {
-  content: "3";
-  color: #b8860b;
-}
-
-.medal[data-name="Diamant"].shown {
-  background: linear-gradient(120deg, #8a2be2 30%, #dda0dd 60%);
-  border: 5px solid #4b0082;
-}
-.medal[data-name="Diamant"]::after {
-  content: "4";
-  color: #4b0082;
-}
-
-.medal[data-name="Rubis"].shown {
-  background: linear-gradient(120deg, #f42370 30%, #f5b0de 60%);
-  border: 5px solid #ac0e58;
-  box-shadow: 0 0 30px rgba(255, 77, 198, 0.6);
-}
-.medal[data-name="Rubis"]::after {
-  content: "5";
-  color: #ac0e58;
-}
-
-.medal[data-name="Saphir"].shown {
-  background: linear-gradient(120deg, #0000ff 30%, #84b9ff 60%);
-  border: 5px solid #1c008e;
-  box-shadow: 0 0 30px rgba(117, 214, 255, 0.6);
-}
-.medal[data-name="Saphir"]::after {
-  content: "6";
-  color: #1c008e;
-}
-
-.medal[data-name="Légendaire"] {
-  border: 5px solid #fff;
-  overflow: hidden;
-  position: relative;
-}
-
-.medal[data-name="Légendaire"]::after {
-  content: "7";
-  color: #fff;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-weight: bold;
-  font-family: "Liberation Serif", monospace;
-  z-index: 1;
-}
-
-.medal[data-name="Légendaire"].shown {
-  animation: glowLegend 2s ease-in-out infinite alternate;
-  transition: all 0.45s ease;
-}
-
-.medal[data-name="Légendaire"].shown:hover {
-  scale: 1.2;
-}
-
-.medal[data-name="Légendaire"].shown::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    45deg,
-    #ff0000,
-    #ff0000,
-    #0000ff,
-    #c746ff,
-    #ff7f00,
-    #ffff00,
-    #2a9f2a,
-    #0000ff,
-    #c746ff,
-    #ff0000
-  );
-  background-size: 400% 400%;
-  animation: rainbowMove 3s ease infinite;
-  opacity: 0.8;
-  z-index: 0;
-}
-
-.btns-wrap {
-  position: fixed;
-  left: 25px;
-  top: 50px;
-  width: 350px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 5.5px;
-  padding: 10px 0px 35px 0px;
-  background: #000;
-  border: 2px solid #0f0;
-  z-index: 9999;
-}
-
-.btns-wrap .hide-nav {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  color: #0f0;
-  font-style: italic;
-  border-left: 2px solid #0f0;
-  border-top: 2px solid #0f0;
-  padding: 3.5px;
-  width: fit-content;
-  cursor: pointer;
-  background: #000;
-}
-
-.show-nav {
-  position: fixed;
-  left: 25px;
-  top: 50px;
-  width: fit-content;
-  height: fit-content;
-  background: #000;
-  color: #0f0;
-  border: 2px solid #0f0;
-  padding: 15px;
-  z-index: 9998;
-  cursor: pointer;
-}
-
-.show-nav:hover {
-  color: #000;
-  background: #0f0;
-}
-
-.btns-wrap .hide-nav:hover {
-  color: #000;
-  background: #0f0;
-}
-
-.btns-wrap::before {
-  content: "Navigation.exe";
-  position: absolute;
-  top: -33px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 1px 8.5px;
-  font-size: 1.15rem;
-  border-radius: 25px;
-  background: #0f0;
-  color: #000;
-}
-
-.btns-wrap button {
-  width: 125px;
-  height: 7dvh;
-  padding: 7.5px;
-  background: #000;
-  color: #0f0;
-  border: 2px solid #0f0;
-  font-weight: 600;
-  letter-spacing: 2.2px;
-  transition: all 0.25s ease;
-}
-
-.btns-wrap button:hover {
-  background: #0f0;
-  color: #000;
-}
-
+/* ==========================================================
+   ANIMATIONS
+   ========================================================== */
 @keyframes spin {
   from {
     transform: rotateY(0deg);
@@ -404,13 +37,468 @@ p.cps-humain {
 @keyframes rainbowMove {
   0% {
     background-position: 0% 50%;
-    rotate: 70deg;
+    rotate: 0deg;
+  }
+  25% {
+    rotate: 135deg;
   }
   50% {
     background-position: 100% 50%;
+    rotate: 180deg;
+  }
+  75% {
+    rotate: 270deg;
   }
   100% {
     background-position: 0% 50%;
-    rotate: -79deg;
+    rotate: 360deg;
   }
+}
+
+/* ==========================================================
+   LAYOUT PRINCIPAL
+   ========================================================== */
+.first-stage {
+  position: absolute;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+}
+
+/* ==========================================================
+   COMPOSANT TITRE (Horloge)
+   ========================================================== */
+.first-stage h1 {
+  position: absolute;
+  left: 50%;
+  top: 45px;
+  transform: translateX(-50%);
+  width: fit-content;
+  font-size: 6.5rem;
+  margin: 0;
+}
+
+.first-stage h1::before {
+  content: "Horloge.exe";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8.5px;
+  font-size: 1.15rem;
+  font-weight: normal;
+  border-radius: 25px;
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+/* ==========================================================
+   COMPOSANT CLICKER
+   ========================================================== */
+.zone-wrap {
+  position: absolute;
+  left: 25px;
+  bottom: 140px;
+  width: 300px;
+}
+
+.zone {
+  position: relative;
+  width: 100%;
+  height: 235px;
+  border: var(--border-width) solid var(--primary-color);
+  background: var(--bg-color);
+  color: var(--primary-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all var(--transition-speed) var(--transition-ease);
+  z-index: 5;
+}
+
+.zone::before {
+  content: "Clicker.exe";
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8.5px;
+  font-size: 1.15rem;
+  border-radius: 25px;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  font-weight: normal;
+  pointer-events: none;
+  user-select: none;
+  transition: all var(--transition-speed);
+}
+
+.zone i {
+  font-style: normal;
+  font-weight: bold;
+  font-size: 1.85rem;
+}
+
+.zone i::selection {
+  background: none;
+  color: var(--primary-color);
+}
+
+.zone.temp {
+  scale: 1.075;
+  transition: all var(--transition-speed);
+}
+
+/* CPS Display */
+p.cps-humain {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  font-size: 0.85rem;
+  color: var(--primary-color);
+  font-weight: bold;
+  font-style: italic;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+.zone-wrap .acps {
+  position: absolute;
+  left: 40%;
+  bottom: -30px;
+  width: 100%;
+  font-size: 14px;
+}
+
+/* ==========================================================
+   BOUTON RESET
+   ========================================================== */
+.reset {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 110px);
+  width: 40%;
+  height: 65px;
+  font-size: x-large;
+  font-weight: bold;
+  letter-spacing: 1.25px;
+  background: var(--bg-color);
+  color: var(--primary-color);
+  border: var(--border-width) solid var(--primary-color);
+  cursor: pointer;
+  transition: all 325ms ease-out;
+}
+
+.reset:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
+  border: 2px solid var(--bg-color);
+  outline: 2px solid var(--primary-color);
+}
+
+/* ==========================================================
+   NAVIGATION
+   ========================================================== */
+.btns-wrap {
+  position: fixed;
+  left: 25px;
+  top: 50px;
+  width: 350px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5.5px;
+  padding: 10px 0 35px 0;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  z-index: 9999;
+}
+
+.btns-wrap::before {
+  content: "Navigation.exe";
+  position: absolute;
+  top: -33px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8.5px;
+  font-size: 1.15rem;
+  border-radius: 25px;
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.btns-wrap button {
+  width: 125px;
+  height: 7dvh;
+  padding: 7.5px;
+  background: var(--bg-color);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  font-weight: 600;
+  letter-spacing: 2.2px;
+  transition: all 0.25s ease;
+}
+
+.btns-wrap button:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+/* Toggle Navigation */
+.btns-wrap .hide-nav {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  color: var(--primary-color);
+  font-style: italic;
+  border-left: 2px solid var(--primary-color);
+  border-top: 2px solid var(--primary-color);
+  padding: 3.5px;
+  width: fit-content;
+  cursor: pointer;
+  background: var(--bg-color);
+}
+
+.btns-wrap .hide-nav:hover {
+  color: var(--bg-color);
+  background: var(--primary-color);
+}
+
+.show-nav {
+  position: fixed;
+  left: 25px;
+  top: 50px;
+  width: fit-content;
+  height: fit-content;
+  background: var(--bg-color);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: 15px;
+  z-index: 9998;
+  cursor: pointer;
+}
+
+.show-nav:hover {
+  color: var(--bg-color);
+  background: var(--primary-color);
+}
+
+/* ==========================================================
+   SYSTÈME DE MÉDAILLES
+   ========================================================== */
+
+/* Container */
+.medals-wrap {
+  position: absolute;
+  right: 25px;
+  top: 40px;
+  height: 92.5dvh;
+  width: 22.5dvw;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 10px;
+  border: 4px solid var(--primary-color);
+  overflow: auto;
+  background: var(--bg-color);
+}
+
+/* Base Medal */
+.medals-wrap .medal {
+  width: 45%;
+  height: 22.5%;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* État Caché - Toutes les médailles */
+.medals-wrap .medal.hidden {
+  border: 5px dotted gray !important;
+  background: var(--bg-color) !important;
+  box-shadow: none !important;
+  position: relative;
+  transition: all 0.35s ease;
+}
+
+.medals-wrap .medal.hidden::after {
+  content: "?";
+  color: gray;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-size: 6.5rem;
+  font-family: "Liberation Serif", monospace;
+  pointer-events: none;
+}
+
+.medals-wrap .medal.hidden:hover {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none !important;
+}
+
+/* Comportement Hover - Médailles Visibles */
+.medals-wrap .medal.shown:hover {
+  cursor: pointer;
+  animation: spin 0.45s ease;
+  transition: transform 0.4s ease;
+}
+
+/* Style commun pour les numéros */
+.medals-wrap .medal.shown::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  font-size: 2.5rem;
+  font-family: "Liberation Serif", monospace;
+  z-index: 1;
+}
+
+/* ==========================================================
+   MÉDAILLES FIXES (1-7)
+   ========================================================== */
+
+/* Bronze - 1 */
+.medal[data-name="Bronze"].shown {
+  background: linear-gradient(120deg, #b77641 30%, #ffb476 60%);
+  border: 5px solid #0a5254;
+}
+.medal[data-name="Bronze"].shown::after {
+  content: "1";
+  color: #0a5254;
+}
+
+/* Argent - 2 */
+.medal[data-name="Argent"].shown {
+  background: linear-gradient(120deg, #57aeb7 30%, #95fffa 60%);
+  border: 5px solid #1e6d4d;
+}
+.medal[data-name="Argent"].shown::after {
+  content: "2";
+  color: #1e6d4d;
+}
+
+/* Or - 3 */
+.medal[data-name="Or"].shown {
+  background: linear-gradient(120deg, #ffd700 30%, #fff8dc 60%);
+  border: 5px solid #b8860b;
+}
+.medal[data-name="Or"].shown::after {
+  content: "3";
+  color: #b8860b;
+}
+
+/* Diamant - 4 */
+.medal[data-name="Diamant"].shown {
+  background: linear-gradient(120deg, #8a2be2 30%, #dda0dd 60%);
+  border: 5px solid #4b0082;
+}
+.medal[data-name="Diamant"].shown::after {
+  content: "4";
+  color: #4b0082;
+}
+
+/* Rubis - 5 */
+.medal[data-name="Rubis"].shown {
+  background: linear-gradient(120deg, #f42370 30%, #f5b0de 60%);
+  border: 5px solid #ac0e58;
+  box-shadow: 0 0 30px rgba(255, 77, 198, 0.6);
+}
+.medal[data-name="Rubis"].shown::after {
+  content: "5";
+  color: #ac0e58;
+}
+
+/* Saphir - 6 */
+.medal[data-name="Saphir"].shown {
+  background: linear-gradient(120deg, #0000ff 30%, #84b9ff 60%);
+  border: 5px solid #1c008e;
+  box-shadow: 0 0 30px rgba(117, 214, 255, 0.6);
+}
+.medal[data-name="Saphir"].shown::after {
+  content: "6";
+  color: #1c008e;
+}
+
+/* Légendaire - 7 */
+.medal[data-name="Légendaire"].shown {
+  border: 5px solid #fff;
+  overflow: hidden;
+  animation: glowLegend 2s ease-in-out infinite alternate;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
+}
+
+.medal[data-name="Légendaire"].shown::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    #ff0000,
+    #ff7f00,
+    #ffff00,
+    #00ff00,
+    #0000ff,
+    #8a2be2
+  );
+  background-size: 400% 400%;
+  animation: rainbowMove 3.55s ease infinite;
+  opacity: 0.85;
+  z-index: 0;
+}
+
+.medal[data-name="Légendaire"].shown::after {
+  content: "7";
+  color: #fff;
+}
+
+/* ==========================================================
+   MÉDAILLES DYNAMIQUES (8+)
+   ========================================================== */
+.medal[data-name^="Médaille"].shown {
+  border: 5px solid #fff !important;
+  animation: glowLegend 2s ease-in-out infinite alternate;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+}
+
+.medal[data-name^="Médaille"].shown::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    var(--grad1, #ff0000),
+    var(--grad2, #ff7f00),
+    var(--grad3, #ffff00),
+    var(--grad4, #00ff00),
+    var(--grad5, #0000ff),
+    var(--grad6, #8a2be2)
+  );
+  background-size: 400% 400%;
+  animation: rainbowMove 3.55s ease infinite;
+  opacity: 0.85;
+  z-index: 0;
+}
+
+.medal[data-name^="Médaille"].shown::after {
+  content: attr(data-index);
+  color: #fff;
 }
