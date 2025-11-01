@@ -1,7 +1,7 @@
 {
-  "name": "pagedelennui_lan",
+  "name": "pde",
   "version": "3.1.0",
-  "description": "...",
+  "description": " La fameuse ",
   "main": "serveur.js",
   "scripts": {
     "test": "npm start"
