@@ -6,7 +6,7 @@ const sharedSession = require("express-socket.io-session");
 const fs = require("fs");
 const path = require("path");
 
-// Imports internes
+// Imports
 const config = require("./config");
 const {
   expressSession,
@@ -56,7 +56,7 @@ fs.watch(config.WEBROOT, { recursive: true }, (_, filename) => {
   if (!filename) return;
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => {
-    console.log(`♻️  Fichier modifié : ${filename}`);
+    console.log(`[EDIT]  Fichier modifié - Public\\${filename}`);
     io.emit("reload");
   }, 500);
 });
