@@ -3,7 +3,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const sharedSession = require("express-socket.io-session");
-const fs = require("fs");
+const chokidar = require("chokidar");
 const path = require("path");
 
 // ------- Imports -------
@@ -49,11 +49,15 @@ io.on("connection", (socket) => initSocketHandlers(io, socket, gameState));
 console.log("\n[AUTO RELOAD : OK]\n");
 let reloadTimer = null;
 
-fs.watch(config.PUBLIC, { recursive: true }, (_, filename) => {
-  if (!filename) return;
+const watcher = chokidar.watch(config.PUBLIC, {
+  ignoreInitial: true,
+  ignored: null,
+});
+
+watcher.on("all", (_, path) => {
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => {
-    console.log(`\n[!]  Fichier modifié - Public\\${filename}\n`);
+    console.log(`\n[!]  Fichier modifié - ${path}\n`);
     io.emit("reload");
   }, 500);
 });
