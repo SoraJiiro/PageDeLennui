@@ -97,20 +97,26 @@ function initSocketHandlers(io, socket, gameState) {
     if (!AntiSpam.allow(socket.id)) return;
     FileService.data.clicks[pseudo] =
       (FileService.data.clicks[pseudo] || 0) + 1;
-    FileService.save("scores", FileService.data.clicks);
+    FileService.save("clicks", FileService.data.clicks);
     socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
     helpers.broadcastClickerLB(io);
   });
 
   socket.on("clicker:reset", () => {
     FileService.data.clicks[pseudo] = 0;
+    FileService.save("clicks", FileService.data.clicks);
+
     FileService.data.medals[pseudo] = [];
-    FileService.save("scores", FileService.data.clicks);
     FileService.save("medals", FileService.data.medals);
+
     socket.emit("clicker:you", { score: 0 });
     socket.emit("clicker:medals", []);
+
     helpers.broadcastClickerLB(io);
-    console.log(`🔄 Reset Clicker pour [${pseudo}]`);
+
+    console.log(
+      `🔄 Reset Clicker complet pour [${pseudo}] - Score: 0, Médailles: []`
+    );
   });
 
   socket.on("clicker:medalUnlock", ({ medalName, colors }) => {

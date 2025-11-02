@@ -63,6 +63,6 @@ serveur.listen(config.PORT, config.HOST, () => {
   console.log(
     `>>> ✅ Serveur en ligne : http://${config.HOST || "localhost"}:${
       config.PORT
-    }`
+    }\n`
   );
 });

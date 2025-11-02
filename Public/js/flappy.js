@@ -12,7 +12,7 @@ export function initFlappy(socket) {
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
-  setupFlpappyReset(socket);
+  setupFlappyReset(socket);
 
   // ---------- Vars ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
