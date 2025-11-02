@@ -1,4 +1,25 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const nav = document.querySelector(".btns-wrap");
+  const showBtn = document.querySelector(".show-nav");
+  const hideBtn = document.querySelector(".hide-nav");
+
+  const navState = localStorage.getItem("navVisible");
+  if (navState === "true") {
+    nav.style.display = "";
+  } else {
+    nav.style.display = "none";
+  }
+
+  showBtn.addEventListener("click", () => {
+    nav.style.display = "";
+    localStorage.setItem("navVisible", "true");
+  });
+
+  hideBtn.addEventListener("click", () => {
+    nav.style.display = "none";
+    localStorage.setItem("navVisible", "false");
+  });
+
   function goTo(section) {
     document.querySelector("#" + section).scrollIntoView();
   }
@@ -13,33 +34,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const sec7 = document.querySelector(".sec7");
   const sec8 = document.querySelector(".sec8");
 
-  sec1.addEventListener("click", () => {
-    goTo("stage1");
-  });
-  sec2.addEventListener("click", () => {
-    goTo("stage2");
-  });
-  sec3.addEventListener("click", () => {
-    goTo("stage3");
-  });
-  sec4.addEventListener("click", () => {
-    goTo("stage4");
-  });
-  sec5.addEventListener("click", () => {
-    goTo("stage5");
-  });
-  mario.addEventListener("click", () => {
-    window.open("https://supermario-game.com/mario-game/mario.html", {
-      target: "_blank",
-    });
-  });
-  sec6.addEventListener("click", () => {
-    goTo("stage6");
-  });
-  sec7.addEventListener("click", () => {
-    goTo("stage7");
-  });
-  sec8.addEventListener("click", () => {
-    goTo("stage8");
-  });
+  sec1.addEventListener("click", () => goTo("stage1"));
+  sec2.addEventListener("click", () => goTo("stage2"));
+  sec3.addEventListener("click", () => goTo("stage3"));
+  sec4.addEventListener("click", () => goTo("stage4"));
+  sec5.addEventListener("click", () => goTo("stage5"));
+  mario.addEventListener("click", () =>
+    window.open("https://supermario-game.com/mario-game/mario.html", "_blank")
+  );
+  sec6.addEventListener("click", () => goTo("stage6"));
+  sec7.addEventListener("click", () => goTo("stage7"));
+  sec8.addEventListener("click", () => goTo("stage8"));
 });

@@ -451,14 +451,28 @@ p.cps-humain {
     #8a2be2
   );
   background-size: 400% 400%;
-  animation: rainbowMove 3.55s ease infinite;
+  animation: rainbowMove 2.89s ease-out infinite;
+  animation-delay: var(--rainbow-delay, 0s);
   opacity: 0.85;
   z-index: 0;
 }
 
 .medal[data-name="Légendaire"].shown::after {
   content: "7";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 88px;
+  height: 88px;
+  line-height: 80px;
+  text-align: center;
   color: #fff;
+  font-weight: bold;
+  font-size: 2.2rem;
+  z-index: 1;
 }
 
 /* ==========================================================
@@ -488,12 +502,26 @@ p.cps-humain {
     var(--grad6, #8a2be2)
   );
   background-size: 400% 400%;
-  animation: rainbowMove 3.55s ease infinite;
+  animation: rainbowMove 2.88s ease-out infinite;
+  animation-delay: var(--rainbow-delay, 0s);
   opacity: 0.85;
   z-index: 0;
 }
 
 .medal[data-name^="Médaille"].shown::after {
   content: attr(data-index);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 88px;
+  height: 88px;
+  line-height: 80px;
+  text-align: center;
   color: #fff;
+  font-weight: bold;
+  font-size: 2.2rem;
+  z-index: 1;
 }

@@ -58,20 +58,16 @@ export function initClicker(socket) {
   function randomColor() {
     const rare = Math.random();
     if (rare <= 0.08) {
-      const specialColors = [
-        "hsl(0, 0%, 100%)",
-        "hsl(300, 100%, 50%)",
-        "hsl(0, 0%, 0%)",
-      ];
+      const specialColors = ["hsl(0, 0%, 100%)", "hsl(0, 0%, 0%)"];
       return specialColors[Math.floor(Math.random() * specialColors.length)];
     }
 
     let h = Math.floor(Math.random() * 360);
-    let s = Math.floor(Math.random() * 40) + 60;
-    let l = Math.floor(Math.random() * 30) + 35;
+    let s = Math.floor(Math.random() * 40) + 71;
+    let l = Math.floor(Math.random() * 30) + 31;
 
-    if (s < 45) s = 45 + Math.random() * 25;
-    if (l < 25) l = 25 + Math.random() * 20;
+    if (s < 45) s = 45 + Math.random() * 20;
+    if (l < 25) l = 25 + Math.random() * 16;
 
     return `hsl(${h}, ${s}%, ${l}%)`;
   }
@@ -79,7 +75,7 @@ export function initClicker(socket) {
   function genererMedailleAuto(index, precedente) {
     const colors = [];
 
-    while (colors.length < 10) {
+    while (colors.length < 12) {
       colors.push(randomColor());
     }
 
@@ -94,8 +90,9 @@ export function initClicker(socket) {
       [colors[i], colors[j]] = [colors[j], colors[i]];
     }
 
-    const pallier = precedente.pallier * 2;
-    const cps = precedente.cps + 3;
+    let pallierTemp = precedente.pallier * 2;
+    let pallier = Math.ceil(pallierTemp * 0.85 - 6500);
+    let cps = precedente.cps + 3;
 
     return {
       nom: `Médaille ${index}`,
@@ -133,6 +130,11 @@ export function initClicker(socket) {
 
       setTimeout(() => {
         medalsWrap.appendChild(el);
+        if (i >= 6) {
+          const delay = (i - 6) * 0.55;
+          el.style.animationDelay = `${delay}s`;
+          el.style.setProperty("--rainbow-delay", `${delay}s`);
+        }
       }, 125);
     }
   });
@@ -334,6 +336,5 @@ export function initClicker(socket) {
   const restored = getSavedCPS();
   if (restored > 0) {
     setAutoClick(restored);
-    showNotif(`🔁 CPS auto restauré : +${restored} cps`);
   }
 }
