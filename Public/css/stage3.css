@@ -13,9 +13,9 @@
 
 .chat-card {
   width: min(900px, 92vw);
-  background: #000;
-  color: #0f0;
-  border: 2px solid #0f0;
+  background: var(--bg-color);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
   padding: 1rem;
 }
 
@@ -29,21 +29,21 @@
 
 .chat-header h2 {
   margin: 0;
-  background: #0f0;
-  color: #000;
+  background: var(--primary-color);
+  color: var(--bg-color);
   padding: 2.5px 7.5px;
   border-radius: 25px;
 }
 
 .chat-status {
-  color: #0f0;
+  color: var(--primary-color);
   display: flex;
   gap: 2.5px;
 }
 
 .chat-messages {
-  background: #000;
-  border: 2px solid #0f0;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
   height: 50vh;
   padding: 0.75rem;
   overflow-y: auto;
@@ -52,19 +52,19 @@
 .msg {
   margin-bottom: 0.75rem;
   padding: 0.5rem 0.75rem;
-  background: #000;
-  border: 2px solid #0f0;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
   color: #fff;
 }
 .msg .meta {
   font-size: 0.8rem;
-  color: #0f0;
+  color: var(--primary-color);
   display: flex;
   gap: 0.5rem;
 }
 .msg .author {
   font-weight: 600;
-  color: #0f0;
+  color: var(--primary-color);
 }
 .msg .text {
   margin-top: 0.25rem;
@@ -73,7 +73,7 @@
 }
 
 .msg.system {
-  background: #000;
+  background: var(--bg-color);
   color: #b4b4b4;
   border-style: dashed;
 }
@@ -86,24 +86,17 @@
 #chat-input {
   flex: 1;
   padding: 0.8rem 1rem;
-  border: 2px solid #0f0;
-  background: #000;
+  border: 2px solid var(--primary-color);
+  background: var(--bg-color);
   color: #fff;
   max-height: 240px;
   min-height: 47.5px;
 }
 .chat-form button {
   padding: 0.8rem 1rem;
-  border: 2px solid #0f0;
-  background: #000000;
-  color: #fff;
   cursor: pointer;
   font-weight: 600;
   transition: 350ms ease;
-}
-.chat-form button:hover {
-  color: #000;
-  background: #0f0;
 }
 
 @media (max-width: 600px) {

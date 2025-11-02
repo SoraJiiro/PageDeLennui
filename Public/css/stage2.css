@@ -19,31 +19,32 @@
   gap: 15px;
   width: 82.5dvw;
   height: 72.5dvh;
-  border: 2px solid #0f0;
+  border: 2px solid var(--primary-color);
 }
 
 .dino-btns-wrap {
   position: relative;
   display: flex;
   flex-direction: row;
-  gap: 7.5px;
+  gap: 10px;
   width: 100%;
   height: fit-content;
   padding: 10px;
   justify-content: center;
   align-items: center;
+  margin-bottom: 20px;
 }
 
 .dino-btns-wrap::before {
   content: "DinoGame.exe";
-  background: #0f0;
+  background: var(--primary-color);
   position: absolute;
   top: -35px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 1.15rem;
-  background: #0f0;
-  color: #000;
+  background: var(--primary-color);
+  color: var(--bg-color);
   border-radius: 25px;
   padding: 1px 8.5px;
   width: fit-content;
@@ -54,62 +55,25 @@
 }
 
 .dino-wrap .dino-btns-wrap button {
-  background: #000;
-  color: #0f0;
   width: 40%;
   height: 65px;
   font-size: x-large;
   font-weight: bold;
   letter-spacing: 1.25px;
-  border: 3px solid #0f0;
   cursor: pointer;
-  transition: all 325ms ease-out;
-}
-
-.dino-wrap .dino-btns-wrap button:hover {
-  color: #000;
-  background: #0f0;
-  border: 2px solid #000;
-  outline: 2px solid #0f0;
   transition: all 325ms ease-out;
 }
 
 .dino-wrap canvas.game {
   width: 77.5%;
   height: 77.5%;
-  outline: 2px solid #0f0;
-}
-
-.dino-btns-wrap {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 20px;
+  outline: 2px solid var(--primary-color);
 }
 
 .dino-btns-wrap button {
-  background: var(--bg-color);
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
   padding: 12px 24px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 16px;
-}
-
-.dino-btns-wrap button:hover {
-  background: var(--primary-color);
-  color: var(--bg-color);
-}
-
-.dino-reset {
-  background: var(--bg-color) !important;
-  color: #ff4444 !important;
-  border-color: #ff4444 !important;
-}
-
-.dino-reset:hover {
-  background: #ff4444 !important;
-  color: var(--bg-color) !important;
 }

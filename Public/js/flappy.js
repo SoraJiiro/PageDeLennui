@@ -1,70 +1,73 @@
 export function initFlappy(socket) {
-  const canvas = document.getElementById("flappyCanvas");
-  const ctx = canvas.getContext("2d");
-  const startBtn = document.getElementsByClassName("flappyStartBtn")[0];
-  const scoreEl = document.getElementById("flappyScore");
+  // ---------- Cache UI ----------
+  const ui = {
+    canvas: document.getElementById("flappyCanvas"),
+    ctx: null,
+    startBtn: document.getElementsByClassName("flappyStartBtn")[0],
+    resetBtn: document.querySelector(".flappyResetBtn"),
+    scoreEl: document.getElementById("flappyScore"),
+  };
+  if (!ui.canvas) return;
+  ui.ctx = ui.canvas.getContext("2d");
 
   function resizeCanvas() {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+    ui.canvas.width = ui.canvas.clientWidth;
+    ui.canvas.height = ui.canvas.clientHeight * 0.88;
   }
-
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
-  setupFlappyReset(socket);
-
-  // ---------- Vars ----------
+  // ---------- Variables de jeu (échelle dynamique) ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
   let birdY, birdVel, pipes, score, gameRunning;
 
   function updateScales() {
-    // mise à l'échelle avec vp du user
-    gravity = canvas.height * 0.00035;
-    jump = -canvas.height * 0.009;
-    pipeGap = canvas.height * 0.25;
-    pipeWidth = canvas.width * 0.08;
-    pipeSpeed = canvas.width * 0.0035;
+    gravity = ui.canvas.height * 0.00035;
+    jump = -ui.canvas.height * 0.009;
+    pipeGap = ui.canvas.height * 0.25;
+    pipeWidth = ui.canvas.width * 0.08;
+    pipeSpeed = ui.canvas.width * 0.0035;
   }
 
   const bird = {
     xRatio: 0.17, // position horizontale relative
     radiusRatio: 0.02, // taille relative
     get x() {
-      return this.xRatio * canvas.width;
+      return this.xRatio * ui.canvas.width;
     },
     get radius() {
-      return this.radiusRatio * canvas.height;
+      return this.radiusRatio * ui.canvas.height;
     },
     draw() {
-      ctx.fillStyle = "#0f0";
-      ctx.beginPath();
-      ctx.arc(this.x, birdY, this.radius, 0, Math.PI * 2);
-      ctx.fill();
+      ui.ctx.fillStyle = "#0f0";
+      ui.ctx.beginPath();
+      ui.ctx.arc(this.x, birdY, this.radius, 0, Math.PI * 2);
+      ui.ctx.fill();
     },
   };
 
   function resetGame() {
     updateScales();
-    birdY = canvas.height / 3.55;
+    birdY = ui.canvas.height / 3.55;
     birdVel = 0;
     pipes = [];
     score = 0;
     gameRunning = true;
-    startBtn.style.display = "none";
+    ui.startBtn.style.display = "none";
+    if (ui.scoreEl) ui.scoreEl.textContent = "Score : 0";
   }
 
   function drawPipes() {
-    ctx.fillStyle = "#0f0";
+    ui.ctx.fillStyle = "#0f0";
     pipes.forEach((p) => {
       // Tuyau haut
-      ctx.fillRect(p.x, 0, pipeWidth, p.top);
+      ui.ctx.fillRect(p.x, 0, pipeWidth, p.top);
       // Tuyau bas
-      ctx.fillRect(
+      ui.ctx.fillRect(
         p.x,
         p.top + pipeGap,
         pipeWidth,
-        canvas.height - (p.top + pipeGap)
+        ui.canvas.height - (p.top + pipeGap)
       );
     });
   }
@@ -72,16 +75,19 @@ export function initFlappy(socket) {
   function update() {
     if (!gameRunning) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ui.ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+    ui.ctx.fillStyle = "#000";
+    ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
 
     birdVel += gravity;
     birdY += birdVel;
 
-    if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width * 0.65) {
-      const topHeight = Math.random() * (canvas.height - pipeGap - 100) + 40;
-      pipes.push({ x: canvas.width, top: topHeight, passed: false });
+    if (
+      pipes.length === 0 ||
+      pipes[pipes.length - 1].x < ui.canvas.width * 0.65
+    ) {
+      const topHeight = Math.random() * (ui.canvas.height - pipeGap - 100) + 40;
+      pipes.push({ x: ui.canvas.width, top: topHeight, passed: false });
     }
 
     pipes.forEach((p) => {
@@ -90,7 +96,7 @@ export function initFlappy(socket) {
       if (!p.passed && p.x + pipeWidth < bird.x - bird.radius) {
         score++;
         p.passed = true;
-        flappyScore.textContent = `Score : ${score}`;
+        ui.scoreEl.textContent = `Score : ${score}`;
       }
     });
 
@@ -110,7 +116,7 @@ export function initFlappy(socket) {
       }
     }
 
-    if (birdY + bird.radius >= canvas.height || birdY - bird.radius <= 0) {
+    if (birdY + bird.radius >= ui.canvas.height || birdY - bird.radius <= 0) {
       gameOver();
     }
 
@@ -119,11 +125,40 @@ export function initFlappy(socket) {
 
   function gameOver() {
     gameRunning = false;
-    startBtn.style.display = "block";
-    startBtn.textContent = "Rejouer";
+    ui.startBtn.style.display = "block";
+    ui.startBtn.textContent = "Rejouer";
+    showGameOver();
     if (socket) socket.emit("flappy:score", { score });
-    score = 0;
-    flappyScore.textContent = `Score : ${score}`;
+  }
+
+  function showGameOver() {
+    // Overlay sombre
+    ui.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+
+    // Texte
+    ui.ctx.fillStyle = "#0f0";
+    ui.ctx.font = "bold 40px monospace";
+    ui.ctx.textAlign = "center";
+    ui.ctx.fillText(
+      "GAME OVER",
+      ui.canvas.width / 2,
+      ui.canvas.height / 2 - 20
+    );
+
+    ui.ctx.font = "20px monospace";
+    ui.ctx.fillText(
+      `Score: ${score}`,
+      ui.canvas.width / 2,
+      ui.canvas.height / 2 + 20
+    );
+
+    ui.ctx.font = "18px monospace";
+    ui.ctx.fillText(
+      "Appuie sur ESPACE pour rejouer",
+      ui.canvas.width / 2,
+      ui.canvas.height / 2 + 60
+    );
   }
 
   // ---------- Eventlisteners ----------
@@ -136,26 +171,25 @@ export function initFlappy(socket) {
       (active && active.isContentEditable);
     if (isTyping) return;
 
-    if (e.code === "Space" && gameRunning) {
+    if (e.code === "Space") {
       e.preventDefault();
-      birdVel = jump;
+      if (gameRunning) {
+        birdVel = jump;
+      } else {
+        // Restart avec espace quand game over
+        resetGame();
+        update();
+      }
     }
   });
 
-  startBtn.addEventListener("click", () => {
+  ui.startBtn.addEventListener("click", () => {
     resetGame();
     update();
   });
 
-  startBtn.style.display = "block";
-  scoreEl.textContent = "Score : 0";
-}
-
-function setupFlappyReset(socket) {
-  const resetBtn = document.querySelector(".flappyResetBtn");
-  if (!resetBtn) return;
-
-  resetBtn.addEventListener("click", async () => {
+  // ---------- Reset (confirm + password) ----------
+  ui.resetBtn?.addEventListener("click", async () => {
     const confirmReset = confirm(
       "⚠️ Es-tu sûr de vouloir réinitialiser ton score Flappy ?\nTon meilleur score sera définitivement perdu !"
     );
@@ -170,14 +204,11 @@ function setupFlappyReset(socket) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-
       const data = await res.json();
-
       if (!res.ok || !data.success) {
         alert("❌ Mot de passe incorrect !");
         return;
       }
-
       socket.emit("flappy:reset");
       alert("✅ Score Flappy réinitialisé avec succès !");
     } catch (err) {
@@ -185,4 +216,8 @@ function setupFlappyReset(socket) {
       console.error(err);
     }
   });
+
+  // ---------- Init UI ----------
+  ui.startBtn.style.display = "block";
+  ui.scoreEl.textContent = "Score : 0";
 }

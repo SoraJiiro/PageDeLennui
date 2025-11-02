@@ -46,7 +46,6 @@ app.use(express.static(config.PUBLIC));
 io.on("connection", (socket) => initSocketHandlers(io, socket, gameState));
 
 // ------- Auto Reload -------
-console.log("\n[AUTO RELOAD : OK]\n");
 let reloadTimer = null;
 
 const watcher = chokidar.watch(config.PUBLIC, {
@@ -54,13 +53,16 @@ const watcher = chokidar.watch(config.PUBLIC, {
   ignored: null,
 });
 
-watcher.on("all", (_, path) => {
+watcher.on("all", (_, filePath) => {
+  var relativePath = path.relative(config.PUBLIC, filePath);
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => {
-    console.log(`\n[!]  Fichier modifié - ${path}\n`);
+    console.log(`\n[!]  Fichier modifié - Public\\${relativePath}\n`);
     io.emit("reload");
   }, 500);
 });
+
+console.log("\n[AUTO RELOAD : OK]\n");
 
 // ------- Start Serveur -------
 serveur.listen(config.PORT, config.HOST, () => {

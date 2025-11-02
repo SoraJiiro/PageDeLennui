@@ -1,17 +1,9 @@
 /* ==========================================================
-   VARIABLES CSS
+   Stage 1 (Accueil / Clicker) – Styles spécifiques
+   Variables globales dans common.css
    ========================================================== */
-:root {
-  --primary-color: #0f0;
-  --bg-color: #000;
-  --border-width: 3px;
-  --transition-speed: 185ms;
-  --transition-ease: ease;
-}
 
-/* ==========================================================
-   ANIMATIONS
-   ========================================================== */
+/* Animations */
 @keyframes spin {
   from {
     transform: rotateY(0deg);
@@ -88,9 +80,6 @@
   color: var(--bg-color);
 }
 
-/* ==========================================================
-   COMPOSANT CLICKER
-   ========================================================== */
 .zone-wrap {
   position: absolute;
   left: 25px;
@@ -146,7 +135,6 @@
   transition: all var(--transition-speed);
 }
 
-/* CPS Display */
 p.cps-humain {
   position: absolute;
   top: 15px;
@@ -168,9 +156,6 @@ p.cps-humain {
   font-size: 14px;
 }
 
-/* ==========================================================
-   BOUTON RESET
-   ========================================================== */
 .reset {
   position: absolute;
   left: 50%;
@@ -181,23 +166,10 @@ p.cps-humain {
   font-size: x-large;
   font-weight: bold;
   letter-spacing: 1.25px;
-  background: var(--bg-color);
-  color: var(--primary-color);
-  border: var(--border-width) solid var(--primary-color);
   cursor: pointer;
   transition: all 325ms ease-out;
 }
 
-.reset:hover {
-  background: var(--primary-color);
-  color: var(--bg-color);
-  border: 2px solid var(--bg-color);
-  outline: 2px solid var(--primary-color);
-}
-
-/* ==========================================================
-   NAVIGATION
-   ========================================================== */
 .btns-wrap {
   position: fixed;
   left: 25px;
@@ -231,17 +203,9 @@ p.cps-humain {
   width: 145px;
   height: 7dvh;
   padding: 7.5px;
-  background: var(--bg-color);
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
   font-weight: 600;
   letter-spacing: 2.2px;
   transition: all 0.25s ease;
-}
-
-.btns-wrap button:hover {
-  background: var(--primary-color);
-  color: var(--bg-color);
 }
 
 .btns-wrap .hide-nav {
@@ -282,11 +246,6 @@ p.cps-humain {
   background: var(--primary-color);
 }
 
-/* ==========================================================
-   SYSTÈME DE MÉDAILLES
-   ========================================================== */
-
-/* Container */
 .medals-wrap {
   position: absolute;
   right: 25px;
@@ -304,7 +263,6 @@ p.cps-humain {
   background: var(--bg-color);
 }
 
-/* Base Medal */
 .medals-wrap .medal {
   width: 45%;
   height: 22.5%;
@@ -313,7 +271,6 @@ p.cps-humain {
   transition: all 0.3s ease;
 }
 
-/* État Caché - Toutes les médailles */
 .medals-wrap .medal.hidden {
   border: 5px dotted gray !important;
   background: var(--bg-color) !important;
@@ -341,14 +298,12 @@ p.cps-humain {
   transform: none !important;
 }
 
-/* Comportement Hover - Médailles Visibles */
 .medals-wrap .medal.shown:hover {
   cursor: pointer;
   animation: spin 0.45s ease;
   transition: transform 0.4s ease;
 }
 
-/* Style commun pour les numéros */
 .medals-wrap .medal.shown::after {
   position: absolute;
   left: 50%;
@@ -359,10 +314,6 @@ p.cps-humain {
   font-family: "Liberation Serif", monospace;
   z-index: 1;
 }
-
-/* ==========================================================
-   MÉDAILLES FIXES (1-7)
-   ========================================================== */
 
 /* Bronze - 1 */
 .medal[data-name="Bronze"].shown {
@@ -475,9 +426,6 @@ p.cps-humain {
   z-index: 1;
 }
 
-/* ==========================================================
-   MÉDAILLES DYNAMIQUES (8+)
-   ========================================================== */
 .medal[data-name^="Médaille"].shown {
   border: 5px solid #fff !important;
   animation: glowLegend 2s ease-in-out infinite alternate;

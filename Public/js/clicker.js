@@ -1,18 +1,24 @@
 export function initClicker(socket) {
-  const zone = document.querySelector(".zone");
-  const acpsEl = document.querySelector(".acps");
-  const resetBtn = document.querySelector(".reset");
-  const medalsWrap = document.querySelector(".medals-wrap");
-  const yourScoreEl = document.getElementById("your-score");
-  const cpsHumainEl = document.querySelector(".cps-humain");
+  // ---------- Cache UI ----------
+  const ui = {
+    zone: document.querySelector(".zone"),
+    acpsEl: document.querySelector(".acps"),
+    resetBtn: document.querySelector(".reset"),
+    medalsWrap: document.querySelector(".medals-wrap"),
+    yourScoreEl: document.getElementById("your-score"),
+    cpsHumainEl: document.querySelector(".cps-humain"),
+  };
 
-  let scoreActuel = 0;
-  let cpsActuel = 0;
-  let timeAutoClicks = null;
-  let medalsDebloquees = new Set();
-  let clicksManuels = [];
-  let cpsHumain = 0;
-  let timerHumain = null;
+  // ---------- Etat local ----------
+  const state = {
+    scoreActuel: 0,
+    cpsActuel: 0,
+    timeAutoClicks: null,
+    medalsDebloquees: new Set(),
+    clicksManuels: [],
+    cpsHumain: 0,
+    timerHumain: null,
+  };
 
   // ---------- Storage helpers ----------
   const STORAGE_KEY = "autoCPS";
@@ -40,7 +46,7 @@ export function initClicker(socket) {
     { nom: "Légendaire", icon: "👑", pallier: 160000, cps: 13 },
   ];
 
-  medalsWrap.querySelectorAll(".medal").forEach((el) => {
+  ui.medalsWrap.querySelectorAll(".medal").forEach((el) => {
     const medalData = medalsList.find((m) => m.nom === el.dataset.name);
     if (!medalData) return;
 
@@ -109,8 +115,9 @@ export function initClicker(socket) {
   }
 
   // ---------- Visu ----------
+  let Mc = 0;
   medalsList.forEach((m, i) => {
-    if (!medalsWrap.querySelector(`[data-name="${m.nom}"]`)) {
+    if (!ui.medalsWrap.querySelector(`[data-name="${m.nom}"]`)) {
       const el = document.createElement("div");
       el.classList.add("medal", "hidden");
       el.dataset.name = m.nom;
@@ -129,40 +136,42 @@ export function initClicker(socket) {
       }
 
       setTimeout(() => {
-        medalsWrap.appendChild(el);
+        ui.medalsWrap.appendChild(el);
         if (i >= 6) {
-          const delay = (i - 6) * 0.55;
+          const delay = (i - 6) * 0.3;
           el.style.animationDelay = `${delay}s`;
           el.style.setProperty("--rainbow-delay", `${delay}s`);
+          Mc++;
         }
-      }, 125);
+      }, 85);
     }
   });
+  setTimeout(() => console.info(`MEDAL ANIMATION : OK [${Mc}]`), 1000);
 
   // ---------- Auto click ----------
   function setAutoClick(cps) {
-    if (timeAutoClicks) clearInterval(timeAutoClicks);
-    cpsActuel = cps;
+    if (state.timeAutoClicks) clearInterval(state.timeAutoClicks);
+    state.cpsActuel = cps;
 
-    if (acpsEl) acpsEl.textContent = cps > 0 ? `+ ${cps} cps` : "";
+    if (ui.acpsEl) ui.acpsEl.textContent = cps > 0 ? `+ ${cps} cps` : "";
     if (cps > 0) {
-      timeAutoClicks = setInterval(() => {
+      state.timeAutoClicks = setInterval(() => {
         for (let i = 0; i < cps; i++) socket.emit("clicker:click");
       }, 1000);
     }
   }
 
   function stopAutoClicks() {
-    if (timeAutoClicks) clearInterval(timeAutoClicks);
-    timeAutoClicks = null;
-    cpsActuel = 0;
-    if (acpsEl) acpsEl.textContent = "";
+    if (state.timeAutoClicks) clearInterval(state.timeAutoClicks);
+    state.timeAutoClicks = null;
+    state.cpsActuel = 0;
+    if (ui.acpsEl) ui.acpsEl.textContent = "";
   }
 
   // ---------- Animations et notifications ----------
   function bumpZone() {
-    zone?.classList.add("temp");
-    setTimeout(() => zone?.classList.remove("temp"), 120);
+    ui.zone?.classList.add("temp");
+    setTimeout(() => ui.zone?.classList.remove("temp"), 120);
   }
 
   function showNotif(text, duration = 4000) {
@@ -197,7 +206,7 @@ export function initClicker(socket) {
 
     if (medalCible) {
       medalsList.forEach((m) => {
-        const medalEl = medalsWrap?.querySelector(
+        const medalEl = ui.medalsWrap?.querySelector(
           `.medal[data-name="${m.nom}"]`
         );
         if (!medalEl) return;
@@ -206,8 +215,8 @@ export function initClicker(socket) {
           medalEl.classList.add("shown");
           medalEl.classList.remove("hidden");
 
-          if (!medalsDebloquees.has(m.nom)) {
-            medalsDebloquees.add(m.nom);
+          if (!state.medalsDebloquees.has(m.nom)) {
+            state.medalsDebloquees.add(m.nom);
             socket.emit("clicker:medalUnlock", {
               medalName: m.nom,
               colors: m.couleurs || [],
@@ -222,7 +231,7 @@ export function initClicker(socket) {
 
       const saved = getSavedCPS();
       const cpsToUse = Math.max(saved, medalCible.cps);
-      if (cpsToUse !== cpsActuel) setAutoClick(cpsToUse);
+      if (cpsToUse !== state.cpsActuel) setAutoClick(cpsToUse);
     }
   }
 
@@ -256,12 +265,12 @@ export function initClicker(socket) {
       socket.emit("clicker:reset");
       stopAutoClicks();
       clearSavedCPS();
-      scoreActuel = 0;
-      medalsDebloquees.clear();
+      state.scoreActuel = 0;
+      state.medalsDebloquees.clear();
 
-      if (yourScoreEl) yourScoreEl.textContent = "0";
-      if (acpsEl) acpsEl.textContent = "";
-      medalsWrap?.querySelectorAll(".medal").forEach((m) => {
+      if (ui.yourScoreEl) ui.yourScoreEl.textContent = "0";
+      if (ui.acpsEl) ui.acpsEl.textContent = "";
+      ui.medalsWrap?.querySelectorAll(".medal").forEach((m) => {
         m.classList.remove("shown");
         m.classList.add("hidden");
       });
@@ -273,36 +282,36 @@ export function initClicker(socket) {
     }
   }
 
-  resetBtn?.addEventListener("click", resetProgress);
+  // ---------- Ecouteurs UI ----------
+  ui.resetBtn?.addEventListener("click", resetProgress);
 
-  // ---------- Gestion du clic manuel ----------
-  if (zone) {
-    zone.addEventListener("click", () => {
+  if (ui.zone) {
+    ui.zone.addEventListener("click", () => {
       socket.emit("clicker:click");
       bumpZone();
 
       const mtn = Date.now();
-      clicksManuels.push(mtn);
-      clicksManuels = clicksManuels.filter((t) => mtn - t < 1000);
-      cpsHumain = clicksManuels.length;
-      clearTimeout(timerHumain);
-      timerHumain = setTimeout(() => (cpsHumain = 0), 1100);
+      state.clicksManuels.push(mtn);
+      state.clicksManuels = state.clicksManuels.filter((t) => mtn - t < 1000);
+      state.cpsHumain = state.clicksManuels.length;
+      clearTimeout(state.timerHumain);
+      state.timerHumain = setTimeout(() => (state.cpsHumain = 0), 1100);
     });
   }
 
   // ---------- Events socket ----------
   socket.on("clicker:you", ({ score }) => {
-    scoreActuel = score;
+    state.scoreActuel = score;
     bumpZone();
-    if (zone) zone.innerHTML = `<i>${score.toLocaleString()}</i>`;
-    if (yourScoreEl) yourScoreEl.textContent = score;
+    if (ui.zone) ui.zone.innerHTML = `<i>${score.toLocaleString()}</i>`;
+    if (ui.yourScoreEl) ui.yourScoreEl.textContent = score;
     verifMedals(score);
   });
 
   socket.on("clicker:medals", (userMedals) => {
-    medalsDebloquees = new Set(userMedals);
+    state.medalsDebloquees = new Set(userMedals);
     medalsList.forEach((m) => {
-      const el = medalsWrap?.querySelector(`.medal[data-name="${m.nom}"]`);
+      const el = ui.medalsWrap?.querySelector(`.medal[data-name="${m.nom}"]`);
       if (!el) return;
       if (userMedals.includes(m.nom)) {
         el.classList.add("shown");
@@ -327,15 +336,15 @@ export function initClicker(socket) {
 
   // ---------- Affichage CPS humain ----------
   setInterval(() => {
-    if (cpsHumainEl)
-      cpsHumainEl.textContent =
-        cpsHumain >= 0 ? `${cpsHumain.toFixed(1)} CPS` : "0.0 CPS";
+    if (ui.cpsHumainEl)
+      ui.cpsHumainEl.textContent =
+        state.cpsHumain >= 0 ? `${state.cpsHumain.toFixed(1)} CPS` : "0.0 CPS";
   }, 750);
 
   // ---------- Restauration du CPS auto au chargement ----------
   const restored = getSavedCPS();
   if (restored > 0) {
     setAutoClick(restored);
-    console.log(`Clicker: CPS auto restauré à ${restored}`);
+    setTimeout(() => console.log(`CPS AUTO : OK [${restored}]`), 1000);
   }
 }

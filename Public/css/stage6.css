@@ -11,16 +11,19 @@
   padding: 1rem;
 }
 
+.flappy-card {
+  margin-top: 45px;
+}
+
 .flappy-card h2 {
-  margin: 5px;
-  background: #0f0;
-  color: #000;
+  background: var(--primary-color);
+  color: var(--bg-color);
   padding: 2.5px 7.5px;
   border-radius: 25px;
   width: fit-content;
   position: absolute;
   left: 50%;
-  top: 0;
+  top: 35px;
   transform: translate(-50%, 0%);
 }
 
@@ -29,10 +32,10 @@
 }
 
 #flappyCanvas {
-  border: 3px solid #0f0;
-  background: #000;
+  border: 3px solid var(--primary-color);
+  background: var(--bg-color);
   width: 80dvw;
-  height: 80dvh;
+  height: 72.5dvh;
 }
 
 #flappyScore {
@@ -42,29 +45,6 @@
   margin-top: 10px;
 }
 
-/*button.flappyStartBtn {
-  position: absolute;
-  left: 50%;
-  bottom: 10px;
-  transform: translate(-50%, -10px);
-  width: 120px;
-  height: 60px;
-  padding: 12px 20px;
-  font-size: 18px;
-  border: none;
-  background: #000;
-  color: #0f0;
-  border: 2px solid #0f0;
-  cursor: pointer;
-  display: none;
-  transition: color cubic-bezier(1, 2, 0, 1) 235ms,
-    background-color cubic-bezier(1, 0, 0, 0) 235ms;
-}
-button.flappyStartBtn:hover {
-  background: #0f0;
-  color: #000;
-}*/
-
 .flappy-btns-wrap {
   display: flex;
   gap: 10px;
@@ -73,28 +53,9 @@ button.flappyStartBtn:hover {
 }
 
 .flappy-btns-wrap button {
-  background: #000;
-  color: #0f0;
-  border: 2px solid #0f0;
   padding: 12px 24px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 16px;
-}
-
-.flappy-btns-wrap button:hover {
-  background: #0f0;
-  color: #000;
-}
-
-.flappyResetBtn {
-  background: #000 !important;
-  color: #ff4444 !important;
-  border-color: #ff4444 !important;
-}
-
-.flappyResetBtn:hover {
-  background: #ff4444 !important;
-  color: #000 !important;
 }

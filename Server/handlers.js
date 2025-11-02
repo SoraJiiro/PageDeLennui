@@ -9,6 +9,18 @@ let pictionaryGame = new PictionaryGame();
 let pictionaryTimer = null;
 let p4Game = new Puissance4Game();
 
+// ------- Colors -------
+const orange = "\x1b[38;5;208m"; // pseudos
+const reset = "\x1b[0m";
+const blue = "\x1b[38;5;33m"; // Dino
+const green = "\x1b[38;5;46m"; // Clicker
+const pink = "\x1b[38;5;205m"; // Flappy
+const violet = "\x1b[38;5;93m"; // UNO
+const red = "\x1b[38;5;167m"; // P4
+const grey = "\x1b[38;5;246m"; // Pictionary
+const colorize = (s, color) => `${color}${s}${reset}`;
+const withGame = (color, s) => `${color}${s}${reset}`;
+
 // ------- Helpers -------
 const helpers = {
   broadcastClickerLB(io) {
@@ -60,7 +72,7 @@ function initSocketHandlers(io, socket, gameState) {
 
   const pseudo = user.pseudo;
   gameState.addUser(socket.id, pseudo, io);
-  console.log(`>> [${pseudo}] connecté`);
+  console.log(`>> [${colorize(pseudo, orange)}] connecté`);
 
   // Envoi dada initiales
   socket.emit("you:name", pseudo);
@@ -108,14 +120,16 @@ function initSocketHandlers(io, socket, gameState) {
 
     FileService.data.medals[pseudo] = [];
     FileService.save("medals", FileService.data.medals);
-
     socket.emit("clicker:you", { score: 0 });
     socket.emit("clicker:medals", []);
 
     helpers.broadcastClickerLB(io);
 
     console.log(
-      `🔄 Reset Clicker complet pour [${pseudo}] - Score: 0, Médailles: []`
+      withGame(
+        green,
+        `🔄 Reset Clicker complet pour [${orange}${pseudo}${green}] - Score: 0, Médailles: []`
+      )
     );
   });
 
@@ -139,7 +153,12 @@ function initSocketHandlers(io, socket, gameState) {
       allMedals[pseudo] = userMedals;
 
       FileService.save("medals", allMedals);
-      console.log(`🏅 ${pseudo} a débloqué ${medalName}`);
+      console.log(
+        withGame(
+          green,
+          `🏅 [${orange}${pseudo}${green}] a débloqué ${medalName}`
+        )
+      );
 
       socket.emit(
         "clicker:medals",
@@ -156,7 +175,12 @@ function initSocketHandlers(io, socket, gameState) {
     if (s > current) {
       FileService.data.dinoScores[pseudo] = s;
       FileService.save("dinoScores", FileService.data.dinoScores);
-      console.log(`🦖 Nouveau score Dino pour [${pseudo}] ::: ${s}`);
+      console.log(
+        withGame(
+          blue,
+          `🦖 Nouveau score Dino pour [${orange}${pseudo}${blue}] ::: ${s}`
+        )
+      );
     }
     helpers.broadcastDinoLB(io);
   });
@@ -164,7 +188,9 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("dino:reset", () => {
     FileService.data.dinoScores[pseudo] = 0;
     FileService.save("dinoScores", FileService.data.dinoScores);
-    console.log(`🔄 Reset Dino pour [${pseudo}]`);
+    console.log(
+      withGame(blue, `🔄 Reset Dino pour [${orange}${pseudo}${blue}]`)
+    );
     helpers.broadcastDinoLB(io);
     socket.emit("dino:resetConfirm", { success: true });
   });
@@ -177,7 +203,12 @@ function initSocketHandlers(io, socket, gameState) {
     if (s > current) {
       FileService.data.flappyScores[pseudo] = s;
       FileService.save("flappyScores", FileService.data.flappyScores);
-      console.log(`🐤 Nouveau score Flappy pour [${pseudo}] ::: ${s}`);
+      console.log(
+        withGame(
+          pink,
+          `🐤 Nouveau score Flappy pour [${orange}${pseudo}${pink}] ::: ${s}`
+        )
+      );
     }
     helpers.broadcastFlappyLB(io);
   });
@@ -185,7 +216,9 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("flappy:reset", () => {
     FileService.data.flappyScores[pseudo] = 0;
     FileService.save("flappyScores", FileService.data.flappyScores);
-    console.log(`🔄 Reset Flappy pour [${pseudo}]`);
+    console.log(
+      withGame(pink, `🔄 Reset Flappy pour [${orange}${pseudo}${pink}]`)
+    );
     helpers.broadcastFlappyLB(io);
     socket.emit("flappy:resetConfirm", { success: true });
   });
@@ -271,13 +304,21 @@ function initSocketHandlers(io, socket, gameState) {
       else if (res.reason === "gameStarted")
         socket.emit("uno:error", "La partie a déjà commencé");
       else if (res.reason === "alreadyIn")
-        console.log(`⚠️  ${pseudo} est déjà dans le lobby UNO`);
+        console.log(
+          withGame(
+            violet,
+            `⚠️  [${orange}${pseudo}${violet}] est déjà dans le lobby UNO`
+          )
+        );
       uno_broadcastLobby();
       return;
     }
 
     console.log(
-      `✅ ${pseudo} a rejoint le lobby UNO (${gameActuelle.joueurs.length}/4)`
+      withGame(
+        violet,
+        `\n✅ [${orange}${pseudo}${violet}] a rejoint le lobby UNO (${gameActuelle.joueurs.length}/4)`
+      )
     );
     uno_broadcastLobby();
   });
@@ -287,10 +328,17 @@ function initSocketHandlers(io, socket, gameState) {
     const etaitJoueur = gameActuelle.removePlayer(pseudo);
 
     if (etaitJoueur) {
-      console.log(`🚪 ${pseudo} a quitté le lobby UNO`);
+      console.log(
+        withGame(
+          violet,
+          `🚪 [${orange}${pseudo}${violet}] a quitté le lobby UNO`
+        )
+      );
       if (gameActuelle.gameStarted) {
         if (gameActuelle.joueurs.length < 2) {
-          console.log(`⚠️  Partie UNO annulée (pas assez de joueurs)`);
+          console.log(
+            withGame(violet, `⚠️  Partie UNO annulée (pas assez de joueurs)`)
+          );
           gameActuelle = new UnoGame();
           uno_broadcastLobby();
           return;
@@ -314,11 +362,16 @@ function initSocketHandlers(io, socket, gameState) {
 
     gameActuelle.startGame();
 
-    const joueursActu = gameActuelle.joueurs.map((j) => j.pseudo);
+    const joueursActu = gameActuelle.joueurs.map(
+      (j) => `${orange}${j.pseudo}${violet}`
+    );
     console.log(
-      `🎮 Partie UNO démarrée avec ${
-        gameActuelle.joueurs.length
-      } joueurs (${joueursActu.join(", ")})`
+      withGame(
+        violet,
+        `\n🎮 Partie UNO démarrée avec ${
+          gameActuelle.joueurs.length
+        } joueurs (${joueursActu.join(", ")})`
+      )
     );
 
     uno_majSocketIds();
@@ -358,7 +411,12 @@ function initSocketHandlers(io, socket, gameState) {
     if (!res.success) return socket.emit("uno:error", res.message);
 
     if (res.winner) {
-      console.log(`🏆 ${res.winner} a gagné la partie de UNO !`);
+      console.log(
+        withGame(
+          violet,
+          `\n🏆 [${orange}${res.winner}${violet}] a gagné la partie de UNO !\n`
+        )
+      );
       FileService.data.unoWins[res.winner] =
         (FileService.data.unoWins[res.winner] || 0) + 1;
       FileService.save("unoWins", FileService.data.unoWins);
@@ -513,7 +571,12 @@ function initSocketHandlers(io, socket, gameState) {
     const res = pictionaryGame.addPlayer(pseudo, socket.id);
     if (!res.success) {
       if (res.reason === "alreadyIn") {
-        console.log(`⚠️  ${pseudo} est déjà dans le lobby PICTIONARY`);
+        console.log(
+          withGame(
+            grey,
+            `⚠️  [${orange}${pseudo}${grey}] est déjà dans le lobby PICTIONARY`
+          )
+        );
       } else if (res.reason === "full") {
         socket.emit(
           "pictionary:error",
@@ -524,7 +587,10 @@ function initSocketHandlers(io, socket, gameState) {
       return;
     }
     console.log(
-      `✅ ${pseudo} a rejoint le lobby PICTIONARY (${pictionaryGame.joueurs.length})`
+      withGame(
+        grey,
+        `\n✅ [${orange}${pseudo}${grey}] a rejoint le lobby PICTIONARY (${pictionaryGame.joueurs.length}/6)`
+      )
     );
     pictionary_broadcastLobby();
   });
@@ -533,11 +599,21 @@ function initSocketHandlers(io, socket, gameState) {
     if (!pictionaryGame) return;
     const etaitJoueur = pictionaryGame.removePlayer(pseudo);
     if (etaitJoueur) {
-      console.log(`🚪 ${pseudo} a quitté le lobby PICTIONARY`);
+      console.log(
+        withGame(
+          grey,
+          `🚪 [${orange}${pseudo}${grey}] a quitté le lobby PICTIONARY`
+        )
+      );
 
       if (pictionaryGame.gameStarted) {
         if (pictionaryGame.joueurs.length < 2) {
-          console.log(`⚠️  Partie PICTIONARY annulée (pas assez de joueurs)`);
+          console.log(
+            withGame(
+              grey,
+              `⚠️  Partie PICTIONARY annulée (pas assez de joueurs)`
+            )
+          );
           io.emit("pictionary:gameEnd", {
             winner: "Partie annulée !",
             reason: `${pseudo} est parti`,
@@ -568,8 +644,18 @@ function initSocketHandlers(io, socket, gameState) {
       );
 
     pictionaryGame.startGame();
+
+    const joueursActu = gameActuelle.joueurs.map(
+      (j) => `${orange}${j.pseudo}${violet}`
+    );
+
     console.log(
-      `🎨 Partie PICTIONARY démarrée avec ${pictionaryGame.joueurs.length} joueurs`
+      withGame(
+        grey,
+        `\n🎨 Partie PICTIONARY démarrée avec ${
+          pictionaryGame.joueurs.length
+        } joueurs (${joueursActu.join(", ")})`
+      )
     );
 
     pictionary_startTimer();
@@ -773,7 +859,12 @@ function initSocketHandlers(io, socket, gameState) {
     const res = p4Game.addPlayer(pseudo, socket.id);
     if (!res.success) {
       if (res.reason === "alreadyIn") {
-        console.log(`⚠️  ${pseudo} est déjà dans le lobby P4`);
+        console.log(
+          withGame(
+            red,
+            `⚠️  [${orange}${pseudo}${red}] est déjà dans le lobby PUISSANCE 4`
+          )
+        );
       } else if (res.reason === "full") {
         socket.emit("p4:error", "Le lobby est plein (2/2)");
       }
@@ -781,7 +872,10 @@ function initSocketHandlers(io, socket, gameState) {
       return;
     }
     console.log(
-      `✅ ${pseudo} a rejoint le lobby P4 (${p4Game.joueurs.length}/2)`
+      withGame(
+        red,
+        `\n✅ [${orange}${pseudo}${red}] a rejoint le lobby PUISSANCE 4 (${p4Game.joueurs.length}/2)`
+      )
     );
     p4_broadcastLobby();
   });
@@ -790,9 +884,14 @@ function initSocketHandlers(io, socket, gameState) {
     if (!p4Game) return;
     const etaitJoueur = p4Game.removePlayer(pseudo);
     if (etaitJoueur) {
-      console.log(`🚪 ${pseudo} a quitté le lobby P4`);
+      console.log(
+        withGame(
+          red,
+          `🚪 [${orange}${pseudo}${red}] a quitté le lobby PUISSANCE 4`
+        )
+      );
       if (p4Game.gameStarted) {
-        console.log(`⚠️  Partie P4 annulée (joueur parti)`);
+        console.log(withGame(red, `⚠️  Partie P4 annulée (joueur parti)`));
         io.emit("p4:gameEnd", {
           winner: "Partie annulée !",
           reason: `${pseudo} est parti`,
@@ -819,7 +918,12 @@ function initSocketHandlers(io, socket, gameState) {
       );
 
     p4Game.startGame();
-    console.log(`🎮 Partie P4 démarrée avec ${p4Game.joueurs.length} joueurs`);
+    console.log(
+      withGame(
+        red,
+        `\n🎮 Partie P4 démarrée avec ${p4Game.joueurs.length} joueurs`
+      )
+    );
     p4_majSocketIds();
 
     p4Game.joueurs.forEach((p) => {
@@ -850,7 +954,12 @@ function initSocketHandlers(io, socket, gameState) {
     if (!res.success) return socket.emit("p4:error", res.message);
 
     if (res.winner) {
-      console.log(`🏆 ${res.winner} a gagné la partie de P4 !`);
+      console.log(
+        withGame(
+          red,
+          `\n🏆 [${orange}${res.winner}${red}] a gagné la partie de P4 !\n`
+        )
+      );
       FileService.data.p4Wins[res.winner] =
         (FileService.data.p4Wins[res.winner] || 0) + 1;
       FileService.save("p4Wins", FileService.data.p4Wins);
@@ -866,7 +975,7 @@ function initSocketHandlers(io, socket, gameState) {
     }
 
     if (res.draw) {
-      console.log(`🤝 Match nul P4 !`);
+      console.log(withGame(red, `\n🤝 Match nul P4 !\n`));
       p4_broadcastGame();
       setTimeout(() => {
         io.emit("p4:gameEnd", { draw: true });
@@ -886,7 +995,7 @@ function initSocketHandlers(io, socket, gameState) {
 
     if (fullyDisconnected) {
       io.emit("system:info", `${pseudo} a quitté le chat`);
-      console.log(`>> [${pseudo}] déconnecté`);
+      console.log(`\n>> [${colorize(pseudo, orange)}] déconnecté`);
     }
 
     io.emit("users:list", gameState.getUniqueUsers());
@@ -897,7 +1006,12 @@ function initSocketHandlers(io, socket, gameState) {
       if (etaitJoueur) {
         gameActuelle.removePlayer(pseudo);
         if (gameActuelle.gameStarted && gameActuelle.joueurs.length < 2) {
-          console.log(`⚠️  Partie UNO annulée (${pseudo} déconnecté)`);
+          console.log(
+            withGame(
+              violet,
+              `⚠️  Partie UNO annulée ([${orange}${pseudo}${violet}] déconnecté)`
+            )
+          );
           io.emit("uno:gameEnd", {
             winner: "Partie annulée !",
             reason: `${pseudo} s'est déconnecté`,
@@ -920,7 +1034,12 @@ function initSocketHandlers(io, socket, gameState) {
       if (etaitJoueurPic) {
         pictionaryGame.removePlayer(pseudo);
         if (pictionaryGame.gameStarted && pictionaryGame.joueurs.length < 2) {
-          console.log(`⚠️  Partie PICTIONARY annulée (${pseudo} déconnecté)`);
+          console.log(
+            withGame(
+              grey,
+              `⚠️  Partie PICTIONARY annulée ([${orange}${pseudo}${grey}] déconnecté)`
+            )
+          );
           io.emit("pictionary:gameEnd", {
             winner: "Partie annulée !",
             reason: `${pseudo} s'est déconnecté`,
@@ -941,8 +1060,13 @@ function initSocketHandlers(io, socket, gameState) {
     if (p4Game) {
       const etaitJoueurP4 = p4Game.joueurs.some((p) => p.pseudo === pseudo);
       if (etaitJoueurP4) {
-        console.log(`⚠️  Partie P4 annulée (${pseudo} déconnecté)`);
         if (p4Game.gameStarted) {
+          console.log(
+            withGame(
+              red,
+              `⚠️  Partie P4 annulée ([${orange}${pseudo}${red}] déconnecté)`
+            )
+          );
           io.emit("p4:gameEnd", {
             winner: "Partie annulée !",
             reason: `${pseudo} s'est déconnecté`,

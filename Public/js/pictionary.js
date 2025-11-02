@@ -1,25 +1,36 @@
 export function initPictionary(socket) {
-  const lobby = document.querySelector(".pictionary-lobby");
-  const gameWrap = document.querySelector(".pictionary-game");
-  const joinBtn = document.querySelector(".pic-join");
-  const leaveBtn = document.querySelector(".pic-leave");
-  const startBtn = document.querySelector(".pic-start");
-  const joueursList = document.querySelector(".pictionary-joueurs");
-  const specsList = document.querySelector(".pictionary-spectators");
-  const statusEl = document.querySelector(".pictionary-status");
-  const modeSpec = document.querySelector(".pictionary-mode-spec");
-  const infoEl = document.querySelector(".pictionary-info");
-  const canvas = document.querySelector(".pictionary-canvas");
-  const guessInput = document.querySelector(".pic-guess-input");
-  const guessBtn = document.querySelector(".pic-guess-btn");
-  const clearBtn = document.querySelector(".pic-clear-btn");
-  const playersEl = document.querySelector(".pictionary-players");
+  // ---------- Cache UI ----------
+  const ui = {
+    lobby: document.querySelector(".pictionary-lobby"),
+    gameWrap: document.querySelector(".pictionary-game"),
+    joinBtn: document.querySelector(".pic-join"),
+    leaveBtn: document.querySelector(".pic-leave"),
+    startBtn: document.querySelector(".pic-start"),
+    joueursList: document.querySelector(".pictionary-joueurs"),
+    specsList: document.querySelector(".pictionary-spectators"),
+    statusEl: document.querySelector(".pictionary-status"),
+    modeSpec: document.querySelector(".pictionary-mode-spec"),
+    infoEl: document.querySelector(".pictionary-info"),
+    canvas: document.querySelector(".pictionary-canvas"),
+    guessInput: document.querySelector(".pic-guess-input"),
+    guessBtn: document.querySelector(".pic-guess-btn"),
+    clearBtn: document.querySelector(".pic-clear-btn"),
+    playersEl: document.querySelector(".pictionary-players"),
+  };
 
-  const ctx = canvas?.getContext("2d");
-  let drawing = false;
-  let estDessinateur = false;
-  let estSpectateur = false;
-  let monPseudo = null;
+  const ctx = ui.canvas?.getContext("2d");
+
+  // ---------- Etat local ----------
+  const state = {
+    drawing: false,
+    estDessinateur: false,
+    estSpectateur: false,
+    monPseudo: null,
+    strokeColor: "#fff",
+    strokeSize: 3,
+    eraser: false,
+    currentTool: "brush",
+  };
 
   socket.emit("pictionary:getState");
 
@@ -36,43 +47,43 @@ export function initPictionary(socket) {
   const stage7 = document.getElementById("stage7");
   if (stage7) observer.observe(stage7);
 
-  // --------- Events Bouton/Input ---------
-  joinBtn?.addEventListener("click", () => socket.emit("pictionary:join"));
-  leaveBtn?.addEventListener("click", () => socket.emit("pictionary:leave"));
-  startBtn?.addEventListener("click", () => socket.emit("pictionary:start"));
-  clearBtn?.addEventListener("click", () => {
-    if (estDessinateur) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // ---------- Ecouteurs UI ----------
+  ui.joinBtn?.addEventListener("click", () => socket.emit("pictionary:join"));
+  ui.leaveBtn?.addEventListener("click", () => socket.emit("pictionary:leave"));
+  ui.startBtn?.addEventListener("click", () => socket.emit("pictionary:start"));
+  ui.clearBtn?.addEventListener("click", () => {
+    if (state.estDessinateur) {
+      ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
       socket.emit("pictionary:clear");
     }
   });
-  guessBtn?.addEventListener("click", () => {
-    const text = guessInput.value.trim();
+  ui.guessBtn?.addEventListener("click", () => {
+    const text = ui.guessInput.value.trim();
     if (text) {
       socket.emit("pictionary:guess", { text });
-      guessInput.value = "";
+      ui.guessInput.value = "";
     }
   });
 
-  if (guessInput) {
-    guessInput.addEventListener("keydown", (e) => {
+  if (ui.guessInput) {
+    ui.guessInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();
-        const text = guessInput.value.trim();
+        const text = ui.guessInput.value.trim();
         if (text) {
           socket.emit("pictionary:guess", { text });
-          guessInput.value = "";
+          ui.guessInput.value = "";
         }
       }
     });
   }
 
-  // --------- Dessin ---------
-  let strokeColor = "#fff";
-  let strokeSize = 3;
-  let eraser = false;
-  let currentTool = "brush";
+  // ---------- Dessin ----------
+  let strokeColor = state.strokeColor;
+  let strokeSize = state.strokeSize;
+  let eraser = state.eraser;
+  let currentTool = state.currentTool;
 
   function sendStroke(x, y, type) {
     socket.emit("pictionary:draw", {
@@ -164,33 +175,33 @@ export function initPictionary(socket) {
   }
 
   function resizeCanvas() {
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
+    if (!ui.canvas) return;
+    const rect = ui.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const clientW = Math.round(
-      canvas.clientWidth ||
+      ui.canvas.clientWidth ||
         rect.width ||
-        Number(canvas.getAttribute("width")) ||
+        Number(ui.canvas.getAttribute("width")) ||
         700
     );
     const clientH = Math.round(
-      canvas.clientHeight ||
+      ui.canvas.clientHeight ||
         rect.height ||
-        Number(canvas.getAttribute("height")) ||
+        Number(ui.canvas.getAttribute("height")) ||
         450
     );
     const displayWidth = Math.max(1, clientW);
     const displayHeight = Math.max(1, clientH);
 
     if (
-      canvas.width !== displayWidth * dpr ||
-      canvas.height !== displayHeight * dpr
+      ui.canvas.width !== displayWidth * dpr ||
+      ui.canvas.height !== displayHeight * dpr
     ) {
-      canvas.width = displayWidth * dpr;
-      canvas.height = displayHeight * dpr;
-      canvas.style.width = `${displayWidth}px`;
-      canvas.style.height = `${displayHeight}px`;
-      const ctxLocal = canvas.getContext("2d");
+      ui.canvas.width = displayWidth * dpr;
+      ui.canvas.height = displayHeight * dpr;
+      ui.canvas.style.width = `${displayWidth}px`;
+      ui.canvas.style.height = `${displayHeight}px`;
+      const ctxLocal = ui.canvas.getContext("2d");
       ctxLocal.setTransform(dpr, 0, 0, dpr, 0, 0);
       try {
         socket.emit("pictionary:getState");
@@ -202,7 +213,7 @@ export function initPictionary(socket) {
 
   window.addEventListener("resize", resizeCanvas);
 
-  if (canvas) {
+  if (ui.canvas) {
     resizeCanvas();
 
     const controls = document.querySelector(".pictionary-controls");
@@ -334,9 +345,9 @@ export function initPictionary(socket) {
 
       if (clearBtnEl) {
         clearBtnEl.addEventListener("click", () => {
-          if (!estDessinateur) return;
+          if (!state.estDessinateur) return;
           if (confirm("Effacer le canevas pour tous les joueurs ?")) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
             socket.emit("pictionary:clear");
           }
         });
@@ -360,9 +371,9 @@ export function initPictionary(socket) {
       })();
     })();
 
-    canvas.addEventListener("mousedown", (e) => {
-      if (!estDessinateur) return;
-      const rect = canvas.getBoundingClientRect();
+    ui.canvas.addEventListener("mousedown", (e) => {
+      if (!state.estDessinateur) return;
+      const rect = ui.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       if (currentTool === "fill") {
@@ -370,15 +381,15 @@ export function initPictionary(socket) {
         sendFill(x, y, strokeColor);
         return;
       }
-      drawing = true;
+      state.drawing = true;
       ctx.beginPath();
       ctx.moveTo(x, y);
       sendStroke(x, y, "start");
     });
 
-    canvas.addEventListener("mousemove", (e) => {
-      if (!drawing || !estDessinateur) return;
-      const rect = canvas.getBoundingClientRect();
+    ui.canvas.addEventListener("mousemove", (e) => {
+      if (!state.drawing || !state.estDessinateur) return;
+      const rect = ui.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       ctx.lineTo(x, y);
@@ -390,25 +401,25 @@ export function initPictionary(socket) {
       sendStroke(x, y, "move");
     });
 
-    canvas.addEventListener("mouseup", () => {
-      if (!estDessinateur) return;
-      drawing = false;
+    ui.canvas.addEventListener("mouseup", () => {
+      if (!state.estDessinateur) return;
+      state.drawing = false;
       sendStroke(0, 0, "end");
     });
 
-    canvas.addEventListener("mouseleave", () => {
-      if (!estDessinateur) return;
-      drawing = false;
+    ui.canvas.addEventListener("mouseleave", () => {
+      if (!state.estDessinateur) return;
+      state.drawing = false;
       sendStroke(0, 0, "end");
     });
   }
 
-  // --------- Events Socket ---------
+  // ---------- Events socket ----------
   socket.on("pictionary:lobby", (data) => {
-    monPseudo = data.myUsername;
-    estSpectateur = !data.estAuLobby && data.gameStarted;
+    state.monPseudo = data.myUsername;
+    state.estSpectateur = !data.estAuLobby && data.gameStarted;
 
-    joueursList.innerHTML = `
+    ui.joueursList.innerHTML = `
       <p>Joueurs dans le lobby (${data.joueurs.length}/6) :</p>
       ${
         data.joueurs.length > 0
@@ -417,7 +428,7 @@ export function initPictionary(socket) {
       }
     `;
 
-    specsList.innerHTML =
+    ui.specsList.innerHTML =
       data.spectators?.length > 0
         ? `<p>Spectateurs (${data.spectators.length}) : ${data.spectators.join(
             ", "
@@ -425,46 +436,46 @@ export function initPictionary(socket) {
         : "";
 
     if (data.estAuLobby) {
-      joinBtn.style.display = "none";
-      leaveBtn.style.display = "inline-block";
-      startBtn.style.display = "inline-block";
+      ui.joinBtn.style.display = "none";
+      ui.leaveBtn.style.display = "inline-block";
+      ui.startBtn.style.display = "inline-block";
 
       if (data.canStart && data.joueurs.length >= 1) {
-        startBtn.disabled = false;
-        startBtn.textContent = "Démarrer la partie";
+        ui.startBtn.disabled = false;
+        ui.startBtn.textContent = "Démarrer la partie";
       } else {
-        startBtn.disabled = true;
-        startBtn.textContent = `En attente (${data.joueurs.length}/3 min)`;
+        ui.startBtn.disabled = true;
+        ui.startBtn.textContent = `En attente (${data.joueurs.length}/3 min)`;
       }
     } else {
-      joinBtn.style.display = "inline-block";
-      leaveBtn.style.display = "none";
-      startBtn.style.display = "none";
+      ui.joinBtn.style.display = "inline-block";
+      ui.leaveBtn.style.display = "none";
+      ui.startBtn.style.display = "none";
 
       if (data.gameStarted) {
-        joinBtn.textContent = "Partie en cours...";
-        joinBtn.disabled = true;
+        ui.joinBtn.textContent = "Partie en cours...";
+        ui.joinBtn.disabled = true;
       } else {
-        joinBtn.textContent = "Rejoindre le lobby";
-        joinBtn.disabled = false;
+        ui.joinBtn.textContent = "Rejoindre le lobby";
+        ui.joinBtn.disabled = false;
       }
     }
   });
 
-  socket.on("pictionary:gameStart", (state) => {
-    lobby.style.display = "none";
-    gameWrap.classList.add("active");
-    updateGame(state);
+  socket.on("pictionary:gameStart", (gameState) => {
+    ui.lobby.style.display = "none";
+    ui.gameWrap.classList.add("active");
+    updateGame(gameState);
   });
 
-  socket.on("pictionary:update", (state) => {
-    lobby.style.display = "none";
-    gameWrap.classList.add("active");
-    updateGame(state);
+  socket.on("pictionary:update", (gameState) => {
+    ui.lobby.style.display = "none";
+    ui.gameWrap.classList.add("active");
+    updateGame(gameState);
   });
 
   socket.on("pictionary:clear", () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
   });
 
   socket.on("pictionary:stroke", (data) => {
@@ -500,49 +511,50 @@ export function initPictionary(socket) {
 
   socket.on("pictionary:gameEnd", (data) => {
     alert(`🎉 ${data.winner || "Partie terminée"} !`);
-    gameWrap.classList.remove("active");
-    lobby.style.display = "block";
+    ui.gameWrap.classList.remove("active");
+    ui.lobby.style.display = "block";
     socket.emit("pictionary:getState");
   });
 
   socket.on("pictionary:backToLobby", () => {
-    gameWrap.classList.remove("active");
-    lobby.style.display = "block";
+    ui.gameWrap.classList.remove("active");
+    ui.lobby.style.display = "block";
     socket.emit("pictionary:getState");
   });
 
-  function updateGame(state) {
-    if (!state) return;
-    estDessinateur = state.estDessinateur;
-    estSpectateur = state.estSpec;
+  function updateGame(gameState) {
+    if (!gameState) return;
+    state.estDessinateur = gameState.estDessinateur;
+    state.estSpectateur = gameState.estSpec;
 
     try {
       const curEl = document.querySelector(".pictionary-current-player");
       if (curEl) {
-        curEl.textContent = state.currentDrawer || "—";
+        curEl.textContent = gameState.currentDrawer || "—";
       }
     } catch (e) {
       console.error("Erreur interne : ", e.toString());
     }
 
-    if (modeSpec) {
-      if (estSpectateur) {
-        modeSpec.style.display = "block";
-        modeSpec.textContent =
+    if (ui.modeSpec) {
+      if (state.estSpectateur) {
+        ui.modeSpec.style.display = "block";
+        ui.modeSpec.textContent =
           "👁️ Mode spectateur - Tu regardes la partie (CTRL + R si problème)";
       } else {
-        modeSpec.style.display = "none";
+        ui.modeSpec.style.display = "none";
       }
     }
 
-    if (statusEl) {
-      if (estDessinateur) statusEl.textContent = "🎨 Tu dessines !";
-      else if (estSpectateur) statusEl.textContent = "👁️ Tu es spectateur";
-      else statusEl.textContent = "🧠 Devine le mot !";
+    if (ui.statusEl) {
+      if (state.estDessinateur) ui.statusEl.textContent = "🎨 Tu dessines !";
+      else if (state.estSpectateur)
+        ui.statusEl.textContent = "👁️ Tu es spectateur";
+      else ui.statusEl.textContent = "🧠 Devine le mot !";
     }
 
-    if (infoEl) {
-      const rawMot = state.motVisible || state.wordProgress || "???";
+    if (ui.infoEl) {
+      const rawMot = gameState.motVisible || gameState.wordProgress || "???";
 
       function esc(s) {
         return String(s)
@@ -554,7 +566,7 @@ export function initPictionary(socket) {
       }
 
       let displayMot;
-      if (estDessinateur) {
+      if (state.estDessinateur) {
         displayMot = `<span class="pictionary-word drawer">${esc(
           rawMot
         )}</span>`;
@@ -566,17 +578,18 @@ export function initPictionary(socket) {
         displayMot = `<span class="pictionary-word">${parts.join(" ")}</span>`;
       }
 
-      infoEl.innerHTML = `
+      ui.infoEl.innerHTML = `
         <p>Mot actuel : ${displayMot}</p>
-        <p>Temps restant : ${state.timeLeft || 0}s</p>
-        ${state.message ? `<p>${esc(state.message)}</p>` : ""}
+        <p>Temps restant : ${gameState.timeLeft || 0}s</p>
+        ${gameState.message ? `<p>${esc(gameState.message)}</p>` : ""}
       `;
     }
 
-    if (playersEl) {
-      playersEl.innerHTML = state.joueurs
+    if (ui.playersEl) {
+      ui.playersEl.innerHTML = gameState.joueurs
         .map((p) => {
-          const cls = p.pseudo === state.currentDrawer ? ' class="drawer"' : "";
+          const cls =
+            p.pseudo === gameState.currentDrawer ? ' class="drawer"' : "";
           return `<div${cls}>${p.pseudo} (${p.score})</div>`;
         })
         .join("");
@@ -590,11 +603,11 @@ export function initPictionary(socket) {
         const guessGroup = controls.querySelector(".pictionary-guess");
         const clearBtnEl = controls.querySelector(".pic-clear-btn");
 
-        if (estSpectateur) {
+        if (state.estSpectateur) {
           if (toolbar) toolbar.style.display = "none";
           if (guessGroup) guessGroup.style.display = "none";
           if (clearBtnEl) clearBtnEl.style.display = "none";
-        } else if (estDessinateur) {
+        } else if (state.estDessinateur) {
           if (toolbar) toolbar.style.display = "flex";
           if (guessGroup) guessGroup.style.display = "none";
           if (clearBtnEl) clearBtnEl.style.display = "inline-block";

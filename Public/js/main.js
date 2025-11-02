@@ -1,9 +1,6 @@
 (async () => {
   // ---------- Conexion Socket ----------
-  if (window.socketInitialized) {
-    return;
-  }
-
+  if (window.socketInitialized) return;
   window.socketInitialized = true;
 
   const sessionRes = await fetch("/api/session");
@@ -14,21 +11,7 @@
 
   const { username } = await sessionRes.json();
 
-  const socket = io({
-    query: { username },
-    reconnexion: true,
-    reconnexionDelay: 1000,
-    reconnexionEssais: 5,
-  });
-
-  window.socket = socket;
-  window.username = username;
-
-  socket.on("reload", () => {
-    window.location.reload();
-  });
-
-  // ---------- Init modules ----------
+  // 1) Charger les modules AVANT d'ouvrir la connexion, pour brancher les listeners
   try {
     const modules = await Promise.all([
       import("./chat.js"),
@@ -62,6 +45,26 @@
       p4Leaderboard,
     ] = modules;
 
+    // 2) Créer le socket en mode autoConnect:false
+    const socket = io({
+      query: { username },
+      autoConnect: false,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      // conserver les anciens alias pour compat
+      reconnexion: true,
+      reconnexionDelay: 1000,
+      reconnexionEssais: 5,
+    });
+
+    window.socket = socket;
+    window.username = username;
+
+    // Brancher un reload tôt
+    socket.on("reload", () => window.location.reload());
+
+    // 3) Initialiser les modules (les listeners sont prêts AVANT connect)
     if (chat?.initChat) chat.initChat(socket);
     if (clicker?.initClicker) clicker.initClicker(socket);
     if (clickerLeaderboard?.initClickerLeaderboard)
@@ -81,6 +84,18 @@
     if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
     if (p4Leaderboard?.initP4Leaderboard)
       p4Leaderboard.initP4Leaderboard(socket);
+
+    // 4) Ouvrir la connexion seulement maintenant (évite de rater les 1ers emits)
+    socket.connect();
+
+    // 5) Ceinture et bretelles: redemander certains états après connexion
+    socket.on("connect", () => {
+      // Ces emits sont bufferisés si envoyés avant connect, mais on assure ici
+      socket.emit("uno:getState");
+      socket.emit("pictionary:getState");
+      socket.emit("p4:getState");
+      // Les leaderboards et le chat sont envoyés automatiquement côté serveur
+    });
   } catch (err) {
     console.error("Erreur chargement modules : ", err);
   }

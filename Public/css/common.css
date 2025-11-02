@@ -1,11 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
 
+/* ==========================================================
+   Variables globales
+   ========================================================== */
 :root {
-  fallback: inherit;
+  --primary-color: #0f0;
+  --bg-color: #000;
+  --danger-color: #ff4444;
+  --border-width: 3px;
+  --transition-speed: 185ms;
+  --transition-ease: ease;
 }
 
+/* Focus accessibilité */
 :focus {
-  outline: 1.75px solid #0f0;
+  outline: 1.75px solid var(--primary-color);
   outline-offset: 2px;
 }
 
@@ -20,19 +29,47 @@
 }
 
 body {
-  background: #000;
-  color: #0f0;
+  background: var(--bg-color);
+  color: var(--primary-color);
   font-family: monospace, monospace;
   width: 100dvw;
+  overflow-x: hidden;
 }
 
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--bg-color);
+}
 ::-webkit-scrollbar {
-  display: none;
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 0 !important;
+  border: 2px solid var(--bg-color);
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #66ff66;
+}
+::-webkit-scrollbar-button {
+  background: var(--primary-color);
+  width: 8px;
+  height: 8px;
+  border-radius: 0 !important;
+}
+::-webkit-scrollbar-corner {
+  background: var(--bg-color);
 }
 
 ::selection {
-  background: #0f0;
-  color: #000;
+  background: var(--primary-color);
+  color: var(--bg-color);
 }
 
 button.log-off {
@@ -40,9 +77,9 @@ button.log-off {
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #000;
-  color: #0f0;
-  border: 2px solid #0f0;
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
   padding: 15px 20px;
   cursor: pointer;
   font-size: 14px;
@@ -52,6 +89,92 @@ button.log-off {
   letter-spacing: 0.22rem;
 }
 button.log-off:hover {
-  background-color: #0f0;
-  color: #000;
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.btn,
+.btns-wrap button,
+.dino-btns-wrap button,
+.leaderboard-buttons button,
+.uno-lobby button,
+.flappy-btns-wrap button,
+.pictionary-actions button,
+.p4-btn-wrapper button,
+.chat-form button,
+.pictionary-guess button,
+.pic-clear-btn,
+button.log-off {
+  background: var(--bg-color);
+  color: var(--primary-color);
+  border: 3px solid var(--primary-color);
+  padding: 12px 24px;
+  font-weight: 700;
+  letter-spacing: 1.25px;
+  cursor: pointer;
+  transition: all 325ms ease-out;
+}
+
+.btn:not(:disabled):hover,
+.btns-wrap button:not(:disabled):hover,
+.dino-btns-wrap button:not(:disabled):hover,
+.leaderboard-buttons button:not(:disabled):hover,
+.uno-lobby button:not(:disabled):hover,
+.flappy-btns-wrap button:not(:disabled):hover,
+.pictionary-actions button:not(:disabled):hover,
+.p4-btn-wrapper button:not(:disabled):hover,
+.chat-form button:not(:disabled):hover,
+.pictionary-guess button:not(:disabled):hover,
+.pic-clear-btn:not(:disabled):hover,
+button.log-off:not(:disabled):hover {
+  color: var(--bg-color);
+  background: var(--primary-color);
+  border: 2px solid #000;
+  outline: 2px solid var(--primary-color);
+}
+
+.btn:disabled,
+.btns-wrap button:disabled,
+.dino-btns-wrap button:disabled,
+.leaderboard-buttons button:disabled,
+.uno-lobby button:disabled,
+.flappy-btns-wrap button:disabled,
+.pictionary-actions button:disabled,
+.p4-btn-wrapper button:disabled,
+.chat-form button:disabled,
+.pictionary-guess button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  outline: none;
+}
+
+.btn-reset,
+button.reset,
+.dino-reset,
+.flappyResetBtn,
+.pic-clear-btn {
+  background: #000 !important;
+  color: #ff4444 !important;
+  border-color: #ff4444 !important;
+  border: 2px solid #ff4444 !important;
+}
+/* Variante RESET (même style, couleur rouge) */
+.btn-reset,
+button.reset,
+.dino-reset,
+.flappyResetBtn,
+.pic-clear-btn {
+  background: var(--bg-color) !important;
+  color: var(--danger-color) !important;
+  border-color: var(--danger-color) !important;
+}
+.btn-reset:not(:disabled):hover,
+button.reset:not(:disabled):hover,
+.dino-reset:not(:disabled):hover,
+.flappyResetBtn:not(:disabled):hover,
+.pic-clear-btn:not(:disabled):hover {
+  background: var(--danger-color) !important;
+  color: var(--bg-color) !important;
+  border: 2px solid #000 !important;
+  outline: 2px solid var(--danger-color) !important;
 }

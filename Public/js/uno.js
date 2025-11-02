@@ -1,29 +1,35 @@
 export function initUno(socket) {
-  const lobby = document.querySelector(".uno-lobby");
-  const game = document.querySelector(".uno-game");
-  const joinBtn = document.querySelector(".uno-rej");
-  const leaveBtn = document.querySelector(".uno-quitter");
-  const startBtn = document.querySelector(".uno-start-game");
-  const joueursList = document.querySelector(".uno-joueurs");
-  const specsList = document.querySelector(".uno-spectators");
-  const statusEl = document.querySelector(".uno-status");
-  const pileEl = document.querySelector(".uno-pile");
-  const discardEl = document.querySelector(".uno-discard");
-  const deckEl = document.querySelector(".uno-deck");
-  const infoEl = document.querySelector(".uno-info");
-  const advEl = document.querySelector(".uno-adversaires");
-  const colorPicker = document.querySelector(".uno-color-picker");
-  const colorOptions = document.querySelector(".uno-color-options");
-  const modeSpec = document.querySelector(".uno-mode-spec");
+  // ========== UI Cache ==========
+  const ui = {
+    lobby: document.querySelector(".uno-lobby"),
+    game: document.querySelector(".uno-game"),
+    joinBtn: document.querySelector(".uno-rej"),
+    leaveBtn: document.querySelector(".uno-quitter"),
+    startBtn: document.querySelector(".uno-start-game"),
+    joueursList: document.querySelector(".uno-joueurs"),
+    specsList: document.querySelector(".uno-spectators"),
+    statusEl: document.querySelector(".uno-status"),
+    pileEl: document.querySelector(".uno-pile"),
+    discardEl: document.querySelector(".uno-discard"),
+    deckEl: document.querySelector(".uno-deck"),
+    infoEl: document.querySelector(".uno-info"),
+    advEl: document.querySelector(".uno-adversaires"),
+    colorPicker: document.querySelector(".uno-color-picker"),
+    colorOptions: document.querySelector(".uno-color-options"),
+    modeSpec: document.querySelector(".uno-mode-spec"),
+  };
 
-  let stateActuel = null;
-  let myUsername = null;
-  let estAuLobby = false;
-  let estSpec = false;
+  // ========== State ==========
+  const state = {
+    stateActuel: null,
+    myUsername: null,
+    estAuLobby: false,
+    estSpec: false,
+  };
 
   socket.emit("uno:getState");
 
-  // Observer pour recharger l'état
+  // Observer pour recharger l'état quand visible
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -38,132 +44,48 @@ export function initUno(socket) {
   const stage6 = document.getElementById("stage6");
   if (stage6) observer.observe(stage6);
 
-  // --------- Events Bouton/Input ---------
-  joinBtn?.addEventListener("click", () => {
-    socket.emit("uno:join");
-  });
-  leaveBtn?.addEventListener("click", () => {
-    socket.emit("uno:leave");
-  });
-  startBtn?.addEventListener("click", () => {
-    socket.emit("uno:start");
-  });
-
-  socket.on("uno:lobby", (data) => {
-    try {
-      myUsername = data.myUsername;
-      estAuLobby = data.estAuLobby;
-      estSpec = !data.estAuLobby && data.gameStarted;
-
-      joueursList.innerHTML = `
-      <p>Joueurs dans le lobby (${data.joueurs.length}/4) :</p>
-      ${
-        data.joueurs.length > 0
-          ? data.joueurs.map((p) => `<div>${p}</div>`).join("")
-          : "<div style='color: #fff;'>Aucun joueur</div>"
-      }
-    `;
-
-      if (specsList && data.spectators && data.spectators.length > 0) {
-        specsList.innerHTML = `
-        <p>Spectateurs (${data.spectators.length}) : ${data.spectators.join(
-          ", "
-        )}</p>
-      `;
-      } else if (specsList) {
-        specsList.innerHTML = "";
-      }
-
-      // Gestion des boutons
-      if (estAuLobby) {
-        joinBtn.style.display = "none";
-        leaveBtn.style.display = "inline-block";
-        startBtn.style.display = "inline-block";
-
-        if (data.canStart && data.joueurs.length >= 2) {
-          startBtn.disabled = false;
-          startBtn.textContent = "Démarrer la partie";
-        } else {
-          startBtn.disabled = true;
-          startBtn.textContent = `En attente (${data.joueurs.length}/2 min)`;
-        }
-      } else {
-        joinBtn.style.display = "inline-block";
-        leaveBtn.style.display = "none";
-        startBtn.style.display = "none";
-
-        if (data.gameStarted) {
-          joinBtn.textContent = "Partie en cours...";
-          joinBtn.disabled = true;
-        } else {
-          joinBtn.textContent = "Rejoindre le lobby";
-          joinBtn.disabled = data.joueurs.length >= 4;
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  });
-
-  // Début de partie
-  socket.on("uno:gameStart", (state) => {
-    lobby.style.display = "none";
-    game.classList.add("active");
-    updateGame(state);
-  });
-
-  // Mise à jour du jeu
-  socket.on("uno:update", (state) => {
-    lobby.style.display = "none";
-    game.classList.add("active");
-    updateGame(state);
-  });
-
-  // Retour au lobby
-  socket.on("uno:backToLobby", () => {
-    game.classList.remove("active");
-    lobby.style.display = "block";
-    socket.emit("uno:getState");
-  });
-
-  // Pioche
-  pileEl?.addEventListener("click", () => {
-    if (stateActuel?.estMonTour && !estSpec) {
-      socket.emit("uno:draw");
-    }
-  });
-
-  // Jouer une carte
+  // ========== Fonctions Utilitaires ==========
   function jouerCarte(cardIndex) {
     socket.emit("uno:play", { cardIndex });
   }
 
-  // Choisir une couleur
-  function setupColorPicker(cardIndex) {
-    colorPicker.classList.add("active");
-    colorOptions.innerHTML = `
-      <button class="uno-color-btn color-red" data-color="red">Rouge</button>
-      <button class="uno-color-btn color-blue" data-color="blue">Bleu</button>
-      <button class="uno-color-btn color-green" data-color="green">Vert</button>
-      <button class="uno-color-btn color-pink" data-color="pink">Rose</button>
-    `;
+  function renderCard(card, isSmall = false) {
+    if (!card) return "";
+    const colorClass =
+      card.color !== "wild" ? `color-${card.color}` : "color-black";
+    const taille = isSmall ? "width: 80px; height: 120px;" : "";
+    return `
+       <div class="uno-card-item ${colorClass}" style="${taille}">
+         <div>${card.valeur}</div>
+       </div>
+     `;
+  }
 
-    pileEl.classList.add("disabled");
-    deckEl.querySelectorAll(".uno-deck-card").forEach((card) => {
+  function setupColorPicker(cardIndex) {
+    ui.colorPicker.classList.add("active");
+    ui.colorOptions.innerHTML = `
+       <button class="uno-color-btn color-red" data-color="red">Rouge</button>
+       <button class="uno-color-btn color-blue" data-color="blue">Bleu</button>
+       <button class="uno-color-btn color-green" data-color="green">Vert</button>
+       <button class="uno-color-btn color-pink" data-color="pink">Rose</button>
+     `;
+
+    ui.pileEl.classList.add("disabled");
+    ui.deckEl.querySelectorAll(".uno-deck-card").forEach((card) => {
       card.classList.add("disabled");
     });
 
     function closeColorPicker() {
-      colorPicker.classList.remove("active");
-      pileEl.classList.remove("disabled");
-      deckEl.querySelectorAll(".uno-deck-card").forEach((card) => {
+      ui.colorPicker.classList.remove("active");
+      ui.pileEl.classList.remove("disabled");
+      ui.deckEl.querySelectorAll(".uno-deck-card").forEach((card) => {
         card.classList.remove("disabled");
       });
       document.removeEventListener("click", handleOutsideClick);
     }
 
     function handleOutsideClick(event) {
-      if (!colorPicker.contains(event.target)) {
+      if (!ui.colorPicker.contains(event.target)) {
         closeColorPicker();
       }
     }
@@ -174,7 +96,7 @@ export function initUno(socket) {
     }, 1);
 
     // Choix couleur
-    colorOptions.querySelectorAll(".uno-color-btn").forEach((btn) => {
+    ui.colorOptions.querySelectorAll(".uno-color-btn").forEach((btn) => {
       btn.addEventListener("click", (event) => {
         event.stopPropagation();
         const color = btn.dataset.color;
@@ -184,65 +106,53 @@ export function initUno(socket) {
     });
   }
 
-  function renderCard(card, isSmall = false) {
-    if (!card) return "";
-    const colorClass =
-      card.color !== "wild" ? `color-${card.color}` : "color-black";
-    const taille = isSmall ? "width: 80px; height: 120px;" : "";
-    return `
-      <div class="uno-card-item ${colorClass}" style="${taille}">
-        <div>${card.valeur}</div>
-      </div>
-    `;
-  }
+  function updateGame(gameState) {
+    state.stateActuel = gameState;
+    state.estSpec = gameState.estSpec;
 
-  function updateGame(state) {
-    stateActuel = state;
-    estSpec = state.estSpec;
-
-    if (modeSpec) {
-      if (estSpec) {
-        modeSpec.style.display = "block";
-        modeSpec.textContent =
+    if (ui.modeSpec) {
+      if (state.estSpec) {
+        ui.modeSpec.style.display = "block";
+        ui.modeSpec.textContent =
           "👁️ Mode spectateur - Tu regardes la partie - CTRL + R quand la partie est finie";
       } else {
-        modeSpec.style.display = "none";
+        ui.modeSpec.style.display = "none";
       }
     }
 
-    if (statusEl) {
-      const tourDuJoueur = state.currentPlayer;
-      const estMonTour = state.estMonTour && !estSpec;
+    if (ui.statusEl) {
+      const tourDuJoueur = gameState.currentPlayer;
+      const estMonTour = gameState.estMonTour && !state.estSpec;
       if (estMonTour) {
-        statusEl.textContent = "C'est ton tour !";
-        pileEl.classList.add("tonTour");
+        ui.statusEl.textContent = "C'est ton tour !";
+        ui.pileEl.classList.add("tonTour");
       } else {
-        statusEl.textContent = `Tour de ${tourDuJoueur}`;
-        pileEl.classList.remove("tonTour");
+        ui.statusEl.textContent = `Tour de ${tourDuJoueur}`;
+        ui.pileEl.classList.remove("tonTour");
       }
     }
 
-    // Carte middle
-    if (discardEl) {
-      discardEl.innerHTML = renderCard(state.topCard, true);
+    // Carte du milieu
+    if (ui.discardEl) {
+      ui.discardEl.innerHTML = renderCard(gameState.topCard, true);
     }
 
-    if (pileEl) {
-      if (estSpec || !state.estMonTour) {
-        pileEl.classList.add("disabled");
+    if (ui.pileEl) {
+      if (state.estSpec || !gameState.estMonTour) {
+        ui.pileEl.classList.add("disabled");
       } else {
-        pileEl.classList.remove("disabled");
+        ui.pileEl.classList.remove("disabled");
       }
     }
 
-    // Display deck selon role
-    if (deckEl) {
-      if (estSpec) {
-        deckEl.innerHTML =
+    // Deck selon rôle
+    if (ui.deckEl) {
+      if (state.estSpec) {
+        ui.deckEl.innerHTML =
           "<div style='color: #fff; text-align: center; width: 100%;'>Mode spectateur</div>";
       } else {
-        deckEl.innerHTML = "";
-        state.monDeck.forEach((card, idx) => {
+        ui.deckEl.innerHTML = "";
+        gameState.monDeck.forEach((card, idx) => {
           const cardEl = document.createElement("div");
           cardEl.className = "uno-deck-card";
           const colorClass =
@@ -251,7 +161,7 @@ export function initUno(socket) {
           cardEl.textContent = card.valeur;
 
           const peutJouer =
-            state.estMonTour && state.playableCards.includes(idx);
+            gameState.estMonTour && gameState.playableCards.includes(idx);
 
           if (!peutJouer) {
             cardEl.classList.add("disabled");
@@ -265,56 +175,155 @@ export function initUno(socket) {
             });
           }
 
-          deckEl.appendChild(cardEl);
+          ui.deckEl.appendChild(cardEl);
         });
       }
     }
 
-    if (advEl) {
-      advEl.innerHTML = "";
-      state.opponents.forEach((opp) => {
+    if (ui.advEl) {
+      ui.advEl.innerHTML = "";
+      gameState.opponents.forEach((opp) => {
         const oppEl = document.createElement("div");
         oppEl.className = "uno-opponent";
-        const isTurn = opp.pseudo === state.currentPlayer;
+        const isTurn = opp.pseudo === gameState.currentPlayer;
 
         oppEl.innerHTML = `
-      <div class="uno-opponent-name ${isTurn ? "highlight" : ""}">
-        ${opp.pseudo}
-      </div>
-      <div class="uno-opponent-cards">${opp.cardCount} carte(s)</div>
-    `;
+         <div class="uno-opponent-name ${isTurn ? "highlight" : ""}">
+           ${opp.pseudo}
+         </div>
+         <div class="uno-opponent-cards">${opp.cardCount} carte(s)</div>
+       `;
 
-        advEl.appendChild(oppEl);
+        ui.advEl.appendChild(oppEl);
       });
     }
 
-    //  --------- Display info --------
-    if (infoEl) {
-      infoEl.innerHTML = `
-        <p>Direction : ${
-          state.direction === 1 ? "Gauche -> Droite" : "Droite -> Gacuhe"
-        }</p>
-        <p>Cartes dans la pioche : ${state.deckSize}</p>
-        ${state.message ? `<p style="color: #fff;">${state.message}</p>` : ""}
-      `;
+    // Informations
+    if (ui.infoEl) {
+      ui.infoEl.innerHTML = `
+         <p>Direction : ${
+           gameState.direction === 1 ? "Gauche -> Droite" : "Droite -> Gauche"
+         }</p>
+         <p>Cartes dans la pioche : ${gameState.deckSize}</p>
+         ${
+           gameState.message
+             ? `<p style="color: #fff;">${gameState.message}</p>`
+             : ""
+         }
+       `;
     }
   }
 
+  // ========== Event Listeners UI ==========
+  ui.joinBtn?.addEventListener("click", () => {
+    socket.emit("uno:join");
+  });
+  ui.leaveBtn?.addEventListener("click", () => {
+    socket.emit("uno:leave");
+  });
+  ui.startBtn?.addEventListener("click", () => {
+    socket.emit("uno:start");
+  });
+
+  ui.pileEl?.addEventListener("click", () => {
+    if (state.stateActuel?.estMonTour && !state.estSpec) {
+      socket.emit("uno:draw");
+    }
+  });
+
+  // ========== Socket Handlers ==========
+  socket.on("uno:lobby", (data) => {
+    try {
+      state.myUsername = data.myUsername;
+      state.estAuLobby = data.estAuLobby;
+      state.estSpec = !data.estAuLobby && data.gameStarted;
+
+      ui.joueursList.innerHTML = `
+      <p>Joueurs dans le lobby (${data.joueurs.length}/4) :</p>
+      ${
+        data.joueurs.length > 0
+          ? data.joueurs.map((p) => `<div>${p}</div>`).join("")
+          : "<div style='color: #fff;'>Aucun joueur</div>"
+      }
+    `;
+
+      if (ui.specsList && data.spectators && data.spectators.length > 0) {
+        ui.specsList.innerHTML = `
+        <p>Spectateurs (${data.spectators.length}) : ${data.spectators.join(
+          ", "
+        )}</p>
+      `;
+      } else if (ui.specsList) {
+        ui.specsList.innerHTML = "";
+      }
+
+      // Gestion des boutons
+      if (state.estAuLobby) {
+        ui.joinBtn.style.display = "none";
+        ui.leaveBtn.style.display = "inline-block";
+        ui.startBtn.style.display = "inline-block";
+
+        if (data.canStart && data.joueurs.length >= 2) {
+          ui.startBtn.disabled = false;
+          ui.startBtn.textContent = "Démarrer la partie";
+        } else {
+          ui.startBtn.disabled = true;
+          ui.startBtn.textContent = `En attente (${data.joueurs.length}/2 min)`;
+        }
+      } else {
+        ui.joinBtn.style.display = "inline-block";
+        ui.leaveBtn.style.display = "none";
+        ui.startBtn.style.display = "none";
+
+        if (data.gameStarted) {
+          ui.joinBtn.textContent = "Partie en cours...";
+          ui.joinBtn.disabled = true;
+        } else {
+          ui.joinBtn.textContent = "Rejoindre le lobby";
+          ui.joinBtn.disabled = data.joueurs.length >= 4;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  // Début de partie
+  socket.on("uno:gameStart", (state) => {
+    ui.lobby.style.display = "none";
+    ui.game.classList.add("active");
+    updateGame(state);
+  });
+
+  // Mise à jour du jeu
+  socket.on("uno:update", (state) => {
+    ui.lobby.style.display = "none";
+    ui.game.classList.add("active");
+    updateGame(state);
+  });
+
+  // Retour au lobby
+  socket.on("uno:backToLobby", () => {
+    ui.game.classList.remove("active");
+    ui.lobby.style.display = "block";
+    socket.emit("uno:getState");
+  });
+
   socket.on("uno:gameEnd", (data) => {
-    if (estSpec) return;
+    if (state.estSpec) return;
     if (data.winner === "Partie annulée !") {
       alert(`${data.winner} ${data.reason}`);
     } else {
       alert(`🎉 ${data.winner} a gagné la partie !`);
     }
-    game.classList.remove("active");
-    lobby.style.display = "block";
-    statusEl.textContent = "";
+    ui.game.classList.remove("active");
+    ui.lobby.style.display = "block";
+    ui.statusEl.textContent = "";
     socket.emit("uno:getState");
   });
 
   socket.on("uno:error", (msg) => {
-    if (estSpec) return;
+    if (state.estSpec) return;
     alert(msg);
   });
 }

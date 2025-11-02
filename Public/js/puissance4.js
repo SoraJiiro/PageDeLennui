@@ -1,20 +1,26 @@
 export function initPuissance4(socket) {
-  const lobby = document.querySelector(".p4-lobby");
-  const game = document.querySelector(".p4-game");
-  const joinBtn = document.querySelector(".p4-join");
-  const leaveBtn = document.querySelector(".p4-leave");
-  const startBtn = document.querySelector(".p4-start");
-  const joueursList = document.querySelector(".p4-joueurs");
-  const specsList = document.querySelector(".p4-spectators");
-  const statusEl = document.querySelector(".p4-status");
-  const boardEl = document.querySelector(".p4-board");
-  const infoEl = document.querySelector(".p4-info");
-  const modeSpec = document.querySelector(".p4-mode-spec");
+  // ---------- Cache UI ----------
+  const ui = {
+    lobby: document.querySelector(".p4-lobby"),
+    game: document.querySelector(".p4-game"),
+    joinBtn: document.querySelector(".p4-join"),
+    leaveBtn: document.querySelector(".p4-leave"),
+    startBtn: document.querySelector(".p4-start"),
+    joueursList: document.querySelector(".p4-joueurs"),
+    specsList: document.querySelector(".p4-spectators"),
+    statusEl: document.querySelector(".p4-status"),
+    boardEl: document.querySelector(".p4-board"),
+    infoEl: document.querySelector(".p4-info"),
+    modeSpec: document.querySelector(".p4-mode-spec"),
+  };
 
-  let monPseudo = null;
-  let estAuLobby = false;
-  let estSpec = false;
-  let gameState = null;
+  // ---------- Etat local ----------
+  const state = {
+    monPseudo: null,
+    estAuLobby: false,
+    estSpec: false,
+    gameState: null,
+  };
 
   socket.emit("p4:getState");
 
@@ -32,13 +38,13 @@ export function initPuissance4(socket) {
   if (stage8) observer.observe(stage8);
 
   // --------- Events Bouton/Input ---------
-  joinBtn?.addEventListener("click", () => socket.emit("p4:join"));
-  leaveBtn?.addEventListener("click", () => socket.emit("p4:leave"));
-  startBtn?.addEventListener("click", () => socket.emit("p4:start"));
+  ui.joinBtn?.addEventListener("click", () => socket.emit("p4:join"));
+  ui.leaveBtn?.addEventListener("click", () => socket.emit("p4:leave"));
+  ui.startBtn?.addEventListener("click", () => socket.emit("p4:start"));
 
   // Gestion clicks dans la grille
-  if (boardEl) {
-    boardEl.addEventListener("click", (e) => {
+  if (ui.boardEl) {
+    ui.boardEl.addEventListener("click", (e) => {
       const cell = e.target.closest(".p4-cell");
       if (!cell || !gameState) return;
 
@@ -52,11 +58,11 @@ export function initPuissance4(socket) {
   }
 
   socket.on("p4:lobby", (data) => {
-    monPseudo = data.myUsername;
-    estAuLobby = data.estAuLobby;
-    estSpec = !data.estAuLobby && data.gameStarted;
+    state.monPseudo = data.myUsername;
+    state.estAuLobby = data.estAuLobby;
+    state.estSpec = !data.estAuLobby && data.gameStarted;
 
-    joueursList.innerHTML = `
+    ui.joueursList.innerHTML = `
       <p>Joueurs dans le lobby (${data.joueurs.length}/2) :</p>
       ${
         data.joueurs.length > 0
@@ -65,89 +71,89 @@ export function initPuissance4(socket) {
       }
     `;
 
-    if (specsList && data.spectators && data.spectators.length > 0) {
-      specsList.innerHTML = `
+    if (ui.specsList && data.spectators && data.spectators.length > 0) {
+      ui.specsList.innerHTML = `
         <p>Spectateurs (${data.spectators.length}) : ${data.spectators.join(
         ", "
       )}</p>
       `;
-    } else if (specsList) {
-      specsList.innerHTML = "";
+    } else if (ui.specsList) {
+      ui.specsList.innerHTML = "";
     }
 
-    if (estAuLobby) {
-      joinBtn.style.display = "none";
-      leaveBtn.style.display = "inline-block";
-      startBtn.style.display = "inline-block";
+    if (state.estAuLobby) {
+      ui.joinBtn.style.display = "none";
+      ui.leaveBtn.style.display = "inline-block";
+      ui.startBtn.style.display = "inline-block";
 
       if (data.canStart && data.joueurs.length === 2) {
-        startBtn.disabled = false;
-        startBtn.textContent = "Démarrer la partie";
+        ui.startBtn.disabled = false;
+        ui.startBtn.textContent = "Démarrer la partie";
       } else {
-        startBtn.disabled = true;
-        startBtn.textContent = `En attente (${data.joueurs.length}/2)`;
+        ui.startBtn.disabled = true;
+        ui.startBtn.textContent = `En attente (${data.joueurs.length}/2)`;
       }
     } else {
-      joinBtn.style.display = "inline-block";
-      leaveBtn.style.display = "none";
-      startBtn.style.display = "none";
+      ui.joinBtn.style.display = "inline-block";
+      ui.leaveBtn.style.display = "none";
+      ui.startBtn.style.display = "none";
 
       if (data.gameStarted) {
-        joinBtn.textContent = "Partie en cours...";
-        joinBtn.disabled = true;
+        ui.joinBtn.textContent = "Partie en cours...";
+        ui.joinBtn.disabled = true;
       } else {
-        joinBtn.textContent = "Rejoindre le lobby";
-        joinBtn.disabled = data.joueurs.length >= 2;
+        ui.joinBtn.textContent = "Rejoindre le lobby";
+        ui.joinBtn.disabled = data.joueurs.length >= 2;
       }
     }
   });
 
-  socket.on("p4:gameStart", (state) => {
-    lobby.style.display = "none";
-    game.classList.add("active");
-    updateGame(state);
+  socket.on("p4:gameStart", (gameState) => {
+    ui.lobby.style.display = "none";
+    ui.game.classList.add("active");
+    updateGame(gameState);
   });
 
-  socket.on("p4:update", (state) => {
-    lobby.style.display = "none";
-    game.classList.add("active");
-    updateGame(state);
+  socket.on("p4:update", (gameState) => {
+    ui.lobby.style.display = "none";
+    ui.game.classList.add("active");
+    updateGame(gameState);
   });
 
   socket.on("p4:backToLobby", () => {
-    game.classList.remove("active");
-    lobby.style.display = "block";
+    ui.game.classList.remove("active");
+    ui.lobby.style.display = "block";
     socket.emit("p4:getState");
   });
 
   socket.on("p4:gameEnd", (data) => {
-    if (!estSpec) {
+    if (!state.estSpec) {
       if (data.winner === "Partie annulée !") {
         alert(`${data.winner} ${data.reason}`);
-        game.classList.remove("active");
-        lobby.style.display = "block";
+        ui.game.classList.remove("active");
+        ui.lobby.style.display = "block";
         socket.emit("p4:getState");
       } else if (data.draw) {
         // 3s message egalité
         setTimeout(() => {
           alert(`🤝 Match nul !`);
-          game.classList.remove("active");
-          lobby.style.display = "block";
+          ui.game.classList.remove("active");
+          ui.lobby.style.display = "block";
           socket.emit("p4:getState");
         }, 3000);
       } else {
         // 3s message win
         setTimeout(() => {
           alert(`🎉 ${data.winner} a gagné la partie !`);
-          game.classList.remove("active");
-          lobby.style.display = "block";
+          ui.game.classList.remove("active");
+          ui.lobby.style.display = "block";
           socket.emit("p4:getState");
         }, 3000);
       }
     } else {
       setTimeout(() => {
-        game.classList.remove("active");
-        lobby.style.display = "block";
+        ui.game.classList.remove("active");
+        ui.lobby.style.display = "block";
         socket.emit("p4:getState");
       }, 3000);
     }
