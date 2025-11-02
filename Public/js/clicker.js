@@ -14,6 +14,21 @@ export function initClicker(socket) {
   let cpsHumain = 0;
   let timerHumain = null;
 
+  // ---------- Storage helpers ----------
+  const STORAGE_KEY = "autoCPS";
+  function getSavedCPS() {
+    const v = parseInt(localStorage.getItem(STORAGE_KEY));
+    return isNaN(v) ? 0 : v;
+  }
+  function saveCPS(cps) {
+    if (typeof cps === "number" && cps > 0) {
+      localStorage.setItem(STORAGE_KEY, String(cps));
+    }
+  }
+  function clearSavedCPS() {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
   // ---------- Médailles de base ----------
   let medalsList = [
     { nom: "Bronze", icon: "🥉", pallier: 2500, cps: 1 },
@@ -39,7 +54,7 @@ export function initClicker(socket) {
     );
   });
 
-  // ---------- Médailles random ----------
+  // ---------- Médailles random (visuel seulement) ----------
   function randomColor() {
     // Rare
     const rare = Math.random();
@@ -84,7 +99,8 @@ export function initClicker(socket) {
     }
 
     const pallier = precedente.pallier * 2;
-    const cps = precedente.cps + Math.floor(Math.random() * 3) + 2;
+    // IMPORTANT: CPS déterministe (plus de random) pour rester identique après reload
+    const cps = precedente.cps + 3;
 
     return {
       nom: `Médaille ${index}`,
@@ -121,7 +137,9 @@ export function initClicker(socket) {
         });
       }
 
-      medalsWrap.appendChild(el);
+      setTimeout(() => {
+        medalsWrap.appendChild(el);
+      }, 125);
     }
   });
 
@@ -200,13 +218,17 @@ export function initClicker(socket) {
             });
             if (m === medalCible)
               showNotif(`🏅 ${m.nom} débloquée ! ${m.icon}`);
+
+            // Sauvegarde du CPS auto au déblocage
+            saveCPS(medalCible.cps);
           }
         }
       });
 
-      if (medalCible.cps !== cpsActuel) {
-        setAutoClick(medalCible.cps);
-      }
+      // Applique le meilleur CPS (entre restauré et médaille cible)
+      const saved = getSavedCPS();
+      const cpsToUse = Math.max(saved, medalCible.cps);
+      if (cpsToUse !== cpsActuel) setAutoClick(cpsToUse);
     }
   }
 
@@ -220,6 +242,7 @@ export function initClicker(socket) {
     socket.emit("clicker:reset");
     socket.emit("clicker:medalsReset");
     stopAutoClicks();
+    clearSavedCPS();
     scoreActuel = 0;
     medalsDebloquees.clear();
 
@@ -276,7 +299,14 @@ export function initClicker(socket) {
     const medaillePlusHaute = medalsList
       .filter((m) => userMedals.includes(m.nom))
       .sort((a, b) => b.pallier - a.pallier)[0];
-    if (medaillePlusHaute) setAutoClick(medaillePlusHaute.cps);
+
+    // Préférence au CPS sauvé (garantit la stabilité inter-reloads)
+    const saved = getSavedCPS();
+    if (saved > 0) {
+      setAutoClick(saved);
+    } else if (medaillePlusHaute) {
+      setAutoClick(medaillePlusHaute.cps);
+    }
   });
 
   // ---------- Affichage CPS humain ----------
@@ -285,4 +315,11 @@ export function initClicker(socket) {
       cpsHumainEl.textContent =
         cpsHumain >= 0 ? `${cpsHumain.toFixed(1)} CPS` : "0.0 CPS";
   }, 750);
+
+  // ---------- Restauration du CPS auto au chargement ----------
+  const restored = getSavedCPS();
+  if (restored > 0) {
+    setAutoClick(restored);
+    showNotif(`🔁 CPS auto restauré : +${restored} cps`);
+  }
 }

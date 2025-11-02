@@ -128,7 +128,7 @@ class AntiSpam {
     bucket.count++;
     this.buckets.set(socketId, bucket);
 
-    return bucket.count <= config.CLICK_MAX_PER_WINDOW;
+    return true;
   }
 
   cleanup(socketId) {

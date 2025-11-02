@@ -84,4 +84,33 @@
   } catch (err) {
     console.error("Erreur chargement modules : ", err);
   }
+
+  function getAndDeleteLSKeys() {
+    var initialLength = window.localStorage.length;
+    for (let p = 0; p < window.localStorage.length; p++) {
+      // Supp le contenu du localStorage (pas de triche par injection)
+      const key = window.localStorage.key(p);
+      if (key) {
+        window.localStorage.removeItem(key);
+        console.info(
+          `${key} Supprimé ! [index-${p}:\\${socket.id}\\${initialLength}]`
+        );
+      } else {
+        if (key === "undefined" || key === null) {
+          console.info("Aucun objet.");
+        }
+      }
+    }
+  }
+
+  // Anti injection
+  setTimeout(() => {
+    getAndDeleteLSKeys();
+  }, 200);
+  window.addEventListener("beforeunload", getAndDeleteLSKeys);
+  window.addEventListener("storage", getAndDeleteLSKeys);
+
+  window.localStorage.setItem = (key, val) => {
+    return "Nope.";
+  };
 })();

@@ -21,5 +21,4 @@ module.exports = {
 
   // Anti-spam
   CLICK_WINDOW_MS: 1200,
-  CLICK_MAX_PER_WINDOW: 25,
 };

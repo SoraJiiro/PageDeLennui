@@ -28,19 +28,22 @@
         <script src="/socket.io/socket.io.js"></script>
         <script defer type="module" src="js/main.js"></script>
 
-    </head>
-
-    <script>
+        <script type="text/javascript">
         document.addEventListener("keydown", (event) => {
             if (event.key === " " || event.key === "ArrowUp" || event.key === "Enter") {
                 event.preventDefault();
             }
         });
-    </script>
+        </script>
+
+    </head>
 
     <body>
 
         <section id="stage1" class="first-stage">
+            <button class="log-off"
+                onclick="window.location.replace('/login');">Se
+                déconnecter</button>
             <h1 class="display"></h1>
             <div class="show-nav"
                 onclick="document.querySelector('.btns-wrap').style.display = '';">Afficher
