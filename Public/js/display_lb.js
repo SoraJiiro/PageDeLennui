@@ -1,11 +1,9 @@
 function showLeaderboard(name) {
-  // Masquer tous les leaderboards
   document.querySelectorAll("#stage4 .leaderboard-card").forEach((card) => {
     card.style.display = "none";
     card.classList.remove("fade-in");
   });
 
-  // Afficher le bon leaderboard avec une petite animation
   const idMap = {
     clicker: "#clicker-leaderboard",
     dino: "#dino-leaderboard",
@@ -22,20 +20,17 @@ function showLeaderboard(name) {
     card.classList.add("fade-in");
   }
 
-  // Gérer le bouton actif
   document.querySelectorAll(".leaderboard-buttons button").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.board === name);
   });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Ajoute les écouteurs de clic sur les boutons
   document.querySelectorAll(".leaderboard-buttons button").forEach((btn) => {
     btn.addEventListener("click", () => {
       showLeaderboard(btn.dataset.board);
     });
   });
 
-  // Affiche le premier leaderboard par défaut
-  showLeaderboard("clicker");
+  showLeaderboard("clicker"); // LB Clicker display par défaut
 });

@@ -1,4 +1,5 @@
 (async () => {
+  // ---------- Conexion Socket ----------
   if (window.socketInitialized) {
     return;
   }
@@ -20,13 +21,14 @@
     reconnexionEssais: 5,
   });
 
-  window.socket = socket; // LE SEUL QUI DOIT EXISTER :'((
+  window.socket = socket;
   window.username = username;
 
   socket.on("reload", () => {
     window.location.reload();
   });
 
+  // ---------- Init modules ----------
   try {
     const modules = await Promise.all([
       import("./chat.js"),
@@ -80,6 +82,6 @@
     if (p4Leaderboard?.initP4Leaderboard)
       p4Leaderboard.initP4Leaderboard(socket);
   } catch (err) {
-    console.error("Erreur modules : ", err);
+    console.error("Erreur chargement modules : ", err);
   }
 })();

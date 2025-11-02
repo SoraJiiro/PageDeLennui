@@ -27,7 +27,7 @@ export function initClicker(socket) {
 
   medalsWrap.querySelectorAll(".medal").forEach((el) => {
     const medalData = medalsList.find((m) => m.nom === el.dataset.name);
-    if (!medalData) return; // sécurité
+    if (!medalData) return;
 
     el.setAttribute(
       "title",
@@ -65,19 +65,19 @@ export function initClicker(socket) {
   function genererMedailleAuto(index, precedente) {
     const colors = [];
 
-    // 7 autres couleurs totalement aléatoires
     while (colors.length < 10) {
+      // Modifier le nb pour gén des medailles
       colors.push(randomColor());
     }
 
-    // 25% de chance de remplacer une couleur par un gris clair
-    if (Math.random() < 0.25) {
-      const greyLightness = Math.floor(Math.random() * 15) + 60; // 60–75%
+    // Gestion gris
+    if (Math.random() < 0.125) {
+      const greyLightness = Math.floor(Math.random() * 15) + 60;
       const greyIndex = Math.floor(Math.random() * colors.length);
       colors[greyIndex] = `hsl(0, 0%, ${greyLightness}%)`;
     }
 
-    // Mélange pour éviter que la première soit toujours claire
+    // Shuffle couleurs
     for (let i = colors.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [colors[i], colors[j]] = [colors[j], colors[i]];
@@ -114,7 +114,7 @@ export function initClicker(socket) {
         }\nPalier : ${m.pallier.toLocaleString()} clics\nCPS auto : ${m.cps}`
       );
 
-      // Stocke les 6 couleurs dans des variables CSS
+      // Stockage clr en var CSS
       if (i >= 7) {
         m.couleurs.forEach((c, idx) => {
           el.style.setProperty(`--grad${idx + 1}`, c);
@@ -171,7 +171,7 @@ export function initClicker(socket) {
     setTimeout(() => notif.remove(), duration);
   }
 
-  // ---------- Vérif & déblocage de médailles ----------
+  // ---------- Vérif + déblocage de médailles ----------
   function verifMedals(score) {
     let medalCible = null;
     for (let i = medalsList.length - 1; i >= 0; i--) {
@@ -250,7 +250,7 @@ export function initClicker(socket) {
     });
   }
 
-  // ---------- Événements socket ----------
+  // ---------- Events socket ----------
   socket.on("clicker:you", ({ score }) => {
     scoreActuel = score;
     bumpZone();

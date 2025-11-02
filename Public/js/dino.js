@@ -12,7 +12,7 @@ export function initDino(socket) {
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
-  // Constantes du jeu
+  // ---------- Consts ----------
   const GRAVITY = 1.2;
   const MIN_JUMP_VELOCITY = 18;
   const MAX_JUMP_VELOCITY = 20;
@@ -22,7 +22,7 @@ export function initDino(socket) {
   const MIN_OBSTACLE_DISTANCE = 300;
   const MAX_OBSTACLE_DISTANCE = 600;
   const OBSTACLES_BETWEEN_SPEED_UP = 2;
-  const CACTUS_SPACING = 32; // Espacement entre cactus d'un groupe
+  const CACTUS_SPACING = 32;
 
   let gameSpeed = INITIAL_SPEED;
   let score = 0;
@@ -112,7 +112,6 @@ export function initDino(socket) {
         MIN_OBSTACLE_DISTANCE;
       const baseX = canvas.width + minDistance + distance;
 
-      // 1 à 3 cactus par groupe
       const count = Math.floor(Math.random() * 3) + 1;
       this.cacti = [];
 
@@ -155,7 +154,7 @@ export function initDino(socket) {
         // Corps principal
         c.fillRect(cactus.x, cactusY, cactus.width, cactus.height);
 
-        // Bras latéraux pour TOUS les cactus, ajustés à la taille
+        // Bras
         const armHeight = Math.max(10, Math.floor(cactus.height * 0.35));
         const armY = cactusY + Math.floor(cactus.height * 0.4);
 
@@ -244,22 +243,20 @@ export function initDino(socket) {
       return cl.x + cl.width > 0;
     });
 
-    // Dino
-    dino.update();
+    dino.update(); // Init dino
 
-    // Spawn des groupes de cactus
     spawnCactusGroup();
 
-    // Update et collision des groupes
+    // Update + collision des groupes
     cactusGroups = cactusGroups.filter((group) => {
       group.update();
 
-      // Vérifier si le groupe est passé
+      // Vérif si le groupe est passé
       if (!group.passed && group.getRightmostX() < dino.x) {
         group.passed = true;
         obstaclesPassed++;
 
-        // Augmenter la vitesse tous les 2 obstacles
+        // Vitess ++ si 2 obstacles passés
         if (
           obstaclesPassed % OBSTACLES_BETWEEN_SPEED_UP === 0 &&
           gameSpeed < MAX_SPEED
@@ -280,8 +277,7 @@ export function initDino(socket) {
       return group.getRightmostX() > 0;
     });
 
-    // Score comme dans le jeu Chrome
-    score += Math.floor(gameSpeed * 0.2);
+    score += Math.floor(gameSpeed * 0.2); // Score comme le dino chrome
 
     // Affichage du score
     c.fillStyle = "#0f0";
@@ -337,6 +333,7 @@ export function initDino(socket) {
     loop();
   }
 
+  // ---------- Eventlisteners ----------
   document.querySelector(".dino-start")?.addEventListener("click", () => {
     if (isFirstStart || gameOver) startGame();
     else if (!dino.jumping) dino.jump(MAX_JUMP_VELOCITY);

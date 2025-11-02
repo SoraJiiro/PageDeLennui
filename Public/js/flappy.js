@@ -4,7 +4,6 @@ export function initFlappy(socket) {
   const startBtn = document.getElementsByClassName("flappyStartBtn")[0];
   const scoreEl = document.getElementById("flappyScore");
 
-  // === Ajustement automatique sur la taille du canvas ===
   function resizeCanvas() {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
@@ -12,12 +11,12 @@ export function initFlappy(socket) {
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
-  // === Variables dépendantes de la taille ===
+  // ---------- Vars ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
   let birdY, birdVel, pipes, score, gameRunning;
 
   function updateScales() {
-    // mise à l'echel avec vp du user
+    // mise à l'échelle avec vp du user
     gravity = canvas.height * 0.00035;
     jump = -canvas.height * 0.009;
     pipeGap = canvas.height * 0.25;
@@ -55,9 +54,9 @@ export function initFlappy(socket) {
   function drawPipes() {
     ctx.fillStyle = "#0f0";
     pipes.forEach((p) => {
-      // Tuyau du haut
+      // Tuyau haut
       ctx.fillRect(p.x, 0, pipeWidth, p.top);
-      // Tuyau du bas
+      // Tuyau bas
       ctx.fillRect(
         p.x,
         p.top + pipeGap,
@@ -97,7 +96,7 @@ export function initFlappy(socket) {
     drawPipes();
     bird.draw();
 
-    // === Collision detection ===
+    // ---------- Collisions ----------
     for (const p of pipes) {
       if (
         bird.x + bird.radius > p.x &&
@@ -124,8 +123,8 @@ export function initFlappy(socket) {
     flappyScore.textContent = `Score : ${score}`;
   }
 
+  // ---------- Eventlisteners ----------
   document.addEventListener("keydown", (e) => {
-    // ignore when typing in inputs or editable elements
     const active = document.activeElement;
     const tag = active && active.tagName;
     const isTyping =
@@ -135,7 +134,6 @@ export function initFlappy(socket) {
     if (isTyping) return;
 
     if (e.code === "Space" && gameRunning) {
-      // prevent page scrolling when space triggers a jump
       e.preventDefault();
       birdVel = jump;
     }

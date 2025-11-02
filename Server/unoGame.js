@@ -204,7 +204,7 @@ class UnoGame {
     } else if (card.valeur === "Inverse") {
       this.direction *= -1;
       if (this.joueurs.length === 2) {
-        // En 1v1 il rejoue
+        // 1v1 rejoue
         message = `${joueur.pseudo} a inversé le sens et rejoue`;
       } else {
         message = `${joueur.pseudo} a inversé le sens`;

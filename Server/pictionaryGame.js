@@ -52,7 +52,6 @@ class PictionaryGame {
   }
 
   canStart() {
-    // Require at least 3 players to start a Pictionary game
     return this.joueurs.length >= 3;
   }
 
@@ -69,7 +68,7 @@ class PictionaryGame {
     this.guessedThisRound.clear();
     this.timeLeft = this.roundDuration;
     this.strokes = [];
-    // Initialize revealed mask: keep spaces revealed, hide letters with '_'
+    // "_" pour char caractère
     if (this.currentWord) {
       this._revealedMask = Array.from(this.currentWord)
         .map((ch) => (ch === " " ? " " : "_"))

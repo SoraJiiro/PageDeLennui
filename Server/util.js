@@ -3,7 +3,7 @@ const path = require("path");
 const session = require("express-session");
 const config = require("./config");
 
-// ========== Session ==========
+// ------- Session -------
 const expressSession = session({
   name: "sid",
   secret: config.SESSION_SECRET,
@@ -16,7 +16,7 @@ const expressSession = session({
   },
 });
 
-// ========== Blacklist Middleware ==========
+// ------- Blacklist + Middleware -------
 const blacklistMiddleware = (req, res, next) => {
   const ip = (
     req.headers["x-forwarded-for"] ||
@@ -33,26 +33,25 @@ const blacklistMiddleware = (req, res, next) => {
   next();
 };
 
-// ========== File Service ==========
+// ------- Gestionnaire fichier data -------
 class FileService {
   constructor() {
-    if (!fs.existsSync(config.DATA_DIR)) {
-      fs.mkdirSync(config.DATA_DIR, { recursive: true });
+    if (!fs.existsSync(config.DATA)) {
+      fs.mkdirSync(config.DATA, { recursive: true });
     }
 
     this.files = {
-      clicks: path.join(config.DATA_DIR, "clicks.json"),
-      historique: path.join(config.DATA_DIR, "chat_history.json"),
-      chatLogs: path.join(config.DATA_DIR, "chat_logs.jsonl"),
-      dinoScores: path.join(config.DATA_DIR, "dino_scores.json"),
-      flappyScores: path.join(config.DATA_DIR, "flappy_scores.json"),
-      unoWins: path.join(config.DATA_DIR, "uno_wins.json"),
-      medals: path.join(config.DATA_DIR, "medals.json"),
-      p4Wins: path.join(config.DATA_DIR, "p4_wins.json"),
-      pictionaryWins: path.join(config.DATA_DIR, "pictionary_wins.json"),
+      clicks: path.join(config.DATA, "clicks.json"),
+      historique: path.join(config.DATA, "chat_history.json"),
+      chatLogs: path.join(config.DATA, "chat_logs.jsonl"),
+      dinoScores: path.join(config.DATA, "dino_scores.json"),
+      flappyScores: path.join(config.DATA, "flappy_scores.json"),
+      unoWins: path.join(config.DATA, "uno_wins.json"),
+      medals: path.join(config.DATA, "medals.json"),
+      p4Wins: path.join(config.DATA, "p4_wins.json"),
+      pictionaryWins: path.join(config.DATA, "pictionary_wins.json"),
     };
 
-    // Charger tous les fichiers au démarrage
     this.data = this.loadAll();
   }
 
@@ -108,7 +107,7 @@ class FileService {
   }
 }
 
-// ========== Anti-Spam ==========
+// ------- Anti-Spam -------
 class AntiSpam {
   constructor() {
     this.buckets = new Map();
@@ -137,7 +136,7 @@ class AntiSpam {
   }
 }
 
-// ========== Game State Manager ==========
+// ------- Gestionnaire Game State -------
 class GameStateManager {
   constructor() {
     this.users = new Map();
@@ -145,9 +144,8 @@ class GameStateManager {
   }
 
   addUser(socketId, pseudo, io) {
-    // Déconnecter anciennes sockets
     if (this.userSockets.has(pseudo)) {
-      const oldSockets = this.userSockets.get(pseudo);
+      const oldSockets = this.userSockets.get(pseudo); // Déco anciennes instances
       oldSockets.forEach((oldId) => {
         if (oldId !== socketId) {
           const oldSocket = io.sockets.sockets.get(oldId);
@@ -173,7 +171,7 @@ class GameStateManager {
       this.userSockets.get(pseudo).delete(socketId);
       if (this.userSockets.get(pseudo).size === 0) {
         this.userSockets.delete(pseudo);
-        return true; // Complètement déconnecté
+        return true;
       }
     }
     return false;
@@ -184,7 +182,7 @@ class GameStateManager {
   }
 }
 
-// ========== Exports ==========
+// ------- Exports -------
 module.exports = {
   expressSession,
   blacklistMiddleware,

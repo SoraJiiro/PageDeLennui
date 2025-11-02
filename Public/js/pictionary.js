@@ -36,7 +36,7 @@ export function initPictionary(socket) {
   const stage7 = document.getElementById("stage7");
   if (stage7) observer.observe(stage7);
 
-  // === Boutons lobby ===
+  // --------- Events Bouton/Input ---------
   joinBtn?.addEventListener("click", () => socket.emit("pictionary:join"));
   leaveBtn?.addEventListener("click", () => socket.emit("pictionary:leave"));
   startBtn?.addEventListener("click", () => socket.emit("pictionary:start"));
@@ -54,7 +54,6 @@ export function initPictionary(socket) {
     }
   });
 
-  // Submit guess on Enter and avoid bubbling to global handlers
   if (guessInput) {
     guessInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -69,11 +68,11 @@ export function initPictionary(socket) {
     });
   }
 
-  // === Dessin ===
+  // --------- Dessin ---------
   let strokeColor = "#fff";
   let strokeSize = 3;
   let eraser = false;
-  let currentTool = "brush"; // 'brush' or 'fill'
+  let currentTool = "brush";
 
   function sendStroke(x, y, type) {
     socket.emit("pictionary:draw", {
@@ -90,7 +89,6 @@ export function initPictionary(socket) {
     socket.emit("pictionary:fill", { x, y, color });
   }
 
-  // helper: hex to rgba array
   function hexToRgba(hex) {
     if (!hex) return [0, 0, 0, 255];
     const h = hex.replace("#", "");
@@ -107,7 +105,7 @@ export function initPictionary(socket) {
     return [r, g, b, 255];
   }
 
-  // Flood fill implementation (works on device pixels). x,y are CSS pixels.
+  // Remplissage tool
   function fillAt(x, y, fillColor) {
     if (!canvas || !ctx) return;
     const dpr = window.devicePixelRatio || 1;
@@ -128,7 +126,6 @@ export function initPictionary(socket) {
     const targetB = data[targetIndex + 2];
     const targetA = data[targetIndex + 3];
     const [fr, fg, fb, fa] = hexToRgba(fillColor);
-    // If target color already equals fillColor, do nothing
     if (targetR === fr && targetG === fg && targetB === fb && targetA === fa) {
       return;
     }
@@ -152,7 +149,6 @@ export function initPictionary(socket) {
       if (visited[idx]) continue;
       const di = idx * 4;
       if (!matchColor(di)) continue;
-      // set new color
       data[di] = fr;
       data[di + 1] = fg;
       data[di + 2] = fb;
@@ -167,13 +163,10 @@ export function initPictionary(socket) {
     ctx.putImageData(img, 0, 0);
   }
 
-  // Resize canvas to match display size and devicePixelRatio to avoid coord mismatch
   function resizeCanvas() {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    // prefer clientWidth/clientHeight (layout size). If those are zero (parent has no height),
-    // fall back to canvas attributes or defaults to avoid tiny 2x2 results.
     const clientW = Math.round(
       canvas.clientWidth ||
         rect.width ||
@@ -189,35 +182,29 @@ export function initPictionary(socket) {
     const displayWidth = Math.max(1, clientW);
     const displayHeight = Math.max(1, clientH);
 
-    // only change size if different
     if (
       canvas.width !== displayWidth * dpr ||
       canvas.height !== displayHeight * dpr
     ) {
       canvas.width = displayWidth * dpr;
       canvas.height = displayHeight * dpr;
-      // ensure CSS size equals layout size
       canvas.style.width = `${displayWidth}px`;
       canvas.style.height = `${displayHeight}px`;
       const ctxLocal = canvas.getContext("2d");
-      // set transform so drawing uses CSS pixels
       ctxLocal.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // request server to resend strokes so the drawing is replayed at new size
       try {
         socket.emit("pictionary:getState");
-      } catch (e) {}
+      } catch (e) {
+        console.error("Erreur interne : ", e.toString());
+      }
     }
   }
 
-  window.addEventListener("resize", () => {
-    resizeCanvas();
-  });
+  window.addEventListener("resize", resizeCanvas);
 
   if (canvas) {
-    // initialize canvas size
     resizeCanvas();
 
-    // create tool UI (palette, brush size, color picker, eraser) if missing
     const controls = document.querySelector(".pictionary-controls");
     if (controls && !controls.querySelector(".pictionary-palette")) {
       const palette = document.createElement("div");
@@ -229,7 +216,6 @@ export function initPictionary(socket) {
         btn.addEventListener("click", () => {
           strokeColor = c;
           eraser = false;
-          // visual feedback
           Array.from(palette.children).forEach((b) => (b.style.outline = ""));
           btn.style.outline = "2px solid #fff";
         });
@@ -269,7 +255,6 @@ export function initPictionary(socket) {
       controls.insertBefore(leftGroup, controls.firstChild);
     }
 
-    // Wire up palette/colorpicker/brush/eraser from static or dynamic markup
     (function wireTools() {
       const palette = controls.querySelector(".pictionary-palette");
       const colorpicker = controls.querySelector(".pictionary-colorpicker");
@@ -278,7 +263,7 @@ export function initPictionary(socket) {
       const fillBtn = controls.querySelector(".pictionary-fill");
       const clearBtnEl = controls.querySelector(".pic-clear-btn");
 
-      let selectedTool = "brush"; // 'brush' | 'fill' | 'eraser'
+      let selectedTool = "brush";
 
       function clearSelectionVisuals() {
         if (palette)
@@ -312,7 +297,6 @@ export function initPictionary(socket) {
         if (visualElem) markSelected(visualElem);
       }
 
-      // palette buttons -> brush
       if (palette) {
         Array.from(palette.children).forEach((btn) => {
           btn.style.cursor = "pointer";
@@ -323,7 +307,6 @@ export function initPictionary(socket) {
         });
       }
 
-      // colorpicker selects brush and sets color
       if (colorpicker) {
         colorpicker.addEventListener("input", (e) => {
           strokeColor = e.target.value;
@@ -331,28 +314,24 @@ export function initPictionary(socket) {
         });
       }
 
-      // brush size
       if (brush) {
         brush.addEventListener("input", (e) => {
           strokeSize = Number(e.target.value) || 3;
         });
       }
 
-      // fill button selects fill tool
       if (fillBtn) {
         fillBtn.addEventListener("click", () => {
           selectTool("fill", fillBtn);
         });
       }
 
-      // eraser selects eraser tool
       if (eraserBtn) {
         eraserBtn.addEventListener("click", () => {
           selectTool("eraser", eraserBtn);
         });
       }
 
-      // clear canvas
       if (clearBtnEl) {
         clearBtnEl.addEventListener("click", () => {
           if (!estDessinateur) return;
@@ -363,7 +342,6 @@ export function initPictionary(socket) {
         });
       }
 
-      // initial selection: try to match colorpicker value to a palette button
       (function initialSelect() {
         const initial = colorpicker ? colorpicker.value : strokeColor;
         if (palette) {
@@ -381,13 +359,13 @@ export function initPictionary(socket) {
         }
       })();
     })();
+
     canvas.addEventListener("mousedown", (e) => {
       if (!estDessinateur) return;
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       if (currentTool === "fill") {
-        // perform fill locally and notify server
         fillAt(x, y, strokeColor);
         sendFill(x, y, strokeColor);
         return;
@@ -425,7 +403,7 @@ export function initPictionary(socket) {
     });
   }
 
-  // === Événements Socket ===
+  // --------- Events Socket ---------
   socket.on("pictionary:lobby", (data) => {
     monPseudo = data.myUsername;
     estSpectateur = !data.estAuLobby && data.gameStarted;
@@ -514,11 +492,9 @@ export function initPictionary(socket) {
   socket.on("pictionary:fill", (data) => {
     try {
       if (!ctx) return;
-      const rect = canvas.getBoundingClientRect();
-      // data.x/y are CSS pixels already
       fillAt(data.x, data.y, data.color);
     } catch (e) {
-      // noop
+      console.error("Erreur interne : ", e.toString());
     }
   });
 
@@ -535,20 +511,18 @@ export function initPictionary(socket) {
     socket.emit("pictionary:getState");
   });
 
-  // === Mise à jour de la partie ===
   function updateGame(state) {
     if (!state) return;
     estDessinateur = state.estDessinateur;
     estSpectateur = state.estSpec;
 
-    // Met à jour l'indicateur du dessinateur
     try {
       const curEl = document.querySelector(".pictionary-current-player");
       if (curEl) {
         curEl.textContent = state.currentDrawer || "—";
       }
     } catch (e) {
-      // noop
+      console.error("Erreur interne : ", e.toString());
     }
 
     if (modeSpec) {
@@ -570,7 +544,6 @@ export function initPictionary(socket) {
     if (infoEl) {
       const rawMot = state.motVisible || state.wordProgress || "???";
 
-      // escape HTML to avoid injection
       function esc(s) {
         return String(s)
           .replace(/&/g, "&amp;")
@@ -580,7 +553,6 @@ export function initPictionary(socket) {
           .replace(/'/g, "&#39;");
       }
 
-      // For non-drawers, insert spaces between characters so underscores are easier to read
       let displayMot;
       if (estDessinateur) {
         displayMot = `<span class="pictionary-word drawer">${esc(
@@ -588,7 +560,7 @@ export function initPictionary(socket) {
         )}</span>`;
       } else {
         const parts = Array.from(String(rawMot)).map((ch) => {
-          if (ch === " ") return "&nbsp;&nbsp;&nbsp;"; // wider gap for spaces
+          if (ch === " ") return "&nbsp;&nbsp;&nbsp;";
           return esc(ch);
         });
         displayMot = `<span class="pictionary-word">${parts.join(" ")}</span>`;
@@ -610,7 +582,7 @@ export function initPictionary(socket) {
         .join("");
     }
 
-    // Afficher/masquer la barre d'outils et la barre de proposition selon le rôle
+    // Display des tools selon role
     try {
       const controls = document.querySelector(".pictionary-controls");
       if (controls) {
@@ -619,16 +591,13 @@ export function initPictionary(socket) {
         const clearBtnEl = controls.querySelector(".pic-clear-btn");
 
         if (estSpectateur) {
-          // spectateur : tout caché
           if (toolbar) toolbar.style.display = "none";
           if (guessGroup) guessGroup.style.display = "none";
           if (clearBtnEl) clearBtnEl.style.display = "none";
         } else if (estDessinateur) {
-          // dessinateur : toolbar visible, guess hidden, clear visible
           if (toolbar) toolbar.style.display = "flex";
           if (guessGroup) guessGroup.style.display = "none";
           if (clearBtnEl) clearBtnEl.style.display = "inline-block";
-          // Ensure a visible selection when toolbar appears: prefer palette match, else colorpicker.
           try {
             const palette = controls.querySelector(".pictionary-palette");
             const colorpicker = controls.querySelector(
@@ -650,17 +619,16 @@ export function initPictionary(socket) {
               colorpicker.dispatchEvent(new Event("input", { bubbles: true }));
             }
           } catch (e) {
-            // noop
+            console.error("Erreur interne : ", e.toString());
           }
         } else {
-          // joueur normal : toolbar hidden, guess visible
           if (toolbar) toolbar.style.display = "none";
           if (guessGroup) guessGroup.style.display = "flex";
           if (clearBtnEl) clearBtnEl.style.display = "none";
         }
       }
     } catch (e) {
-      // noop
+      console.error("Erreur interne : ", e.toString());
     }
   }
 }

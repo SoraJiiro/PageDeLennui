@@ -1,16 +1,15 @@
-// handlers.js
 const { FileService, AntiSpam, GameStateManager } = require("./util");
 const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
 
-// ==== ÉTAT GLOBAL DES JEUX ====
-let gameActuelle = new UnoGame(); // UNO
+// ------- Games -------
+let gameActuelle = new UnoGame();
 let pictionaryGame = new PictionaryGame();
 let pictionaryTimer = null;
-let p4Game = new Puissance4Game(); // Puissance 4
+let p4Game = new Puissance4Game();
 
-// ==== HELPERS GÉNÉRAUX (leaderboards, etc.) ====
+// ------- Helpers -------
 const helpers = {
   broadcastClickerLB(io) {
     const arr = Object.entries(FileService.data.clicks)
@@ -50,7 +49,7 @@ const helpers = {
   },
 };
 
-// ==== HANDLERS SOCKET PRINCIPAUX ====
+// ------- Handler Socket -------
 function initSocketHandlers(io, socket, gameState) {
   const user = socket.handshake.session?.user;
   if (!user || !user.pseudo) {
@@ -63,7 +62,7 @@ function initSocketHandlers(io, socket, gameState) {
   gameState.addUser(socket.id, pseudo, io);
   console.log(`>> [${pseudo}] connecté`);
 
-  // ---- Envoi initial au client ----
+  // Envoi dada initiales
   socket.emit("you:name", pseudo);
   socket.emit("chat:history", FileService.data.historique);
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
@@ -78,9 +77,7 @@ function initSocketHandlers(io, socket, gameState) {
   io.emit("users:list", gameState.getUniqueUsers());
   io.emit("system:info", `${pseudo} a rejoint le chat`);
 
-  // =========================
-  // =======  CHAT  ==========
-  // =========================
+  // ------- Chat -------
   socket.on("chat:message", ({ text }) => {
     const msg = String(text || "").trim();
     if (!msg) return;
@@ -95,9 +92,7 @@ function initSocketHandlers(io, socket, gameState) {
     io.emit("chat:message", payload);
   });
 
-  // =========================
-  // ===== CLICKER ===========
-  // =========================
+  // ------- Clicker -------
   socket.on("clicker:click", () => {
     if (!AntiSpam.allow(socket.id)) return;
     FileService.data.clicks[pseudo] =
@@ -121,11 +116,9 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("clicker:medalUnlock", ({ medalName, colors }) => {
     if (typeof medalName !== "string" || medalName.trim() === "") return;
 
-    // Récupère ou crée la structure de médailles pour ce joueur
     const allMedals = FileService.data.medals;
-    const userMedals = allMedals[pseudo] || [];
+    const userMedals = allMedals[pseudo] || []; // Get ou créer
 
-    // Si la médaille n'est pas déjà débloquée
     if (
       !userMedals.find((m) =>
         typeof m === "string" ? m === medalName : m.name === medalName
@@ -134,7 +127,7 @@ function initSocketHandlers(io, socket, gameState) {
       const newEntry =
         Array.isArray(colors) && colors.length >= 3
           ? { name: medalName, colors }
-          : medalName; // compatibilité ancienne version
+          : medalName;
 
       userMedals.push(newEntry);
       allMedals[pseudo] = userMedals;
@@ -149,9 +142,7 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
-  // =========================
-  // ======  DINO   ==========
-  // =========================
+  // ------- Dino -------
   socket.on("dino:score", ({ score }) => {
     const s = Number(score);
     if (isNaN(s) || s < 0) return;
@@ -164,9 +155,7 @@ function initSocketHandlers(io, socket, gameState) {
     helpers.broadcastDinoLB(io);
   });
 
-  // =========================
-  // =====  FLAPPY  ==========
-  // =========================
+  // ------- Flappy -------
   socket.on("flappy:score", ({ score }) => {
     const s = Number(score);
     if (isNaN(s) || s < 0) return;
@@ -179,9 +168,7 @@ function initSocketHandlers(io, socket, gameState) {
     helpers.broadcastFlappyLB(io);
   });
 
-  // =====================================================
-  // ======================  UNO  ========================
-  // =====================================================
+  // ------- Uno -------
   function uno_majSocketIds() {
     if (!gameActuelle) return;
     io.sockets.sockets.forEach((clientSocket) => {
@@ -372,10 +359,8 @@ function initSocketHandlers(io, socket, gameState) {
     uno_broadcast(res.message);
   });
 
-  // =====================================================
-  // ==================  PICTIONARY  =====================
-  // =====================================================
-  function pic_majSocketIds() {
+  // ------- Pictionary -------
+  function pictionary_majSocketIds() {
     if (!pictionaryGame) return;
     io.sockets.sockets.forEach((clientSocket) => {
       const clientUser = clientSocket.handshake.session?.user;
@@ -385,9 +370,9 @@ function initSocketHandlers(io, socket, gameState) {
     });
   }
 
-  function pic_broadcastLobby() {
+  function pictionary_broadcastLobby() {
     if (!pictionaryGame) pictionaryGame = new PictionaryGame();
-    pic_majSocketIds();
+    pictionary_majSocketIds();
     const lobbyState = pictionaryGame.getLobbyState();
     io.sockets.sockets.forEach((clientSocket) => {
       const clientUser = clientSocket.handshake.session?.user;
@@ -404,9 +389,9 @@ function initSocketHandlers(io, socket, gameState) {
     });
   }
 
-  function pic_broadcastGame(message = "") {
+  function pictionary_broadcastGame(message = "") {
     if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    pic_majSocketIds();
+    pictionary_majSocketIds();
     [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
       const pSocket = io.sockets.sockets.get(p.socketId);
       if (pSocket) {
@@ -417,20 +402,20 @@ function initSocketHandlers(io, socket, gameState) {
     });
   }
 
-  function pic_startTimer() {
+  function pictionary_startTimer() {
     if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    pic_stopTimer();
-    pictionaryTimer = setInterval(pic_tick, 1000);
+    pictionary_stopTimer();
+    pictionaryTimer = setInterval(pictionary_tick, 1000);
   }
 
-  function pic_stopTimer() {
+  function pictionary_stopTimer() {
     if (pictionaryTimer) {
       clearInterval(pictionaryTimer);
       pictionaryTimer = null;
     }
   }
 
-  function pic_tick() {
+  function pictionary_tick() {
     if (!pictionaryGame || !pictionaryGame.gameStarted) return;
     if (typeof pictionaryGame.timeLeft !== "number") {
       pictionaryGame.timeLeft = pictionaryGame.roundDuration;
@@ -466,19 +451,19 @@ function initSocketHandlers(io, socket, gameState) {
 
         io.emit("pictionary:gameEnd", { winner });
         pictionaryGame = new PictionaryGame();
-        pic_stopTimer();
-        pic_broadcastLobby();
+        pictionary_stopTimer();
+        pictionary_broadcastLobby();
       } else {
-        pic_broadcastGame("Nouvelle manche : nouveau dessinateur");
+        pictionary_broadcastGame("Nouvelle manche : nouveau dessinateur");
         io.emit("pictionary:clear");
-        pic_startTimer();
+        pictionary_startTimer();
       }
     }
   }
 
   socket.on("pictionary:getState", () => {
     if (!pictionaryGame) pictionaryGame = new PictionaryGame();
-    pic_majSocketIds();
+    pictionary_majSocketIds();
     const lobbyState = pictionaryGame.getLobbyState();
     const estAuLobby = pictionaryGame.joueurs.some((p) => p.pseudo === pseudo);
     socket.emit("pictionary:lobby", {
@@ -499,7 +484,7 @@ function initSocketHandlers(io, socket, gameState) {
     if (pictionaryGame.gameStarted) {
       socket.emit("pictionary:error", "La partie a déjà commencé");
       pictionaryGame.addSpectator(pseudo, socket.id);
-      pic_broadcastLobby();
+      pictionary_broadcastLobby();
       return;
     }
     pictionaryGame.removeSpectator(pseudo);
@@ -513,13 +498,13 @@ function initSocketHandlers(io, socket, gameState) {
           `Le lobby est plein (${pictionaryGame.maxPlayers}/6)`
         );
       }
-      pic_broadcastLobby();
+      pictionary_broadcastLobby();
       return;
     }
     console.log(
       `✅ ${pseudo} a rejoint le lobby PICTIONARY (${pictionaryGame.joueurs.length})`
     );
-    pic_broadcastLobby();
+    pictionary_broadcastLobby();
   });
 
   socket.on("pictionary:leave", () => {
@@ -536,14 +521,14 @@ function initSocketHandlers(io, socket, gameState) {
             reason: `${pseudo} est parti`,
           });
           pictionaryGame = new PictionaryGame();
-          pic_broadcastLobby();
+          pictionary_broadcastLobby();
           return;
         }
-        pic_broadcastGame(`${pseudo} a quitté la partie`);
+        pictionary_broadcastGame(`${pseudo} a quitté la partie`);
       }
 
       pictionaryGame.addSpectator(pseudo, socket.id);
-      pic_broadcastLobby();
+      pictionary_broadcastLobby();
     } else {
       pictionaryGame.removeSpectator(pseudo);
     }
@@ -565,8 +550,8 @@ function initSocketHandlers(io, socket, gameState) {
       `🎨 Partie PICTIONARY démarrée avec ${pictionaryGame.joueurs.length} joueurs`
     );
 
-    pic_startTimer();
-    pic_majSocketIds();
+    pictionary_startTimer();
+    pictionary_majSocketIds();
 
     pictionaryGame.joueurs.forEach((p) => {
       const s = io.sockets.sockets.get(p.socketId);
@@ -592,7 +577,7 @@ function initSocketHandlers(io, socket, gameState) {
       }
     });
 
-    pic_broadcastLobby();
+    pictionary_broadcastLobby();
   });
 
   socket.on("pictionary:guess", ({ text }) => {
@@ -612,7 +597,7 @@ function initSocketHandlers(io, socket, gameState) {
           system: true,
           text: `${pseudo} a deviné !`,
         });
-        pic_broadcastGame(`${pseudo} a deviné le mot`);
+        pictionary_broadcastGame(`${pseudo} a deviné le mot`);
       }
 
       const nonDrawers = pictionaryGame.joueurs.filter(
@@ -639,13 +624,13 @@ function initSocketHandlers(io, socket, gameState) {
 
           io.emit("pictionary:gameEnd", { winner });
           pictionaryGame = new PictionaryGame();
-          pic_stopTimer();
-          pic_broadcastLobby();
+          pictionary_stopTimer();
+          pictionary_broadcastLobby();
           return;
         } else {
-          pic_broadcastGame("Nouvelle manche : nouveau dessinateur");
+          pictionary_broadcastGame("Nouvelle manche : nouveau dessinateur");
           io.emit("pictionary:clear");
-          pic_startTimer();
+          pictionary_startTimer();
           return;
         }
       }
@@ -698,13 +683,11 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("pictionary:backToLobby", () => {
     io.emit("pictionary:gameEnd", { winner: "Retour au lobby" });
     pictionaryGame = new PictionaryGame();
-    pic_stopTimer();
-    pic_broadcastLobby();
+    pictionary_stopTimer();
+    pictionary_broadcastLobby();
   });
 
-  // =====================================================
-  // ================  PUISSANCE 4  ======================
-  // =====================================================
+  // ------- Puissance 4 -------
   function p4_majSocketIds() {
     if (!p4Game) return;
     io.sockets.sockets.forEach((clientSocket) => {
@@ -874,9 +857,7 @@ function initSocketHandlers(io, socket, gameState) {
     p4_broadcastGame();
   });
 
-  // =========================
-  // ===== DISCONNECT ========
-  // =========================
+  // ------- Log off -------
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
     AntiSpam.cleanup(socket.id);
@@ -888,7 +869,7 @@ function initSocketHandlers(io, socket, gameState) {
 
     io.emit("users:list", gameState.getUniqueUsers());
 
-    // --- UNO
+    // UNO
     if (gameActuelle) {
       const etaitJoueur = gameActuelle.joueurs.some((p) => p.pseudo === pseudo);
       if (etaitJoueur) {
@@ -909,7 +890,7 @@ function initSocketHandlers(io, socket, gameState) {
       }
     }
 
-    // --- PICTIONARY
+    // PICTIONARY
     if (pictionaryGame) {
       const etaitJoueurPic = pictionaryGame.joueurs.some(
         (p) => p.pseudo === pseudo
@@ -922,19 +903,19 @@ function initSocketHandlers(io, socket, gameState) {
             winner: "Partie annulée !",
             reason: `${pseudo} s'est déconnecté`,
           });
-          pic_stopTimer();
+          pictionary_stopTimer();
           pictionaryGame = new PictionaryGame();
-          pic_broadcastLobby();
+          pictionary_broadcastLobby();
         } else if (pictionaryGame.gameStarted) {
-          pic_broadcastGame(`${pseudo} s'est déconnecté`);
+          pictionary_broadcastGame(`${pseudo} s'est déconnecté`);
         }
-        pic_broadcastLobby();
+        pictionary_broadcastLobby();
       } else {
         pictionaryGame.removeSpectator(pseudo);
       }
     }
 
-    // --- P4
+    // Puissance 4
     if (p4Game) {
       const etaitJoueurP4 = p4Game.joueurs.some((p) => p.pseudo === pseudo);
       if (etaitJoueurP4) {

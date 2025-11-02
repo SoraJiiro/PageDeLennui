@@ -21,10 +21,9 @@ export function initUno(socket) {
   let estAuLobby = false;
   let estSpec = false;
 
-  // Demander l'état initial au chargement de la page
   socket.emit("uno:getState");
 
-  // Redemander l'état quand on arrive sur la page UNO
+  // Observer pour recharger l'état
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -39,22 +38,17 @@ export function initUno(socket) {
   const stage6 = document.getElementById("stage6");
   if (stage6) observer.observe(stage6);
 
-  // Rejoindre le lobby
+  // --------- Events Bouton/Input ---------
   joinBtn?.addEventListener("click", () => {
     socket.emit("uno:join");
   });
-
-  // Quitter le lobby
   leaveBtn?.addEventListener("click", () => {
     socket.emit("uno:leave");
   });
-
-  // Démarrer la partie
   startBtn?.addEventListener("click", () => {
     socket.emit("uno:start");
   });
 
-  // Mise à jour du lobby
   socket.on("uno:lobby", (data) => {
     try {
       myUsername = data.myUsername;
@@ -154,13 +148,11 @@ export function initUno(socket) {
       <button class="uno-color-btn color-pink" data-color="pink">Rose</button>
     `;
 
-    // Désactiver la pioche et les cartes
     pileEl.classList.add("disabled");
     deckEl.querySelectorAll(".uno-deck-card").forEach((card) => {
       card.classList.add("disabled");
     });
 
-    // Fonction pour fermer le color picker
     function closeColorPicker() {
       colorPicker.classList.remove("active");
       pileEl.classList.remove("disabled");
@@ -170,25 +162,21 @@ export function initUno(socket) {
       document.removeEventListener("click", handleOutsideClick);
     }
 
-    // Gestion du clic à l'extérieur
     function handleOutsideClick(event) {
-      // On ignore les clics à l'intérieur du color picker
       if (!colorPicker.contains(event.target)) {
         closeColorPicker();
       }
     }
 
-    // Empêcher plusieurs listeners accumulés
     document.removeEventListener("click", handleOutsideClick);
-    // Délai pour éviter que le clic d’ouverture ferme immédiatement le menu
     setTimeout(() => {
       document.addEventListener("click", handleOutsideClick);
-    }, 0);
+    }, 1);
 
-    // Choix d'une couleur
+    // Choix couleur
     colorOptions.querySelectorAll(".uno-color-btn").forEach((btn) => {
       btn.addEventListener("click", (event) => {
-        event.stopPropagation(); // Empêche la fermeture immédiate
+        event.stopPropagation();
         const color = btn.dataset.color;
         socket.emit("uno:play", { cardIndex, color });
         closeColorPicker();
@@ -196,7 +184,6 @@ export function initUno(socket) {
     });
   }
 
-  // Affichage d'une carte
   function renderCard(card, isSmall = false) {
     if (!card) return "";
     const colorClass =
@@ -209,12 +196,10 @@ export function initUno(socket) {
     `;
   }
 
-  // Mise à jour de l'interface
   function updateGame(state) {
     stateActuel = state;
     estSpec = state.estSpec;
 
-    // Mode spectateur
     if (modeSpec) {
       if (estSpec) {
         modeSpec.style.display = "block";
@@ -225,7 +210,6 @@ export function initUno(socket) {
       }
     }
 
-    // Statut
     if (statusEl) {
       const tourDuJoueur = state.currentPlayer;
       const estMonTour = state.estMonTour && !estSpec;
@@ -238,12 +222,11 @@ export function initUno(socket) {
       }
     }
 
-    // Carte défaussée
+    // Carte middle
     if (discardEl) {
       discardEl.innerHTML = renderCard(state.topCard, true);
     }
 
-    // Pioche
     if (pileEl) {
       if (estSpec || !state.estMonTour) {
         pileEl.classList.add("disabled");
@@ -252,7 +235,7 @@ export function initUno(socket) {
       }
     }
 
-    // Main du joueur (vide si spectateur)
+    // Display deck selon role
     if (deckEl) {
       if (estSpec) {
         deckEl.innerHTML =
@@ -287,7 +270,6 @@ export function initUno(socket) {
       }
     }
 
-    // Adversaires
     if (advEl) {
       advEl.innerHTML = "";
       state.opponents.forEach((opp) => {
@@ -306,7 +288,7 @@ export function initUno(socket) {
       });
     }
 
-    // Informations
+    //  --------- Display info --------
     if (infoEl) {
       infoEl.innerHTML = `
         <p>Direction : ${
@@ -318,7 +300,6 @@ export function initUno(socket) {
     }
   }
 
-  // Fin de partie
   socket.on("uno:gameEnd", (data) => {
     if (estSpec) return;
     if (data.winner === "Partie annulée !") {

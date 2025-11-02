@@ -6,7 +6,7 @@ const sharedSession = require("express-socket.io-session");
 const fs = require("fs");
 const path = require("path");
 
-// Imports
+// ------- Imports -------
 const config = require("./config");
 const {
   expressSession,
@@ -17,42 +17,39 @@ const authRoutes = require("./authRoutes");
 const requireAuth = require("./requireAuth");
 const { initSocketHandlers } = require("./handlers");
 
-// Initialisation
+// ------- Init -------
 const app = express();
 const serveur = http.createServer(app);
 const io = new Server(serveur);
 const gameState = new GameStateManager();
 
-// Middleware
+// ------- Middleware -------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(expressSession);
 app.use(blacklistMiddleware);
 
-// Partage de session avec Socket.IO
 io.use(sharedSession(expressSession, { autoSave: true }));
 
-// Routes
+// ------- Route -------
 app.use("/api", authRoutes);
 app.get("/login", (_, res) =>
-  res.sendFile(path.join(config.WEBROOT, "login.html"))
+  res.sendFile(path.join(config.PUBLIC, "login.html"))
 );
 app.get("/register", (_, res) =>
-  res.sendFile(path.join(config.WEBROOT, "register.html"))
+  res.sendFile(path.join(config.PUBLIC, "register.html"))
 );
 
-// Auth obligatoire ensuite
 app.use(requireAuth);
-app.use(express.static(config.WEBROOT));
+app.use(express.static(config.PUBLIC));
 
-// Socket.IO
 io.on("connection", (socket) => initSocketHandlers(io, socket, gameState));
 
-// Auto Reload
+// ------- Auto Reload -------
 console.log("\n[AUTO RELOAD : OK]\n");
 let reloadTimer = null;
 
-fs.watch(config.WEBROOT, { recursive: true }, (_, filename) => {
+fs.watch(config.PUBLIC, { recursive: true }, (_, filename) => {
   if (!filename) return;
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => {
@@ -61,7 +58,7 @@ fs.watch(config.WEBROOT, { recursive: true }, (_, filename) => {
   }, 500);
 });
 
-// Démarrage du serveur
+// ------- Start Serveur -------
 serveur.listen(config.PORT, config.HOST, () => {
   console.log(
     `>>> ✅ Serveur en ligne : http://${config.HOST || "localhost"}:${

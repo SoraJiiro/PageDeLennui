@@ -100,7 +100,7 @@ class Puissance4Game {
       return { success: false, message: "Colonne invalide" };
     }
 
-    // Trouver la ligne la plus basse disponible
+    // Trouver dernière ligne
     let row = -1;
     for (let r = 5; r >= 0; r--) {
       if (this.board[r][col] === 0) {
@@ -113,36 +113,32 @@ class Puissance4Game {
       return { success: false, message: "Cette colonne est pleine" };
     }
 
-    // Placer le jeton
     const playerColor = joueur.color;
     this.board[row][col] = playerColor;
 
-    // Vérifier la victoire
     if (this.checkWin(row, col, playerColor)) {
       this.winner = joueur.pseudo;
       return { success: true, winner: joueur.pseudo };
     }
 
-    // Vérifier match nul
     if (this.isBoardFull()) {
       this.draw = true;
       return { success: true, draw: true };
     }
 
-    // Passer au joueur suivant
     this.nextPlayer();
 
     return { success: true };
   }
 
   checkWin(row, col, color) {
-    // Vérifier horizontal
+    // Vérif horizontal
     if (this.checkDirection(row, col, 0, 1, color)) return true;
-    // Vérifier vertical
+    // Vérif vertical
     if (this.checkDirection(row, col, 1, 0, color)) return true;
-    // Vérifier diagonal /
+    // Vérif diagonal (/)
     if (this.checkDirection(row, col, 1, 1, color)) return true;
-    // Vérifier diagonal \
+    // Vérif diagonal (\)
     if (this.checkDirection(row, col, 1, -1, color)) return true;
     return false;
   }
@@ -150,7 +146,7 @@ class Puissance4Game {
   checkDirection(row, col, dRow, dCol, color) {
     let count = 1;
 
-    // Compter dans une direction
+    // Vérif direction 1
     for (let i = 1; i < 4; i++) {
       const r = row + dRow * i;
       const c = col + dCol * i;
@@ -159,7 +155,7 @@ class Puissance4Game {
       count++;
     }
 
-    // Compter dans la direction opposée
+    // Vérif direction 2
     for (let i = 1; i < 4; i++) {
       const r = row - dRow * i;
       const c = col - dCol * i;

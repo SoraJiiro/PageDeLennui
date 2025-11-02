@@ -7,9 +7,9 @@ module.exports = {
   HOST: "",
   SESSION_SECRET: process.env.CLE_SID || "pDeS3CR3Ts1dKeY@523!",
 
-  // Chemins
-  DATA_DIR: path.join(__dirname, "..", "data"),
-  WEBROOT: path.join(__dirname, "..", "Public"),
+  // Route
+  DATA: path.join(__dirname, "..", "data"),
+  PUBLIC: path.join(__dirname, "..", "Public"),
 
   // Blacklist
   BLACKLIST: [

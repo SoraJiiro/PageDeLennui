@@ -31,12 +31,12 @@ export function initPuissance4(socket) {
   const stage8 = document.getElementById("stage8");
   if (stage8) observer.observe(stage8);
 
-  // Boutons lobby
+  // --------- Events Bouton/Input ---------
   joinBtn?.addEventListener("click", () => socket.emit("p4:join"));
   leaveBtn?.addEventListener("click", () => socket.emit("p4:leave"));
   startBtn?.addEventListener("click", () => socket.emit("p4:start"));
 
-  // Gestion des clics sur les colonnes
+  // Gestion clicks dans la grille
   if (boardEl) {
     boardEl.addEventListener("click", (e) => {
       const cell = e.target.closest(".p4-cell");
@@ -51,7 +51,6 @@ export function initPuissance4(socket) {
     });
   }
 
-  // Socket: Lobby
   socket.on("p4:lobby", (data) => {
     monPseudo = data.myUsername;
     estAuLobby = data.estAuLobby;
@@ -103,30 +102,25 @@ export function initPuissance4(socket) {
     }
   });
 
-  // Socket: Début de partie
   socket.on("p4:gameStart", (state) => {
     lobby.style.display = "none";
     game.classList.add("active");
     updateGame(state);
   });
 
-  // Socket: Mise à jour
   socket.on("p4:update", (state) => {
     lobby.style.display = "none";
     game.classList.add("active");
     updateGame(state);
   });
 
-  // Socket: Retour au lobby
   socket.on("p4:backToLobby", () => {
     game.classList.remove("active");
     lobby.style.display = "block";
     socket.emit("p4:getState");
   });
 
-  // Socket: Fin de partie
   socket.on("p4:gameEnd", (data) => {
-    // Afficher l'alerte seulement pour les joueurs, pas les spectateurs
     if (!estSpec) {
       if (data.winner === "Partie annulée !") {
         alert(`${data.winner} ${data.reason}`);
@@ -134,7 +128,7 @@ export function initPuissance4(socket) {
         lobby.style.display = "block";
         socket.emit("p4:getState");
       } else if (data.draw) {
-        // Attendre 3 secondes pour voir le message de match nul
+        // 3s message egalité
         setTimeout(() => {
           alert(`🤝 Match nul !`);
           game.classList.remove("active");
@@ -142,7 +136,7 @@ export function initPuissance4(socket) {
           socket.emit("p4:getState");
         }, 3000);
       } else {
-        // Attendre 3 secondes pour voir le message de victoire
+        // 3s message win
         setTimeout(() => {
           alert(`🎉 ${data.winner} a gagné la partie !`);
           game.classList.remove("active");
@@ -151,7 +145,6 @@ export function initPuissance4(socket) {
         }, 3000);
       }
     } else {
-      // Pour les spectateurs, retour immédiat au lobby
       setTimeout(() => {
         game.classList.remove("active");
         lobby.style.display = "block";
@@ -160,19 +153,16 @@ export function initPuissance4(socket) {
     }
   });
 
-  // Socket: Erreur
   socket.on("p4:error", (msg) => {
     if (estSpec) return;
     alert(msg);
   });
 
-  // Mise à jour de l'interface de jeu
   function updateGame(state) {
     if (!state) return;
     gameState = state;
     estSpec = state.estSpec;
 
-    // Mode spectateur
     if (modeSpec) {
       if (estSpec) {
         modeSpec.style.display = "block";
@@ -182,7 +172,6 @@ export function initPuissance4(socket) {
       }
     }
 
-    // Statut
     if (statusEl) {
       if (state.winner) {
         statusEl.textContent = `${state.winner} a gagné !`;
@@ -221,7 +210,6 @@ export function initPuissance4(socket) {
             cell.appendChild(token);
           }
 
-          // Ajouter la classe clickable si c'est jouable
           if (
             state.estMonTour &&
             !state.winner &&
@@ -237,7 +225,7 @@ export function initPuissance4(socket) {
       }
     }
 
-    // Informations
+    // -------- Display info --------
     if (infoEl) {
       const player1 = state.joueurs[0];
       const player2 = state.joueurs[1];

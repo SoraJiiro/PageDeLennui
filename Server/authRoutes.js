@@ -76,6 +76,7 @@ router.post("/register", async (req, res) => {
 
   req.session.user = { id: newUser.id, pseudo: newUser.pseudo };
   res.json({ message: "Compte créé avec succès.", pseudo: newUser.pseudo });
+  console.log(`Compte créé ${newUser.pseudo} (${ip}) à [${newUser.creeAt}]`);
 });
 
 router.post("/login", async (req, res) => {
@@ -85,7 +86,6 @@ router.post("/login", async (req, res) => {
 
   const users = readUsers();
 
-  // On cherche par 'pseudo' (et pas username)
   const user = users.find(
     (u) => u.pseudo.toLowerCase() === pseudo.toLowerCase()
   );
