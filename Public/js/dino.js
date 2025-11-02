@@ -12,6 +12,8 @@ export function initDino(socket) {
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
+  setupDinoReset(socket);
+
   // ---------- Consts ----------
   const GRAVITY = 1.2;
   const MIN_JUMP_VELOCITY = 18;
@@ -374,6 +376,42 @@ export function initDino(socket) {
           dino.dy *= 0.62;
         }
       }
+    }
+  });
+}
+
+function setupDinoReset(socket) {
+  const resetBtn = document.querySelector(".dino-reset");
+  if (!resetBtn) return;
+
+  resetBtn.addEventListener("click", async () => {
+    const confirmReset = confirm(
+      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Dino ?\nTon meilleur score sera définitivement perdu !"
+    );
+    if (!confirmReset) return;
+
+    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    if (!password) return;
+
+    try {
+      const res = await fetch("/api/verify-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert("❌ Mot de passe incorrect !");
+        return;
+      }
+
+      socket.emit("dino:reset");
+      alert("✅ Score Dino réinitialisé avec succès !");
+    } catch (err) {
+      alert("🚨 Erreur lors de la vérification du mot de passe");
+      console.error(err);
     }
   });
 }

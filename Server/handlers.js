@@ -155,6 +155,14 @@ function initSocketHandlers(io, socket, gameState) {
     helpers.broadcastDinoLB(io);
   });
 
+  socket.on("dino:reset", () => {
+    FileService.data.dinoScores[pseudo] = 0;
+    FileService.save("dinoScores", FileService.data.dinoScores);
+    console.log(`🔄 Reset Dino pour [${pseudo}]`);
+    helpers.broadcastDinoLB(io);
+    socket.emit("dino:resetConfirm", { success: true });
+  });
+
   // ------- Flappy -------
   socket.on("flappy:score", ({ score }) => {
     const s = Number(score);
@@ -166,6 +174,14 @@ function initSocketHandlers(io, socket, gameState) {
       console.log(`🐤 Nouveau score Flappy pour [${pseudo}] ::: ${s}`);
     }
     helpers.broadcastFlappyLB(io);
+  });
+
+  socket.on("flappy:reset", () => {
+    FileService.data.flappyScores[pseudo] = 0;
+    FileService.save("flappyScores", FileService.data.flappyScores);
+    console.log(`🔄 Reset Flappy pour [${pseudo}]`);
+    helpers.broadcastFlappyLB(io);
+    socket.emit("flappy:resetConfirm", { success: true });
   });
 
   // ------- Uno -------

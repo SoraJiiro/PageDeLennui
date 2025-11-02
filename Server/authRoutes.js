@@ -117,4 +117,39 @@ router.post("/logout", (req, res) => {
   });
 });
 
+router.post("/verify-password", async (req, res) => {
+  const { password } = req.body;
+
+  if (!req.session || !req.session.user || !req.session.user.pseudo) {
+    return res.status(401).json({ success: false, message: "Non connecté" });
+  }
+
+  if (!password) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Mot de passe manquant" });
+  }
+
+  const users = readUsers();
+  const user = users.find(
+    (u) => u.pseudo.toLowerCase() === req.session.user.pseudo.toLowerCase()
+  );
+
+  if (!user) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Utilisateur introuvable" });
+  }
+
+  const match = await bcrypt.compare(password, user.passwordHashé);
+
+  if (!match) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Mot de passe incorrect" });
+  }
+
+  res.json({ success: true, message: "Mot de passe vérifié" });
+});
+
 module.exports = router;

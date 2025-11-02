@@ -8,8 +8,11 @@ export function initFlappy(socket) {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
   }
+
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
+
+  setupFlpappyReset(socket);
 
   // ---------- Vars ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
@@ -146,4 +149,40 @@ export function initFlappy(socket) {
 
   startBtn.style.display = "block";
   scoreEl.textContent = "Score : 0";
+}
+
+function setupFlappyReset(socket) {
+  const resetBtn = document.querySelector(".flappyResetBtn");
+  if (!resetBtn) return;
+
+  resetBtn.addEventListener("click", async () => {
+    const confirmReset = confirm(
+      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Flappy ?\nTon meilleur score sera définitivement perdu !"
+    );
+    if (!confirmReset) return;
+
+    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    if (!password) return;
+
+    try {
+      const res = await fetch("/api/verify-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert("❌ Mot de passe incorrect !");
+        return;
+      }
+
+      socket.emit("flappy:reset");
+      alert("✅ Score Flappy réinitialisé avec succès !");
+    } catch (err) {
+      alert("🚨 Erreur lors de la vérification du mot de passe");
+      console.error(err);
+    }
+  });
 }

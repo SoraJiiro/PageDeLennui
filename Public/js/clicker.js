@@ -56,7 +56,6 @@ export function initClicker(socket) {
 
   // ---------- Médailles random (visuel seulement) ----------
   function randomColor() {
-    // Rare
     const rare = Math.random();
     if (rare <= 0.08) {
       const specialColors = [
@@ -81,25 +80,21 @@ export function initClicker(socket) {
     const colors = [];
 
     while (colors.length < 10) {
-      // Modifier le nb pour gén des medailles
       colors.push(randomColor());
     }
 
-    // Gestion gris
     if (Math.random() < 0.125) {
       const greyLightness = Math.floor(Math.random() * 15) + 60;
       const greyIndex = Math.floor(Math.random() * colors.length);
       colors[greyIndex] = `hsl(0, 0%, ${greyLightness}%)`;
     }
 
-    // Shuffle couleurs
     for (let i = colors.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [colors[i], colors[j]] = [colors[j], colors[i]];
     }
 
     const pallier = precedente.pallier * 2;
-    // IMPORTANT: CPS déterministe (plus de random) pour rester identique après reload
     const cps = precedente.cps + 3;
 
     return {
@@ -130,7 +125,6 @@ export function initClicker(socket) {
         }\nPalier : ${m.pallier.toLocaleString()} clics\nCPS auto : ${m.cps}`
       );
 
-      // Stockage clr en var CSS
       if (i >= 7) {
         m.couleurs.forEach((c, idx) => {
           el.style.setProperty(`--grad${idx + 1}`, c);
@@ -219,41 +213,62 @@ export function initClicker(socket) {
             if (m === medalCible)
               showNotif(`🏅 ${m.nom} débloquée ! ${m.icon}`);
 
-            // Sauvegarde du CPS auto au déblocage
             saveCPS(medalCible.cps);
           }
         }
       });
 
-      // Applique le meilleur CPS (entre restauré et médaille cible)
       const saved = getSavedCPS();
       const cpsToUse = Math.max(saved, medalCible.cps);
       if (cpsToUse !== cpsActuel) setAutoClick(cpsToUse);
     }
   }
 
-  // ---------- Reset ----------
-  function resetProgress() {
+  // ---------- Reset avec vérification mot de passe ----------
+  async function resetProgress() {
     const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score et tes médailles seront perdus !"
+      "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score, tes médailles et ton CPS auto seront perdus !"
     );
     if (!confirmReset) return;
 
-    socket.emit("clicker:reset");
-    socket.emit("clicker:medalsReset");
-    stopAutoClicks();
-    clearSavedCPS();
-    scoreActuel = 0;
-    medalsDebloquees.clear();
+    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    if (!password) {
+      showNotif("❌ Réinitialisation annulée");
+      return;
+    }
 
-    if (yourScoreEl) yourScoreEl.textContent = "0";
-    if (acpsEl) acpsEl.textContent = "";
-    medalsWrap?.querySelectorAll(".medal").forEach((m) => {
-      m.classList.remove("shown");
-      m.classList.add("hidden");
-    });
+    try {
+      const res = await fetch("/api/verify-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-    showNotif("🔁 Progression réinitialisée !");
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showNotif("❌ Mot de passe incorrect !");
+        return;
+      }
+
+      socket.emit("clicker:reset");
+      stopAutoClicks();
+      clearSavedCPS();
+      scoreActuel = 0;
+      medalsDebloquees.clear();
+
+      if (yourScoreEl) yourScoreEl.textContent = "0";
+      if (acpsEl) acpsEl.textContent = "";
+      medalsWrap?.querySelectorAll(".medal").forEach((m) => {
+        m.classList.remove("shown");
+        m.classList.add("hidden");
+      });
+
+      showNotif("✅ Progression réinitialisée avec succès !");
+    } catch (err) {
+      showNotif("🚨 Erreur lors de la vérification du mot de passe");
+      console.error(err);
+    }
   }
 
   resetBtn?.addEventListener("click", resetProgress);
@@ -300,7 +315,6 @@ export function initClicker(socket) {
       .filter((m) => userMedals.includes(m.nom))
       .sort((a, b) => b.pallier - a.pallier)[0];
 
-    // Préférence au CPS sauvé (garantit la stabilité inter-reloads)
     const saved = getSavedCPS();
     if (saved > 0) {
       setAutoClick(saved);
