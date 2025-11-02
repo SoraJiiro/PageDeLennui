@@ -336,5 +336,6 @@ export function initClicker(socket) {
   const restored = getSavedCPS();
   if (restored > 0) {
     setAutoClick(restored);
+    console.log(`Clicker: CPS auto restauré à ${restored}`);
   }
 }
