@@ -2,13 +2,18 @@
 <html>
 
     <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Page de l'ennui</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <script type="text/javascript" src="js/nav.js"></script>
-        <script defer type="text/javascript" src="js/display_lb.js"></script>
-        <script defer type="text/javascript" src="js/horloge.js"></script>
+        <link rel="preload"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+            as="style"
+            onload="this.onload=null;this.rel='stylesheet'">
+        <noscript>
+            <link rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        </noscript>
 
         <link rel="stylesheet" type="text/css" href="css/common.css" />
         <link rel="stylesheet" type="text/css" href="css/stage1.css" />
@@ -20,27 +25,34 @@
         <link rel="stylesheet" type="text/css" href="css/stage7.css" />
         <link rel="stylesheet" type="text/css" href="css/stage8.css" />
 
-        <link rel='icon' type="img/png" href="imgs/icon_d.png"
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
             media="(prefers-color-scheme: dark)" />
-        <link rel='icon' type="img/png" href="imgs/icon_l.png"
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
             media="(prefers-color-scheme: light)" />
 
+        <script type="text/javascript" src="js/nav.js"></script>
+        <script defer type="text/javascript" src="js/display_lb.js"></script>
+        <script defer type="text/javascript" src="js/horloge.js"></script>
         <script src="/socket.io/socket.io.js"></script>
         <script defer type="module" src="js/main.js"></script>
 
         <script type="text/javascript">
-        document.addEventListener("keydown", (event) => {
-            if (event.key === " " || event.key === "ArrowUp" || event.key === "Enter") {
-                event.preventDefault();
-            }
-        });
-        </script>
+    document.addEventListener("keydown", (event) => {
+      const active = document.activeElement;
+      const tag = active && active.tagName;
+      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || (active && active.isContentEditable);
+      if (isTyping) return;
 
+      if (event.key === " " || event.key === "ArrowUp" || event.key === "Enter") {
+        event.preventDefault();
+      }
+    });
+  </script>
     </head>
 
     <body>
 
-        <section id="stage1" class="first-stage">
+        <section id="stage1">
             <button class="log-off"
                 onclick="window.location.replace('/login');">Se
                 déconnecter</button>
@@ -81,17 +93,17 @@
             </div>
         </section>
 
-        <section id="stage2" class="second-stage">
+        <section id="stage2">
             <div class="dino-wrap">
+                <canvas class="game"></canvas>
                 <div class="dino-btns-wrap">
                     <button class="dino-start">Jouer</button>
                     <button class="dino-reset">Reset</button>
                 </div>
-                <canvas class="game"></canvas>
             </div>
         </section>
 
-        <section id="stage3" class="third-stage">
+        <section id="stage3">
             <div class="chat-card" role="region" aria-label="Chat LAN">
                 <div class="chat-header">
                     <h2>Chat.exe</h2>
@@ -114,12 +126,15 @@
 });
 </script>
                     <button type="submit" title="Envoyer"
-                        class="submit">Envoyer</button>
+                        class="submit"><i
+                            class="fa-solid fa-circle-arrow-right"></i>
+
+                    </button>
                 </form>
             </div>
         </section>
 
-        <section id="stage4" class="fourth-stage">
+        <section id="stage4">
 
             <div class="leaderboard-buttons">
                 <button data-board="clicker">Clicker</button>
@@ -190,7 +205,7 @@
             </div>
         </section>
 
-        <section id="stage5" class="fifth-stage">
+        <section id="stage5">
             <div class="uno-card">
                 <div class="uno-header">
                     <h2>UNO.exe</h2>
@@ -233,13 +248,9 @@
             </div>
         </section>
 
-        <section id="stage6" class="sixth-stage">
-            <div class="flappy-card">
-                <h2>Flappy Bird.exe</h2>
-                <div class="flappy-container">
-                    <canvas id="flappyCanvas"></canvas>
-                    <div id="flappyScore">Score : 0</div>
-                </div>
+        <section id="stage6">
+            <div class="flappy-wrap">
+                <canvas id="flappyCanvas" class="game"></canvas>
                 <div class="flappy-btns-wrap">
                     <button class="flappyStartBtn">Jouer</button>
                     <button class="flappyResetBtn">Reset</button>
@@ -247,7 +258,7 @@
             </div>
         </section>
 
-        <section id="stage7" class="seventh-stage">
+        <section id="stage7">
             <div class="pictionary-card">
                 <div class="pictionary-header">
                     <h2>Pictionary.exe</h2>
@@ -340,7 +351,7 @@
                 </div>
             </div>
         </section>
-        <section id="stage8" class="eighth-stage">
+        <section id="stage8">
             <div class="p4-card">
                 <div class="p4-header">
                     <h2>Puissance 4.exe</h2>

@@ -1,4 +1,4 @@
-.second-stage {
+#stage2 {
   position: absolute;
   top: calc(1 * 100dvh);
   left: 0;
@@ -18,26 +18,11 @@
   align-items: center;
   gap: 15px;
   width: 82.5dvw;
-  height: 72.5dvh;
-  border: 2px solid var(--primary-color);
+  height: 82.5dvh;
 }
 
-.dino-btns-wrap {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  width: 100%;
-  height: fit-content;
-  padding: 10px;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.dino-btns-wrap::before {
+.dino-wrap::before {
   content: "DinoGame.exe";
-  background: var(--primary-color);
   position: absolute;
   top: -35px;
   left: 50%;
@@ -54,10 +39,22 @@
   transition: all 185ms;
 }
 
+.dino-btns-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  width: 100%;
+  height: fit-content;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
 .dino-wrap .dino-btns-wrap button {
-  width: 40%;
-  height: 65px;
-  font-size: x-large;
+  width: 35%;
+  height: 50px;
+  font-size: large;
   font-weight: bold;
   letter-spacing: 1.25px;
   cursor: pointer;
@@ -65,8 +62,8 @@
 }
 
 .dino-wrap canvas.game {
-  width: 77.5%;
-  height: 77.5%;
+  width: 100%;
+  height: 100%;
   outline: 2px solid var(--primary-color);
 }
 

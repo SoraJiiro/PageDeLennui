@@ -13,9 +13,9 @@ export function initDino(socket) {
   if (ui.yourScoreEl) ui.yourScoreEl.textContent = "0";
 
   // ---------- Constantes Gameplay ----------
-  const GRAVITY = 1.2;
-  const MIN_JUMP_VELOCITY = 18;
-  const MAX_JUMP_VELOCITY = 20;
+  const GRAVITY = 1.1;
+  const MIN_JUMP_VELOCITY = 19;
+  const MAX_JUMP_VELOCITY = 21;
   const INITIAL_SPEED = 6;
   const SPEED_INCREMENT = 0.3;
   const MAX_SPEED = 14;
@@ -38,10 +38,10 @@ export function initDino(socket) {
     cloudTimer: 0,
   };
 
-  // ---------- Pseudo & meilleur score (côté serveur) ----------
+  // ---------- Pseudo & meilleur score ----------
   let myName = null;
   let myBest = 0;
-  let pendingScore = null; // score candidat en attente de confirmation serveur
+  let scoreAttente = null;
   socket.on("you:name", (name) => {
     myName = name;
   });
@@ -50,9 +50,9 @@ export function initDino(socket) {
     const me = arr.find((e) => e.pseudo === myName);
     const prevBest = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
-    if (pendingScore != null && myBest >= pendingScore && myBest > prevBest) {
+    if (scoreAttente != null && myBest >= scoreAttente && myBest > prevBest) {
       showNotif(`🦖 Nouveau record ! Score: ${myBest}`);
-      pendingScore = null;
+      scoreAttente = null;
     }
   });
 
@@ -280,7 +280,7 @@ export function initDino(socket) {
         const finalScore = Math.floor(state.score);
         socket.emit("dino:score", { score: finalScore });
         // Attendre la confirmation via le leaderboard serveur
-        pendingScore = finalScore;
+        scoreAttente = finalScore;
         showGameOver();
         return false;
       }
@@ -364,6 +364,13 @@ export function initDino(socket) {
       (active && active.isContentEditable);
     if (isTyping) return;
 
+    // Vérifier que la section Dino (stage2) est visible
+    const dinoSection = document.getElementById("stage2");
+    if (!dinoSection) return;
+    const rect = dinoSection.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (!isVisible) return;
+
     if (e.code === "Space") {
       e.preventDefault();
       if (state.isFirstStart || state.gameOver) {
@@ -378,6 +385,13 @@ export function initDino(socket) {
   });
 
   document.addEventListener("keyup", (e) => {
+    // Vérifier que la section Dino (stage2) est visible
+    const dinoSection = document.getElementById("stage2");
+    if (!dinoSection) return;
+    const rect = dinoSection.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (!isVisible) return;
+
     if (e.code === "Space") {
       e.preventDefault();
       if (dino.jumping && dino.dy > 0) {
@@ -416,7 +430,7 @@ export function initDino(socket) {
       socket.emit("dino:reset");
       showNotif("🔄 Score Dino réinitialisé avec succès !");
       myBest = 0;
-      pendingScore = null;
+      scoreAttente = null;
     } catch (err) {
       showNotif("⚠️ Erreur lors de la vérification du mot de passe");
       console.error(err);

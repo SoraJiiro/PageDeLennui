@@ -6,7 +6,7 @@ html {
   --pink: #ff69e9;
 }
 
-.fifth-stage {
+#stage5 {
   position: absolute;
   top: calc(4 * 100dvh);
   left: 0;

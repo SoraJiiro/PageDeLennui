@@ -8,8 +8,6 @@ export function initChat(socket) {
   const messages = document.getElementById("chat-messages");
   const submit = document.querySelector(".submit");
 
-  // showNotif est importé depuis util.js pour éviter la duplication
-
   function addMessage({ auteur, text, at, type = "user" }) {
     const el = document.createElement("div");
     el.className = `msg ${type}`;
@@ -31,7 +29,7 @@ export function initChat(socket) {
   }
 
   socket.on("you:name", (name) => {
-    if (meSpan) meSpan.textContent = `Connecté en tant que : ${name} | `;
+    if (meSpan) meSpan.innerHTML += `<span id="pseudo">${name}</span>`;
   });
 
   socket.on("chat:history", (history) => {
@@ -59,8 +57,7 @@ export function initChat(socket) {
     });
 
     if (
-      payload.name !==
-      meSpan.textContent.replace("Connecté en tant que : ", "").split(" | ")[0]
+      payload.name !== meSpan.textContent.replace("Connecté en tant que : ", "")
     ) {
       showNotif(`💬 Nouveau message de ${payload.name} dans le Chat`);
     }
@@ -73,6 +70,7 @@ export function initChat(socket) {
       if (!text) return;
       socket.emit("chat:message", { text });
       input.value = "";
+      input.style.height = "auto";
       input.focus();
     });
 

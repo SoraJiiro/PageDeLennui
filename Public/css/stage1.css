@@ -1,9 +1,3 @@
-/* ==========================================================
-   Stage 1 (Accueil / Clicker) – Styles spécifiques
-   Variables globales dans common.css
-   ========================================================== */
-
-/* Animations */
 @keyframes spin {
   from {
     transform: rotateY(0deg);
@@ -47,14 +41,15 @@
   }
 }
 
-.first-stage {
+#stage1 {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
   width: 100dvw;
   height: 100dvh;
 }
 
-.first-stage h1 {
+#stage1 h1 {
   position: absolute;
   left: 50%;
   top: 22.5%;
@@ -66,7 +61,7 @@
     "Lucida Sans";
 }
 
-.first-stage h1::before {
+#stage1 h1::before {
   content: "Horloge.exe";
   position: absolute;
   top: -20px;

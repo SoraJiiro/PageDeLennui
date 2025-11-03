@@ -1,4 +1,4 @@
-.fourth-stage {
+#stage4 {
   position: absolute;
   top: calc(3 * 100dvh);
   left: 0;
@@ -80,5 +80,8 @@
   background: var(--primary-color);
   color: var(--bg-color);
   font-weight: bold;
-  box-shadow: 0 0 10px #00ff0065;
+  -webkit-box-shadow: 1px 0px 15px 5px rgba(0, 255, 0, 0.35);
+  box-shadow: 0px 0px 15px 10px rgba(0, 255, 0, 0.35);
+  outline: 2px solid var(--primary-color);
+  outline-offset: 4px;
 }

@@ -22,6 +22,8 @@ export function initPuissance4(socket) {
     gameState: null,
   };
 
+  let estSpec = false; // Variable locale pour estSpec accessible globalement dans le module
+
   socket.emit("p4:getState");
 
   // Observer pour recharger l'état
@@ -46,12 +48,12 @@ export function initPuissance4(socket) {
   if (ui.boardEl) {
     ui.boardEl.addEventListener("click", (e) => {
       const cell = e.target.closest(".p4-cell");
-      if (!cell || !gameState) return;
+      if (!cell || !state.gameState) return;
 
       const col = parseInt(cell.dataset.col);
       if (isNaN(col)) return;
 
-      if (gameState.estMonTour && !gameState.winner && !estSpec) {
+      if (state.gameState.estMonTour && !state.gameState.winner && !estSpec) {
         socket.emit("p4:play", { col });
       }
     });
@@ -164,43 +166,43 @@ export function initPuissance4(socket) {
     alert(msg);
   });
 
-  function updateGame(state) {
-    if (!state) return;
-    gameState = state;
-    estSpec = state.estSpec;
+  function updateGame(gameStateData) {
+    if (!gameStateData) return;
+    state.gameState = gameStateData;
+    estSpec = gameStateData.estSpec;
 
-    if (modeSpec) {
+    if (ui.modeSpec) {
       if (estSpec) {
-        modeSpec.style.display = "block";
-        modeSpec.textContent = "👁️ Mode spectateur - Tu regardes la partie";
+        ui.modeSpec.style.display = "block";
+        ui.modeSpec.textContent = "👁️ Mode spectateur - Tu regardes la partie";
       } else {
-        modeSpec.style.display = "none";
+        ui.modeSpec.style.display = "none";
       }
     }
 
-    if (statusEl) {
-      if (state.winner) {
-        statusEl.textContent = `${state.winner} a gagné !`;
-        statusEl.style.background = "#ffd700";
-        statusEl.style.color = "#000";
-      } else if (state.draw) {
-        statusEl.textContent = "Match nul !";
-        statusEl.style.background = "#ff6b6b";
-        statusEl.style.color = "#000";
-      } else if (state.estMonTour && !estSpec) {
-        statusEl.textContent = "C'est ton tour !";
-        statusEl.style.background = "#0f0";
-        statusEl.style.color = "#000";
+    if (ui.statusEl) {
+      if (gameStateData.winner) {
+        ui.statusEl.textContent = `${gameStateData.winner} a gagné !`;
+        ui.statusEl.style.background = "#ffd700";
+        ui.statusEl.style.color = "#000";
+      } else if (gameStateData.draw) {
+        ui.statusEl.textContent = "Match nul !";
+        ui.statusEl.style.background = "#ff6b6b";
+        ui.statusEl.style.color = "#000";
+      } else if (gameStateData.estMonTour && !estSpec) {
+        ui.statusEl.textContent = "C'est ton tour !";
+        ui.statusEl.style.background = "#0f0";
+        ui.statusEl.style.color = "#000";
       } else {
-        statusEl.textContent = `Tour de ${state.currentPlayer}`;
-        statusEl.style.background = "#0f0";
-        statusEl.style.color = "#000";
+        ui.statusEl.textContent = `Tour de ${gameStateData.currentPlayer}`;
+        ui.statusEl.style.background = "#0f0";
+        ui.statusEl.style.color = "#000";
       }
     }
 
     // Grille de jeu
-    if (boardEl) {
-      boardEl.innerHTML = "";
+    if (ui.boardEl) {
+      ui.boardEl.innerHTML = "";
 
       for (let row = 0; row < 6; row++) {
         for (let col = 0; col < 7; col++) {
@@ -209,7 +211,7 @@ export function initPuissance4(socket) {
           cell.dataset.row = row;
           cell.dataset.col = col;
 
-          const value = state.board[row][col];
+          const value = gameStateData.board[row][col];
           if (value !== 0) {
             const token = document.createElement("div");
             token.className = `p4-token ${value === 1 ? "red" : "blue"}`;
@@ -217,30 +219,30 @@ export function initPuissance4(socket) {
           }
 
           if (
-            state.estMonTour &&
-            !state.winner &&
-            !state.draw &&
+            gameStateData.estMonTour &&
+            !gameStateData.winner &&
+            !gameStateData.draw &&
             !estSpec &&
             row === 0
           ) {
             cell.classList.add("clickable");
           }
 
-          boardEl.appendChild(cell);
+          ui.boardEl.appendChild(cell);
         }
       }
     }
 
     // -------- Display info --------
-    if (infoEl) {
-      const player1 = state.joueurs[0];
-      const player2 = state.joueurs[1];
+    if (ui.infoEl) {
+      const player1 = gameStateData.joueurs[0];
+      const player2 = gameStateData.joueurs[1];
 
       let html = `<p>`;
 
       if (player1) {
         html += `<span class="${
-          state.currentPlayer === player1 ? "p4-current-player" : ""
+          gameStateData.currentPlayer === player1 ? "p4-current-player" : ""
         } c1">${player1}</span>`;
       }
 
@@ -250,27 +252,27 @@ export function initPuissance4(socket) {
 
       if (player2) {
         html += `<span class="${
-          state.currentPlayer === player2 ? "p4-current-player" : ""
+          gameStateData.currentPlayer === player2 ? "p4-current-player" : ""
         } c2">${player2}</span>`;
       }
 
       html += `</p>`;
 
-      if (state.winner) {
-        html += `<div class="p4-winner-message">🏆 ${state.winner} remporte la partie ! 🏆</div>`;
-        statusEl.innerHTML = "";
-        statusEl.textContent = "";
-      } else if (state.draw) {
+      if (gameStateData.winner) {
+        html += `<div class="p4-winner-message">🏆 ${gameStateData.winner} remporte la partie ! 🏆</div>`;
+        ui.statusEl.innerHTML = "";
+        ui.statusEl.textContent = "";
+      } else if (gameStateData.draw) {
         html += `<div class="p4-winner-message">🤝 Match nul ! 🤝</div>`;
-        statusEl.innerHTML = "";
-        statusEl.textContent = "";
+        ui.statusEl.innerHTML = "";
+        ui.statusEl.textContent = "";
       }
 
-      if (state.message) {
-        html += `<p style="color: #fff;">${state.message}</p>`;
+      if (gameStateData.message) {
+        html += `<p style="color: #fff;">${gameStateData.message}</p>`;
       }
 
-      infoEl.innerHTML = html;
+      ui.infoEl.innerHTML = html;
     }
   }
 }

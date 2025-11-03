@@ -11,6 +11,8 @@ export function initFlappy(socket) {
   };
   if (!ui.canvas) return;
   ui.ctx = ui.canvas.getContext("2d");
+  // Masquer l'ancien score DOM pour aligner l'UI sur le Dino
+  if (ui.scoreEl) ui.scoreEl.style.display = "none";
 
   function resizeCanvas() {
     ui.canvas.width = ui.canvas.clientWidth;
@@ -24,16 +26,16 @@ export function initFlappy(socket) {
   let birdY, birdVel, pipes, score, gameRunning;
   let myName = null;
   let myBest = 0;
-  let pendingScore = null;
+  let scoreAttente = null;
   socket.on("you:name", (name) => (myName = name));
   socket.on("flappy:leaderboard", (arr) => {
     if (!Array.isArray(arr) || !myName) return;
     const me = arr.find((e) => e.pseudo === myName);
     const prev = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
-    if (pendingScore != null && myBest >= pendingScore && myBest > prev) {
+    if (scoreAttente != null && myBest >= scoreAttente && myBest > prev) {
       showNotif(`🐤 Nouveau record ! Score: ${myBest}`);
-      pendingScore = null;
+      scoreAttente = null;
     }
   });
 
@@ -70,7 +72,6 @@ export function initFlappy(socket) {
     score = 0;
     gameRunning = true;
     ui.startBtn.style.display = "none";
-    if (ui.scoreEl) ui.scoreEl.textContent = "Score : 0";
   }
 
   function drawPipes() {
@@ -112,7 +113,6 @@ export function initFlappy(socket) {
       if (!p.passed && p.x + pipeWidth < bird.x - bird.radius) {
         score++;
         p.passed = true;
-        ui.scoreEl.textContent = `Score : ${score}`;
       }
     });
 
@@ -136,6 +136,16 @@ export function initFlappy(socket) {
       gameOver();
     }
 
+    // ---------- Score ----------
+    ui.ctx.fillStyle = "#fff";
+    ui.ctx.font = "bold 24px monospace";
+    ui.ctx.textAlign = "right";
+    ui.ctx.fillText(
+      `${String(score).padStart(3, "0")}`,
+      ui.canvas.width - 20,
+      30
+    );
+
     requestAnimationFrame(update);
   }
 
@@ -145,7 +155,7 @@ export function initFlappy(socket) {
     ui.startBtn.textContent = "Rejouer";
     showGameOver();
     if (socket) socket.emit("flappy:score", { score });
-    pendingScore = score; // attendre confirmation serveur via leaderboard
+    scoreAttente = score; // attendre confirmation serveur via leaderboard
   }
 
   function showGameOver() {
@@ -187,6 +197,13 @@ export function initFlappy(socket) {
       tag === "TEXTAREA" ||
       (active && active.isContentEditable);
     if (isTyping) return;
+
+    // Vérifier que la section Flappy (stage6) est visible
+    const flappySection = document.getElementById("stage6");
+    if (!flappySection) return;
+    const rect = flappySection.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (!isVisible) return;
 
     if (e.code === "Space") {
       e.preventDefault();
@@ -232,7 +249,7 @@ export function initFlappy(socket) {
       socket.emit("flappy:reset");
       showNotif("🔄 Score Flappy réinitialisé avec succès !");
       myBest = 0;
-      pendingScore = null;
+      scoreAttente = null;
     } catch (err) {
       showNotif("⚠️ Erreur lors de la vérification du mot de passe");
       console.error(err);
@@ -241,5 +258,4 @@ export function initFlappy(socket) {
 
   // ---------- Init UI ----------
   ui.startBtn.style.display = "block";
-  ui.scoreEl.textContent = "Score : 0";
 }

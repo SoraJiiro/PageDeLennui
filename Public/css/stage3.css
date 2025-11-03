@@ -1,4 +1,4 @@
-.third-stage {
+#stage3 {
   position: absolute;
   top: calc(2 * 100dvh);
   left: 0;
@@ -38,7 +38,32 @@
 .chat-status {
   color: var(--primary-color);
   display: flex;
-  gap: 2.5px;
+}
+
+#me {
+  border-right: 1px solid var(--primary-color);
+  padding-right: 10px;
+}
+
+#me::before {
+  content: "[ ";
+}
+
+#me::after {
+  content: " ]";
+}
+
+#usersCount {
+  border-left: 1px solid var(--primary-color);
+  padding-left: 10px;
+}
+
+#usersCount::before {
+  content: "[ ";
+}
+
+#usersCount::after {
+  content: " ]";
 }
 
 .chat-messages {
@@ -83,6 +108,7 @@
   margin-top: 0.75rem;
   gap: 0.5rem;
 }
+
 #chat-input {
   flex: 1;
   padding: 0.8rem 1rem;
@@ -92,11 +118,23 @@
   max-height: 240px;
   min-height: 47.5px;
 }
+
 .chat-form button {
   padding: 0.8rem 1rem;
   cursor: pointer;
+  font-size: 2rem;
   font-weight: 600;
   transition: 350ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+span#pseudo {
+  font-weight: bold;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: var(--primary-color);
 }
 
 @media (max-width: 600px) {

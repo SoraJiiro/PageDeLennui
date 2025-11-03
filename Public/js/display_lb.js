@@ -1,7 +1,6 @@
 function showLeaderboard(name) {
   document.querySelectorAll("#stage4 .leaderboard-card").forEach((card) => {
     card.style.display = "none";
-    card.classList.remove("fade-in");
   });
 
   const idMap = {
@@ -17,20 +16,30 @@ function showLeaderboard(name) {
   if (table) {
     const card = table.closest(".leaderboard-card");
     card.style.display = "block";
-    card.classList.add("fade-in");
   }
 
   document.querySelectorAll(".leaderboard-buttons button").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.board === name);
+    btn.classList.remove("active");
   });
+
+  document.querySelectorAll(".leaderboard-buttons button").forEach((btn) => {
+    if (btn.dataset.board === name) {
+      btn.classList.add("active");
+    }
+  });
+
+  localStorage.setItem("activeLeaderboard", name);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const savedLeaderboard =
+    localStorage.getItem("activeLeaderboard") || "clicker";
+
   document.querySelectorAll(".leaderboard-buttons button").forEach((btn) => {
     btn.addEventListener("click", () => {
       showLeaderboard(btn.dataset.board);
     });
   });
 
-  showLeaderboard("clicker"); // LB Clicker display par défaut
+  showLeaderboard(savedLeaderboard);
 });
