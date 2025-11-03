@@ -1,3 +1,5 @@
+import { showNotif } from "./util.js";
+
 export function initDino(socket) {
   // ---------- Cache UI ----------
   const ui = {
@@ -35,6 +37,24 @@ export function initDino(socket) {
     clouds: [],
     cloudTimer: 0,
   };
+
+  // ---------- Pseudo & meilleur score (côté serveur) ----------
+  let myName = null;
+  let myBest = 0;
+  let pendingScore = null; // score candidat en attente de confirmation serveur
+  socket.on("you:name", (name) => {
+    myName = name;
+  });
+  socket.on("dino:leaderboard", (arr) => {
+    if (!Array.isArray(arr) || !myName) return;
+    const me = arr.find((e) => e.pseudo === myName);
+    const prevBest = myBest;
+    myBest = me ? Number(me.score) || 0 : 0;
+    if (pendingScore != null && myBest >= pendingScore && myBest > prevBest) {
+      showNotif(`🦖 Nouveau record ! Score: ${myBest}`);
+      pendingScore = null;
+    }
+  });
 
   // ---------- Canvas sizing ----------
   function resizeCanvas() {
@@ -257,7 +277,10 @@ export function initDino(socket) {
       // Collision
       if (group.collides()) {
         state.gameOver = true;
-        socket.emit("dino:score", { score: state.score });
+        const finalScore = Math.floor(state.score);
+        socket.emit("dino:score", { score: finalScore });
+        // Attendre la confirmation via le leaderboard serveur
+        pendingScore = finalScore;
         showGameOver();
         return false;
       }
@@ -374,7 +397,10 @@ export function initDino(socket) {
     if (!confirmReset) return;
 
     const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
-    if (!password) return;
+    if (!password) {
+      showNotif("❌ Réinitialisation annulée");
+      return;
+    }
 
     try {
       const res = await fetch("/api/verify-password", {
@@ -384,13 +410,15 @@ export function initDino(socket) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        alert("❌ Mot de passe incorrect !");
+        showNotif("❌ Mot de passe incorrect !");
         return;
       }
       socket.emit("dino:reset");
-      alert("✅ Score Dino réinitialisé avec succès !");
+      showNotif("🔄 Score Dino réinitialisé avec succès !");
+      myBest = 0;
+      pendingScore = null;
     } catch (err) {
-      alert("🚨 Erreur lors de la vérification du mot de passe");
+      showNotif("⚠️ Erreur lors de la vérification du mot de passe");
       console.error(err);
     }
   });

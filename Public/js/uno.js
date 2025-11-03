@@ -310,16 +310,23 @@ export function initUno(socket) {
   });
 
   socket.on("uno:gameEnd", (data) => {
-    if (state.estSpec) return;
-    if (data.winner === "Partie annulée !") {
-      alert(`${data.winner} ${data.reason}`);
-    } else {
-      alert(`🎉 ${data.winner} a gagné la partie !`);
+    // Affiche un écran de vainqueur similaire à P4 puis retour lobby
+    if (ui.infoEl) {
+      if (data.winner === "Partie annulée !") {
+        ui.infoEl.innerHTML = `<div class="p4-winner-message">⚠️ ${
+          data.winner
+        } ${data.reason || ""}</div>`;
+      } else {
+        ui.infoEl.innerHTML = `<div class="p4-winner-message">� ${data.winner} remporte la partie ! 🏆</div>`;
+      }
     }
-    ui.game.classList.remove("active");
-    ui.lobby.style.display = "block";
-    ui.statusEl.textContent = "";
-    socket.emit("uno:getState");
+    if (ui.statusEl) ui.statusEl.textContent = "";
+
+    setTimeout(() => {
+      ui.game.classList.remove("active");
+      ui.lobby.style.display = "block";
+      socket.emit("uno:getState");
+    }, 3000);
   });
 
   socket.on("uno:error", (msg) => {

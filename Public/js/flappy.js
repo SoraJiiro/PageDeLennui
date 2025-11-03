@@ -1,3 +1,5 @@
+import { showNotif } from "./util.js";
+
 export function initFlappy(socket) {
   // ---------- Cache UI ----------
   const ui = {
@@ -20,6 +22,20 @@ export function initFlappy(socket) {
   // ---------- Variables de jeu (échelle dynamique) ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
   let birdY, birdVel, pipes, score, gameRunning;
+  let myName = null;
+  let myBest = 0;
+  let pendingScore = null;
+  socket.on("you:name", (name) => (myName = name));
+  socket.on("flappy:leaderboard", (arr) => {
+    if (!Array.isArray(arr) || !myName) return;
+    const me = arr.find((e) => e.pseudo === myName);
+    const prev = myBest;
+    myBest = me ? Number(me.score) || 0 : 0;
+    if (pendingScore != null && myBest >= pendingScore && myBest > prev) {
+      showNotif(`🐤 Nouveau record ! Score: ${myBest}`);
+      pendingScore = null;
+    }
+  });
 
   function updateScales() {
     gravity = ui.canvas.height * 0.00035;
@@ -129,6 +145,7 @@ export function initFlappy(socket) {
     ui.startBtn.textContent = "Rejouer";
     showGameOver();
     if (socket) socket.emit("flappy:score", { score });
+    pendingScore = score; // attendre confirmation serveur via leaderboard
   }
 
   function showGameOver() {
@@ -196,7 +213,10 @@ export function initFlappy(socket) {
     if (!confirmReset) return;
 
     const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
-    if (!password) return;
+    if (!password) {
+      showNotif("❌ Réinitialisation annulée");
+      return;
+    }
 
     try {
       const res = await fetch("/api/verify-password", {
@@ -206,13 +226,15 @@ export function initFlappy(socket) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        alert("❌ Mot de passe incorrect !");
+        showNotif("❌ Mot de passe incorrect !");
         return;
       }
       socket.emit("flappy:reset");
-      alert("✅ Score Flappy réinitialisé avec succès !");
+      showNotif("🔄 Score Flappy réinitialisé avec succès !");
+      myBest = 0;
+      pendingScore = null;
     } catch (err) {
-      alert("🚨 Erreur lors de la vérification du mot de passe");
+      showNotif("⚠️ Erreur lors de la vérification du mot de passe");
       console.error(err);
     }
   });

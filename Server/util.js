@@ -120,7 +120,7 @@ class AntiSpam {
       count: 0,
     };
 
-    if (now - bucket.windowStart >= config.CLICK_WINDOW_MS) {
+    if (now - bucket.windowStart >= config.MAX_CLICKS_MS) {
       bucket.windowStart = now;
       bucket.count = 0;
     }

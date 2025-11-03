@@ -1,3 +1,5 @@
+import { showNotif } from "./util.js";
+
 export function initClicker(socket) {
   // ---------- Cache UI ----------
   const ui = {
@@ -157,7 +159,7 @@ export function initClicker(socket) {
     if (cps > 0) {
       state.timeAutoClicks = setInterval(() => {
         for (let i = 0; i < cps; i++) socket.emit("clicker:click");
-      }, 1000);
+      }, 2250);
     }
   }
 
@@ -172,26 +174,6 @@ export function initClicker(socket) {
   function bumpZone() {
     ui.zone?.classList.add("temp");
     setTimeout(() => ui.zone?.classList.remove("temp"), 120);
-  }
-
-  function showNotif(text, duration = 4000) {
-    const notif = document.createElement("div");
-    notif.className = "notif";
-    notif.textContent = text;
-    notif.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #0f0;
-      opacity: 0.8;
-      color: #000;
-      padding: 15px 25px;
-      font-weight: bold;
-      z-index: 9999;
-      animation: slideIn 0.3s ease;
-    `;
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), duration);
   }
 
   // ---------- Vérif + déblocage de médailles ----------
@@ -275,9 +257,9 @@ export function initClicker(socket) {
         m.classList.add("hidden");
       });
 
-      showNotif("✅ Progression réinitialisée avec succès !");
+      showNotif("🔄 Progression réinitialisée avec succès !");
     } catch (err) {
-      showNotif("🚨 Erreur lors de la vérification du mot de passe");
+      showNotif("⚠️ Erreur lors de la vérification du mot de passe");
       console.error(err);
     }
   }

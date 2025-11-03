@@ -1,3 +1,5 @@
+import { showNotif } from "./util.js";
+
 export function initChat(socket) {
   const meSpan = document.getElementById("me");
   const usersCount = document.getElementById("usersCount");
@@ -6,25 +8,7 @@ export function initChat(socket) {
   const messages = document.getElementById("chat-messages");
   const submit = document.querySelector(".submit");
 
-  function showNotif(text, duration = 4000) {
-    const notif = document.createElement("div");
-    notif.className = "notif";
-    notif.textContent = text;
-    notif.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #0f0;
-    opacity: 0.8;
-    color: #000;
-    padding: 15px 25px;
-    font-weight: bold;
-    z-index: 9999;
-    animation: slideIn 0.3s ease;
-  `;
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), duration);
-  }
+  // showNotif est importé depuis util.js pour éviter la duplication
 
   function addMessage({ auteur, text, at, type = "user" }) {
     const el = document.createElement("div");

@@ -128,7 +128,7 @@ function initSocketHandlers(io, socket, gameState) {
     console.log(
       withGame(
         green,
-        `🔄 Reset Clicker complet pour [${orange}${pseudo}${green}] - Score: 0, Médailles: []`
+        `🔄 Reset Clicker complet pour [${orange}${pseudo}${green}]`
       )
     );
   });
@@ -317,7 +317,7 @@ function initSocketHandlers(io, socket, gameState) {
     console.log(
       withGame(
         violet,
-        `\n✅ [${orange}${pseudo}${violet}] a rejoint le lobby UNO (${gameActuelle.joueurs.length}/4)`
+        `\n➡️ [${orange}${pseudo}${violet}] a rejoint le lobby UNO (${gameActuelle.joueurs.length}/4)`
       )
     );
     uno_broadcastLobby();
@@ -331,7 +331,7 @@ function initSocketHandlers(io, socket, gameState) {
       console.log(
         withGame(
           violet,
-          `🚪 [${orange}${pseudo}${violet}] a quitté le lobby UNO`
+          `⬅️ [${orange}${pseudo}${violet}] a quitté le lobby UNO`
         )
       );
       if (gameActuelle.gameStarted) {
@@ -589,7 +589,7 @@ function initSocketHandlers(io, socket, gameState) {
     console.log(
       withGame(
         grey,
-        `\n✅ [${orange}${pseudo}${grey}] a rejoint le lobby PICTIONARY (${pictionaryGame.joueurs.length}/6)`
+        `\n➡️ [${orange}${pseudo}${grey}] a rejoint le lobby PICTIONARY (${pictionaryGame.joueurs.length}/6)`
       )
     );
     pictionary_broadcastLobby();
@@ -602,7 +602,7 @@ function initSocketHandlers(io, socket, gameState) {
       console.log(
         withGame(
           grey,
-          `🚪 [${orange}${pseudo}${grey}] a quitté le lobby PICTIONARY`
+          `⬅️ [${orange}${pseudo}${grey}] a quitté le lobby PICTIONARY`
         )
       );
 
@@ -874,7 +874,7 @@ function initSocketHandlers(io, socket, gameState) {
     console.log(
       withGame(
         red,
-        `\n✅ [${orange}${pseudo}${red}] a rejoint le lobby PUISSANCE 4 (${p4Game.joueurs.length}/2)`
+        `\n➡️ [${orange}${pseudo}${red}] a rejoint le lobby PUISSANCE 4 (${p4Game.joueurs.length}/2)`
       )
     );
     p4_broadcastLobby();
@@ -887,7 +887,7 @@ function initSocketHandlers(io, socket, gameState) {
       console.log(
         withGame(
           red,
-          `🚪 [${orange}${pseudo}${red}] a quitté le lobby PUISSANCE 4`
+          `⬅️ [${orange}${pseudo}${red}] a quitté le lobby PUISSANCE 4`
         )
       );
       if (p4Game.gameStarted) {
@@ -1056,7 +1056,7 @@ function initSocketHandlers(io, socket, gameState) {
       }
     }
 
-    // Puissance 4
+    // PUISSANCE 4
     if (p4Game) {
       const etaitJoueurP4 = p4Game.joueurs.some((p) => p.pseudo === pseudo);
       if (etaitJoueurP4) {

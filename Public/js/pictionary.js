@@ -510,10 +510,16 @@ export function initPictionary(socket) {
   });
 
   socket.on("pictionary:gameEnd", (data) => {
-    alert(`🎉 ${data.winner || "Partie terminée"} !`);
-    ui.gameWrap.classList.remove("active");
-    ui.lobby.style.display = "block";
-    socket.emit("pictionary:getState");
+    // Affiche un écran de vainqueur similaire à P4, puis retour lobby
+    if (ui.infoEl) {
+      const text = data.winner || "Partie terminée";
+      ui.infoEl.innerHTML = `<div class="p4-winner-message">🏆 ${text} 🏆</div>`;
+    }
+    setTimeout(() => {
+      ui.gameWrap.classList.remove("active");
+      ui.lobby.style.display = "block";
+      socket.emit("pictionary:getState");
+    }, 3000);
   });
 
   socket.on("pictionary:backToLobby", () => {
