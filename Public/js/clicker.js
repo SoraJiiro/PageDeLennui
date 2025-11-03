@@ -22,7 +22,7 @@ export function initClicker(socket) {
     timerHumain: null,
   };
 
-  // ---------- Storage helpers ----------
+  // ---------- Storage manager ----------
   const STORAGE_KEY = "autoCPS";
   function getSavedCPS() {
     const v = parseInt(localStorage.getItem(STORAGE_KEY));

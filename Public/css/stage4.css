@@ -16,7 +16,7 @@
   width: min(900px, 92vw);
   background: var(--bg-color);
   color: var(--primary-color);
-  border: 1px solid #000;
+  border: 1px solid var(--bg-color);
   padding: 1rem;
   transform: translateY(-(calc(100dvh - 90%)));
 }
@@ -61,7 +61,7 @@
   background: var(--bg-color);
 }
 .board tr:nth-child(odd) td {
-  background: #00ff0025;
+  background: color-mix(in srgb, var(--primary-color) 15%, transparent);
 }
 .leaderboard-buttons {
   text-align: center;

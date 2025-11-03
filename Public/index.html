@@ -30,24 +30,13 @@
         <link rel="icon" type="img/png" href="imgs/icon_l.png"
             media="(prefers-color-scheme: light)" />
 
-        <script type="text/javascript" src="js/nav.js"></script>
+        <script defer type="text/javascript" src="js/nav.js"></script>
         <script defer type="text/javascript" src="js/display_lb.js"></script>
         <script defer type="text/javascript" src="js/horloge.js"></script>
-        <script src="/socket.io/socket.io.js"></script>
+
+        <script defer src="/socket.io/socket.io.js"></script>
         <script defer type="module" src="js/main.js"></script>
-
-        <script type="text/javascript">
-    document.addEventListener("keydown", (event) => {
-      const active = document.activeElement;
-      const tag = active && active.tagName;
-      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || (active && active.isContentEditable);
-      if (isTyping) return;
-
-      if (event.key === " " || event.key === "ArrowUp" || event.key === "Enter") {
-        event.preventDefault();
-      }
-    });
-  </script>
+        <script defer type="text/javascript" src="js/keys.js"></script>
     </head>
 
     <body>
@@ -118,14 +107,7 @@
                     class="chat-form">
                     <textarea id="chat-input" rows="1"
                         placeholder="Écris ton message..."></textarea>
-                    <script type="text/javascript">
-            let input = document.getElementById("chat-input");
-            input.addEventListener("input", () => {
-                input.style.height = "auto";
-                input.style.height = input.scrollHeight + "px";
-});
-</script>
-                    <button type="submit" title="Envoyer"
+                    <button type="submit" title="Envoyer message"
                         class="submit"><i
                             class="fa-solid fa-circle-arrow-right"></i>
 

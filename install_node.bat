@@ -12,7 +12,7 @@ powershell -Command "Invoke-WebRequest '%NODE_URL%' -OutFile '%TEMP%\node.zip'"
 if not exist "%TEMP%\node.zip" (
     echo Erreur : le téléchargement de Node.js a échoué.
     pause
-    exit /b 1  :: quitte le script en cas d’erreur
+    exit
 )
 
 echo Extraction de Node.js...
@@ -22,8 +22,8 @@ powershell -Command "Expand-Archive -Path '%TEMP%\node.zip' -DestinationPath '%I
 for /d %%i in ("%INSTALL_DIR%\node-v%NODE_VERSION%-win-x64") do set NODE_DIR=%%i
 
 
-move "%NODE_DIR%\*" "%INSTALL_DIR%" >nul 2>&1  :: déplace fichiers sans afficher les messages
-rd "%NODE_DIR%" >nul 2>&1  :: supprime le dossier vide
+move "%NODE_DIR%\*" "%INSTALL_DIR%" >nul 2>&1 
+rd "%NODE_DIR%" >nul 2>&1  
 
 echo.
 echo Node.js a été installé localement dans :

@@ -310,7 +310,6 @@ export function initUno(socket) {
   });
 
   socket.on("uno:gameEnd", (data) => {
-    // Affiche un écran de vainqueur similaire à P4 puis retour lobby
     if (ui.infoEl) {
       if (data.winner === "Partie annulée !") {
         ui.infoEl.innerHTML = `<div class="p4-winner-message">⚠️ ${

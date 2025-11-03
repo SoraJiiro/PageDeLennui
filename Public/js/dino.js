@@ -38,7 +38,7 @@ export function initDino(socket) {
     cloudTimer: 0,
   };
 
-  // ---------- Pseudo & meilleur score ----------
+  // ---------- Pseudo + meilleur score ----------
   let myName = null;
   let myBest = 0;
   let scoreAttente = null;

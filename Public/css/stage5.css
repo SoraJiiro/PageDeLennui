@@ -154,7 +154,7 @@ html {
   justify-content: center;
   font-weight: bold;
   font-size: 1.1rem;
-  border: thick double #000;
+  border: thick double var(--bg-color);
 }
 
 .uno-deck {
@@ -169,7 +169,7 @@ html {
 .uno-deck-card {
   width: 80px;
   height: 115px;
-  border: thick double #000;
+  border: thick double var(--bg-color);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -187,8 +187,8 @@ html {
 .uno-deck-card.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  border: dashed 1.5px #000;
-  outline: dashed 1.5px #000;
+  border: dashed 1.5px var(--bg-color);
+  outline: dashed 1.5px var(--bg-color);
   outline-offset: -3.5px;
 }
 
@@ -212,7 +212,7 @@ html {
     rgba(255, 255, 255, 1) 65%,
     var(--rouge) 55%
   );
-  color: #000;
+  color: var(--bg-color);
 }
 .color-blue {
   background: radial-gradient(
@@ -220,7 +220,7 @@ html {
     rgba(255, 255, 255, 1) 65%,
     var(--blue) 55%
   );
-  color: #000;
+  color: var(--bg-color);
 }
 .color-green {
   background: radial-gradient(
@@ -228,7 +228,7 @@ html {
     rgba(255, 255, 255, 1) 65%,
     var(--vert) 55%
   );
-  color: #000;
+  color: var(--bg-color);
 }
 .color-pink {
   background: radial-gradient(
@@ -236,11 +236,15 @@ html {
     rgba(255, 255, 255, 1) 65%,
     var(--pink) 55%
   );
-  color: #000;
+  color: var(--bg-color);
 }
 .color-black {
-  background: radial-gradient(circle, rgba(255, 255, 255, 1) 65%, #000 55%);
-  color: #000;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 1) 65%,
+    var(--bg-color) 55%
+  );
+  color: var(--bg-color);
   border: thick double #fff;
 }
 
@@ -321,9 +325,9 @@ html {
 .uno-pile.tonTour {
   background: var(--primary-color);
   filter: brightness(0.9);
-  border: thick double #000;
-  -webkit-box-shadow: 0px 0px 10px 2px #0f0;
-  box-shadow: 0px 0px 10px 2px #0f0;
+  border: thick double var(--bg-color);
+  -webkit-box-shadow: 0px 0px 10px 2px var(--primary-color);
+  box-shadow: 0px 0px 10px 2px var(--primary-color);
 }
 
 .uno-pile {

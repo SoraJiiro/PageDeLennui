@@ -312,7 +312,7 @@
   color: #fff;
 }
 .pictionary-chat-messages .sys {
-  color: #0f0;
+  color: var(--primary-color);
   font-weight: 600;
 }
 .pictionary-chat-messages .msg {

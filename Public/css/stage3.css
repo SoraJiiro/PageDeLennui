@@ -41,7 +41,7 @@
 }
 
 #me {
-  border-right: 1px solid var(--primary-color);
+  border-right: 2px solid var(--primary-color);
   padding-right: 10px;
 }
 
@@ -54,7 +54,7 @@
 }
 
 #usersCount {
-  border-left: 1px solid var(--primary-color);
+  border-left: 2px solid var(--primary-color);
   padding-left: 10px;
 }
 

@@ -1,4 +1,0 @@
-Se mettre à la racine du projet (voir - node_modules/Public/Server + fichiers)
-Exécuter 'node Server/init.js'
-
-(CRTL + C dans le terminal quand vous voulez éteindre la session)

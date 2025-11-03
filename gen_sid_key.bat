@@ -15,4 +15,4 @@ if not defined cle (
 )
 
 echo %cle%
-pause
+exit /b 0

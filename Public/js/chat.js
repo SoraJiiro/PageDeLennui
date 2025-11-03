@@ -64,6 +64,17 @@ export function initChat(socket) {
   });
 
   if (form) {
+    // Auto-resize du textarea à la saisie (évite le script inline dans le HTML)
+    if (input) {
+      const autoResize = () => {
+        input.style.height = "auto";
+        input.style.height = input.scrollHeight + "px";
+      };
+      input.addEventListener("input", autoResize);
+      // Ajuste une première fois (au cas où il y a du contenu pré-rempli)
+      autoResize();
+    }
+
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const text = input.value.trim();
