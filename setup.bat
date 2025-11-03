@@ -18,8 +18,8 @@ if not defined CLE_SID (
 )
 
 
-(echo PORT=7750) > .env
-(echo CLE_SID=%CLE_SID%) >> .env
+(echo PORT=7750) > Server/.env
+(echo CLE_SID=%CLE_SID%) >> Server/.env
 
 echo > Dossier data\ cree 
 echo > Fichier .env cree 

@@ -16,7 +16,7 @@ if [[ -z "${CLE_SID}" ]]; then
   exit 1
 fi
 
-cat > .env <<EOF
+cat > Server/.env <<EOF
 PORT=7750
 CLE_SID=${CLE_SID}
 EOF
