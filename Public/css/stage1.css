@@ -118,6 +118,7 @@
   font-style: normal;
   font-weight: bold;
   font-size: 1.85rem;
+  user-select: none;
 }
 
 .zone i::selection {
@@ -244,8 +245,8 @@ p.cps-humain {
 .medals-wrap {
   position: absolute;
   right: 25px;
-  top: 40px;
-  height: 92.5dvh;
+  top: 25px;
+  height: 90dvh;
   width: 22.5dvw;
   display: flex;
   flex-wrap: wrap;
