@@ -36,6 +36,8 @@ export function initDino(socket) {
     cactusGroups: [],
     clouds: [],
     cloudTimer: 0,
+    paused: false,
+    countdown: 0,
   };
 
   // ---------- Pseudo + meilleur score ----------
@@ -227,8 +229,72 @@ export function initDino(socket) {
     }
   }
 
+  function showPaused() {
+    c.fillStyle = "rgba(0, 0, 0, 0.7)";
+    c.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+
+    c.fillStyle = "#0f0";
+    c.font = "bold 40px monospace";
+    c.textAlign = "center";
+
+    if (state.countdown > 0) {
+      c.fillText(
+        state.countdown.toString(),
+        ui.canvas.width / 2,
+        ui.canvas.height / 2
+      );
+    } else {
+      c.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
+      c.font = "18px monospace";
+      c.fillText(
+        "Appuie sur P pour reprendre",
+        ui.canvas.width / 2,
+        ui.canvas.height / 2 + 40
+      );
+    }
+  }
+
   function loop() {
     if (state.gameOver) return;
+
+    // Gestion du compte à rebours
+    if (state.countdown > 0) {
+      state.frameCount++;
+
+      // Dessiner le jeu en arrière-plan
+      c.fillStyle = "#000";
+      c.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+
+      c.fillStyle = "#0f0";
+      const groundY = ui.canvas.height - 10;
+      c.fillRect(0, groundY, ui.canvas.width, 10);
+
+      state.clouds.forEach((cl) => cl.draw());
+      dino.draw();
+      state.cactusGroups.forEach((group) => group.draw());
+
+      // Afficher le compte à rebours
+      showPaused();
+
+      // Décrémenter toutes les 60 frames (environ 1 seconde)
+      if (state.frameCount % 60 === 0) {
+        state.countdown--;
+        if (state.countdown === 0) {
+          state.paused = false;
+        }
+      }
+
+      requestAnimationFrame(loop);
+      return;
+    }
+
+    // Si en pause (sans compte à rebours)
+    if (state.paused) {
+      showPaused();
+      requestAnimationFrame(loop);
+      return;
+    }
+
     state.frameCount++;
 
     // Fond noir
@@ -371,12 +437,38 @@ export function initDino(socket) {
     const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
     if (!isVisible) return;
 
+    if (e.key === "p" || e.key === "P") {
+      e.preventDefault();
+      // Ne pas permettre la pause si le jeu n'a pas démarré ou est terminé
+      if (state.isFirstStart || state.gameOver) return;
+
+      if (state.paused && state.countdown === 0) {
+        // Reprendre avec compte à rebours
+        state.countdown = 3;
+        state.frameCount = 0;
+      } else if (!state.paused && state.countdown === 0) {
+        // Mettre en pause
+        state.paused = true;
+        try {
+          window.open("../fake.html", "_blank");
+          console.log("Chrome save");
+        } catch {
+          window.open("about:newtab", "_blank");
+          console.log("Firefox save");
+        }
+      }
+      return;
+    }
+
     if (e.code === "Space") {
       e.preventDefault();
       if (state.isFirstStart || state.gameOver) {
         startGame();
         return;
       }
+      // Empêcher le saut pendant la pause
+      if (state.paused || state.countdown > 0) return;
+
       if (!dino.jumping && dino.y === 0) {
         state.jumpStartTime = Date.now();
         dino.jump(MAX_JUMP_VELOCITY);
@@ -394,6 +486,9 @@ export function initDino(socket) {
 
     if (e.code === "Space") {
       e.preventDefault();
+      // Empêcher les actions pendant la pause
+      if (state.paused || state.countdown > 0) return;
+
       if (dino.jumping && dino.dy > 0) {
         const pressDuration = Date.now() - state.jumpStartTime;
         if (pressDuration < 125) {

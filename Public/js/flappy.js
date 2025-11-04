@@ -24,6 +24,9 @@ export function initFlappy(socket) {
   // ---------- Variables de jeu (échelle dynamique) ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
   let birdY, birdVel, pipes, score, gameRunning;
+  let paused = false;
+  let countdown = 0;
+  let frameCount = 0;
   let myName = null;
   let myBest = 0;
   let scoreAttente = null;
@@ -71,6 +74,9 @@ export function initFlappy(socket) {
     pipes = [];
     score = 0;
     gameRunning = true;
+    paused = false;
+    countdown = 0;
+    frameCount = 0;
     ui.startBtn.style.display = "none";
   }
 
@@ -89,8 +95,67 @@ export function initFlappy(socket) {
     });
   }
 
+  function showPaused() {
+    ui.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+
+    ui.ctx.fillStyle = "#0f0";
+    ui.ctx.font = "bold 40px monospace";
+    ui.ctx.textAlign = "center";
+
+    if (countdown > 0) {
+      ui.ctx.fillText(
+        countdown.toString(),
+        ui.canvas.width / 2,
+        ui.canvas.height / 2
+      );
+    } else {
+      ui.ctx.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
+      ui.ctx.font = "18px monospace";
+      ui.ctx.fillText(
+        "Appuie sur P pour reprendre",
+        ui.canvas.width / 2,
+        ui.canvas.height / 2 + 40
+      );
+    }
+  }
+
   function update() {
     if (!gameRunning) return;
+
+    // Gestion du compte à rebours
+    if (countdown > 0) {
+      frameCount++;
+
+      // Dessiner le jeu en arrière-plan
+      ui.ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+      ui.ctx.fillStyle = "#000";
+      ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+
+      drawPipes();
+      bird.draw();
+
+      // Afficher le compte à rebours
+      showPaused();
+
+      // Décrémenter toutes les 60 frames (environ 1 seconde)
+      if (frameCount % 60 === 0) {
+        countdown--;
+        if (countdown === 0) {
+          paused = false;
+        }
+      }
+
+      requestAnimationFrame(update);
+      return;
+    }
+
+    // Si en pause (sans compte à rebours)
+    if (paused) {
+      showPaused();
+      requestAnimationFrame(update);
+      return;
+    }
 
     ui.ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
     ui.ctx.fillStyle = "#000";
@@ -205,8 +270,34 @@ export function initFlappy(socket) {
     const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
     if (!isVisible) return;
 
+    if (e.key === "p" || e.key === "P") {
+      e.preventDefault();
+      // Ne pas permettre la pause si le jeu n'est pas en cours
+      if (!gameRunning) return;
+
+      if (paused && countdown === 0) {
+        // Reprendre avec compte à rebours
+        countdown = 3;
+        frameCount = 0;
+      } else if (!paused && countdown === 0) {
+        // Mettre en pause
+        paused = true;
+        try {
+          window.open("../fake.html", "_blank");
+          console.log("Chrome save");
+        } catch {
+          window.open("about:newtab", "_blank");
+          console.log("Firefox save");
+        }
+      }
+      return;
+    }
+
     if (e.code === "Space") {
       e.preventDefault();
+      // Empêcher les actions pendant la pause
+      if (paused || countdown > 0) return;
+
       if (gameRunning) {
         birdVel = jump;
       } else {

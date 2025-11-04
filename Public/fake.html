@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Nouvel onglet</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="icon" href="imgs/firefox.svg" type="img/svg" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet">
+        <style>
+    :root {
+      --bg: #f6f7fb;
+      --bg-hero: #ffffff;
+      --text: #0f172a; /* slate-900 */
+      --muted: #475569; /* slate-600 */
+      --card: #ffffff;
+      --border: #e2e8f0; /* slate-200 */
+      --shadow: 0 10px 30px rgba(2, 6, 23, 0.07);
+      --link: #2563eb; /* blue-600 */
+      --accent: #ff7139; /* Firefox orange */
+      --accent-2: #9141ff; /* Firefox purple */
+      --accent-3: #00ddff; /* Firefox cyan */
+      --radius: 16px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0f1a;
+        --bg-hero: #0f1222;
+        --text: #e6eaf3;
+        --muted: #9aa3b2;
+        --card: #161a2e;
+        --border: #242a44;
+        --shadow: 0 10px 30px rgba(0,0,0,0.4);
+        --link: #8ab4ff;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 50% -80px, var(--bg-hero), var(--bg));
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .page {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 28px;
+      padding: 48px 24px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .ff-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      user-select: none;
+    }
+    .logo {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: none;
+      position: relative;
+    }
+    
+    .ff-title { font-weight: 700; letter-spacing: -0.02em; }
+
+    .header-actions { display: flex; gap: 8px; }
+    .chip {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Search */
+    .search {
+      margin: 10px auto 0;
+      width: min(760px, 100%);
+      position: relative;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: 40px;
+      padding: 14px 18px;
+    }
+    .search-box .glow {
+      position: absolute;
+      inset: -2px;
+      border-radius: 44px;
+      pointer-events: none;
+      background: radial-gradient(600px 120px at 50% -40px, color-mix(in oklab, var(--accent) 14%, transparent), transparent 60%);
+      opacity: 0.7;
+      z-index: -1;
+    }
+    .search input[type="text"] {
+      flex: 1;
+      font-size: 18px;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+    }
+    .search .icon {
+      width: 20px; height: 20px;
+      opacity: .8;
+    }
+    .search .btn {
+      border: 1px solid #fff;
+      background: linear-gradient(180deg, var(--bg-hero), var(--card));
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* Top Sites */
+    .section-title {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 26px 2px 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .topsites {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 16px;
+    }
+    @media (max-width: 1024px) {
+      .topsites { grid-template-columns: repeat(6, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .topsites { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .topsites { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .site {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 10px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      text-align: center;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform .2s ease;
+    }
+    .site:hover { transform: translateY(-2px); }
+
+    .favicon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .site span { font-size: 13px; color: var(--muted); }
+
+    /* Pocket-like Stories */
+    .stories {
+      margin-top: 4px;
+      display: grid;
+      grid-template-columns: 1.5fr 1.5fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 980px) {
+      .stories { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .stories { grid-template-columns: 1fr; }
+    }
+
+    .story {
+      display: grid;
+      grid-template-rows: 150px auto;
+      border-radius: calc(var(--radius) + 2px);
+      overflow: clip;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .story .cover {
+      background: linear-gradient(135deg, #c084fc, #22d3ee);
+    }
+    .story:nth-child(2) .cover { background: linear-gradient(135deg, #60a5fa, #34d399); }
+    .story:nth-child(3) .cover { background: linear-gradient(135deg, #f472b6, #fb923c); }
+
+    .story .meta { padding: 14px 16px 16px; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: linear-gradient(180deg, var(--bg-hero), var(--card));
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .story h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+    .story p { margin: 0; color: var(--muted); font-size: 14px; }
+
+    /* Footer */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    footer a { color: var(--link); text-decoration: none; }
+    footer .links { display: flex; gap: 14px; flex-wrap: wrap; }
+
+    button.btn {color: #FFF;}
+
+  </style>
+    </head>
+    <body>
+        <div class="page">
+            <header>
+                <div class="ff-brand" aria-label="Firefox">
+                    <div class="logo" aria-hidden="true"> <img
+                            src="imgs/firefox.svg" alt="///" width="37.5"
+                            height="37.5"></div>
+                    <div class="ff-title">Firefox</div>
+                </div>
+                <div class="header-actions">
+                    <div class="chip">Connexion</div>
+                    <div class="chip">Paramètres</div>
+                </div>
+            </header>
+
+            <section class="search" role="search">
+                <div class="glow" aria-hidden="true"></div>
+                <div class="search-box">
+                    <!-- simple magnifier icon -->
+                    <svg class="icon" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true"><circle cx="11" cy="11" r="7" /><line
+                            x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                    <input type="text" placeholder="Rechercher sur le Web"
+                        aria-label="Rechercher" />
+                    <button class="btn" type="button">Rechercher</button>
+                </div>
+                <div class="section-title">Sites populaires</div>
+                <div class="topsites">
+                    <!-- Example tiles; replace href and labels as needed -->
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #1e3a8a;">W</div>
+                        <span>wikipedia.org</span>
+                    </a>
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #ea4335;">G</div>
+                        <span>google.com</span>
+                    </a>
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #111827;">G</div>
+                        <span>github.com</span>
+                    </a>
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #0ea5e9;">T</div>
+                        <span>twitter.com</span>
+                    </a>
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #16a34a;">S</div>
+                        <span>spotify.com</span>
+                    </a>
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #dc2626;">Y</div>
+                        <span>youtube.com</span>
+                    </a>
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #6d28d9;">R</div>
+                        <span>reddit.com</span>
+                    </a>
+                    <a class="site" href="#">
+                        <div class="favicon"
+                            style="background: #4f46e5;">F</div>
+                        <span>firefox.com</span>
+                    </a>
+                </div>
+            </section>
+
+            <section>
+                <div class="section-title">Recommandé par Pocket</div>
+                <div class="stories">
+                    <article class="story">
+                        <div class="cover" aria-hidden="true"></div>
+                        <div class="meta">
+                            <span class="badge">Pocket</span>
+                            <h3>10 astuces pour gagner du temps en ligne</h3>
+                            <p>Des méthodes simples pour rester concentré et
+                                productif pendant votre navigation.</p>
+                        </div>
+                    </article>
+                    <article class="story">
+                        <div class="cover" aria-hidden="true"></div>
+                        <div class="meta">
+                            <span class="badge">Pocket</span>
+                            <h3>Les coulisses du design de Firefox</h3>
+                            <p>Découvrez les principes derrière l'interface
+                                moderne et accessible du navigateur.</p>
+                        </div>
+                    </article>
+                    <article class="story">
+                        <div class="cover" aria-hidden="true"></div>
+                        <div class="meta">
+                            <span class="badge">Tendance</span>
+                            <h3>Protéger votre vie privée en 2025</h3>
+                            <p>Un tour d'horizon des meilleurs réflexes pour
+                                garder le contrôle de vos données.</p>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <footer>
+                <div>Firefox - 2025</div>
+                <div class="links">
+                    <a href="#">Mentions légales</a>
+                    <a href="#">Vie privée</a>
+                    <a href="#">Paramètres</a>
+                </div>
+            </footer>
+        </div>
+    </body>
+</html>
