@@ -146,13 +146,38 @@
 }
 
 .p4-token.red {
-  background: radial-gradient(circle at 30% 30%, #f02323);
-  border: 2px solid #b52020;
+  background: radial-gradient(circle at 30% 30%, #f33c3c);
+  border: 2px solid #a50d0d;
+}
+
+.p4-token.red::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid #f33c3c;
+  border-radius: 50%;
+  width: 66%;
+  height: 66%;
+  z-index: 1;
 }
 
 .p4-token.blue {
   background: radial-gradient(circle at 30% 30%, #05a4fa);
   border: 2px solid #2700d6;
+}
+
+.p4-token.blue::after {
+  content: attr(data-index);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid #05a4fa;
+  border-radius: 50%;
+  width: 20%;
+  height: 20%;
 }
 
 .p4-info {

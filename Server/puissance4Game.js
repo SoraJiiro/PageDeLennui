@@ -9,6 +9,7 @@ class Puissance4Game {
     this.gameStarted = false;
     this.winner = null;
     this.draw = false;
+    this.winningCells = [];
   }
 
   addPlayer(pseudo, socketId) {
@@ -73,6 +74,7 @@ class Puissance4Game {
       .map(() => Array(7).fill(0));
     this.winner = null;
     this.draw = false;
+    this.winningCells = [];
     return true;
   }
 
@@ -133,18 +135,34 @@ class Puissance4Game {
 
   checkWin(row, col, color) {
     // Vérif horizontal
-    if (this.checkDirection(row, col, 0, 1, color)) return true;
+    const horizontal = this.checkDirection(row, col, 0, 1, color);
+    if (horizontal) {
+      this.winningCells = horizontal;
+      return true;
+    }
     // Vérif vertical
-    if (this.checkDirection(row, col, 1, 0, color)) return true;
+    const vertical = this.checkDirection(row, col, 1, 0, color);
+    if (vertical) {
+      this.winningCells = vertical;
+      return true;
+    }
     // Vérif diagonal (/)
-    if (this.checkDirection(row, col, 1, 1, color)) return true;
+    const diag1 = this.checkDirection(row, col, 1, 1, color);
+    if (diag1) {
+      this.winningCells = diag1;
+      return true;
+    }
     // Vérif diagonal (\)
-    if (this.checkDirection(row, col, 1, -1, color)) return true;
+    const diag2 = this.checkDirection(row, col, 1, -1, color);
+    if (diag2) {
+      this.winningCells = diag2;
+      return true;
+    }
     return false;
   }
 
   checkDirection(row, col, dRow, dCol, color) {
-    let count = 1;
+    const cells = [{ row, col }];
 
     // Vérif direction 1
     for (let i = 1; i < 4; i++) {
@@ -152,7 +170,7 @@ class Puissance4Game {
       const c = col + dCol * i;
       if (r < 0 || r >= 6 || c < 0 || c >= 7) break;
       if (this.board[r][c] !== color) break;
-      count++;
+      cells.push({ row: r, col: c });
     }
 
     // Vérif direction 2
@@ -161,10 +179,10 @@ class Puissance4Game {
       const c = col - dCol * i;
       if (r < 0 || r >= 6 || c < 0 || c >= 7) break;
       if (this.board[r][c] !== color) break;
-      count++;
+      cells.push({ row: r, col: c });
     }
 
-    return count >= 4;
+    return cells.length >= 4 ? cells : null;
   }
 
   isBoardFull() {
@@ -187,6 +205,7 @@ class Puissance4Game {
       joueurs: this.joueurs.map((j) => j.pseudo),
       winner: this.winner,
       draw: this.draw,
+      winningCells: this.winningCells || [],
     };
   }
 

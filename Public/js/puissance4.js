@@ -136,7 +136,6 @@ export function initPuissance4(socket) {
         ui.lobby.style.display = "block";
         socket.emit("p4:getState");
       } else if (data.draw) {
-        // 3s message egalité
         setTimeout(() => {
           alert(`🤝 Match nul !`);
           ui.game.classList.remove("active");
@@ -144,7 +143,6 @@ export function initPuissance4(socket) {
           socket.emit("p4:getState");
         }, 3000);
       } else {
-        // 3s message win
         setTimeout(() => {
           alert(`🎉 ${data.winner} a gagné la partie !`);
           ui.game.classList.remove("active");
@@ -215,6 +213,19 @@ export function initPuissance4(socket) {
           if (value !== 0) {
             const token = document.createElement("div");
             token.className = `p4-token ${value === 1 ? "red" : "blue"}`;
+
+            if (
+              gameStateData.winningCells &&
+              gameStateData.winningCells.length > 0
+            ) {
+              const isWinningCell = gameStateData.winningCells.some(
+                (wc) => wc.row === row && wc.col === col
+              );
+              if (isWinningCell) {
+                token.style.background = "#fff";
+              }
+            }
+
             cell.appendChild(token);
           }
 
