@@ -510,7 +510,6 @@ export function initPictionary(socket) {
   });
 
   socket.on("pictionary:gameEnd", (data) => {
-    // Affiche un écran de vainqueur similaire à P4, puis retour lobby
     if (ui.infoEl) {
       const text = data.winner || "Partie terminée";
       ui.infoEl.innerHTML = `<div class="p4-winner-message">🏆 ${text} 🏆</div>`;
