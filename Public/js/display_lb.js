@@ -10,6 +10,7 @@ function showLeaderboard(name) {
     uno: "#uno-leaderboard",
     pictionary: "#pictionary-leaderboard",
     p4: "#p4-leaderboard",
+    blockblast: "#blockblast-leaderboard",
   };
 
   const table = document.querySelector(idMap[name]);

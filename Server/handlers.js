@@ -2,6 +2,9 @@ const { FileService, AntiSpam } = require("./util");
 const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
+const fs = require("fs");
+const path = require("path");
+const config = require("./config");
 
 // ------- Games -------
 let gameActuelle = new UnoGame();
@@ -59,6 +62,12 @@ const leaderboardManager = {
       .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
     io.emit("p4:leaderboard", arr);
   },
+  broadcastBlockBlastLB(io) {
+    const arr = Object.entries(FileService.data.blockblastScores)
+      .map(([u, s]) => ({ pseudo: u, score: s }))
+      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    io.emit("blockblast:leaderboard", arr);
+  },
 };
 
 // ------- Handler Socket -------
@@ -85,6 +94,7 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastUnoLB(io);
   leaderboardManager.broadcastPictionaryLB(io);
   leaderboardManager.broadcastP4LB(io);
+  leaderboardManager.broadcastBlockBlastLB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
   io.emit("system:info", `${pseudo} a rejoint le chat`);
@@ -988,6 +998,124 @@ function initSocketHandlers(io, socket, gameState) {
     }
 
     p4_broadcastGame();
+  });
+
+  // ------- Block Blast -------
+  socket.on("blockblast:score", ({ score }) => {
+    const s = Number(score);
+    if (isNaN(s) || s < 0) return;
+    const current = FileService.data.blockblastScores[pseudo] || 0;
+    if (s > current) {
+      FileService.data.blockblastScores[pseudo] = s;
+      FileService.save("blockblastScores", FileService.data.blockblastScores);
+      console.log(
+        withGame(
+          `\n🧱 Nouveau score Block Blast pour [${orange}${pseudo}${green}] ::: ${s}\n`,
+          green
+        )
+      );
+    }
+    // En cas de game over, on efface l'état sauvegardé de la partie en cours
+    if (
+      FileService.data.blockblastSaves &&
+      FileService.data.blockblastSaves[pseudo]
+    ) {
+      delete FileService.data.blockblastSaves[pseudo];
+      FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+    }
+    leaderboardManager.broadcastBlockBlastLB(io);
+  });
+
+  socket.on("blockblast:saveMove", (moveData) => {
+    try {
+      // Créer le dossier d'historique si nécessaire
+      const historyDir = path.join(config.DATA, "blockblast_history");
+      if (!fs.existsSync(historyDir)) {
+        fs.mkdirSync(historyDir, { recursive: true });
+      }
+
+      // Nom du fichier basé sur le pseudo et la date
+      const date = new Date().toISOString().split("T")[0];
+      // Sanitize pseudo pour un nom de fichier Windows-safe
+      const safePseudo = String(pseudo).replace(/[^a-z0-9_-]/gi, "_");
+      const filename = path.join(historyDir, `${safePseudo}_${date}.jsonl`);
+
+      // Ajouter le pseudo et la date aux données
+      const dataToSave = {
+        ...moveData,
+        pseudo,
+        date: new Date().toISOString(),
+      };
+
+      fs.appendFileSync(filename, JSON.stringify(dataToSave) + "\n");
+    } catch (err) {
+      console.error(
+        "Erreur lors de la sauvegarde du mouvement Block Blast:",
+        err
+      );
+    }
+  });
+
+  socket.on("blockblast:reset", () => {
+    FileService.data.blockblastScores[pseudo] = 0;
+    FileService.save("blockblastScores", FileService.data.blockblastScores);
+    // Effacer également toute sauvegarde de grille associée à ce joueur
+    if (
+      FileService.data.blockblastSaves &&
+      FileService.data.blockblastSaves[pseudo]
+    ) {
+      delete FileService.data.blockblastSaves[pseudo];
+      FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+    }
+    console.log(
+      withGame(`🔄 Reset Block Blast pour [${orange}${pseudo}${green}]`, green)
+    );
+    leaderboardManager.broadcastBlockBlastLB(io);
+    socket.emit("blockblast:resetConfirm", { success: true });
+  });
+
+  // Sauvegarde/restauration de l'état courant de Block Blast
+  socket.on("blockblast:saveState", ({ grid, score, pieces, gameOver }) => {
+    try {
+      // Validation simple
+      if (
+        !Array.isArray(grid) ||
+        typeof score !== "number" ||
+        !Array.isArray(pieces)
+      )
+        return;
+      // Ne pas enregistrer les états finaux
+      if (gameOver === true) return;
+      if (!FileService.data.blockblastSaves)
+        FileService.data.blockblastSaves = {};
+      FileService.data.blockblastSaves[pseudo] = { grid, score, pieces };
+      FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+    } catch (e) {
+      console.error("Erreur saveState Block Blast:", e);
+    }
+  });
+
+  socket.on("blockblast:loadState", () => {
+    try {
+      const save = FileService.data.blockblastSaves?.[pseudo] || null;
+      if (save) {
+        socket.emit("blockblast:state", { found: true, state: save });
+      } else {
+        socket.emit("blockblast:state", { found: false });
+      }
+    } catch (e) {
+      socket.emit("blockblast:state", { found: false });
+    }
+  });
+
+  socket.on("blockblast:clearState", () => {
+    if (
+      FileService.data.blockblastSaves &&
+      FileService.data.blockblastSaves[pseudo]
+    ) {
+      delete FileService.data.blockblastSaves[pseudo];
+      FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+    }
   });
 
   // ------- Log off -------

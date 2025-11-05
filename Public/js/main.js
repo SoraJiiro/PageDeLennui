@@ -27,6 +27,8 @@
       import("./pictionary_leaderboard.js"),
       import("./puissance4.js"),
       import("./p4_leaderboard.js"),
+      import("./blockblast.js"),
+      import("./blockblast_leaderboard.js"),
     ]);
 
     const [
@@ -43,6 +45,8 @@
       pictionaryLeaderboard,
       puissance4,
       p4Leaderboard,
+      blockblast,
+      blockblastLeaderboard,
     ] = modules;
 
     // 2) Créer le socket en mode autoConnect:false
@@ -84,6 +88,9 @@
     if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
     if (p4Leaderboard?.initP4Leaderboard)
       p4Leaderboard.initP4Leaderboard(socket);
+    if (blockblast?.initBlockBlast) blockblast.initBlockBlast(socket);
+    if (blockblastLeaderboard?.initBlockBlastLeaderboard)
+      blockblastLeaderboard.initBlockBlastLeaderboard(socket);
 
     // 4) Ouvrir la connexion seulement maintenant (évite de rater les 1ers emits)
     socket.connect();

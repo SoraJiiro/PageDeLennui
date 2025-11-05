@@ -50,6 +50,8 @@ class FileService {
       medals: path.join(config.DATA, "medals.json"),
       p4Wins: path.join(config.DATA, "p4_wins.json"),
       pictionaryWins: path.join(config.DATA, "pictionary_wins.json"),
+      blockblastScores: path.join(config.DATA, "blockblast_scores.json"),
+      blockblastSaves: path.join(config.DATA, "blockblast_saves.json"),
     };
 
     this.data = this.loadAll();
@@ -82,6 +84,8 @@ class FileService {
       unoWins: this.readJSON(this.files.unoWins, {}),
       p4Wins: this.readJSON(this.files.p4Wins, {}),
       pictionaryWins: this.readJSON(this.files.pictionaryWins, {}),
+      blockblastScores: this.readJSON(this.files.blockblastScores, {}),
+      blockblastSaves: this.readJSON(this.files.blockblastSaves, {}),
     };
   }
 
@@ -96,6 +100,8 @@ class FileService {
       unoWins: this.files.unoWins,
       p4Wins: this.files.p4Wins,
       pictionaryWins: this.files.pictionaryWins,
+      blockblastScores: this.files.blockblastScores,
+      blockblastSaves: this.files.blockblastSaves,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

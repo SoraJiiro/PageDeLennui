@@ -1,0 +1,232 @@
+#stage9 {
+  position: absolute;
+  top: calc(8 * 100dvh);
+  left: 0;
+  right: 0;
+  bottom: auto;
+  width: 100dvw;
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.blockblast-wrap {
+  width: min(600px, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.blockblast-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+}
+
+.blockblast-score {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.blockblast-grid {
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 500px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: 2px;
+  background: var(--primary-color);
+  border: 3px solid var(--primary-color);
+  padding: 2px;
+}
+
+.blockblast-cell {
+  background: var(--bg-color);
+  border: 1px solid rgba(15, 255, 15, 0.2);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  will-change: transform, opacity;
+}
+
+.blockblast-cell.preview {
+  background: rgba(15, 255, 15, 0.3);
+}
+
+/* Unifier l'animation de clear pour éviter les conflits et garantir 0.55s */
+
+.blockblast-pieces {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  min-height: 150px;
+}
+
+.blockblast-piece {
+  display: grid;
+  gap: 3px;
+  cursor: pointer;
+  padding: 0.5rem;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.blockblast-piece:hover:not(.used) {
+  transform: scale(1.1);
+  border-color: var(--primary-color);
+}
+
+.blockblast-piece.used {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.blockblast-piece.dragging {
+  opacity: 0.5;
+}
+
+.blockblast-piece.invalid {
+  cursor: not-allowed;
+}
+
+.blockblast-piece-block {
+  width: 25px;
+  height: 25px;
+  background: var(--primary-color);
+}
+
+.blockblast-drag-preview {
+  position: fixed;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.blockblast-drag-preview .blockblast-piece-block {
+  opacity: 0.3;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+}
+
+.blockblast-controls {
+  width: 100%;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.blockblast-controls button {
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  background: var(--bg-color);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.blockblast-controls button:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.blockblast-gameover {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.95);
+  border: 3px solid var(--primary-color);
+  padding: 2rem;
+  text-align: center;
+  z-index: 1000;
+  display: none;
+}
+
+.blockblast-gameover.active {
+  display: block;
+}
+
+.blockblast-gameover h2 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.blockblast-gameover p {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.blockblast-gameover button {
+  padding: 0.8rem 2rem;
+  cursor: pointer;
+  font-weight: 600;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  border: 2px solid var(--primary-color);
+}
+
+.blockblast-info {
+  width: 100%;
+  padding: 1rem;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  text-align: center;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .blockblast-piece-block {
+    width: 20px;
+    height: 20px;
+  }
+
+  .blockblast-pieces {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .blockblast-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .blockblast-score {
+    font-size: 1.2rem;
+  }
+}
+
+.blockblast-cell.filled.clearing {
+  animation: bbClear 0.55s ease-out both;
+  transform-origin: 50% 50%;
+}
+
+@keyframes bbClear {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+}

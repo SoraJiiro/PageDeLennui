@@ -24,6 +24,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage6.css" />
         <link rel="stylesheet" type="text/css" href="css/stage7.css" />
         <link rel="stylesheet" type="text/css" href="css/stage8.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage9.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
             media="(prefers-color-scheme: dark)" />
@@ -58,6 +59,7 @@
                 <button class="sec6">Flappy bird</button>
                 <button class="sec7">Pictionary</button>
                 <button class="sec8">Puissance 4</button>
+                <button class="sec9">Block Blast</button>
                 <p class="hide-nav">Cacher</p>
             </div>
 
@@ -125,6 +127,7 @@
                 <button data-board="uno">UNO</button>
                 <button data-board="pictionary">Pictionary</button>
                 <button data-board="p4">Puissance 4</button>
+                <button data-board="blockblast">Block Blast</button>
             </div>
 
             <center>
@@ -191,6 +194,15 @@
                 </div>
                 <table class="board" id="p4-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Victoires</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Block Blast Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="blockblast-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -369,6 +381,37 @@
                     </div>
                     <div class="p4-mode-spec" style="display: none;"></div>
                 </div>
+            </div>
+        </section>
+        <section id="stage9">
+            <div class="blockblast-wrap">
+                <div class="blockblast-header">
+                    <h2>Block Blast.exe</h2>
+                    <div class="blockblast-score">Score: 0</div>
+                </div>
+
+                <div class="blockblast-grid"></div>
+
+                <div class="blockblast-pieces"></div>
+
+                <div class="blockblast-info">
+                    <i class="fa-solid fa-lightbulb"></i> Tu peux drag la pièce
+                    sur
+                    la
+                    grille ou simplement cliquer dessus puis cliquer sur
+                    l'emplacement où tu veux la placer sur la grille
+                </div>
+
+                <div class="blockblast-controls">
+                    <button class="blockblast-reset">Reset Score</button>
+                </div>
+            </div>
+
+            <div class="blockblast-gameover">
+                <h2>GAME OVER</h2>
+                <p>Score final: <span
+                        class="blockblast-gameover-score">0</span></p>
+                <button class="blockblast-restart">Rejouer</button>
             </div>
         </section>
 
