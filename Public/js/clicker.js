@@ -103,8 +103,8 @@ export function initClicker(socket) {
     let cps = precedente.cps + 3;
 
     return {
-      nom: `Médaille ${index}`,
-      icon: "⭐",
+      nom: `Médaille Préstige - ${index}`,
+      icon: "[⭐]",
       pallier,
       cps,
       couleurs: colors,

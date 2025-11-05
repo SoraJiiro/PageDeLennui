@@ -165,7 +165,8 @@ button.log-off:not(:disabled):hover {
 button.reset,
 .dino-reset,
 .flappyResetBtn,
-.pic-clear-btn {
+.pic-clear-btn,
+.blockblast-reset {
   background: var(--bg-color) !important;
   color: var(--danger-color) !important;
   border-color: var(--danger-color) !important;
@@ -176,7 +177,8 @@ button.reset,
 button.reset,
 .dino-reset,
 .flappyResetBtn,
-.pic-clear-btn {
+.pic-clear-btn,
+.blockblast-reset {
   background: var(--bg-color) !important;
   color: var(--danger-color) !important;
   border-color: var(--danger-color) !important;
@@ -185,7 +187,8 @@ button.reset,
 button.reset:not(:disabled):hover,
 .dino-reset:not(:disabled):hover,
 .flappyResetBtn:not(:disabled):hover,
-.pic-clear-btn:not(:disabled):hover {
+.pic-clear-btn:not(:disabled):hover,
+.blockblast-reset:not(:disabled):hover {
   background: var(--danger-color) !important;
   color: var(--bg-color) !important;
   border: 2px solid var(--bg-color) !important;
@@ -198,4 +201,18 @@ button.reset:not(:disabled):hover,
   font-family: "Font Awesome 6 Free" !important;
   font-weight: 900 !important;
   font-style: normal;
+}
+
+p.pause-info {
+  margin-top: 10px;
+  font-size: clamp(0.75rem, 1vw + 0.2rem, 1rem);
+  color: var(--primary-color);
+  opacity: 0.75;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid var(--primary-color);
+  padding: 6px 10px;
+  display: flex;
+  gap: 7.5px;
 }
