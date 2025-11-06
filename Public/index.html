@@ -50,7 +50,7 @@
             <div class="keybind-wrap">
                 <label for="keybind">Changer la touche de Pause</label>
                 <input type="text" class="keybind" id="keybind"
-                    placeholder="Entrer une touche..."
+                    placeholder="Touche" autocomplete="off"
                     maxlength="1" minlength="0" />
 
                 <button class="keybind-submit">Appliquer</button>
@@ -104,7 +104,8 @@
                 </div>
                 <p class="pause-info"><i
                         class="fa-solid fa-lightbulb"></i>Appuyer sur <mark
-                        style="background: #0f0!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">"P"</mark>
+                        id="keybind-mark"
+                        style="background: #0f0!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;"></mark>
                     pour mettre en pause</p>
             </div>
         </section>
@@ -277,7 +278,8 @@
                 </div>
                 <p class="pause-info"><i
                         class="fa-solid fa-lightbulb"></i>Appuyer sur <mark
-                        style="background: #0f0!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">"P"</mark>
+                        id="keybind-mark"
+                        style="background: #0f0!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;"></mark>
                     pour mettre en pause</p>
             </div>
         </section>

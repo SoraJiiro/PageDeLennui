@@ -23,3 +23,50 @@ export function showNotif(text, duration = 4000) {
     console.warn("showNotif fallback:", text);
   }
 }
+
+// Etat partagé pour la touche de pause (par défaut P/p)
+export const keys = { default: ["P", "p"] };
+
+// Charger la touche depuis le localStorage si disponible
+try {
+  const saved = localStorage.getItem("pauseKey");
+  if (saved && typeof saved === "string" && saved.length === 1) {
+    keys.default = [saved.toUpperCase(), saved.toLowerCase()];
+  }
+} catch {}
+
+export function keyBind() {
+  const input = document.querySelector(".keybind");
+  const btn = document.querySelector(".keybind-submit");
+  const marks = document.querySelectorAll("#keybind-mark");
+
+  // Initialiser l'UI avec la touche actuelle
+  try {
+    const current = keys.default[0] || "P";
+    marks.forEach((mark) => {
+      mark.textContent = `"${current}"`;
+    });
+    if (input) input.value = current;
+  } catch {}
+
+  if (!input || !btn) return keys;
+
+  btn.addEventListener("click", () => {
+    const val = (input.value || "").trim();
+    if (val.length !== 1) {
+      showNotif("⚠️ Entrez une seule touche (1 caractère)");
+      return;
+    }
+    keys.default = [val.toUpperCase(), val.toLowerCase()];
+    marks.forEach((mark) => {
+      mark.textContent = `"${val}"`;
+    });
+    try {
+      localStorage.setItem("pauseKey", val);
+    } catch {}
+    showNotif(`Touche de pause changée en "${val}"`);
+    console.log("Nouvelle touche de pause:", keys.default);
+  });
+
+  return keys;
+}

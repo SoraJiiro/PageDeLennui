@@ -1,4 +1,4 @@
-import { showNotif } from "./util.js";
+import { showNotif, keys } from "./util.js";
 
 export function initDino(socket) {
   // ---------- Cache UI ----------
@@ -246,8 +246,9 @@ export function initDino(socket) {
     } else {
       c.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
       c.font = "18px monospace";
+      const pauseKey = (keys && keys.default && keys.default[0]) || "P";
       c.fillText(
-        "Appuie sur P pour reprendre",
+        `Appuie sur ${pauseKey} pour reprendre`,
         ui.canvas.width / 2,
         ui.canvas.height / 2 + 40
       );
@@ -437,7 +438,7 @@ export function initDino(socket) {
     const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
     if (!isVisible) return;
 
-    if (e.key === "p" || e.key === "P") {
+    if (keys.default.includes(e.key)) {
       e.preventDefault();
       // Ne pas permettre la pause si le jeu n'a pas démarré ou est terminé
       if (state.isFirstStart || state.gameOver) return;

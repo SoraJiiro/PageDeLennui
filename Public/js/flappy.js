@@ -1,4 +1,4 @@
-import { showNotif } from "./util.js";
+import { showNotif, keys } from "./util.js";
 
 export function initFlappy(socket) {
   // ---------- Cache UI ----------
@@ -112,8 +112,9 @@ export function initFlappy(socket) {
     } else {
       ui.ctx.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
       ui.ctx.font = "18px monospace";
+      const pauseKey = (keys && keys.default && keys.default[0]) || "P";
       ui.ctx.fillText(
-        "Appuie sur P pour reprendre",
+        `Appuie sur ${pauseKey} pour reprendre`,
         ui.canvas.width / 2,
         ui.canvas.height / 2 + 40
       );
@@ -270,7 +271,7 @@ export function initFlappy(socket) {
     const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
     if (!isVisible) return;
 
-    if (e.key === "p" || e.key === "P") {
+    if (keys.default.includes(e.key)) {
       e.preventDefault();
       // Ne pas permettre la pause si le jeu n'est pas en cours
       if (!gameRunning) return;

@@ -1,4 +1,12 @@
+import { keys, keyBind } from "./util.js";
+
 (async () => {
+  // Initialiser la touche de pause (UI + état partagé)
+  try {
+    keyBind();
+  } catch (e) {
+    console.warn("keyBind init error", e);
+  }
   // ---------- Conexion Socket ----------
   if (window.socketInitialized) return;
   window.socketInitialized = true;
