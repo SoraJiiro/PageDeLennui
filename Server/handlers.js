@@ -137,7 +137,7 @@ function initSocketHandlers(io, socket, gameState) {
 
     console.log(
       withGame(
-        `🔄 Reset Clicker complet pour [${orange}${pseudo}${green}]`,
+        `\n🔄 Reset Clicker complet pour [${orange}${pseudo}${green}]\n`,
         green
       )
     );
@@ -199,7 +199,7 @@ function initSocketHandlers(io, socket, gameState) {
     FileService.data.dinoScores[pseudo] = 0;
     FileService.save("dinoScores", FileService.data.dinoScores);
     console.log(
-      withGame(`🔄 Reset Dino pour [${orange}${pseudo}${blue}]`, blue)
+      withGame(`\n🔄 Reset Dino pour [${orange}${pseudo}${blue}]\n`, blue)
     );
     leaderboardManager.broadcastDinoLB(io);
     socket.emit("dino:resetConfirm", { success: true });
@@ -227,7 +227,7 @@ function initSocketHandlers(io, socket, gameState) {
     FileService.data.flappyScores[pseudo] = 0;
     FileService.save("flappyScores", FileService.data.flappyScores);
     console.log(
-      withGame(`🔄 Reset Flappy pour [${orange}${pseudo}${pink}]`, pink)
+      withGame(`\n🔄 Reset Flappy pour [${orange}${pseudo}${pink}]\n`, pink)
     );
     leaderboardManager.broadcastFlappyLB(io);
     socket.emit("flappy:resetConfirm", { success: true });
@@ -1015,14 +1015,8 @@ function initSocketHandlers(io, socket, gameState) {
         )
       );
     }
-    // En cas de game over, on efface l'état sauvegardé de la partie en cours
-    if (
-      FileService.data.blockblastSaves &&
-      FileService.data.blockblastSaves[pseudo]
-    ) {
-      delete FileService.data.blockblastSaves[pseudo];
-      FileService.save("blockblastSaves", FileService.data.blockblastSaves);
-    }
+    // Ne pas effacer ici la sauvegarde de partie: elle est nettoyée
+    // explicitement via 'blockblast:clearState' (game over ou reset)
     leaderboardManager.broadcastBlockBlastLB(io);
   });
 
@@ -1057,8 +1051,7 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   socket.on("blockblast:reset", () => {
-    FileService.data.blockblastScores[pseudo] = 0;
-    FileService.save("blockblastScores", FileService.data.blockblastScores);
+    // Ne pas toucher au meilleur score (leaderboard all-time)
     // Effacer également toute sauvegarde de grille associée à ce joueur
     if (
       FileService.data.blockblastSaves &&
@@ -1068,7 +1061,10 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.save("blockblastSaves", FileService.data.blockblastSaves);
     }
     console.log(
-      withGame(`🔄 Reset Block Blast pour [${orange}${pseudo}${green}]`, green)
+      withGame(
+        `\n🔄 Reset Block Blast pour [${orange}${pseudo}${green}]\n`,
+        green
+      )
     );
     leaderboardManager.broadcastBlockBlastLB(io);
     socket.emit("blockblast:resetConfirm", { success: true });

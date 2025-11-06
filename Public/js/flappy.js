@@ -283,7 +283,7 @@ export function initFlappy(socket) {
         // Mettre en pause
         paused = true;
         try {
-          window.open("../fake.html", "_blank");
+          window.open("../search.html", "_blank");
           console.log("Chrome save");
         } catch {
           window.open("about:newtab", "_blank");

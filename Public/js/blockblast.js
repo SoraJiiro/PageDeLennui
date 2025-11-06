@@ -1,6 +1,7 @@
 import { showNotif } from "./util.js";
 
 export function initBlockBlast(socket) {
+  const GRID_SIZE = 9;
   // ---------- Cache UI ----------
   const ui = {
     grid: document.querySelector(".blockblast-grid"),
@@ -16,9 +17,9 @@ export function initBlockBlast(socket) {
 
   // ---------- État du jeu ----------
   const state = {
-    grid: Array(8)
+    grid: Array(GRID_SIZE)
       .fill(null)
-      .map(() => Array(8).fill(false)),
+      .map(() => Array(GRID_SIZE).fill(false)),
     score: 0,
     currentPieces: [],
     gameOver: false,
@@ -33,6 +34,8 @@ export function initBlockBlast(socket) {
   let myName = null;
   let myBest = 0;
   let scoreAttente = null;
+  // Pour éviter d'envoyer des scores non-best à répétition
+  let lastBestReported = 0;
 
   socket.on("you:name", (name) => {
     myName = name;
@@ -43,11 +46,22 @@ export function initBlockBlast(socket) {
     const me = arr.find((e) => e.pseudo === myName);
     const prevBest = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
+    // Synchroniser le marqueur local avec le leaderboard reçu
+    if (myBest > lastBestReported) lastBestReported = myBest;
     if (scoreAttente != null && myBest >= scoreAttente && myBest > prevBest) {
       showNotif(`🧱 Nouveau record Block Blast ! Score: ${myBest}`);
       scoreAttente = null;
     }
   });
+
+  // N'émettre le score que s'il dépasse le best of all time
+  function reportBestIfImproved() {
+    const currentBest = Math.max(myBest, lastBestReported);
+    if (state.score > currentBest) {
+      socket.emit("blockblast:score", { score: state.score });
+      lastBestReported = state.score;
+    }
+  }
 
   // ---------- Formes de pièces ----------
   const PIECE_SHAPES = [
@@ -173,19 +187,122 @@ export function initBlockBlast(socket) {
     [[1]],
     // Ligne horizontale 2
     [[1, 1]],
-    // Ligne verticale 2
-    [[1], [1]],
     // 2 blocks diag
-    [[0], [1], [1], [0]],
+    [
+      [0, 1],
+      [1, 0],
+    ],
+    // 2 blocks diag gauche
+    [
+      [1, 0],
+      [0, 1],
+    ],
+    // triple diag
+    [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ],
+    // triple diag gauche
+    [
+      [0, 0, 1],
+      [0, 1, 0],
+      [1, 0, 0],
+    ],
+    // U
+    [
+      [1, 0, 1],
+      [1, 1, 1],
+    ],
+    // U inversé
+    [
+      [1, 1, 1],
+      [1, 0, 1],
+    ],
+    // U gauche
+    [
+      [1, 1],
+      [0, 1],
+      [1, 1],
+    ],
+    // U droit
+    [
+      [1, 1],
+      [1, 0],
+      [1, 1],
+    ],
+    // Gros T
+    [
+      [1, 1, 1],
+      [0, 1, 0],
+      [0, 1, 0],
+    ],
+    // Gros T inversé
+    [
+      [0, 1, 0],
+      [0, 1, 0],
+      [1, 1, 1],
+    ],
+    // Gros T gauche
+    [
+      [1, 0, 0],
+      [1, 1, 1],
+      [1, 0, 0],
+    ],
+    // Gros T droit
+    [
+      [0, 0, 1],
+      [1, 1, 1],
+      [0, 0, 1],
+    ],
+    // 2 petit vertical
+    [[1], [1]],
+    // mini L
+    [
+      [1, 1],
+      [1, 0],
+    ],
+    // mini L inversé
+    [
+      [0, 1],
+      [1, 1],
+    ],
+    // mini L gauche
+    [
+      [1, 0],
+      [1, 1],
+    ],
+    // mini L droit
+    [
+      [1, 1],
+      [0, 1],
+    ],
+    // v
+    [
+      [1, 0, 1],
+      [0, 1, 0],
+    ],
+    // v inversé
+    [
+      [0, 1, 0],
+      [1, 0, 1],
+    ],
+    // rectangle vertical
+    [
+      [1, 1],
+      [1, 1],
+      [1, 1],
+    ],
   ];
-
   // ---------- Couleurs de pièces ----------
   const colors = [
     "#e33724ff",
     "#1653e0ff",
     "#09cd5bff",
     "#ff21daff",
-    "#cfdce4ff",
+    "#d4dde3ff",
+    "#5a5757ff",
+    "#f3fe20ff",
   ];
   function randomPieceColor() {
     return colors[Math.floor(Math.random() * colors.length)];
@@ -194,8 +311,8 @@ export function initBlockBlast(socket) {
   // ---------- Initialisation ----------
   function initGrid() {
     ui.grid.innerHTML = "";
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
         const cell = document.createElement("div");
         cell.className = "blockblast-cell";
         cell.dataset.row = row;
@@ -209,8 +326,8 @@ export function initBlockBlast(socket) {
   function gridHasAnyPlacementForAnyShape() {
     for (const shape of PIECE_SHAPES) {
       const piece = { shape };
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
           if (canPlacePiece(piece, row, col)) return true;
         }
       }
@@ -220,8 +337,8 @@ export function initBlockBlast(socket) {
 
   function setHasPlacablePiece(pieces) {
     for (const piece of pieces) {
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
           if (canPlacePiece(piece, row, col)) return true;
         }
       }
@@ -237,7 +354,13 @@ export function initBlockBlast(socket) {
         if (shape[r][c] === 1) {
           const gr = startRow + r;
           const gc = startCol + c;
-          if (gr < 0 || gr >= 8 || gc < 0 || gc >= 8 || grid[gr][gc])
+          if (
+            gr < 0 ||
+            gr >= GRID_SIZE ||
+            gc < 0 ||
+            gc >= GRID_SIZE ||
+            grid[gr][gc]
+          )
             return false;
         }
       }
@@ -247,8 +370,8 @@ export function initBlockBlast(socket) {
 
   function listPlacementsOnGrid(grid, piece) {
     const placements = [];
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
         if (canPlacePieceOn(grid, piece, row, col))
           placements.push({ row, col });
       }
@@ -278,12 +401,12 @@ export function initBlockBlast(socket) {
     const rowsToClear = [];
     const colsToClear = [];
 
-    for (let row = 0; row < 8; row++) {
+    for (let row = 0; row < GRID_SIZE; row++) {
       if (next[row].every((cell) => cell)) rowsToClear.push(row);
     }
-    for (let col = 0; col < 8; col++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
       let full = true;
-      for (let row = 0; row < 8; row++) {
+      for (let row = 0; row < GRID_SIZE; row++) {
         if (!next[row][col]) {
           full = false;
           break;
@@ -297,10 +420,10 @@ export function initBlockBlast(socket) {
     }
 
     rowsToClear.forEach((row) => {
-      next[row] = Array(8).fill(false);
+      next[row] = Array(GRID_SIZE).fill(false);
     });
     colsToClear.forEach((col) => {
-      for (let row = 0; row < 8; row++) next[row][col] = false;
+      for (let row = 0; row < GRID_SIZE; row++) next[row][col] = false;
     });
 
     return {
@@ -390,6 +513,17 @@ export function initBlockBlast(socket) {
         if (ok) {
           state.currentPieces = candidate;
           renderPieces();
+          // Sauvegarder immédiatement le nouveau set pour résilience au reload
+          socket.emit("blockblast:saveState", {
+            score: state.score,
+            grid: state.grid,
+            pieces: state.currentPieces.map((p) => ({
+              shape: p.shape,
+              used: p.used,
+              color: p.color,
+            })),
+            gameOver: false,
+          });
           return;
         }
       }
@@ -421,8 +555,8 @@ export function initBlockBlast(socket) {
       let forced = null;
       outer: for (const shape of PIECE_SHAPES) {
         const piece = { shape };
-        for (let row = 0; row < 8; row++) {
-          for (let col = 0; col < 8; col++) {
+        for (let row = 0; row < GRID_SIZE; row++) {
+          for (let col = 0; col < GRID_SIZE; col++) {
             if (canPlacePiece(piece, row, col)) {
               forced = shape;
               break outer;
@@ -441,6 +575,17 @@ export function initBlockBlast(socket) {
 
     state.currentPieces = pieces;
     renderPieces();
+    // Sauvegarder immédiatement le nouveau set pour résilience au reload
+    socket.emit("blockblast:saveState", {
+      score: state.score,
+      grid: state.grid,
+      pieces: state.currentPieces.map((p) => ({
+        shape: p.shape,
+        used: p.used,
+        color: p.color,
+      })),
+      gameOver: false,
+    });
   }
 
   function renderPieces() {
@@ -534,7 +679,8 @@ export function initBlockBlast(socket) {
         const block = document.createElement("div");
         if (cell === 1) {
           block.className = "blockblast-piece-block";
-          block.style.opacity = "0.7";
+          // Prévisualisation plus discrète
+          block.style.opacity = "0.25";
           if (piece.color) block.style.backgroundColor = piece.color;
         } else {
           block.style.width = "25px";
@@ -560,6 +706,11 @@ export function initBlockBlast(socket) {
       state.dragPreview.style.left = e.clientX + "px";
       state.dragPreview.style.top = e.clientY + "px";
     }
+  }
+
+  // Utilitaire pour éviter les débordements dûs aux gaps/borders CSS
+  function clampGridCoord(v) {
+    return Math.max(0, Math.min(GRID_SIZE - 1, v));
   }
 
   // ---------- Placement des pièces ----------
@@ -629,8 +780,8 @@ export function initBlockBlast(socket) {
         if (
           startRow < 0 ||
           startCol < 0 ||
-          startRow + rows > 8 ||
-          startCol + cols > 8
+          startRow + rows > GRID_SIZE ||
+          startCol + cols > GRID_SIZE
         ) {
           continue;
         }
@@ -650,9 +801,9 @@ export function initBlockBlast(socket) {
           const gridCol = startCol + c;
           if (
             gridRow < 0 ||
-            gridRow >= 8 ||
+            gridRow >= GRID_SIZE ||
             gridCol < 0 ||
-            gridCol >= 8 ||
+            gridCol >= GRID_SIZE ||
             state.grid[gridRow][gridCol]
           ) {
             return false;
@@ -693,7 +844,8 @@ export function initBlockBlast(socket) {
 
     piece.used = true;
     state.selectedPiece = null;
-    state.score += countBlocks(shape) + 70;
+    // Score = nombre de blocs posés (bonus des clears ajouté plus tard)
+    state.score += countBlocks(shape) + 65;
 
     // Sauvegarder l'état après le placement
     moveData.gridAfter = state.grid.map((row) => [...row]);
@@ -701,6 +853,8 @@ export function initBlockBlast(socket) {
 
     updateScore();
     renderGrid();
+    // Reporter le best si on vient de le dépasser
+    reportBestIfImproved();
 
     const linesCleared = checkAndClearLines();
     moveData.linesCleared = linesCleared;
@@ -758,14 +912,14 @@ export function initBlockBlast(socket) {
     const colsToClear = [];
 
     // Vérifier les lignes
-    for (let row = 0; row < 8; row++) {
+    for (let row = 0; row < GRID_SIZE; row++) {
       if (state.grid[row].every((cell) => cell)) {
         rowsToClear.push(row);
       }
     }
 
     // Vérifier les colonnes
-    for (let col = 0; col < 8; col++) {
+    for (let col = 0; col < GRID_SIZE; col++) {
       if (state.grid.every((row) => row[col])) {
         colsToClear.push(col);
       }
@@ -777,12 +931,12 @@ export function initBlockBlast(socket) {
     // Animation de suppression
     const cellsToAnimate = [];
     rowsToClear.forEach((row) => {
-      for (let col = 0; col < 8; col++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
         cellsToAnimate.push({ row, col });
       }
     });
     colsToClear.forEach((col) => {
-      for (let row = 0; row < 8; row++) {
+      for (let row = 0; row < GRID_SIZE; row++) {
         if (!cellsToAnimate.some((c) => c.row === row && c.col === col)) {
           cellsToAnimate.push({ row, col });
         }
@@ -805,23 +959,25 @@ export function initBlockBlast(socket) {
     setTimeout(() => {
       // Supprimer les lignes et colonnes
       rowsToClear.forEach((row) => {
-        state.grid[row] = Array(8).fill(false);
+        state.grid[row] = Array(GRID_SIZE).fill(false);
       });
       colsToClear.forEach((col) => {
-        for (let row = 0; row < 8; row++) {
+        for (let row = 0; row < GRID_SIZE; row++) {
           state.grid[row][col] = false;
         }
       });
 
       // Calculer le score bonus
       const totalCleared = rowsToClear.length + colsToClear.length;
-      const bonus = totalCleared * 10;
-      state.score += bonus;
+      const bonus = totalCleared * 15;
+      state.score += bonus + 50;
       updateScore();
       renderGrid();
+      // Reporter le best si on vient de le dépasser avec le bonus
+      reportBestIfImproved();
 
       if (totalCleared > 1) {
-        showNotif(`🎉 Combo x${totalCleared} ! +${bonus} points`);
+        showNotif(`🎉 Combo x${totalCleared} !`);
       }
     }, 550);
 
@@ -833,8 +989,8 @@ export function initBlockBlast(socket) {
     for (let i = 0; i < state.currentPieces.length; i++) {
       if (state.currentPieces[i].used) continue;
 
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
           if (canPlacePiece(state.currentPieces[i], row, col)) {
             return false;
           }
@@ -848,7 +1004,7 @@ export function initBlockBlast(socket) {
     state.gameOver = true;
     ui.gameoverScore.textContent = state.score;
     ui.gameoverEl.classList.add("active");
-    socket.emit("blockblast:score", { score: state.score });
+    reportBestIfImproved();
     // Effacer l'état sauvegardé côté serveur (partie terminée)
     socket.emit("blockblast:clearState");
     scoreAttente = state.score;
@@ -879,9 +1035,9 @@ export function initBlockBlast(socket) {
   }
 
   function resetGame() {
-    state.grid = Array(8)
+    state.grid = Array(GRID_SIZE)
       .fill(null)
-      .map(() => Array(8).fill(false));
+      .map(() => Array(GRID_SIZE).fill(false));
     state.score = 0;
     state.gameOver = false;
     state.selectedPiece = null;
@@ -917,12 +1073,14 @@ export function initBlockBlast(socket) {
     if (state.draggedPiece === null || state.gameOver) return;
 
     const rect = ui.grid.getBoundingClientRect();
-    const cellSize = rect.width / 8;
+    const cellSize = rect.width / GRID_SIZE;
 
-    const col = Math.floor((e.clientX - rect.left) / cellSize);
-    const row = Math.floor((e.clientY - rect.top) / cellSize);
+    let col = Math.floor((e.clientX - rect.left) / cellSize);
+    let row = Math.floor((e.clientY - rect.top) / cellSize);
+    col = clampGridCoord(col);
+    row = clampGridCoord(row);
 
-    if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+    if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
       const piece = state.currentPieces[state.draggedPiece];
       const anchor = getAnchorForHover(piece, row, col);
       if (anchor) updatePreviewCells(computePieceCells(piece, anchor));
@@ -940,12 +1098,14 @@ export function initBlockBlast(socket) {
     updatePreviewCells(null);
 
     const rect = ui.grid.getBoundingClientRect();
-    const cellSize = rect.width / 8;
+    const cellSize = rect.width / GRID_SIZE;
 
-    const col = Math.floor((e.clientX - rect.left) / cellSize);
-    const row = Math.floor((e.clientY - rect.top) / cellSize);
+    let col = Math.floor((e.clientX - rect.left) / cellSize);
+    let row = Math.floor((e.clientY - rect.top) / cellSize);
+    col = clampGridCoord(col);
+    row = clampGridCoord(row);
 
-    if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+    if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
       const piece = state.currentPieces[state.draggedPiece];
       const anchor = getAnchorForHover(piece, row, col);
       if (anchor) {
@@ -960,10 +1120,12 @@ export function initBlockBlast(socket) {
   ui.grid.addEventListener("mousemove", (e) => {
     if (state.gameOver || state.selectedPiece === null) return;
     const rect = ui.grid.getBoundingClientRect();
-    const cellSize = rect.width / 8;
-    const col = Math.floor((e.clientX - rect.left) / cellSize);
-    const row = Math.floor((e.clientY - rect.top) / cellSize);
-    if (!(row >= 0 && row < 8 && col >= 0 && col < 8)) return;
+    const cellSize = rect.width / GRID_SIZE;
+    let col = Math.floor((e.clientX - rect.left) / cellSize);
+    let row = Math.floor((e.clientY - rect.top) / cellSize);
+    col = clampGridCoord(col);
+    row = clampGridCoord(row);
+    if (!(row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE)) return;
     const piece = state.currentPieces[state.selectedPiece];
     const anchor = piece ? getAnchorForHover(piece, row, col) : null;
     if (anchor && piece) updatePreviewCells(computePieceCells(piece, anchor));
@@ -989,7 +1151,7 @@ export function initBlockBlast(socket) {
   // ---------- Boutons ----------
   ui.resetBtn?.addEventListener("click", async () => {
     const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Block Blast ?\nTon meilleur score sera définitivement perdu !"
+      "⚠️ Es-tu sûr de vouloir réinitialiser la partie en cours Block Blast ?\nTa partie actuelle sera perdue (meilleur score conservé)."
     );
     if (!confirmReset) return;
 
@@ -1014,8 +1176,7 @@ export function initBlockBlast(socket) {
         // Remise à zéro locale du jeu (grille, score, pièces)
         resetGame();
         socket.emit("blockblast:clearState");
-        // Remise à zéro du meilleur score côté client
-        myBest = 0;
+        // Le meilleur score est conservé (ne pas l'écraser côté client)
         scoreAttente = null;
         showNotif("🔄 Score Block Blast réinitialisé avec succès !");
       });
@@ -1033,6 +1194,7 @@ export function initBlockBlast(socket) {
   updateScore();
 
   let restoredOnce = false;
+  let unloadHooked = false;
   socket.on("blockblast:state", (payload) => {
     restoredOnce = true;
     if (!payload || !payload.found || !payload.state) {
@@ -1063,10 +1225,34 @@ export function initBlockBlast(socket) {
     renderGrid();
     updateScore();
     renderPieces();
-    // Si l'état restauré n'a aucune pose possible, on le considère invalide
-    if (checkGameOver()) {
-      socket.emit("blockblast:clearState");
-      resetGame();
+    // Si toutes les pièces sont utilisées ou aucune pose possible, générer un nouveau set
+    if (
+      state.currentPieces.length === 0 ||
+      state.currentPieces.every((p) => p.used) ||
+      checkGameOver()
+    ) {
+      generateNewPieces();
+    }
+
+    if (!unloadHooked) {
+      window.addEventListener("beforeunload", () => {
+        if (!state.gameOver) {
+          // Sauvegarde de l'état courant pour restauration post-reload
+          socket.emit("blockblast:saveState", {
+            score: state.score,
+            grid: state.grid,
+            pieces: state.currentPieces.map((p) => ({
+              shape: p.shape,
+              used: p.used,
+              color: p.color,
+            })),
+            gameOver: false,
+          });
+        }
+        // N'envoyer le score que si c'est un nouveau best
+        reportBestIfImproved();
+      });
+      unloadHooked = true;
     }
   });
   socket.emit("blockblast:loadState");

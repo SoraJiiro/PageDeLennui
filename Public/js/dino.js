@@ -450,7 +450,7 @@ export function initDino(socket) {
         // Mettre en pause
         state.paused = true;
         try {
-          window.open("../fake.html", "_blank");
+          window.open("../search.html", "_blank");
           console.log("Chrome save");
         } catch {
           window.open("about:newtab", "_blank");

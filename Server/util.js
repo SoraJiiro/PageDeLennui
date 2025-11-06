@@ -156,7 +156,7 @@ class GameStateManager {
         if (oldId !== socketId) {
           const oldSocket = io.sockets.sockets.get(oldId);
           if (oldSocket) {
-            console.log(`🔄 Reset socket ${oldId} -> ${pseudo}`);
+            console.log(`\n🔄 Reset socket ${oldId} -> ${pseudo}\n`);
             oldSocket.disconnect(true);
           }
         }

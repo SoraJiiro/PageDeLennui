@@ -40,8 +40,8 @@
   aspect-ratio: 1;
   max-width: 500px;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(8, 1fr);
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
   gap: 2px;
   background: var(--primary-color);
   border: 3px solid var(--primary-color);
@@ -57,7 +57,10 @@
 }
 
 .blockblast-cell.preview {
-  background: rgba(15, 255, 15, 0.3);
+  /* Aperçu plus discret et neutre */
+  background: rgba(255, 255, 255, 0.12);
+  outline: 1px dashed rgba(255, 255, 255, 0.25);
+  outline-offset: -1px;
 }
 
 /* Unifier l'animation de clear pour éviter les conflits et garantir 0.55s */
@@ -115,8 +118,9 @@
 }
 
 .blockblast-drag-preview .blockblast-piece-block {
-  opacity: 0.3;
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+  /* Drag preview plus soft (couleur de la pièce mais faible opacité) */
+  opacity: 0.2;
+  box-shadow: none;
 }
 
 .blockblast-controls {
