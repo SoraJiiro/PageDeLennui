@@ -100,6 +100,16 @@ export function initBlockBlast(socket) {
       [0, 1],
       [1, 1],
     ],
+    // L couché gauche
+    [
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+    // L couché droit
+    [
+      [1, 0, 0],
+      [1, 1, 1],
+    ],
     // T shape
     [
       [1, 1, 1],
@@ -287,6 +297,19 @@ export function initBlockBlast(socket) {
       [0, 1, 0],
       [1, 0, 1],
     ],
+    // v gauche
+    [
+      [0, 1],
+      [1, 0],
+      [0, 1],
+    ],
+    // v droit
+    [
+      [1, 0],
+
+      [0, 1],
+      [1, 0],
+    ],
     // rectangle vertical
     [
       [1, 1],
@@ -303,6 +326,8 @@ export function initBlockBlast(socket) {
     "#d4dde3ff",
     "#5a5757ff",
     "#f3fe20ff",
+    "#c800ffff",
+    "#ff9500ff",
   ];
   function randomPieceColor() {
     return colors[Math.floor(Math.random() * colors.length)];
@@ -445,7 +470,7 @@ export function initBlockBlast(socket) {
     //    - ce placement déclenche un clear (ligne/col)
     //    - après ce clear, une deuxième pièce est plaçable
     //    - après pose + clear de la deuxième, la troisième est aussi plaçable
-    const CHAIN_TRIES = 30;
+    const CHAIN_TRIES = 100;
     for (let t = 0; t < CHAIN_TRIES; t++) {
       const now = Date.now();
       const candidate = [];

@@ -101,8 +101,8 @@
 }
 
 .keybind-wrap button {
-  width: 150px;
-  height: 40px;
+  width: 175px;
+  height: 57.5px;
   font-size: 1.25rem;
   font-weight: bold;
   letter-spacing: 1.5px;
@@ -307,6 +307,11 @@ p.cps-humain {
   transition: all 0.3s ease;
 }
 
+/* Masquer tout index par défaut (évite le '7' visible sur Légendaire quand hidden) */
+.medals-wrap .medal .medal-index {
+  display: none;
+}
+
 .medals-wrap .medal.hidden {
   border: 5px dotted gray !important;
   background: var(--bg-color) !important;
@@ -349,6 +354,8 @@ p.cps-humain {
   font-size: 2.5rem;
   font-family: "Liberation Serif", monospace;
   z-index: 1;
+  -webkit-text-stroke: 0.75px #000;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
 }
 
 /* Bronze - 1 */
@@ -590,4 +597,9 @@ p.cps-humain {
   animation: rainbowMove 3.22s ease-out infinite;
   animation-delay: var(--rainbow-delay, 0s);
   z-index: -1;
+}
+
+/* Uniformisation: chiffres des médailles de base en blanc */
+.medals-wrap .medal.shown::after {
+  color: #fff !important;
 }
