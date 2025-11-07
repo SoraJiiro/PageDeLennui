@@ -78,20 +78,30 @@
                 <button class="reset">Reset</button>
             </div>
 
-            <div class="medals-wrap">
-                <div data-name="Bronze"
-                    class="medal hidden first-reward"></div>
-                <div data-name="Argent"
-                    class="medal hidden second-reward"></div>
-                <div data-name="Or" class="medal hidden third-reward"></div>
-                <div data-name="Diamant"
-                    class="medal hidden fourth-reward"></div>
-                <div data-name="Rubis"
-                    class="medal hidden fifth-reward"></div>
-                <div data-name="Saphir"
-                    class="medal hidden sixth-reward"></div>
-                <div data-name="Légendaire"
-                    class="medal hidden seventh-reward"></div>
+            <div class="medals-wrap" aria-label="Progression des médailles"
+                role="group">
+                <div data-name="Bronze" data-rank="1" class="medal hidden"
+                    role="img"
+                    aria-label="Médaille Bronze - Rang 1 - 2 500 clics requis"></div>
+                <div data-name="Argent" data-rank="2" class="medal hidden"
+                    role="img"
+                    aria-label="Médaille Argent - Rang 2 - 5 000 clics requis"></div>
+                <div data-name="Or" data-rank="3" class="medal hidden"
+                    role="img"
+                    aria-label="Médaille Or - Rang 3 - 10 000 clics requis"></div>
+                <div data-name="Diamant" data-rank="4" class="medal hidden"
+                    role="img"
+                    aria-label="Médaille Diamant - Rang 4 - 20 000 clics requis"></div>
+                <div data-name="Rubis" data-rank="5" class="medal hidden"
+                    role="img"
+                    aria-label="Médaille Rubis - Rang 5 - 40 000 clics requis"></div>
+                <div data-name="Saphir" data-rank="6" class="medal hidden"
+                    role="img"
+                    aria-label="Médaille Saphir - Rang 6 - 80 000 clics requis"></div>
+                <div data-name="Légendaire" data-rank="7" class="medal hidden"
+                    role="img"
+                    aria-label="Médaille Légendaire - Rang 7 - 160 000 clics requis"><span
+                        class="medal-index" aria-hidden="true">7</span></div>
             </div>
         </section>
 
@@ -100,6 +110,7 @@
                 <canvas class="game"></canvas>
                 <div class="dino-btns-wrap">
                     <button class="dino-start">Jouer</button>
+                    <button class="dino-stop">Stop</button>
                     <button class="dino-reset">Reset</button>
                 </div>
                 <p class="pause-info"><i
@@ -274,6 +285,7 @@
                 <canvas id="flappyCanvas" class="game"></canvas>
                 <div class="flappy-btns-wrap">
                     <button class="flappyStartBtn">Jouer</button>
+                    <button class="flappyStopBtn">Stop</button>
                     <button class="flappyResetBtn">Reset</button>
                 </div>
                 <p class="pause-info"><i

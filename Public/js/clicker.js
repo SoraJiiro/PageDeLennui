@@ -62,93 +62,102 @@ export function initClicker(socket) {
     );
   });
 
-  // ---------- Médailles random (visuel seulement) ----------
-  function randomColor() {
-    const rare = Math.random();
-    if (rare <= 0.08) {
-      const specialColors = ["hsl(0, 0%, 100%)", "hsl(0, 0%, 0%)"];
-      return specialColors[Math.floor(Math.random() * specialColors.length)];
-    }
+  // ---------- Génération prestige différée (plus de couleurs random visibles au reload) ----------
+  const TOTAL_PRESTIGE = 14; // Médaille Préstige - 8 .. -21
 
-    let h = Math.floor(Math.random() * 360);
-    let s = Math.floor(Math.random() * 40) + 71;
-    let l = Math.floor(Math.random() * 30) + 31;
-
-    if (s < 45) s = 45 + Math.random() * 20;
-    if (l < 25) l = 25 + Math.random() * 16;
-
-    return `hsl(${h}, ${s}%, ${l}%)`;
-  }
-
-  function genererMedailleAuto(index, precedente) {
-    const colors = [];
-
-    while (colors.length < 12) {
-      colors.push(randomColor());
-    }
-
-    if (Math.random() < 0.125) {
-      const greyLightness = Math.floor(Math.random() * 15) + 60;
-      const greyIndex = Math.floor(Math.random() * colors.length);
-      colors[greyIndex] = `hsl(0, 0%, ${greyLightness}%)`;
-    }
-
-    for (let i = colors.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [colors[i], colors[j]] = [colors[j], colors[i]];
-    }
-
-    let pallierTemp = precedente.pallier * 2;
-    let pallier = Math.ceil(pallierTemp * 0.85 - 6500);
-    let cps = precedente.cps + 3;
-
-    return {
-      nom: `Médaille Préstige - ${index}`,
-      icon: "[⭐]",
-      pallier,
-      cps,
-      couleurs: colors,
-    };
-  }
-
-  const nbExtra = 14;
-  for (let i = 8; i <= nbExtra + 7; i++) {
-    medalsList.push(genererMedailleAuto(i, medalsList[medalsList.length - 1]));
-  }
-
-  // ---------- Visu ----------
-  let Mc = 0;
-  medalsList.forEach((m, i) => {
-    if (!ui.medalsWrap.querySelector(`[data-name="${m.nom}"]`)) {
-      const el = document.createElement("div");
-      el.classList.add("medal", "hidden");
-      el.dataset.name = m.nom;
-      el.dataset.index = (i + 1).toString();
-      el.setAttribute(
-        "title",
-        `${m.nom} ${
-          m.icon
-        }\nPalier : ${m.pallier.toLocaleString()} clics\nCPS auto : ${m.cps}`
-      );
-
-      if (i >= 7) {
-        m.couleurs.forEach((c, idx) => {
-          el.style.setProperty(`--grad${idx + 1}`, c);
-        });
+  function buildPrestigeListIfNeeded() {
+    // Créer des entrées sans couleurs (elles seront appliquées depuis la sauvegarde)
+    if (!medalsList.find((m) => m.nom.startsWith("Médaille Préstige"))) {
+      let precedente = medalsList[medalsList.length - 1];
+      for (let idx = 8; idx <= TOTAL_PRESTIGE + 7; idx++) {
+        // Calcul pallier/cps identique à l'ancienne logique
+        let pallierTemp = precedente.pallier * 2;
+        let pallier = Math.ceil(pallierTemp * 0.85 - 6500);
+        let cps = precedente.cps + 3;
+        const entry = {
+          nom: `Médaille Préstige - ${idx}`,
+          icon: "[⭐]",
+          pallier,
+          cps,
+          couleurs: [], // vide, attend couleurs sauvegardées ou génération si jamais
+        };
+        medalsList.push(entry);
+        precedente = entry;
       }
-
-      setTimeout(() => {
-        ui.medalsWrap.appendChild(el);
-        if (i >= 6) {
-          const delay = (i - 6) * 0.3;
-          el.style.animationDelay = `${delay}s`;
-          el.style.setProperty("--rainbow-delay", `${delay}s`);
-          Mc++;
-        }
-      }, 85);
     }
-  });
-  setTimeout(() => console.info(`MEDAL ANIMATION : OK [${Mc}]`), 1000);
+  }
+  buildPrestigeListIfNeeded();
+
+  function createMedalElement(m, index, savedColors = null) {
+    if (ui.medalsWrap.querySelector(`[data-name="${m.nom}"]`)) return;
+    const el = document.createElement("div");
+    const indexSpan = document.createElement("span");
+    indexSpan.className = "medal-index";
+    // Afficher l'index seulement si médaille débloquée (on le mettra plus tard)
+    indexSpan.textContent = "";
+    indexSpan.setAttribute("aria-hidden", "true");
+    el.appendChild(indexSpan);
+    el.classList.add("medal", "hidden");
+    el.dataset.name = m.nom;
+    el.dataset.index = (index + 1).toString();
+    el.setAttribute(
+      "title",
+      `${m.nom} ${
+        m.icon
+      }\nPalier : ${m.pallier.toLocaleString()} clics\nCPS auto : ${m.cps}`
+    );
+    // Accessibilité: chaque médaille agit comme une image décorative informative.
+    el.setAttribute("role", "img");
+
+    // Appliquer couleurs sauvegardées prestige si présentes
+    if (savedColors && Array.isArray(savedColors)) {
+      savedColors.forEach((c, idx) => {
+        el.style.setProperty(`--grad${idx + 1}`, c);
+      });
+      m.couleurs = savedColors.slice();
+    }
+
+    // Si pas de couleurs (nouvelle médaille non sauvegardée), générer maintenant (évite flicker ultérieur)
+    if (
+      m.couleurs &&
+      m.couleurs.length === 0 &&
+      m.nom.startsWith("Médaille Préstige")
+    ) {
+      const temp = [];
+      while (temp.length < 12) {
+        // Générateur simple – on évite la complexité rare pour stabilité
+        const h = Math.floor(Math.random() * 360);
+        const s = 70 + Math.floor(Math.random() * 25);
+        const l = 35 + Math.floor(Math.random() * 20);
+        temp.push(`hsl(${h}, ${s}%, ${l}%)`);
+      }
+      temp.forEach((c, idx) => el.style.setProperty(`--grad${idx + 1}`, c));
+      m.couleurs = temp;
+    }
+
+    // Définir aria-label après éventuelle génération / application des couleurs
+    const couleursSlice = (m.couleurs || []).slice(0, 3).join(", ");
+    const couleursPart = couleursSlice
+      ? ` Couleurs: ${couleursSlice}${m.couleurs.length > 3 ? ", …" : ""}.`
+      : "";
+    el.setAttribute(
+      "aria-label",
+      `${m.nom} - Rang ${(
+        index + 1
+      ).toString()} - Palier ${m.pallier.toLocaleString()} clics - CPS auto ${
+        m.cps
+      }.${couleursPart}`
+    );
+
+    // Timing animation prestige (après la 7ème base)
+    if (index >= 7) {
+      const delay = (index - 6) * 0.3;
+      el.style.animationDelay = `${delay}s`;
+      el.style.setProperty("--rainbow-delay", `${delay}s`);
+    }
+
+    ui.medalsWrap.appendChild(el);
+  }
 
   // ---------- Auto click ----------
   function setAutoClick(cps) {
@@ -291,21 +300,44 @@ export function initClicker(socket) {
   });
 
   socket.on("clicker:medals", (userMedals) => {
-    state.medalsDebloquees = new Set(userMedals);
-    medalsList.forEach((m) => {
+    // Construire la liste prestige (si non faite) AVANT mappage couleurs sauvegardées
+    buildPrestigeListIfNeeded();
+    // userMedals peut être un tableau de strings (noms) OU d'objets { name, colors }
+    const entries = Array.isArray(userMedals) ? userMedals : [];
+    const names = entries
+      .map((m) => (typeof m === "string" ? m : m?.name))
+      .filter(Boolean);
+    const colorMap = {};
+    entries.forEach((m) => {
+      if (m && typeof m === "object" && Array.isArray(m.colors) && m.name) {
+        colorMap[m.name] = m.colors;
+      }
+    });
+
+    state.medalsDebloquees = new Set(names);
+
+    // Créer / mettre à jour les éléments DOM des médailles
+    medalsList.forEach((m, idx) => {
+      createMedalElement(m, idx, colorMap[m.nom]);
       const el = ui.medalsWrap?.querySelector(`.medal[data-name="${m.nom}"]`);
       if (!el) return;
-      if (userMedals.includes(m.nom)) {
+      if (names.includes(m.nom)) {
         el.classList.add("shown");
         el.classList.remove("hidden");
+        const idxSpan = el.querySelector(".medal-index");
+        if (idxSpan && !idxSpan.textContent) {
+          idxSpan.textContent = (idx + 1).toString();
+        }
       } else {
         el.classList.remove("shown");
         el.classList.add("hidden");
+        const idxSpan = el.querySelector(".medal-index");
+        if (idxSpan) idxSpan.textContent = "";
       }
     });
 
     const medaillePlusHaute = medalsList
-      .filter((m) => userMedals.includes(m.nom))
+      .filter((m) => names.includes(m.nom))
       .sort((a, b) => b.pallier - a.pallier)[0];
 
     const saved = getSavedCPS();

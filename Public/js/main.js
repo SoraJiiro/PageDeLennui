@@ -1,12 +1,6 @@
 import { keys, keyBind } from "./util.js";
 
 (async () => {
-  // Initialiser la touche de pause (UI + état partagé)
-  try {
-    keyBind();
-  } catch (e) {
-    console.warn("keyBind init error", e);
-  }
   // ---------- Conexion Socket ----------
   if (window.socketInitialized) return;
   window.socketInitialized = true;
@@ -19,7 +13,13 @@ import { keys, keyBind } from "./util.js";
 
   const { username } = await sessionRes.json();
 
-  // 1) Charger les modules AVANT d'ouvrir la connexion, pour brancher les listeners
+  // Initialiser la touche de pause (UI + état partagé) APRES avoir le pseudo
+  try {
+    keyBind(username);
+  } catch (e) {
+    console.warn("keyBind init error", e);
+  }
+
   try {
     const modules = await Promise.all([
       import("./chat.js"),
@@ -57,7 +57,6 @@ import { keys, keyBind } from "./util.js";
       blockblastLeaderboard,
     ] = modules;
 
-    // 2) Créer le socket en mode autoConnect:false
     const socket = io({
       query: { username },
       autoConnect: false,
@@ -73,10 +72,8 @@ import { keys, keyBind } from "./util.js";
     window.socket = socket;
     window.username = username;
 
-    // Brancher un reload tôt
     socket.on("reload", () => window.location.reload());
 
-    // 3) Initialiser les modules (les listeners sont prêts AVANT connect)
     if (chat?.initChat) chat.initChat(socket);
     if (clicker?.initClicker) clicker.initClicker(socket);
     if (clickerLeaderboard?.initClickerLeaderboard)
@@ -100,16 +97,12 @@ import { keys, keyBind } from "./util.js";
     if (blockblastLeaderboard?.initBlockBlastLeaderboard)
       blockblastLeaderboard.initBlockBlastLeaderboard(socket);
 
-    // 4) Ouvrir la connexion seulement maintenant (évite de rater les 1ers emits)
     socket.connect();
 
-    // 5) Ceinture et bretelles: redemander certains états après connexion
     socket.on("connect", () => {
-      // Ces emits sont bufferisés si envoyés avant connect, mais on assure ici
       socket.emit("uno:getState");
       socket.emit("pictionary:getState");
       socket.emit("p4:getState");
-      // Les leaderboards et le chat sont envoyés automatiquement côté serveur
     });
   } catch (err) {
     console.error("Erreur chargement modules : ", err);

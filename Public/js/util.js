@@ -24,23 +24,24 @@ export function showNotif(text, duration = 4000) {
   }
 }
 
-// Etat partagé pour la touche de pause (par défaut P/p)
 export const keys = { default: ["P", "p"] };
 
-// Charger la touche depuis le localStorage si disponible
-try {
-  const saved = localStorage.getItem("pauseKey");
-  if (saved && typeof saved === "string" && saved.length === 1) {
-    keys.default = [saved.toUpperCase(), saved.toLowerCase()];
-  }
-} catch {}
-
-export function keyBind() {
+export function keyBind(username = null) {
   const input = document.querySelector(".keybind");
   const btn = document.querySelector(".keybind-submit");
   const marks = document.querySelectorAll("#keybind-mark");
+  const s1 = document.querySelector(".stage1");
 
-  // Initialiser l'UI avec la touche actuelle
+  const storageKey = username ? `pauseKey:${username}` : "pauseKey";
+
+  try {
+    const saved =
+      localStorage.getItem(storageKey) || localStorage.getItem("pauseKey");
+    if (saved && typeof saved === "string" && saved.length === 1) {
+      keys.default = [saved.toUpperCase(), saved.toLowerCase()];
+    }
+  } catch {}
+
   try {
     const current = keys.default[0] || "P";
     marks.forEach((mark) => {
@@ -62,10 +63,40 @@ export function keyBind() {
       mark.textContent = `"${val}"`;
     });
     try {
-      localStorage.setItem("pauseKey", val);
+      localStorage.setItem(storageKey, val);
     } catch {}
     showNotif(`Touche de pause changée en "${val}"`);
     console.log("Nouvelle touche de pause:", keys.default);
+    try {
+      window.dispatchEvent(
+        new CustomEvent("pauseKey:changed", { detail: { key: val } })
+      );
+    } catch {}
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && document.activeElement === input) {
+      e.preventDefault();
+      const val = (input.value || "").trim();
+      if (val.length !== 1) {
+        showNotif("⚠️ Entrez une seule touche (1 caractère)");
+        return;
+      }
+      keys.default = [val.toUpperCase(), val.toLowerCase()];
+      marks.forEach((mark) => {
+        mark.textContent = `"${val}"`;
+      });
+      try {
+        localStorage.setItem(storageKey, val);
+      } catch {}
+      showNotif(`Touche de pause changée en "${val}"`);
+      console.log("Nouvelle touche de pause:", keys.default);
+      try {
+        window.dispatchEvent(
+          new CustomEvent("pauseKey:changed", { detail: { key: val } })
+        );
+      } catch {}
+    }
   });
 
   return keys;

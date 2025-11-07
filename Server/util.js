@@ -55,6 +55,8 @@ class FileService {
     };
 
     this.data = this.loadAll();
+    // Migration silencieuse des médailles vers format uniforme { name, colors: [] }
+    this.migrateMedals();
   }
 
   readJSON(file, fallback) {
@@ -87,6 +89,33 @@ class FileService {
       blockblastScores: this.readJSON(this.files.blockblastScores, {}),
       blockblastSaves: this.readJSON(this.files.blockblastSaves, {}),
     };
+  }
+
+  migrateMedals() {
+    try {
+      const medalsData = this.data.medals || {};
+      let changed = false;
+      Object.keys(medalsData).forEach((user) => {
+        const arr = Array.isArray(medalsData[user]) ? medalsData[user] : [];
+        const normalized = arr.map((m) => {
+          if (typeof m === "string") {
+            changed = true;
+            return { name: m, colors: [] };
+          }
+          return {
+            name: m.name,
+            colors: Array.isArray(m.colors) ? m.colors : [],
+          };
+        });
+        medalsData[user] = normalized;
+      });
+      if (changed) {
+        this.save("medals", medalsData);
+        console.log("[Migration] Médailles normalisées (format objets). ✔️");
+      }
+    } catch (e) {
+      console.warn("[Migration] Échec de la normalisation des médailles", e);
+    }
   }
 
   save(key, data) {

@@ -87,7 +87,14 @@ function initSocketHandlers(io, socket, gameState) {
   socket.emit("you:name", pseudo);
   socket.emit("chat:history", FileService.data.historique);
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
-  socket.emit("clicker:medals", FileService.data.medals[pseudo] || []);
+  // Normaliser les médailles (toujours objets { name, colors }) pour le client
+  const rawUserMedalsInit = FileService.data.medals[pseudo] || [];
+  const normalizedInit = rawUserMedalsInit.map((m) =>
+    typeof m === "string"
+      ? { name: m, colors: [] }
+      : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
+  );
+  socket.emit("clicker:medals", normalizedInit);
   leaderboardManager.broadcastClickerLB(io);
   leaderboardManager.broadcastDinoLB(io);
   leaderboardManager.broadcastFlappyLB(io);
@@ -147,34 +154,35 @@ function initSocketHandlers(io, socket, gameState) {
     if (typeof medalName !== "string" || medalName.trim() === "") return;
 
     const allMedals = FileService.data.medals;
-    const userMedals = allMedals[pseudo] || []; // Get ou créer
+    const userMedals = allMedals[pseudo] || [];
 
-    if (
-      !userMedals.find((m) =>
-        typeof m === "string" ? m === medalName : m.name === medalName
-      )
-    ) {
-      const newEntry =
+    const already = userMedals.find((m) =>
+      typeof m === "string" ? m === medalName : m.name === medalName
+    );
+    if (already) return; // rien à faire
+
+    const entry = {
+      name: medalName,
+      colors:
         Array.isArray(colors) && colors.length >= 3
-          ? { name: medalName, colors }
-          : medalName;
+          ? colors.slice(0, 24) // limiter pour éviter surcharge
+          : [],
+    };
+    userMedals.push(entry);
+    allMedals[pseudo] = userMedals;
+    FileService.save("medals", allMedals);
 
-      userMedals.push(newEntry);
-      allMedals[pseudo] = userMedals;
+    console.log(
+      withGame(`🏅 [${orange}${pseudo}${green}] a débloqué ${medalName}`, green)
+    );
 
-      FileService.save("medals", allMedals);
-      console.log(
-        withGame(
-          `🏅 [${orange}${pseudo}${green}] a débloqué ${medalName}`,
-          green
-        )
-      );
-
-      socket.emit(
-        "clicker:medals",
-        userMedals.map((m) => (typeof m === "string" ? m : m.name))
-      );
-    }
+    // Ré-émission normalisée (objets complets)
+    const normalized = userMedals.map((m) =>
+      typeof m === "string"
+        ? { name: m, colors: [] }
+        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
+    );
+    socket.emit("clicker:medals", normalized);
   });
 
   // ------- Dino -------

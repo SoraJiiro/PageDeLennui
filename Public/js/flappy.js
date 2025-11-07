@@ -6,12 +6,12 @@ export function initFlappy(socket) {
     canvas: document.getElementById("flappyCanvas"),
     ctx: null,
     startBtn: document.getElementsByClassName("flappyStartBtn")[0],
+    stopBtn: document.getElementsByClassName("flappyStopBtn")[0],
     resetBtn: document.querySelector(".flappyResetBtn"),
     scoreEl: document.getElementById("flappyScore"),
   };
   if (!ui.canvas) return;
   ui.ctx = ui.canvas.getContext("2d");
-  // Masquer l'ancien score DOM pour aligner l'UI sur le Dino
   if (ui.scoreEl) ui.scoreEl.style.display = "none";
 
   function resizeCanvas() {
@@ -27,6 +27,15 @@ export function initFlappy(socket) {
   let paused = false;
   let countdown = 0;
   let frameCount = 0;
+  let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
+  try {
+    window.addEventListener("pauseKey:changed", (e) => {
+      const k = e?.detail?.key;
+      if (typeof k === "string" && k.length === 1) {
+        pauseKeyText = k.toUpperCase();
+      }
+    });
+  } catch {}
   let myName = null;
   let myBest = 0;
   let scoreAttente = null;
@@ -78,6 +87,14 @@ export function initFlappy(socket) {
     countdown = 0;
     frameCount = 0;
     ui.startBtn.style.display = "none";
+    if (ui.stopBtn) ui.stopBtn.style.display = "inline-block";
+  }
+
+  function clearToBlack() {
+    try {
+      ui.ctx.fillStyle = "#000";
+      ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    } catch {}
   }
 
   function drawPipes() {
@@ -112,9 +129,8 @@ export function initFlappy(socket) {
     } else {
       ui.ctx.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
       ui.ctx.font = "18px monospace";
-      const pauseKey = (keys && keys.default && keys.default[0]) || "P";
       ui.ctx.fillText(
-        `Appuie sur ${pauseKey} pour reprendre`,
+        `Appuie sur ${pauseKeyText} pour reprendre`,
         ui.canvas.width / 2,
         ui.canvas.height / 2 + 40
       );
@@ -128,7 +144,6 @@ export function initFlappy(socket) {
     if (countdown > 0) {
       frameCount++;
 
-      // Dessiner le jeu en arrière-plan
       ui.ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
       ui.ctx.fillStyle = "#000";
       ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
@@ -136,10 +151,8 @@ export function initFlappy(socket) {
       drawPipes();
       bird.draw();
 
-      // Afficher le compte à rebours
       showPaused();
 
-      // Décrémenter toutes les 60 frames (environ 1 seconde)
       if (frameCount % 60 === 0) {
         countdown--;
         if (countdown === 0) {
@@ -151,7 +164,6 @@ export function initFlappy(socket) {
       return;
     }
 
-    // Si en pause (sans compte à rebours)
     if (paused) {
       showPaused();
       requestAnimationFrame(update);
@@ -312,6 +324,25 @@ export function initFlappy(socket) {
   ui.startBtn.addEventListener("click", () => {
     resetGame();
     update();
+  });
+
+  ui.stopBtn?.addEventListener("click", () => {
+    if (!gameRunning) return;
+    const sent = score;
+    if (window.socket) window.socket.emit("flappy:score", { score: sent });
+    // Réinitialiser l'état de la run sans relancer
+    gameRunning = false;
+    paused = false;
+    countdown = 0;
+    frameCount = 0;
+    pipes = [];
+    if (ui.stopBtn) ui.stopBtn.style.display = "none";
+    // Canvas noir comme au chargement
+    clearToBlack();
+    // Afficher le bouton pour rejouer
+    ui.startBtn.style.display = "block";
+    ui.startBtn.textContent = "Rejouer";
+    showNotif(`# Partie stoppée.`);
   });
 
   // ---------- Reset (confirm + password) ----------

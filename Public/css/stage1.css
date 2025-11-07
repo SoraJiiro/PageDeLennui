@@ -25,30 +25,13 @@
     background-position: 0% 50%;
     rotate: 0deg;
   }
-  25% {
-    rotate: 135deg;
-  }
   50% {
     background-position: 100% 50%;
     rotate: 180deg;
   }
-  75% {
-    rotate: 270deg;
-  }
   100% {
     background-position: 0% 50%;
     rotate: 360deg;
-  }
-}
-@keyframes rainbowMove2 {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 0%;
-  }
-  100% {
-    background-position: 0% 50%;
   }
 }
 
@@ -407,6 +390,10 @@ p.cps-humain {
   content: "4";
   color: #4b0082;
 }
+.medal[data-name="Diamant"].shown::after {
+  content: "4";
+  color: #4b0082;
+}
 
 /* Rubis - 5 */
 .medal[data-name="Rubis"].shown {
@@ -461,22 +448,61 @@ p.cps-humain {
   z-index: 0;
 }
 
-.medal[data-name="Légendaire"].shown::after {
-  content: "7";
+.medal[data-name="Légendaire"].shown .medal-index::after {
+  content: "";
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  border: 3px solid #fff;
   border-radius: 50%;
-  width: 88px;
-  height: 88px;
-  line-height: 80px;
-  text-align: center;
-  color: #fff;
+  width: 66%;
+  height: 66%;
+  background: transparent;
+  z-index: 1;
+}
+
+.medal[data-name="Légendaire"].shown .medal-index {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 66%;
+  height: 66%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-weight: bold;
   font-size: 2.2rem;
-  z-index: 1;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  -webkit-text-stroke: 0.75px #000;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+.medal[data-name="Légendaire"].shown .medal-index::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    #ff0000,
+    #ff7f00,
+    #ffff00,
+    #00ff00,
+    #0000ff,
+    #8a2be2
+  );
+  background-size: 400% 400%;
+  animation: rainbowMove 3.22s ease-out infinite;
+  animation-delay: var(--rainbow-delay, 0s);
+  z-index: -1;
+  filter: brightness(1.05);
 }
 
 .medal[data-name^="Médaille"].shown {
@@ -505,40 +531,63 @@ p.cps-humain {
   background-size: 400% 400%;
   animation: rainbowMove 2.88s ease-out infinite;
   animation-delay: var(--rainbow-delay, 0s);
-  opacity: 0.85;
+  opacity: 0.87;
   z-index: 0;
 }
 
 .medal[data-name^="Médaille"].shown::after {
-  content: attr(data-index);
+  content: "";
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  border: 3px solid #fff;
-  -webkit-text-stroke: 0.75px #000;
   border-radius: 50%;
+  width: 66%;
+  height: 66%;
+  background: transparent;
+  z-index: 1;
+}
+
+.medal[data-name^="Médaille"].shown .medal-index {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 66%;
   height: 66%;
   display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
-  color: #fff;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  z-index: 2;
   font-weight: bold;
   font-size: 2.2rem;
+  color: #fff;
+  -webkit-text-stroke: 0.75px #000;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.medal[data-name^="Médaille"].shown .medal-index::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
   background: linear-gradient(
-    125deg,
-    var(--grad1),
-    var(--grad2),
-    var(--grad3),
-    var(--grad4),
-    var(--grad5),
-    var(--grad6)
+    45deg,
+    var(--grad1, #ff0000),
+    var(--grad2, #ff7f00),
+    var(--grad3, #ffff00),
+    var(--grad4, #00ff00),
+    var(--grad5, #0000ff),
+    var(--grad6, #8a2be2)
   );
   background-size: 400% 400%;
-  animation: rainbowMove2 3s ease infinite;
+  animation: rainbowMove 3.22s ease-out infinite;
   animation-delay: var(--rainbow-delay, 0s);
-  opacity: 0.95;
-  z-index: 1;
+  z-index: -1;
 }
