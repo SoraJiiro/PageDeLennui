@@ -1,4 +1,4 @@
-import { keys, keyBind } from "./util.js";
+import { showNotif, keyBind } from "./util.js";
 
 (async () => {
   // ---------- Conexion Socket ----------
@@ -13,7 +13,6 @@ import { keys, keyBind } from "./util.js";
 
   const { username } = await sessionRes.json();
 
-  // Initialiser la touche de pause (UI + état partagé) APRES avoir le pseudo
   try {
     keyBind(username);
   } catch (e) {
@@ -63,7 +62,6 @@ import { keys, keyBind } from "./util.js";
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
-      // conserver les anciens alias pour compat
       reconnexion: true,
       reconnexionDelay: 1000,
       reconnexionEssais: 5,
@@ -103,6 +101,14 @@ import { keys, keyBind } from "./util.js";
       socket.emit("uno:getState");
       socket.emit("pictionary:getState");
       socket.emit("p4:getState");
+    });
+
+    socket.on("system:notification", (data) => {
+      showNotif(
+        data.message,
+        data.duration || 8000,
+        data.withCountdown || false
+      );
     });
   } catch (err) {
     console.error("Erreur chargement modules : ", err);

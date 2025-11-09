@@ -1,4 +1,4 @@
-export function showNotif(text, duration = 4000) {
+export function showNotif(text, duration = 4000, withCountdown = false) {
   try {
     const notif = document.createElement("div");
     notif.className = "notif";
@@ -16,9 +16,36 @@ export function showNotif(text, duration = 4000) {
       border: 2px solid #0f0;
       box-shadow: 0 0 0 2px #000 inset;
       animation: slideIn 0.25s ease-out;
+      min-width: 200px;
+      text-align: center;
     `;
     document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), duration);
+
+    if (withCountdown) {
+      setTimeout(() => {
+        let countdown = 3;
+
+        const countdownInterval = setInterval(() => {
+          if (countdown > 0) {
+            notif.textContent = `[${countdown}]`;
+            notif.style.fontSize = "2rem";
+            countdown--;
+          } else {
+            notif.textContent = "Fermeture...";
+            notif.style.background = "#ff0";
+            notif.style.border = "2px solid #ff0";
+            clearInterval(countdownInterval);
+
+            setTimeout(() => {
+              notif.remove();
+            }, 800);
+          }
+        }, 1000);
+      }, duration);
+      setTimeout(() => notif.remove(), duration + 4800);
+    } else {
+      setTimeout(() => notif.remove(), duration);
+    }
   } catch (e) {
     console.warn("showNotif fallback:", text);
   }

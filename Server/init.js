@@ -15,6 +15,7 @@ const {
 } = require("./util");
 const authRoutes = require("./authRoutes");
 const requireAuth = require("./requireAuth");
+const adminRoutes = require("./adminRoutes");
 const { initSocketHandlers } = require("./handlers");
 
 // ------- Init -------
@@ -33,12 +34,19 @@ io.use(sharedSession(expressSession, { autoSave: true }));
 
 // ------- Route -------
 app.use("/api", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.get("/login", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "login.html"))
 );
 app.get("/register", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "register.html"))
 );
+app.get("/admin", requireAuth, (req, res) => {
+  if (req.session.user.pseudo !== "Admin") {
+    return res.redirect("/");
+  }
+  res.sendFile(path.join(config.PUBLIC, "index_admin.html"));
+});
 
 app.use(requireAuth);
 app.use(express.static(config.PUBLIC));

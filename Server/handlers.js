@@ -1122,6 +1122,30 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  // ------- Admin Events -------
+  socket.on("admin:refresh", () => {
+    if (pseudo === "Admin") {
+      leaderboardManager.broadcastClickerLB(io);
+      leaderboardManager.broadcastDinoLB(io);
+      leaderboardManager.broadcastFlappyLB(io);
+      leaderboardManager.broadcastUnoLB(io);
+      leaderboardManager.broadcastPictionaryLB(io);
+      leaderboardManager.broadcastP4LB(io);
+      leaderboardManager.broadcastBlockBlastLB(io);
+    }
+  });
+
+  socket.on("admin:global-notification", ({ message, withCountdown }) => {
+    if (pseudo === "Admin" && message) {
+      io.emit("system:notification", {
+        message: `📢 [ADMIN] ${message}`,
+        duration: 8000,
+        withCountdown: withCountdown || false,
+      });
+      console.log(`[ADMIN] Notification globale envoyée: ${message}`);
+    }
+  });
+
   // ------- Log off -------
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);

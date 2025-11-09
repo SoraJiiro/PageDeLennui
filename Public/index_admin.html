@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Administration - Page de l'ennui</title>
+
+        <link rel="preload"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+            as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript>
+            <link rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        </noscript>
+
+        <link rel="stylesheet" type="text/css" href="css/common.css" />
+        <link rel="stylesheet" type="text/css" href="css/admin.css" />
+
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)" />
+    </head>
+    <body>
+        <div class="admin-container">
+            <div class="admin-header">
+                <h1><i class="fa-solid fa-wrench"></i> PANEL
+                    ADMIN</h1>
+                <button class="log-off"
+                    onclick="window.location.replace('/login');">Se
+                    déconnecter</button>
+            </div>
+
+            <div class="admin-sections">
+                <!-- LEADERBOARDS -->
+                <section class="admin-section">
+                    <h2><i class="fa-solid fa-trophy"></i> Leaderboards</h2>
+                    <center>
+                        <div class="leaderboard-tabs">
+                            <button class="lb-tab active"
+                                data-board="clicker">Clicker</button>
+                            <button class="lb-tab"
+                                data-board="dino">Dino</button>
+                            <button class="lb-tab" data-board="flappy">Flappy
+                            </button>
+                            <button class="lb-tab" data-board="uno">UNO</button>
+                            <button class="lb-tab"
+                                data-board="pictionary">Pictionary</button>
+                            <button class="lb-tab" data-board="p4">P4</button>
+                            <button class="lb-tab" data-board="blockblast">Block
+                                Blast</button>
+                        </div>
+                    </center>
+
+                    <div class="leaderboard-content active"
+                        data-board="clicker">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Clicks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-clicker"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-content" data-board="dino">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-dino"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-content" data-board="flappy">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-flappy"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-content" data-board="uno">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Victoires</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-uno"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-content" data-board="pictionary">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-pictionary"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-content" data-board="p4">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Victoires</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-p4"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-content" data-board="blockblast">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-blockblast"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- USER INFO -->
+                <section class="admin-section">
+                    <h2><i class="fa-solid fa-user"></i>Info Utilisateur</h2>
+
+                    <div class="user-search">
+                        <input type="text" id="userSearchInput"
+                            placeholder="Rechercher un utilisateur par pseudo..." />
+                    </div>
+
+                    <div class="user-info-display" id="userInfoDisplay">
+                        <h3 id="userInfoPseudo"></h3>
+                        <div id="userInfoStats"></div>
+                    </div>
+                </section>
+
+                <!-- ADMINISTRATION -->
+                <section class="admin-section">
+                    <h2><i class="fa-solid fa-gear"></i> Commandes</h2>
+
+                    <div class="admin-controls">
+                        <!-- Modifier Stats -->
+                        <div class="control-group">
+                            <h3><i class="fa-solid fa-chart-simple"></i>
+                                Modifier Stats</h3>
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Pseudo</label>
+                                        <input type="text" id="modifyUser"
+                                            placeholder="Pseudo de l'utilisateur" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Stat ?</label>
+                                        <select id="modifyStatType">
+                                            <option
+                                                value="clicks">Clicker</option>
+                                            <option
+                                                value="dinoScores">Dino</option>
+                                            <option
+                                                value="flappyScores">Flappy</option>
+                                            <option value="unoWins">UNO</option>
+                                            <option
+                                                value="pictionaryWins">Pictionary</option>
+                                            <option value="p4Wins">P4</option>
+                                            <option
+                                                value="blockblastScores">Block
+                                                Blast</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Nouvelle Valeur</label>
+                                        <input type="number"
+                                            id="modifyStatValue"
+                                            placeholder="Nouvelle valeur"
+                                            min="0" />
+                                    </div>
+                                    <div class="action-buttons">
+                                        <button class="btn"
+                                            onclick="modifyStat()">
+                                            <i class="fa-solid fa-pen"></i>
+                                            Modifier
+                                        </button>
+                                        <button class="btn btn-danger"
+                                            onclick="resetStat()">
+                                            <i
+                                                class="fa-solid fa-rotate-left"></i>
+                                            Reset
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Supprimer Utilisateur -->
+                        <div class="control-group">
+                            <h3><i class="fa-solid fa-trash"></i> Supprimer
+                                Utilisateur</h3>
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Pseudo</label>
+                                        <input type="text" id="deleteUser"
+                                            placeholder="Pseudo à supprimer" />
+                                    </div>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-danger"
+                                            onclick="deleteUser()">
+                                            <i class="fa-solid fa-trash"></i>
+                                            Supprimer Définitivement
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notification Globale -->
+                        <div class="control-group">
+                            <h3><i class="fa-solid fa-bullhorn"></i>
+                                Notif</h3>
+                            <div class="control-form">
+                                <div class="form-field">
+                                    <label>Message</label>
+                                    <textarea id="notificationMessage"
+                                        placeholder="Message à envoyer à tlm"></textarea>
+                                </div>
+                                <div class="form-field">
+                                    <label
+                                        style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                        <input type="checkbox"
+                                            id="countdownCheckbox"
+                                            style="width: auto; height: 20px; cursor: pointer;">
+                                        <span>Countdown ?</span>
+                                    </label>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="btn btn-warning"
+                                        onclick="sendGlobalNotification()">
+                                        <i class="fa-solid fa-bell"></i> Envoyer
+                                        à Tous
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+        let socket;
+        let currentUser = null;
+
+        // Vérifier la session
+        async function checkSession() {
+            const res = await fetch('/api/session');
+            if (!res.ok) {
+                window.location.href = '/login';
+                return;
+            }
+            const data = await res.json();
+            currentUser = data.pseudo;
+            
+            if (currentUser !== 'Admin') {
+                window.location.href = '/';
+                return;
+            }
+            
+            initSocket();
+        }
+
+        // Initialiser Socket.IO
+        function initSocket() {
+            socket = io({
+                query: { username: currentUser }
+            });
+
+            socket.on('connect', () => {
+                console.log('✅ Connecté au serveur');  
+            });
+
+            // Leaderboards
+            socket.on('clicker:leaderboard', (data) => updateLeaderboard('clicker', data, 'score'));
+            socket.on('dino:leaderboard', (data) => updateLeaderboard('dino', data, 'score'));
+            socket.on('flappy:leaderboard', (data) => updateLeaderboard('flappy', data, 'score'));
+            socket.on('uno:leaderboard', (data) => updateLeaderboard('uno', data, 'wins'));
+            socket.on('pictionary:leaderboard', (data) => updateLeaderboard('pictionary', data, 'points'));
+            socket.on('p4:leaderboard', (data) => updateLeaderboard('p4', data, 'wins'));
+            socket.on('blockblast:leaderboard', (data) => updateLeaderboard('blockblast', data, 'score'));
+        }
+
+        function updateLeaderboard(type, data, valueKey) {
+            const tbody = document.getElementById(`lb-${type}`);
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            data.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.pseudo}</td>
+                    <td>${item[valueKey]}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Tabs Leaderboard
+        document.querySelectorAll('.lb-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const board = tab.dataset.board;
+                
+                document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.leaderboard-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.querySelector(`.leaderboard-content[data-board="${board}"]`).classList.add('active');
+            });
+        });
+
+        // Recherche utilisateur
+        document.getElementById('userSearchInput').addEventListener('input', async (e) => {
+            const pseudo = e.target.value.trim();
+            if (!pseudo) {
+                document.getElementById('userInfoDisplay').classList.remove('visible');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                if (!res.ok) {
+                    showNotification('❌ Utilisateur non trouvé', 'error');
+                    document.getElementById('userInfoDisplay').classList.remove('visible');
+                    return;
+                }
+                
+                const data = await res.json();
+                displayUserInfo(data);
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de la recherche', 'error');
+            }
+        });
+
+        function displayUserInfo(data) {
+            const display = document.getElementById('userInfoDisplay');
+            const pseudoEl = document.getElementById('userInfoPseudo');
+            const statsEl = document.getElementById('userInfoStats');
+            
+            pseudoEl.textContent = `👤 ${data.pseudo}`;
+            
+            statsEl.innerHTML = `
+                <div class="user-stat">
+                    <span class="label">Clicks (Clicker):</span>
+                    <span class="value">${data.clicks || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Score Dino:</span>
+                    <span class="value">${data.dinoScore || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Score Flappy:</span>
+                    <span class="value">${data.flappyScore || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Victoires UNO:</span>
+                    <span class="value">${data.unoWins || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Points Pictionary:</span>
+                    <span class="value">${data.pictionaryPoints || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Victoires P4:</span>
+                    <span class="value">${data.p4Wins || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Score Block Blast:</span>
+                    <span class="value">${data.blockblastScore || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Médailles:</span>
+                    <span class="value">${data.medals ? data.medals.length : 0}</span>
+                </div>
+            `;
+            
+            display.classList.add('visible');
+        }
+
+        // Modifier Stat
+        async function modifyStat() {
+            const pseudo = document.getElementById('modifyUser').value.trim();
+            const statType = document.getElementById('modifyStatType').value;
+            const value = parseInt(document.getElementById('modifyStatValue').value);
+
+            if (!pseudo || isNaN(value) || value < 0) {
+                showNotification('⚠️ Veuillez remplir tous les champs', 'error');
+                return;
+            }
+
+            if (!confirm(`Modifier ${statType} de ${pseudo} à ${value} ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/modify-stat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, statType, value })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    socket.emit('admin:refresh'); // Rafraîchir les leaderboards
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de la modification', 'error');
+            }
+        }
+
+        // Reset Stat
+        async function resetStat() {
+            const pseudo = document.getElementById('modifyUser').value.trim();
+            const statType = document.getElementById('modifyStatType').value;
+
+            if (!pseudo) {
+                showNotification('⚠️ Veuillez entrer un pseudo', 'error');
+                return;
+            }
+
+            if (!confirm(`Reset ${statType} de ${pseudo} à 0 ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/modify-stat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, statType, value: 0 })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    socket.emit('admin:refresh');
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors du reset', 'error');
+            }
+        }
+
+        // Supprimer Utilisateur
+        async function deleteUser() {
+            const pseudo = document.getElementById('deleteUser').value.trim();
+
+            if (!pseudo) {
+                showNotification('⚠️ Veuillez entrer un pseudo', 'error');
+                return;
+            }
+
+            if (pseudo === 'Admin') {
+                showNotification('❌ Impossible de supprimer l\'Admin', 'error');
+                return;
+            }
+
+            if (!confirm(`⚠️ ATTENTION ⚠️\n\nSupprimer définitivement l'utilisateur "${pseudo}" ?\n\nToutes ses données seront perdues !`)) return;
+
+            try {
+                const res = await fetch('/api/admin/delete-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    document.getElementById('deleteUser').value = '';
+                    socket.emit('admin:refresh');
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de la suppression', 'error');
+            }
+        }
+
+        // Notification Globale
+        function sendGlobalNotification() {
+            const message = document.getElementById('notificationMessage').value.trim();
+            const withCountdown = document.getElementById('countdownCheckbox').checked;
+
+            if (!message) {
+                showNotification('⚠️ Veuillez entrer un message', 'error');
+                return;
+            }
+
+            const countdownText = withCountdown ? '\n\n(countdown ?)' : '';
+            if (!confirm(`Envoyer cette notification à tous les utilisateurs ?${countdownText}\n\n"${message}"`)) return;
+
+            socket.emit('admin:global-notification', { message, withCountdown });
+            showNotification(`✅ Notification envoyée à tous${withCountdown ? ' (avec countdown)' : ''}`, 'success');
+            document.getElementById('notificationMessage').value = '';
+            document.getElementById('countdownCheckbox').checked = false;
+        }
+
+        // Afficher notification locale
+        function showNotification(message, type = 'info') {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.textContent = message;
+            
+            if (type === 'error') {
+                notif.style.background = '#ff4444';
+            } else if (type === 'success') {
+                notif.style.background = '#0f0';
+            }
+            
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.remove();
+            }, 4000);
+        }
+
+        // Initialiser
+        checkSession();
+    </script>
+    </body>
+</html>
