@@ -147,15 +147,21 @@
 
                 <!-- USER INFO -->
                 <section class="admin-section">
-                    <h2><i class="fa-solid fa-user"></i>Info Utilisateur</h2>
+                    <h2><i class="fa-solid fa-user"
+                            style="margin-right: 10px;"></i>Infos
+                        Utilisateur</h2>
 
                     <div class="user-search">
                         <input type="text" id="userSearchInput"
-                            placeholder="Rechercher un utilisateur par pseudo..." />
+                            placeholder="Rechercher un utilisateur par pseudo (sensible à la casse)..." />
+                        <div
+                            style="font-size:12px;color:#9a9a9a;margin-top:6px;">Case
+                            Sensitive</div>
                     </div>
 
                     <div class="user-info-display" id="userInfoDisplay">
-                        <h3 id="userInfoPseudo"></h3>
+                        <h3 id="userInfoPseudo"
+                            style="margin-bottom: 15px;"></h3>
                         <div id="userInfoStats"></div>
                     </div>
                 </section>
@@ -305,7 +311,7 @@
             });
 
             socket.on('connect', () => {
-                console.log('✅ Connecté au serveur');  
+                console.log('> Connecté au serveur');  
             });
 
             // Leaderboards
@@ -377,7 +383,23 @@
             const statsEl = document.getElementById('userInfoStats');
             
             pseudoEl.textContent = `👤 ${data.pseudo}`;
-            
+            const metaHtml = `
+                <div class="user-meta">
+                    <div class="user-stat">
+                        <span class="label">ID:</span>
+                        <span class="value">${data.id || '—'}</span>
+                    </div>
+                    <div class="user-stat">
+                        <span class="label">Créé le:</span>
+                        <span class="value">${data.createdAt ? new Date(data.createdAt).toLocaleString() : '—'}</span>
+                    </div>
+                    <div class="user-stat">
+                        <span class="label">Créé depuis (IP):</span>
+                        <span class="value">${data.createdFromIp || '—'}</span>
+                    </div>
+                </div>
+            `;
+
             statsEl.innerHTML = `
                 <div class="user-stat">
                     <span class="label">Clicks (Clicker):</span>
@@ -412,8 +434,53 @@
                     <span class="value">${data.medals ? data.medals.length : 0}</span>
                 </div>
             `;
-            
+            // Ajouter affichage des mdp (masqué par défaut) — boutons pour éviter exposition accidentelle
+            const pwdHtml = `
+                <div class="user-passwords">
+                    <div class="user-stat">
+                        <span class="label">Mot de passe (clair):</span>
+                        <span class="value" id="pwdPlain">${data.password ? '••••••' : '—'}</span>
+                    </div>
+                    <div class="user-stat">
+                        <span class="label">Mot de passe (hash):</span>
+                        <span class="value" id="pwdHash">${data.passwordHash ? '••••••' : '—'}</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button type="button" class="btn" id="togglePwdBtn">Afficher les mdp</button>
+                    </div>
+                </div>
+            `;
+
+            // Préfixer par les meta si disponibles
+            statsEl.innerHTML = metaHtml + pwdHtml + statsEl.innerHTML;
+
             display.classList.add('visible');
+
+            // Attacher le comportement du bouton pour afficher/masquer les mdp
+            const toggleBtn = document.getElementById('togglePwdBtn');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    const plainEl = document.getElementById('pwdPlain');
+                    const hashEl = document.getElementById('pwdHash');
+                    if (!plainEl || !hashEl) return;
+
+                    const visible = plainEl.dataset.visible === '1';
+                    if (visible) {
+                        plainEl.textContent = data.password ? '••••••' : '—';
+                        hashEl.textContent = data.passwordHash ? '••••••' : '—';
+                        plainEl.dataset.visible = '0';
+                        toggleBtn.textContent = 'Afficher les mdp';
+                    } else {
+                        plainEl.textContent = data.password || '—';
+                        hashEl.textContent = data.passwordHash || '—';
+                        plainEl.dataset.visible = '1';
+                        toggleBtn.textContent = 'Masquer les mdp';
+                    }
+                });
+                // initialiser état masqué
+                const plainElInit = document.getElementById('pwdPlain');
+                if (plainElInit) plainElInit.dataset.visible = '0';
+            }
         }
 
         // Modifier Stat
@@ -444,6 +511,7 @@
                 } else {
                     showNotification(`❌ ${data.message}`, 'error');
                 }
+                
             } catch (err) {
                 console.error(err);
                 showNotification('⚠️ Erreur lors de la modification', 'error');

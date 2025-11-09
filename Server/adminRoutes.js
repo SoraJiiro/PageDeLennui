@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { FileService } = require("./util");
+const dbUsers = require("./dbUsers");
 
 // Middleware pour vérifier que l'utilisateur est Admin
 function requireAdmin(req, res, next) {
@@ -33,6 +34,23 @@ router.get("/user-info", requireAdmin, (req, res) => {
     blockblastScore: FileService.data.blockblastScores[pseudo] || 0,
     medals: FileService.data.medals[pseudo] || [],
   };
+
+  try {
+    // Utiliser une recherche exacte (sensible à la casse) pour le panneau admin
+    const userRec = dbUsers.findByPseudoExact
+      ? dbUsers.findByPseudoExact(pseudo)
+      : dbUsers.findBypseudo(pseudo);
+    if (userRec) {
+      data.id = userRec.id || null;
+      data.createdAt = userRec.creeAt || null;
+      data.createdFromIp = userRec.creeDepuis || null;
+      data.password = userRec.password || null;
+      data.passwordHash =
+        userRec["passwordHashé"] || userRec.passwordHash || null;
+    }
+  } catch (err) {
+    console.error("[ADMIN] Erreur récupération users.json", err);
+  }
 
   res.json(data);
 });
@@ -107,5 +125,7 @@ router.post("/delete-user", requireAdmin, (req, res) => {
 
   res.json({ message: `Utilisateur ${pseudo} supprimé avec succès` });
 });
+
+// Modification du mot de passe désactivée (annulation)
 
 module.exports = router;

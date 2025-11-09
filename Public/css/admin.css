@@ -126,11 +126,7 @@ table tr:hover {
   display: flex;
   justify-content: space-between;
   padding: 10px;
-  border-bottom: 1px solid var(--primary-color);
-}
-
-.user-stat:last-child {
-  border-bottom: none;
+  border-top: 1px solid var(--primary-color);
 }
 
 .user-stat .label {

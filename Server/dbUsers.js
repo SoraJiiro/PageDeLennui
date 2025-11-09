@@ -29,6 +29,12 @@ function findBypseudo(pseudo) {
   );
 }
 
+// Recherche sensible à la casse (exact match)
+function findByPseudoExact(pseudo) {
+  const db = readAll();
+  return db.users.find((u) => u.pseudo === String(pseudo)) || null;
+}
+
 function countByIp(ip) {
   const db = readAll();
   return db.users.filter((u) => u.createdFromIp === ip).length;
@@ -51,4 +57,10 @@ function findById(id) {
   return db.users.find((u) => u.id === id) || null;
 }
 
-module.exports = { findBypseudo, findById, countByIp, createUser };
+module.exports = {
+  findBypseudo,
+  findByPseudoExact,
+  findById,
+  countByIp,
+  createUser,
+};
