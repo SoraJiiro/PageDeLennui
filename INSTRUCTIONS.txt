@@ -8,7 +8,7 @@
 
 3) Dans ce même Terminal, écrire "chmod 755 ./start_server.sh" et l'exécuter, puis écrire "./start_server.sh" et l'exécuter. Le serveur devrait se lancer.
 
-3.5) Sinon, dans le terminal écrire "node Server/init.js".
+3.5) Sinon, dans le terminal écrire "npm start".
 
 4) Ouvrir l'URL "localhost:7750" dans le navigateur internet
 
