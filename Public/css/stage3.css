@@ -111,19 +111,32 @@
 
 #chat-input {
   flex: 1;
-  padding: 0.8rem 1rem;
+  padding: 0.9rem 1rem;
   border: 2px solid var(--primary-color);
   background: var(--bg-color);
   color: #fff;
   max-height: 240px;
-  min-height: 47.5px;
+  /* un peu plus gros pour meilleure lisibilité */
+  min-height: clamp(48px, 6.5vh, 64px);
+  height: auto;
+  /* masquer la scrollbar visuelle (Firefox / IE / WebKit) */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* WebKit (Chrome, Edge, Safari) - supprimer track */
+#chat-input::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .chat-form button {
-  padding: 0.8rem 1rem;
+  /* forcer le bouton à la même hauteur que le textarea (un peu plus grand) */
+  height: clamp(48px, 6.5vh, 64px);
+  padding: 0 1rem; /* on conserve un padding horizontal, vertical géré par height */
   cursor: pointer;
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: 1.4rem; /* un peu plus gros */
+  font-weight: 700;
   transition: 350ms ease;
   display: flex;
   align-items: center;

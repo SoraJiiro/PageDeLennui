@@ -96,6 +96,19 @@ table tr:hover {
   background: rgba(0, 255, 0, 0.05);
 }
 
+/* Chat */
+.chat-card {
+  margin: 10px auto;
+}
+
+.chat-card h3 {
+  margin: 0;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  padding: 2.5px 7.5px;
+  border-radius: 25px;
+}
+
 /* User Info */
 .user-search {
   margin-bottom: 20px;
@@ -197,25 +210,14 @@ table tr:hover {
   margin-top: 10px;
 }
 
-.btn-danger {
+.btn-red {
   background: var(--bg-color) !important;
-  color: var(--danger-color) !important;
-  border-color: var(--danger-color) !important;
+  color: var(--red-color) !important;
+  border-color: var(--red-color) !important;
 }
 
-.btn-danger:hover {
-  background: var(--danger-color) !important;
-  color: var(--bg-color) !important;
-}
-
-.btn-warning {
-  background: var(--bg-color) !important;
-  color: #ff9500 !important;
-  border-color: #ff9500 !important;
-}
-
-.btn-warning:hover {
-  background: #ff9500 !important;
+.btn-red:hover {
+  background: var(--red-color) !important;
   color: var(--bg-color) !important;
 }
 
@@ -231,6 +233,28 @@ table tr:hover {
   z-index: 10000;
   animation: slideIn 0.3s ease-out;
   max-width: 400px;
+}
+
+#cntdwnlbl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  padding: 15px 15px 15px 0;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  height: 20px;
+  display: inline-block;
+}
+
+input[type="checkbox"]:checked {
+  accent-color: var(--primary-color);
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
 }
 
 @keyframes slideIn {

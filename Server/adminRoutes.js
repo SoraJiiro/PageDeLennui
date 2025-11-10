@@ -36,7 +36,6 @@ router.get("/user-info", requireAdmin, (req, res) => {
   };
 
   try {
-    // Utiliser une recherche exacte (sensible à la casse) pour le panneau admin
     const userRec = dbUsers.findByPseudoExact
       ? dbUsers.findByPseudoExact(pseudo)
       : dbUsers.findBypseudo(pseudo);
@@ -84,6 +83,47 @@ router.post("/modify-stat", requireAdmin, (req, res) => {
 
   res.json({
     message: `Statistique ${statType} de ${pseudo} mise à jour à ${value}`,
+  });
+});
+
+router.post("/modify-all-stats", requireAdmin, (req, res) => {
+  const { pseudo, stats } = req.body;
+
+  if (!pseudo || typeof stats !== "object") {
+    return res.status(400).json({ message: "Données invalides" });
+  }
+
+  for (const statType in stats) {
+    if (typeof stats[statType] !== "number") {
+      return res
+        .status(400)
+        .json({ message: "Valeur de statistique invalide" });
+    }
+
+    const validStats = [
+      "clicks",
+      "dinoScores",
+      "flappyScores",
+      "unoWins",
+      "pictionaryWins",
+      "p4Wins",
+      "blockblastScores",
+    ];
+
+    if (!validStats.includes(statType)) {
+      return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    FileService.data[statType][pseudo] = stats[statType];
+    FileService.save(statType, FileService.data[statType]);
+
+    console.log(
+      `[ADMIN] Modification: ${pseudo} - ${statType} = ${stats[statType]}`
+    );
+  }
+
+  res.json({
+    message: `Toutes les statistiques de ${pseudo} ont été mises à jour`,
   });
 });
 

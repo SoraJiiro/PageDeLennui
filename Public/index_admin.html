@@ -14,6 +14,7 @@
         </noscript>
 
         <link rel="stylesheet" type="text/css" href="css/common.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage3.css" />
         <link rel="stylesheet" type="text/css" href="css/admin.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -145,6 +146,31 @@
                     </div>
                 </section>
 
+                <!-- CHAT LAN -->
+                <section class="admin-section" id="chat">
+                    <h2><i class="fa-solid fa-comments"
+                            style="margin-right:10px"></i>Chat LAN</h2>
+                    <div class="chat-card" role="region" aria-label="Chat LAN">
+                        <div class="chat-header">
+                            <h3>Chat.exe</h3>
+                            <div class="chat-status">
+                                <span id="me"></span>
+                                <span id="usersCount"></span>
+                            </div>
+                        </div>
+                        <div id="chat-messages" class="chat-messages"
+                            aria-live="polite"></div>
+                        <form id="chat-form" autocomplete="off"
+                            autocorrect="off" class="chat-form">
+                            <textarea id="chat-input" rows="1"
+                                placeholder="Écris ton message..."></textarea>
+                            <button type="submit" title="Envoyer message"
+                                class="submit"><i
+                                    class="fa-solid fa-circle-arrow-right"></i></button>
+                        </form>
+                    </div>
+                </section>
+
                 <!-- USER INFO -->
                 <section class="admin-section">
                     <h2><i class="fa-solid fa-user"
@@ -198,6 +224,8 @@
                                             <option
                                                 value="blockblastScores">Block
                                                 Blast</option>
+                                            <option value="all">Toutes les
+                                                stats</option>
                                         </select>
                                     </div>
                                 </div>
@@ -214,12 +242,6 @@
                                             onclick="modifyStat()">
                                             <i class="fa-solid fa-pen"></i>
                                             Modifier
-                                        </button>
-                                        <button class="btn btn-danger"
-                                            onclick="resetStat()">
-                                            <i
-                                                class="fa-solid fa-rotate-left"></i>
-                                            Reset
                                         </button>
                                     </div>
                                 </div>
@@ -238,10 +260,10 @@
                                             placeholder="Pseudo à supprimer" />
                                     </div>
                                     <div class="action-buttons">
-                                        <button class="btn btn-danger"
+                                        <button class="btn btn-red"
                                             onclick="deleteUser()">
                                             <i class="fa-solid fa-trash"></i>
-                                            Supprimer Définitivement
+                                            Supprimer
                                         </button>
                                     </div>
                                 </div>
@@ -259,16 +281,14 @@
                                         placeholder="Message à envoyer à tlm"></textarea>
                                 </div>
                                 <div class="form-field">
-                                    <label
-                                        style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <label id="cntdwnlbl">
                                         <input type="checkbox"
-                                            id="countdownCheckbox"
-                                            style="width: auto; height: 20px; cursor: pointer;">
+                                            id="countdownCheckbox">
                                         <span>Countdown ?</span>
                                     </label>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="btn btn-warning"
+                                    <button class="btn"
                                         onclick="sendGlobalNotification()">
                                         <i class="fa-solid fa-bell"></i> Envoyer
                                         à Tous
@@ -282,12 +302,12 @@
         </div>
 
         <script src="/socket.io/socket.io.js"></script>
-        <script>
+        <script type="text/javascript">
         let socket;
         let currentUser = null;
+        let chatModule = null;
 
-        // Vérifier la session
-        async function checkSession() {
+        async function checkSes() {
             const res = await fetch('/api/session');
             if (!res.ok) {
                 window.location.href = '/login';
@@ -300,18 +320,42 @@
                 window.location.href = '/';
                 return;
             }
-            
+
+            // importer le module chat ici, de la même manière que sur la page publique
+            try {
+                // import relatif vers /js/chat.js
+                chatModule = await import('/js/chat.js');
+            } catch (err) {
+                console.warn('Impossible de précharger le module de chat:', err);
+                chatModule = null;
+            }
+
             initSocket();
         }
 
         // Initialiser Socket.IO
         function initSocket() {
+            // on crée la socket sans auto-connexion pour pouvoir initialiser
+            // les handlers du module chat avant que le serveur n'émette des événements
             socket = io({
-                query: { username: currentUser }
+                query: { username: currentUser },
+                autoConnect: false,
             });
 
+            // initialiser le module chat (s'il a été préchargé)
+            try {
+                if (chatModule && typeof chatModule.initChat === 'function') {
+                    chatModule.initChat(socket);
+                }
+            } catch (err) {
+                console.warn('Erreur lors de l\'initialisation du module chat:', err);
+            }
+
+            // connecte après l'initialisation des handlers
+            socket.connect();
+
             socket.on('connect', () => {
-                console.log('> Connecté au serveur');  
+                console.log('> Connecté au serveur');
             });
 
             // Leaderboards
@@ -382,7 +426,7 @@
             const pseudoEl = document.getElementById('userInfoPseudo');
             const statsEl = document.getElementById('userInfoStats');
             
-            pseudoEl.textContent = `👤 ${data.pseudo}`;
+            pseudoEl.innerHTML = `<i class="fa-solid fa-user"></i> ${data.pseudo}`;
             const metaHtml = `
                 <div class="user-meta">
                     <div class="user-stat">
@@ -394,7 +438,7 @@
                         <span class="value">${data.createdAt ? new Date(data.createdAt).toLocaleString() : '—'}</span>
                     </div>
                     <div class="user-stat">
-                        <span class="label">Créé depuis (IP):</span>
+                        <span class="label">Créé par (IP):</span>
                         <span class="value">${data.createdFromIp || '—'}</span>
                     </div>
                 </div>
@@ -434,16 +478,19 @@
                     <span class="value">${data.medals ? data.medals.length : 0}</span>
                 </div>
             `;
-            // Ajouter affichage des mdp (masqué par défaut) — boutons pour éviter exposition accidentelle
+
+            pwdLength = data.password ? data.password.length : 0;
+            hashedPwdLength = data.password ? data.passwordHash.length : 0;
+
             const pwdHtml = `
                 <div class="user-passwords">
                     <div class="user-stat">
-                        <span class="label">Mot de passe (clair):</span>
-                        <span class="value" id="pwdPlain">${data.password ? '••••••' : '—'}</span>
+                        <span class="label">MPD :</span>
+                        <span class="value" id="pwdPlain">${data.password ? "•".repeat(pwdLength) : '—'}</span>
                     </div>
                     <div class="user-stat">
-                        <span class="label">Mot de passe (hash):</span>
-                        <span class="value" id="pwdHash">${data.passwordHash ? '••••••' : '—'}</span>
+                        <span class="label">MDP HASH :</span>
+                        <span class="value" id="pwdHash">${data.passwordHash ? '•'.repeat(hashedPwdLength) : '—'}</span>
                     </div>
                     <div class="action-buttons">
                         <button type="button" class="btn" id="togglePwdBtn">Afficher les mdp</button>
@@ -496,6 +543,47 @@
 
             if (!confirm(`Modifier ${statType} de ${pseudo} à ${value} ?`)) return;
 
+            if (statType === 'all') {
+                if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats de ${pseudo} à ${value} ! Confirmer ?`)) return;
+            }
+
+            try {
+                if (statType === 'all') {
+                    // Construire un objet stats avec toutes les clés valides = value
+                    const stats = {
+                        clicks: value,
+                        dinoScores: value,
+                        flappyScores: value,
+                        unoWins: value,
+                        pictionaryWins: value,
+                        p4Wins: value,
+                        blockblastScores: value,
+                    };
+
+                    const res = await fetch('/api/admin/modify-all-stats', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pseudo, stats })
+                    });
+
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        showNotification(`✅ ${data.message}`, 'success');
+                        socket.emit('admin:refresh');
+                        document.getElementById('modifyUser').value = '';
+                        document.getElementById('modifyStatValue').value = '';
+                    } else {
+                        showNotification(`❌ ${data.message}`, 'error');
+                    }
+                    return;
+                }
+
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de la modification', 'error');
+            }
+
             try {
                 const res = await fetch('/api/admin/modify-stat', {
                     method: 'POST',
@@ -507,7 +595,9 @@
                 
                 if (res.ok) {
                     showNotification(`✅ ${data.message}`, 'success');
-                    socket.emit('admin:refresh'); // Rafraîchir les leaderboards
+                    socket.emit('admin:refresh');
+                    document.getElementById('modifyUser').value = '';
+                    document.getElementById('modifyStatValue').value = '';
                 } else {
                     showNotification(`❌ ${data.message}`, 'error');
                 }
@@ -515,39 +605,6 @@
             } catch (err) {
                 console.error(err);
                 showNotification('⚠️ Erreur lors de la modification', 'error');
-            }
-        }
-
-        // Reset Stat
-        async function resetStat() {
-            const pseudo = document.getElementById('modifyUser').value.trim();
-            const statType = document.getElementById('modifyStatType').value;
-
-            if (!pseudo) {
-                showNotification('⚠️ Veuillez entrer un pseudo', 'error');
-                return;
-            }
-
-            if (!confirm(`Reset ${statType} de ${pseudo} à 0 ?`)) return;
-
-            try {
-                const res = await fetch('/api/admin/modify-stat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, statType, value: 0 })
-                });
-
-                const data = await res.json();
-                
-                if (res.ok) {
-                    showNotification(`✅ ${data.message}`, 'success');
-                    socket.emit('admin:refresh');
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showNotification('⚠️ Erreur lors du reset', 'error');
             }
         }
 
@@ -627,8 +684,8 @@
             }, 4000);
         }
 
-        // Initialiser
-        checkSession();
+    // Initialiser
+    checkSes();
     </script>
     </body>
 </html>

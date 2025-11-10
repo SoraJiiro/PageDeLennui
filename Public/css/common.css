@@ -3,7 +3,7 @@
 :root {
   --primary-color: #0f0;
   --bg-color: #000;
-  --danger-color: #ff4444;
+  --red-color: #ff4444;
   --border-width: 3px;
   --transition-speed: 185ms;
   --transition-ease: ease;
@@ -172,9 +172,9 @@ button.reset,
 .pic-clear-btn,
 .blockblast-reset {
   background: var(--bg-color) !important;
-  color: var(--danger-color) !important;
-  border-color: var(--danger-color) !important;
-  border: 2px solid var(--danger-color) !important;
+  color: var(--red-color) !important;
+  border-color: var(--red-color) !important;
+  border: 2px solid var(--red-color) !important;
 }
 
 .btn-reset,
@@ -184,8 +184,8 @@ button.reset,
 .pic-clear-btn,
 .blockblast-reset {
   background: var(--bg-color) !important;
-  color: var(--danger-color) !important;
-  border-color: var(--danger-color) !important;
+  color: var(--red-color) !important;
+  border-color: var(--red-color) !important;
 }
 .btn-reset:not(:disabled):hover,
 button.reset:not(:disabled):hover,
@@ -193,10 +193,10 @@ button.reset:not(:disabled):hover,
 .flappyResetBtn:not(:disabled):hover,
 .pic-clear-btn:not(:disabled):hover,
 .blockblast-reset:not(:disabled):hover {
-  background: var(--danger-color) !important;
+  background: var(--red-color) !important;
   color: var(--bg-color) !important;
   border: 2px solid var(--bg-color) !important;
-  outline: 2px solid var(--danger-color) !important;
+  outline: 2px solid var(--red-color) !important;
 }
 .fa,
 .fa-solid,

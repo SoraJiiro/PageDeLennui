@@ -1,3 +1,5 @@
+- Installer NodeJs (dernière version)
+
 [commandes à réaliser sous linux ou terminal unix/bash]
 
 1) Ouvir un Terminal à la racine du projet (click droit dans PageDeLennui-master et "ouvrir dans le terminal")
