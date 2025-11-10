@@ -302,11 +302,10 @@ export function initBlockBlast(socket) {
 
   // ---------- Couleurs de pièces (palette du jeu original) ----------
   const colors = [
-    "#e33724ff",
     "#1653e0ff",
     "#09cd5bff",
     "#ff21daff",
-    "#d4dde3ff",
+    "#ecf1f5ff",
     "#5a5757ff",
     "#f3fe20ff",
     "#c800ffff",
