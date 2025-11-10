@@ -341,10 +341,11 @@ export function initClicker(socket) {
       .sort((a, b) => b.pallier - a.pallier)[0];
 
     const saved = getSavedCPS();
-    if (saved > 0) {
-      setAutoClick(saved);
-    } else if (medaillePlusHaute) {
-      setAutoClick(medaillePlusHaute.cps);
+    const highestCps = medaillePlusHaute ? medaillePlusHaute.cps : 0;
+    const cpsToUse = Math.max(saved || 0, highestCps);
+    if (cpsToUse > 0) {
+      setAutoClick(cpsToUse);
+      saveCPS(cpsToUse);
     }
   });
 
