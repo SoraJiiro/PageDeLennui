@@ -4,7 +4,9 @@
   "description": " La fameuse ",
   "main": "serveur.js",
   "scripts": {
-    "test": "npm start"
+    "start": "node Server/init.js",
+    "serve": "node Server/init.js",
+    "test": "echo \"No test configured\" && exit 0"
   },
   "repository": {
     "type": "git",
