@@ -24,6 +24,8 @@ const grey = "\x1b[38;5;246m"; // Pictionary
 const colorize = (s, color) => `${color}${s}${reset}`;
 const withGame = (s, color) => `${color}${s}${reset}`;
 
+let isAlreadyLogged_bb = false;
+
 // ------- LB manager -------
 const leaderboardManager = {
   broadcastClickerLB(io) {
@@ -64,7 +66,13 @@ const leaderboardManager = {
   },
   broadcastBlockBlastLB(io) {
     const arr = Object.entries(FileService.data.blockblastScores)
-      .map(([u, s]) => ({ pseudo: u, score: s }))
+      .map(([u, s]) => ({
+        pseudo: u,
+        score: s,
+        timeMs: FileService.data.blockblastBestTimes
+          ? FileService.data.blockblastBestTimes[u] || null
+          : null,
+      }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("blockblast:leaderboard", arr);
   },
@@ -195,7 +203,7 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.save("dinoScores", FileService.data.dinoScores);
       console.log(
         withGame(
-          `\n🦖 Nouveau score Dino pour [${orange}${pseudo}${blue}] ::: ${s}\n`,
+          `\n🦖 Nouveau score Dino pour [${orange}${pseudo}${blue}] -> ${s}\n`,
           blue
         )
       );
@@ -223,7 +231,7 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.save("flappyScores", FileService.data.flappyScores);
       console.log(
         withGame(
-          `\n🐤 Nouveau score Flappy pour [${orange}${pseudo}${pink}] ::: ${s}\n`,
+          `\n🐤 Nouveau score Flappy pour [${orange}${pseudo}${pink}] -> ${s}\n`,
           pink
         )
       );
@@ -280,8 +288,10 @@ function initSocketHandlers(io, socket, gameState) {
     });
   }
 
-  function uno_broadcast(message = "") {
+  function uno_broadcast(message = "", resetTimer = false) {
     if (!gameActuelle || !gameActuelle.gameStarted) return;
+    // Démarrer/Reset le timer uniquement quand le tour change (play/draw/timeout)
+    if (resetTimer) uno_startTurnTimer();
     uno_majSocketIds();
     [...gameActuelle.joueurs, ...gameActuelle.spectators].forEach((p) => {
       const pSocket = io.sockets.sockets.get(p.socketId);
@@ -291,6 +301,33 @@ function initSocketHandlers(io, socket, gameState) {
         pSocket.emit("uno:update", state);
       }
     });
+  }
+
+  // ----- Timer de tour UNO (10s) -----
+  function uno_clearTurnTimer() {
+    if (gameActuelle && gameActuelle.turnTimer) {
+      clearTimeout(gameActuelle.turnTimer);
+      gameActuelle.turnTimer = null;
+    }
+    if (gameActuelle) gameActuelle.turnDeadlineAt = null;
+  }
+
+  function uno_startTurnTimer() {
+    uno_clearTurnTimer();
+    if (!gameActuelle || !gameActuelle.gameStarted) return;
+    const current = gameActuelle.getCurrentPlayer();
+    if (!current) return;
+    // Définir la deadline côté serveur pour affichage client
+    gameActuelle.turnDeadlineAt = Date.now() + 10000;
+    gameActuelle.turnTimer = setTimeout(() => {
+      const res = gameActuelle.autoDrawAndPass();
+      const msg =
+        res && res.message
+          ? res.message
+          : `${current.pseudo} n'a pas joué en 10s: pioche auto.`;
+      // Nouveau tour -> resetTimer = true
+      uno_broadcast(msg, true);
+    }, 10000);
   }
 
   socket.on("uno:getState", () => {
@@ -343,6 +380,9 @@ function initSocketHandlers(io, socket, gameState) {
 
   socket.on("uno:leave", () => {
     if (!gameActuelle) return;
+    const wasCurrent =
+      gameActuelle.getCurrentPlayer() &&
+      gameActuelle.getCurrentPlayer().pseudo === pseudo;
     const etaitJoueur = gameActuelle.removePlayer(pseudo);
 
     if (etaitJoueur) {
@@ -357,11 +397,13 @@ function initSocketHandlers(io, socket, gameState) {
           console.log(
             withGame(`⚠️  Partie UNO annulée (pas assez de joueurs)`, violet)
           );
+          uno_clearTurnTimer();
           gameActuelle = new UnoGame();
           uno_broadcastLobby();
           return;
         }
-        uno_broadcast(`${pseudo} a quitté la partie`);
+        // Si le joueur courant est parti, nouveau tour -> resetTimer = true
+        uno_broadcast(`${pseudo} a quitté la partie`, wasCurrent);
       }
       gameActuelle.addSpectator(pseudo, socket.id);
       uno_broadcastLobby();
@@ -391,6 +433,9 @@ function initSocketHandlers(io, socket, gameState) {
         violet
       )
     );
+
+    // Démarrer le timer AVANT d'envoyer l'état initial pour inclure turnDeadlineAt
+    uno_startTurnTimer();
 
     uno_majSocketIds();
 
@@ -435,6 +480,7 @@ function initSocketHandlers(io, socket, gameState) {
           violet
         )
       );
+      uno_clearTurnTimer();
       FileService.data.unoWins[res.winner] =
         (FileService.data.unoWins[res.winner] || 0) + 1;
       FileService.save("unoWins", FileService.data.unoWins);
@@ -445,7 +491,8 @@ function initSocketHandlers(io, socket, gameState) {
       return;
     }
 
-    uno_broadcast(res.message);
+    // Après un play, le tour change -> resetTimer = true
+    uno_broadcast(res.message, true);
   });
 
   socket.on("uno:draw", () => {
@@ -454,7 +501,8 @@ function initSocketHandlers(io, socket, gameState) {
     if (!joueur) return socket.emit("uno:error", "Tu n'es pas dans la partie");
     const res = gameActuelle.drawCard(joueur);
     if (!res.success) return socket.emit("uno:error", res.message);
-    uno_broadcast(res.message);
+    // Après une pioche volontaire, le tour passe -> resetTimer = true
+    uno_broadcast(res.message, true);
   });
 
   // ------- Pictionary -------
@@ -1009,22 +1057,50 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   // ------- Block Blast -------
-  socket.on("blockblast:score", ({ score }) => {
+  socket.on("blockblast:score", ({ score, elapsedMs, final }) => {
     const s = Number(score);
+
     if (isNaN(s) || s < 0) return;
+
     const current = FileService.data.blockblastScores[pseudo] || 0;
+
     if (s > current) {
       FileService.data.blockblastScores[pseudo] = s;
       FileService.save("blockblastScores", FileService.data.blockblastScores);
-      console.log(
-        withGame(
-          `\n🧱 Nouveau score Block Blast pour [${orange}${pseudo}${green}] ::: ${s}\n`,
-          green
-        )
+      // Si score meilleur et indication finale, enregistrer le temps de run
+      if (final === true && typeof elapsedMs === "number") {
+        if (!FileService.data.blockblastBestTimes)
+          FileService.data.blockblastBestTimes = {};
+        FileService.data.blockblastBestTimes[pseudo] = Math.max(0, elapsedMs);
+        FileService.save(
+          "blockblastBestTimes",
+          FileService.data.blockblastBestTimes
+        );
+      }
+      if (isAlreadyLogged_bb === false) {
+        console.log(
+          withGame(
+            `\n🧱 Nouveau score Block Blast pour [${orange}${pseudo}${green}] -> ${s}\n`,
+            green
+          )
+        );
+        isAlreadyLogged_bb = true;
+      }
+    } else if (
+      final === true &&
+      s === current &&
+      typeof elapsedMs === "number"
+    ) {
+      // Si la partie se termine avec un score égal au record actuel, mettre à jour le temps du meilleur run
+      if (!FileService.data.blockblastBestTimes)
+        FileService.data.blockblastBestTimes = {};
+      FileService.data.blockblastBestTimes[pseudo] = Math.max(0, elapsedMs);
+      FileService.save(
+        "blockblastBestTimes",
+        FileService.data.blockblastBestTimes
       );
     }
-    // Ne pas effacer ici la sauvegarde de partie: elle est nettoyée
-    // explicitement via 'blockblast:clearState' (game over ou reset)
+
     leaderboardManager.broadcastBlockBlastLB(io);
   });
 
@@ -1079,25 +1155,34 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   // Sauvegarde/restauration de l'état courant de Block Blast
-  socket.on("blockblast:saveState", ({ grid, score, pieces, gameOver }) => {
-    try {
-      // Validation simple
-      if (
-        !Array.isArray(grid) ||
-        typeof score !== "number" ||
-        !Array.isArray(pieces)
-      )
-        return;
-      // Ne pas enregistrer les états finaux
-      if (gameOver === true) return;
-      if (!FileService.data.blockblastSaves)
-        FileService.data.blockblastSaves = {};
-      FileService.data.blockblastSaves[pseudo] = { grid, score, pieces };
-      FileService.save("blockblastSaves", FileService.data.blockblastSaves);
-    } catch (e) {
-      console.error("Erreur saveState Block Blast:", e);
+  socket.on(
+    "blockblast:saveState",
+    ({ grid, score, pieces, elapsedMs, gameOver }) => {
+      try {
+        // Validation simple
+        if (
+          !Array.isArray(grid) ||
+          typeof score !== "number" ||
+          !Array.isArray(pieces)
+        )
+          return;
+        // Ne pas enregistrer les états finaux
+        if (gameOver === true) return;
+        if (!FileService.data.blockblastSaves)
+          FileService.data.blockblastSaves = {};
+        // Inclure elapsedMs si fourni (nombre de ms depuis le début de la partie)
+        FileService.data.blockblastSaves[pseudo] = {
+          grid,
+          score,
+          pieces,
+          elapsedMs: typeof elapsedMs === "number" ? elapsedMs : 0,
+        };
+        FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+      } catch (e) {
+        console.error("Erreur saveState Block Blast:", e);
+      }
     }
-  });
+  );
 
   socket.on("blockblast:loadState", () => {
     try {
@@ -1160,6 +1245,9 @@ function initSocketHandlers(io, socket, gameState) {
 
     // UNO
     if (gameActuelle) {
+      const wasCurrent =
+        gameActuelle.getCurrentPlayer() &&
+        gameActuelle.getCurrentPlayer().pseudo === pseudo;
       const etaitJoueur = gameActuelle.joueurs.some((p) => p.pseudo === pseudo);
       if (etaitJoueur) {
         gameActuelle.removePlayer(pseudo);
@@ -1174,9 +1262,11 @@ function initSocketHandlers(io, socket, gameState) {
             winner: "Partie annulée !",
             reason: `${pseudo} s'est déconnecté`,
           });
+          uno_clearTurnTimer();
           gameActuelle = new UnoGame();
         } else if (gameActuelle.gameStarted) {
-          uno_broadcast(`${pseudo} s'est déconnecté`);
+          // Reset timer seulement si le joueur courant a quitté
+          uno_broadcast(`${pseudo} s'est déconnecté`, wasCurrent);
         }
         uno_broadcastLobby();
       } else {

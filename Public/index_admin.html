@@ -331,9 +331,7 @@
                 return;
             }
 
-            // importer le module chat ici, de la même manière que sur la page publique
             try {
-                // import relatif vers /js/chat.js
                 chatModule = await import('/js/chat.js');
             } catch (err) {
                 console.warn('Impossible de précharger le module de chat:', err);

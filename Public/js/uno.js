@@ -25,6 +25,9 @@ export function initUno(socket) {
     myUsername: null,
     estAuLobby: false,
     estSpec: false,
+    countdownId: null,
+    baseStatusText: "",
+    lastDeadline: null,
   };
 
   socket.emit("uno:getState");
@@ -124,12 +127,13 @@ export function initUno(socket) {
       const tourDuJoueur = gameState.currentPlayer;
       const estMonTour = gameState.estMonTour && !state.estSpec;
       if (estMonTour) {
-        ui.statusEl.textContent = "C'est ton tour !";
+        state.baseStatusText = "C'est ton tour !";
         ui.pileEl.classList.add("tonTour");
       } else {
-        ui.statusEl.textContent = `Tour de ${tourDuJoueur}`;
+        state.baseStatusText = `Tour de ${tourDuJoueur}`;
         ui.pileEl.classList.remove("tonTour");
       }
+      ui.statusEl.textContent = state.baseStatusText;
     }
 
     // Carte du milieu
@@ -212,6 +216,50 @@ export function initUno(socket) {
          }
        `;
     }
+
+    // Countdown (visible par tous) basé sur turnDeadlineAt côté serveur
+    syncCountdown(gameState.turnDeadlineAt || null);
+  }
+
+  function clearCountdown() {
+    if (state.countdownId) {
+      clearInterval(state.countdownId);
+      state.countdownId = null;
+    }
+  }
+
+  function syncCountdown(deadlineMs) {
+    // Si pas de deadline, on nettoie et affiche juste le statut de base
+    if (!deadlineMs || typeof deadlineMs !== "number") {
+      state.lastDeadline = null;
+      clearCountdown();
+      if (ui.statusEl) ui.statusEl.textContent = state.baseStatusText || "";
+      return;
+    }
+
+    if (state.lastDeadline === deadlineMs && state.countdownId) {
+      // déjà en cours pour cette deadline
+      return;
+    }
+
+    state.lastDeadline = deadlineMs;
+    clearCountdown();
+
+    const tick = () => {
+      const now = Date.now();
+      let secs = Math.ceil((deadlineMs - now) / 1000);
+      if (secs < 0) secs = 0;
+      if (ui.statusEl) {
+        ui.statusEl.textContent = `${state.baseStatusText} • Décompte: ${secs}s`;
+      }
+      if (secs <= 0) {
+        clearCountdown();
+      }
+    };
+
+    // Premier affichage immédiat puis toutes les 200ms pour une sensation fluide
+    tick();
+    state.countdownId = setInterval(tick, 200);
   }
 
   // ========== Event Listeners UI ==========
@@ -306,6 +354,7 @@ export function initUno(socket) {
   socket.on("uno:backToLobby", () => {
     ui.game.classList.remove("active");
     ui.lobby.style.display = "block";
+    clearCountdown();
     socket.emit("uno:getState");
   });
 
@@ -320,6 +369,7 @@ export function initUno(socket) {
       }
     }
     if (ui.statusEl) ui.statusEl.textContent = "";
+    clearCountdown();
 
     setTimeout(() => {
       ui.game.classList.remove("active");

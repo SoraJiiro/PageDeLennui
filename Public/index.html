@@ -230,7 +230,7 @@
                     <h2>Block Blast Leaderboard.exe</h2>
                 </div>
                 <table class="board" id="blockblast-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th><th>Temps</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -426,6 +426,7 @@
             <div class="blockblast-wrap">
                 <div class="blockblast-header">
                     <h2>Block Blast.exe</h2>
+                    <div class="blockblast-time"></div>
                     <div class="blockblast-score">Score: 0</div>
                 </div>
 
@@ -451,13 +452,15 @@
                 <h2>GAME OVER</h2>
                 <p>Score final: <span
                         class="blockblast-gameover-score">0</span></p>
+                <p>Durée de la partie:<span
+                        class="blockblast-gameover-time"></span></p>
                 <button class="blockblast-restart">Rejouer</button>
             </div>
         </section>
 
     </body>
 
-    <script defer>
+    <script defer type="text/javascript">
                 (function () {
                     function protectZone() {
                         const z = document.querySelector('.zone');

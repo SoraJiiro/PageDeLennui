@@ -8,9 +8,11 @@ export function initBlockBlast(socket) {
     grid: document.querySelector(".blockblast-grid"),
     pieces: document.querySelector(".blockblast-pieces"),
     scoreEl: document.querySelector(".blockblast-score"),
+    timeEl: document.querySelector(".blockblast-time"),
     resetBtn: document.querySelector(".blockblast-reset"),
     gameoverEl: document.querySelector(".blockblast-gameover"),
     gameoverScore: document.querySelector(".blockblast-gameover-score"),
+    gameoverTime: document.querySelector(".blockblast-gameover-time"),
     restartBtn: document.querySelector(".blockblast-restart"),
   };
 
@@ -32,7 +34,119 @@ export function initBlockBlast(socket) {
     combo: 0, // Compteur de combo
     totalLinesCleared: 0, // Total de lignes effacées dans la session
     consecutivePlacements: 0, // Placements consécutifs sans clear
+    // Temps écoulé en millisecondes (persisté avec la sauvegarde)
+    elapsedMs: 0,
   };
+
+  // Timer interne
+  let timerId = null;
+  let lastTick = null;
+  let lastLocalSave = 0;
+  const INACTIVITY_MS = 5000; // 5s d'inactivité -> figer le timer
+  let inactivityTimeoutId = null;
+  let isInViewport = true; // maintenu par IntersectionObserver
+
+  function formatTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0)
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(
+        2,
+        "0"
+      )}:${String(s).padStart(2, "0")}`;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
+  function updateTimerDisplay() {
+    if (!ui.timeEl) return;
+    ui.timeEl.textContent = formatTime(state.elapsedMs);
+    // Sauvegarde locale périodique (throttled)
+    try {
+      const now = Date.now();
+      if (now - lastLocalSave > 1000) {
+        lastLocalSave = now;
+        saveLocalState();
+      }
+    } catch (e) {}
+  }
+
+  // Sauvegarde locale (fallback quand socket ne peut pas transmettre lors du beforeunload)
+  const LOCAL_SAVE_KEY = "blockblast_local_save_v1";
+
+  function saveLocalState() {
+    try {
+      const small = {
+        grid: state.grid,
+        score: state.score,
+        pieces: state.currentPieces.map((p) => ({
+          shape: p.shape,
+          used: p.used,
+          color: p.color,
+        })),
+        elapsedMs: state.elapsedMs,
+        gameOver: !!state.gameOver,
+        at: Date.now(),
+      };
+      localStorage.setItem(LOCAL_SAVE_KEY, JSON.stringify(small));
+    } catch (e) {}
+  }
+
+  function loadLocalState() {
+    try {
+      const raw = localStorage.getItem(LOCAL_SAVE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function startTimer() {
+    if (state.gameOver) return;
+    if (timerId) return;
+    lastTick = Date.now();
+    timerId = setInterval(() => {
+      const now = Date.now();
+      state.elapsedMs += now - lastTick;
+      lastTick = now;
+      updateTimerDisplay();
+    }, 250);
+    updateTimerDisplay();
+  }
+
+  function stopTimer() {
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+      lastTick = null;
+    }
+    updateTimerDisplay();
+  }
+
+  function clearInactivityTimeout() {
+    if (inactivityTimeoutId) {
+      clearTimeout(inactivityTimeoutId);
+      inactivityTimeoutId = null;
+    }
+  }
+
+  function scheduleInactivityStop() {
+    clearInactivityTimeout();
+    inactivityTimeoutId = setTimeout(() => stopTimer(), INACTIVITY_MS);
+  }
+
+  function activityDetected(evt) {
+    // evt can be undefined for programmatic calls
+    if (state.gameOver) return;
+    // If blockblast area isn't visible or tab hidden, don't start
+    if (!document || document.visibilityState === "hidden") return;
+    if (!isInViewport) return;
+
+    // Ne pas démarrer automatiquement ; si le timer tourne, renouveler le timeout
+    if (timerId) scheduleInactivityStop();
+  }
 
   // ---------- Pseudo + meilleur score ----------
   let myName = null;
@@ -73,6 +187,17 @@ export function initBlockBlast(socket) {
         if (Array.isArray(save.grid)) state.grid = save.grid.map((r) => [...r]);
         if (typeof save.score === "number") state.score = save.score;
 
+        // Restaurer timer si présent côté serveur
+        if (typeof save.elapsedMs === "number") {
+          state.elapsedMs = save.elapsedMs;
+        } else {
+          // fallback : tenter de charger depuis localStorage
+          const local = loadLocalState();
+          if (local && typeof local.elapsedMs === "number") {
+            state.elapsedMs = local.elapsedMs;
+          }
+        }
+
         // Restaurer pièces (reconstituer currentPieces)
         if (Array.isArray(save.pieces)) {
           state.currentPieces = save.pieces.map((p, i) => ({
@@ -86,9 +211,35 @@ export function initBlockBlast(socket) {
         renderGrid();
         renderPieces();
         updateScore();
+        updateTimerDisplay();
       } else {
-        // Pas de sauvegarde trouvée -> nouvelle partie
-        generateNewPieces();
+        // Pas de sauvegarde trouvée côté serveur -> tenter restauration locale
+        const local = loadLocalState();
+        if (local && Array.isArray(local.grid) && Array.isArray(local.pieces)) {
+          try {
+            state.grid = local.grid.map((r) => [...r]);
+            state.score = typeof local.score === "number" ? local.score : 0;
+            state.elapsedMs =
+              typeof local.elapsedMs === "number" ? local.elapsedMs : 0;
+            if (Array.isArray(local.pieces)) {
+              state.currentPieces = local.pieces.map((p, i) => ({
+                shape: p.shape,
+                used: !!p.used,
+                id: Date.now() + i,
+                color: p.color || randomPieceColor(),
+              }));
+            }
+            renderGrid();
+            renderPieces();
+            updateScore();
+            updateTimerDisplay();
+          } catch (e) {
+            generateNewPieces();
+          }
+        } else {
+          // Aucune sauvegarde locale non plus -> nouvelle partie
+          generateNewPieces();
+        }
       }
     } catch (e) {
       console.error("Erreur lors du traitement de blockblast:state", e);
@@ -99,7 +250,11 @@ export function initBlockBlast(socket) {
   function reportBestIfImproved() {
     const currentBest = Math.max(myBest, lastBestReported);
     if (state.score > currentBest) {
-      socket.emit("blockblast:score", { score: state.score });
+      socket.emit("blockblast:score", {
+        score: state.score,
+        elapsedMs: state.elapsedMs,
+        final: false,
+      });
       lastBestReported = state.score;
     }
   }
@@ -230,31 +385,6 @@ export function initBlockBlast(socket) {
       [1, 1, 0],
       [0, 1, 1],
     ],
-    // 5 blocs - "6" vertcal gauche
-    [
-      [1, 0, 0],
-      [1, 1, 0],
-      [1, 1, 0],
-    ],
-    // 5 blocs - "6" vertical droit
-    [
-      [0, 0, 1],
-      [0, 1, 1],
-      [0, 1, 1],
-    ],
-    // 5 blocs - "6" horizontal haut
-    [
-      [1, 1, 1],
-      [1, 1, 0],
-      [0, 0, 0],
-    ],
-    // 5 blocs - "6" horizontal bas
-    [
-      [0, 0, 0],
-      [0, 1, 1],
-      [1, 1, 1],
-    ],
-
     // 5 blocs - pont horizontal haut
     [
       [1, 1, 1],
@@ -468,6 +598,7 @@ export function initBlockBlast(socket) {
     state.currentPieces = pieces;
     renderPieces();
 
+    // Sauvegarder l'état incluant le timer
     socket.emit("blockblast:saveState", {
       score: state.score,
       grid: state.grid,
@@ -476,8 +607,16 @@ export function initBlockBlast(socket) {
         used: p.used,
         color: p.color,
       })),
+      elapsedMs: state.elapsedMs,
       gameOver: false,
     });
+    // sauvegarde locale en plus (fallback si socket indisponible)
+    try {
+      saveLocalState();
+    } catch (e) {}
+
+    // Ne pas démarrer automatiquement le timer lors de génération de nouvelles pièces.
+    // Le timer doit démarrer uniquement lorsque le joueur clique sur une pièce ou commence un drag.
   }
 
   function renderPieces() {
@@ -506,6 +645,8 @@ export function initBlockBlast(socket) {
       });
 
       pieceEl.addEventListener("click", () => selectPiece(index));
+      // activité sur les pièces
+      pieceEl.addEventListener("mousemove", activityDetected);
       pieceEl.addEventListener("dragstart", (e) => handleDragStart(e, index));
       pieceEl.setAttribute("draggable", "true");
 
@@ -528,6 +669,15 @@ export function initBlockBlast(socket) {
     });
   }
 
+  // Démarrer le timer aussi quand le joueur sélectionne une pièce (click)
+  const origSelectPiece = selectPiece;
+  // note: we override by reassigning the function name used by event listeners above
+  // but since selectPiece is used internally we keep same identifier
+  selectPiece = function (index) {
+    origSelectPiece(index);
+    startTimer();
+  };
+
   function handleDragStart(e, index) {
     if (state.currentPieces[index].used) {
       e.preventDefault();
@@ -543,6 +693,8 @@ export function initBlockBlast(socket) {
     setTimeout(() => img.remove(), 0);
 
     createDragPreview(state.currentPieces[index]);
+    // Considérer le joueur actif
+    startTimer();
   }
 
   function createDragPreview(piece) {
@@ -820,8 +972,12 @@ export function initBlockBlast(socket) {
               used: p.used,
               color: p.color,
             })),
+            elapsedMs: state.elapsedMs,
             gameOver: false,
           });
+          try {
+            saveLocalState();
+          } catch (e) {}
         }
       }, 650);
     }, 100);
@@ -932,10 +1088,25 @@ export function initBlockBlast(socket) {
     state.gameOver = true;
     ui.gameoverScore.textContent = state.score;
     ui.gameoverEl.classList.add("active");
+    if (ui.gameoverTime)
+      ui.gameoverTime.textContent = ` ${formatTime(state.elapsedMs)}`;
 
     reportBestIfImproved();
+    // Émettre le score final avec la durée de la partie pour enregistrer le temps du meilleur run
+    try {
+      socket.emit("blockblast:score", {
+        score: state.score,
+        elapsedMs: state.elapsedMs,
+        final: true,
+      });
+    } catch (e) {}
     socket.emit("blockblast:clearState");
+    try {
+      localStorage.removeItem(LOCAL_SAVE_KEY);
+    } catch (e) {}
     scoreAttente = state.score;
+    // Stop timer on game over
+    stopTimer();
   }
 
   function renderGrid() {
@@ -961,12 +1132,9 @@ export function initBlockBlast(socket) {
 
   function updateScore() {
     ui.scoreEl.textContent = `Score: ${state.score}`;
-    if (state.combo > 1) {
-      ui.scoreEl.textContent += ` | Combo: x${state.combo}`;
-    }
   }
 
-  function resetGame() {
+  function resetGame(fromGameOver = false) {
     state.grid = Array(GRID_SIZE)
       .fill(null)
       .map(() => Array(GRID_SIZE).fill(false));
@@ -978,16 +1146,28 @@ export function initBlockBlast(socket) {
     state.combo = 0;
     state.totalLinesCleared = 0;
     state.consecutivePlacements = 0;
+    // Reset timer only if called from game over (rejouer)
+    if (fromGameOver) {
+      state.elapsedMs = 0;
+      updateTimerDisplay();
+    }
 
     ui.gameoverEl.classList.remove("active");
     updateScore();
     renderGrid();
     generateNewPieces();
     socket.emit("blockblast:clearState");
+    try {
+      localStorage.removeItem(LOCAL_SAVE_KEY);
+    } catch (e) {}
   }
 
   // ---------- Événements de la grille ----------
   ui.grid.addEventListener("mousemove", (e) => {
+    // activité utilisateur -> éviter arrêt pour inactivité
+    try {
+      activityDetected(e);
+    } catch (err) {}
     updateDragPreviewPosition(e);
 
     const cell = e.target.closest(".blockblast-cell");
@@ -1147,8 +1327,8 @@ export function initBlockBlast(socket) {
   });
 
   // ---------- Boutons ----------
-  ui.resetBtn?.addEventListener("click", resetGame);
-  ui.restartBtn?.addEventListener("click", resetGame);
+  ui.resetBtn?.addEventListener("click", () => resetGame(false));
+  ui.restartBtn?.addEventListener("click", () => resetGame(true));
 
   // ---------- Initialisation ----------
   initGrid();
@@ -1165,4 +1345,83 @@ export function initBlockBlast(socket) {
     generateNewPieces();
   }
   updateScore();
+
+  // Gestion focus/visibilité pour mettre en pause le timer lorsque l'utilisateur ne joue pas
+  function onVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      stopTimer();
+      // sauvegarder l'état courant
+      try {
+        socket.emit("blockblast:saveState", {
+          score: state.score,
+          grid: state.grid,
+          pieces: state.currentPieces.map((p) => ({
+            shape: p.shape,
+            used: p.used,
+            color: p.color,
+          })),
+          elapsedMs: state.elapsedMs,
+          gameOver: false,
+        });
+        try {
+          saveLocalState();
+        } catch (e) {}
+      } catch (e) {}
+    } else if (document.visibilityState === "visible") {
+      // ne pas démarrer automatiquement si gameOver
+      if (!state.gameOver) {
+        // On démarre seulement si l'utilisateur interagit; garder startTimer ici
+        // si vous préférez auto-start, décommentez la ligne suivante:
+        // startTimer();
+      }
+    }
+  }
+
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  window.addEventListener("blur", () => stopTimer());
+  window.addEventListener("focus", () => {
+    // Ne pas démarrer automatiquement à la focus, attendre interaction
+  });
+
+  // IntersectionObserver pour détecter si la zone BlockBlast est visible dans le viewport
+  try {
+    const wrap = document.querySelector(".blockblast-wrap") || ui.grid;
+    if (wrap && "IntersectionObserver" in window) {
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && entry.intersectionRatio > 0) {
+              isInViewport = true;
+              clearInactivityTimeout();
+            } else {
+              isInViewport = false;
+              stopTimer();
+            }
+          });
+        },
+        { threshold: [0, 0.1, 0.5] }
+      );
+      obs.observe(wrap);
+    }
+  } catch (e) {}
+
+  // Avant déchargement, sauvegarder l'état courant
+  window.addEventListener("beforeunload", () => {
+    try {
+      socket.emit("blockblast:saveState", {
+        score: state.score,
+        grid: state.grid,
+        pieces: state.currentPieces.map((p) => ({
+          shape: p.shape,
+          used: p.used,
+          color: p.color,
+        })),
+        elapsedMs: state.elapsedMs,
+        gameOver: !!state.gameOver,
+      });
+      try {
+        saveLocalState();
+      } catch (e) {}
+    } catch (e) {}
+  });
 }

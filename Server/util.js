@@ -52,6 +52,7 @@ class FileService {
       pictionaryWins: path.join(config.DATA, "pictionary_wins.json"),
       blockblastScores: path.join(config.DATA, "blockblast_scores.json"),
       blockblastSaves: path.join(config.DATA, "blockblast_saves.json"),
+      blockblastBestTimes: path.join(config.DATA, "blockblast_best_times.json"),
     };
 
     this.data = this.loadAll();
@@ -88,6 +89,7 @@ class FileService {
       pictionaryWins: this.readJSON(this.files.pictionaryWins, {}),
       blockblastScores: this.readJSON(this.files.blockblastScores, {}),
       blockblastSaves: this.readJSON(this.files.blockblastSaves, {}),
+      blockblastBestTimes: this.readJSON(this.files.blockblastBestTimes, {}),
     };
   }
 
@@ -131,6 +133,7 @@ class FileService {
       pictionaryWins: this.files.pictionaryWins,
       blockblastScores: this.files.blockblastScores,
       blockblastSaves: this.files.blockblastSaves,
+      blockblastBestTimes: this.files.blockblastBestTimes,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

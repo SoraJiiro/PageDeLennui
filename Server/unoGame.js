@@ -8,6 +8,9 @@ class UnoGame {
     this.direction = 1;
     this.gameStarted = false;
     this.drawStack = 0;
+    this.turnTimer = null;
+    this.turnTimeoutMs = 10000;
+    this.turnDeadlineAt = null;
   }
 
   addPlayer(pseudo, socketId) {
@@ -324,6 +327,7 @@ class UnoGame {
       direction: this.direction,
       deckSize: this.deck.length,
       playableCards: joueur ? this.getPlayableCards(joueur) : [],
+      turnDeadlineAt: this.turnDeadlineAt,
       opponents: this.joueurs
         .filter((p) => p.pseudo !== forUsername)
         .map((p) => ({ pseudo: p.pseudo, cardCount: p.hand.length })),
@@ -336,6 +340,45 @@ class UnoGame {
       spectators: this.spectators.map((s) => s.pseudo),
       gameStarted: this.gameStarted,
       canStart: this.canStart(),
+    };
+  }
+
+  // Action automatique à l'expiration du tour: pioche puis passe
+  autoDrawAndPass() {
+    const joueur = this.getCurrentPlayer();
+    if (!joueur) return { success: false, message: "Aucun joueur courant" };
+
+    // Si une pénalité de pioche est en attente (+2/+4), on pioche tout le stack
+    if (this.drawStack > 0) {
+      let count = this.drawStack;
+      for (let i = 0; i < count; i++) {
+        if (this.deck.length === 0) this.reshuffleDeck();
+        if (this.deck.length > 0) joueur.hand.push(this.deck.pop());
+      }
+      this.drawStack = 0;
+      this.nextPlayer();
+      return {
+        success: true,
+        message: `${joueur.pseudo} n'a pas joué à temps: pioche ${count} carte(s) automatiquement`,
+      };
+    }
+
+    // Sinon, pioche 1 carte et passe
+    if (this.deck.length === 0) this.reshuffleDeck();
+    if (this.deck.length === 0) {
+      // Pas de cartes, on passe quand même
+      this.nextPlayer();
+      return {
+        success: true,
+        message: `${joueur.pseudo} n'a pas joué à temps: passe (pioche impossible)`,
+      };
+    }
+    const card = this.deck.pop();
+    joueur.hand.push(card);
+    this.nextPlayer();
+    return {
+      success: true,
+      message: `${joueur.pseudo} n'a pas joué à temps: pioche 1 carte automatiquement`,
     };
   }
 }
