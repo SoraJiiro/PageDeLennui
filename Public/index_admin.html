@@ -243,6 +243,16 @@
                                             <i class="fa-solid fa-pen"></i>
                                             Modifier
                                         </button>
+                                        <button class="btn"
+                                            onclick="addStat()">
+                                            <i class="fa-solid fa-pen"></i>
+                                            Ajouter
+                                        </button>
+                                        <button class="btn btn-red"
+                                            onclick="removeStat()">
+                                            <i class="fa-solid fa-pen"></i>
+                                            Retirer
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -605,6 +615,74 @@
             } catch (err) {
                 console.error(err);
                 showNotification('⚠️ Erreur lors de la modification', 'error');
+            }
+        }
+
+        // Ajouter Stat
+        async function addStat() {
+            const pseudo = document.getElementById('modifyUser').value.trim();
+            const statType = document.getElementById('modifyStatType').value;
+            const value = parseInt(document.getElementById('modifyStatValue').value);
+
+            if (!pseudo || isNaN(value) || value <= 0) {
+                showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
+                return;
+            }
+            if (!confirm(`Ajouter ${value} à ${statType} de ${pseudo} ?`)) return;
+            try {
+                const res = await fetch('/api/admin/add-stat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, statType, value })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    socket.emit('admin:refresh');
+                    document.getElementById('modifyUser').value = '';
+                    document.getElementById('modifyStatValue').value = '';
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de l\'ajout', 'error');
+            }
+        }
+
+        // Retirer Stat
+        async function removeStat() {
+            const pseudo = document.getElementById('modifyUser').value.trim();
+            const statType = document.getElementById('modifyStatType').value;
+            const value = parseInt(document.getElementById('modifyStatValue').value);
+
+            if (!pseudo || isNaN(value) || value <= 0) {
+                showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
+                return;
+            }
+
+            if (!confirm(`Retirer ${value} de ${statType} de ${pseudo} ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/remove-stat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, statType, value })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    socket.emit('admin:refresh');
+                    document.getElementById('modifyUser').value = '';
+                    document.getElementById('modifyStatValue').value = '';
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de la suppression', 'error');
             }
         }
 

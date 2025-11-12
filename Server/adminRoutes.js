@@ -54,7 +54,7 @@ router.get("/user-info", requireAdmin, (req, res) => {
   res.json(data);
 });
 
-// Modifier une statistique
+// Modifier une stat
 router.post("/modify-stat", requireAdmin, (req, res) => {
   const { pseudo, statType, value } = req.body;
 
@@ -86,6 +86,7 @@ router.post("/modify-stat", requireAdmin, (req, res) => {
   });
 });
 
+// Modifier toutes les stats
 router.post("/modify-all-stats", requireAdmin, (req, res) => {
   const { pseudo, stats } = req.body;
 
@@ -118,12 +119,86 @@ router.post("/modify-all-stats", requireAdmin, (req, res) => {
     FileService.save(statType, FileService.data[statType]);
 
     console.log(
-      `[ADMIN] Modification: ${pseudo} - ${statType} = ${stats[statType]}`
+      `[ADMIN] Modification: ${pseudo} ${statType} -> ${stats[statType]}`
     );
   }
 
   res.json({
     message: `Toutes les statistiques de ${pseudo} ont été mises à jour`,
+  });
+});
+
+// Ajouter stat
+router.post("/add-stat", requireAdmin, (req, res) => {
+  const { pseudo, statType, value } = req.body;
+
+  if (!pseudo || !statType || typeof value !== "number") {
+    return res.status(400).json({ message: "Données invalides" });
+  }
+
+  const validStats = [
+    "clicks",
+    "dinoScores",
+    "flappyScores",
+    "unoWins",
+    "pictionaryWins",
+    "p4Wins",
+    "blockblastScores",
+  ];
+
+  if (!validStats.includes(statType)) {
+    return res.status(400).json({ message: "Type de statistique invalide" });
+  }
+
+  const currentValue = FileService.data[statType][pseudo] || 0;
+  const newValue = currentValue + value;
+
+  FileService.data[statType][pseudo] = newValue;
+  FileService.save(statType, FileService.data[statType]);
+
+  console.log(
+    `[ADMIN] Ajout: ${pseudo} (${statType} + ${value}) -> ${newValue}`
+  );
+
+  res.json({
+    message: `Statistique ${statType} de ${pseudo} augmentée de ${value} (total: ${newValue})`,
+  });
+});
+
+// Retirer stat
+router.post("/remove-stat", requireAdmin, (req, res) => {
+  const { pseudo, statType, value } = req.body;
+
+  if (!pseudo || !statType || typeof value !== "number") {
+    return res.status(400).json({ message: "Données invalides" });
+  }
+
+  const validStats = [
+    "clicks",
+    "dinoScores",
+    "flappyScores",
+    "unoWins",
+    "pictionaryWins",
+    "p4Wins",
+    "blockblastScores",
+  ];
+
+  if (!validStats.includes(statType)) {
+    return res.status(400).json({ message: "Type de statistique invalide" });
+  }
+
+  const currentValue = FileService.data[statType][pseudo] || 0;
+  const newValue = Math.max(0, currentValue - value);
+
+  FileService.data[statType][pseudo] = newValue;
+  FileService.save(statType, FileService.data[statType]);
+
+  console.log(
+    `[ADMIN] Retrait: ${pseudo} (${statType} - ${value}) -> ${newValue}`
+  );
+
+  res.json({
+    message: `Statistique ${statType} de ${pseudo} diminuée de ${value} (total: ${newValue})`,
   });
 });
 
