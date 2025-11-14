@@ -24,7 +24,6 @@ class FileLogger {
       const line = `${timestamp} [${level}] ${message}\n`;
       fs.appendFileSync(this.logFile, line, "utf8");
     } catch (err) {
-      // Ne pas bloquer si échec d'écriture
       console.error("Erreur écriture log fichier:", err);
     }
   }
