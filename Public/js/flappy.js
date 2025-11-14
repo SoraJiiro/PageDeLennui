@@ -329,7 +329,7 @@ export function initFlappy(socket) {
   ui.stopBtn?.addEventListener("click", () => {
     if (!gameRunning) return;
     const sent = score;
-    if (window.socket) window.socket.emit("flappy:score", { score: sent });
+    if (socket) socket.emit("flappy:score", { score: sent });
     // Réinitialiser l'état de la run sans relancer
     gameRunning = false;
     paused = false;

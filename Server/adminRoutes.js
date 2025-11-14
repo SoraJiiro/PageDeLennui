@@ -79,7 +79,10 @@ router.post("/modify-stat", requireAdmin, (req, res) => {
   FileService.data[statType][pseudo] = value;
   FileService.save(statType, FileService.data[statType]);
 
-  console.log(`[ADMIN] Modification: ${pseudo} - ${statType} = ${value}`);
+  console.log({
+    level: "action",
+    message: `Modification: ${pseudo} - ${statType} = ${value}`,
+  });
 
   res.json({
     message: `Statistique ${statType} de ${pseudo} mise à jour à ${value}`,
@@ -118,9 +121,10 @@ router.post("/modify-all-stats", requireAdmin, (req, res) => {
     FileService.data[statType][pseudo] = stats[statType];
     FileService.save(statType, FileService.data[statType]);
 
-    console.log(
-      `[ADMIN] Modification: ${pseudo} ${statType} -> ${stats[statType]}`
-    );
+    console.log({
+      level: "action",
+      message: `Modification: ${pseudo} ${statType} -> ${stats[statType]}`,
+    });
   }
 
   res.json({
@@ -156,9 +160,10 @@ router.post("/add-stat", requireAdmin, (req, res) => {
   FileService.data[statType][pseudo] = newValue;
   FileService.save(statType, FileService.data[statType]);
 
-  console.log(
-    `[ADMIN] Ajout: ${pseudo} (${statType} + ${value}) -> ${newValue}`
-  );
+  console.log({
+    level: "action",
+    message: `Ajout: ${pseudo} (${statType} + ${value}) -> ${newValue}`,
+  });
 
   res.json({
     message: `Statistique ${statType} de ${pseudo} augmentée de ${value} (total: ${newValue})`,
@@ -193,9 +198,10 @@ router.post("/remove-stat", requireAdmin, (req, res) => {
   FileService.data[statType][pseudo] = newValue;
   FileService.save(statType, FileService.data[statType]);
 
-  console.log(
-    `[ADMIN] Retrait: ${pseudo} (${statType} - ${value}) -> ${newValue}`
-  );
+  console.log({
+    level: "action",
+    message: `Retrait: ${pseudo} (${statType} - ${value}) -> ${newValue}`,
+  });
 
   res.json({
     message: `Statistique ${statType} de ${pseudo} diminuée de ${value} (total: ${newValue})`,
@@ -236,7 +242,7 @@ router.post("/delete-user", requireAdmin, (req, res) => {
   FileService.save("medals", FileService.data.medals);
   FileService.save("blockblastSaves", FileService.data.blockblastSaves);
 
-  console.log(`[ADMIN] Utilisateur supprimé: ${pseudo}`);
+  console.log({ level: "action", message: `Utilisateur supprimé: ${pseudo}` });
 
   res.json({ message: `Utilisateur ${pseudo} supprimé avec succès` });
 });

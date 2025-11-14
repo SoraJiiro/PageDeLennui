@@ -1,0 +1,127 @@
+/* Styles spécifiques à la page des logs Admin, harmonisés avec le thème global */
+
+html,
+body {
+  background: #000;
+  color: #fafafa;
+  margin: 0;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 50px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  box-shadow: 0 2px 0 rgba(255, 255, 255, 0.05);
+  z-index: 2;
+  background: #111;
+  border-bottom: 2px solid #fff;
+  list-style: none;
+  margin: 0;
+}
+
+.bar > li {
+  display: flex;
+  align-items: center;
+  border-right: 2px solid #fff;
+  height: 100%;
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+  padding: 7.5px;
+}
+
+.bar > li:last-child {
+  border-right: none;
+}
+
+.bar .title strong {
+  justify-content: left;
+  padding-right: 12px;
+  font-size: 2rem;
+}
+
+.pill {
+  padding: 7.5px 35px;
+  border-radius: 999px;
+  background: #444444;
+  border: 2px solid #f1f1f1;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* état actif pour les pills (y compris le bouton autoscroll) */
+.pill.active {
+  background: #8d8d8d;
+  border-color: #dcdcdc;
+}
+
+.pill:hover {
+  background: #6a6a6a;
+}
+
+/* Assure que le bouton avec classe .pill garde le style des pills */
+button.pill {
+  background: #444444;
+  color: inherit;
+  border: 2px solid #f1f1f1;
+  border-radius: 999px;
+  padding: 7.5px 35px;
+}
+
+.pill.active {
+  background: #8282f8;
+  color: #fff;
+  border-color: #fff;
+}
+
+.logs {
+  padding: 10px 40px;
+}
+
+.entry {
+  border-bottom: 1px dashed var(--line);
+  padding: 12.5px 4px;
+}
+
+.t {
+  color: rgb(177, 177, 177);
+  margin-right: 8px;
+}
+.lvl-action {
+  color: #ff6b35;
+  font-weight: bold;
+}
+.lvl-log {
+  color: #8282f8;
+}
+.lvl-warn {
+  color: #ffdb6e;
+}
+.lvl-error {
+  color: #ff7a7a;
+}
+.muted {
+  color: #888;
+}
+
+.controls {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: 1px solid #f1f1f1;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}

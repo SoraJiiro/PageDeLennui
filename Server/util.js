@@ -146,33 +146,6 @@ class FileService {
 }
 
 // ------- Anti-Spam -------
-class AntiSpam {
-  constructor() {
-    this.buckets = new Map();
-  }
-
-  allow(socketId) {
-    const now = Date.now();
-    const bucket = this.buckets.get(socketId) || {
-      windowStart: now,
-      count: 0,
-    };
-
-    if (now - bucket.windowStart >= config.MAX_CLICKS_MS) {
-      bucket.windowStart = now;
-      bucket.count = 0;
-    }
-
-    bucket.count++;
-    this.buckets.set(socketId, bucket);
-
-    return true;
-  }
-
-  cleanup(socketId) {
-    this.buckets.delete(socketId);
-  }
-}
 
 // ------- Gestionnaire Game State -------
 class GameStateManager {
@@ -188,7 +161,8 @@ class GameStateManager {
         if (oldId !== socketId) {
           const oldSocket = io.sockets.sockets.get(oldId);
           if (oldSocket) {
-            console.log(`\n🔄 Reset socket ${oldId} -> ${pseudo}\n`);
+            if (pseudo !== "Admin")
+              console.log(`\n🔄 Reset socket ${oldId} -> ${pseudo}\n`);
             oldSocket.disconnect(true);
           }
         }
@@ -225,6 +199,5 @@ module.exports = {
   expressSession,
   blacklistMiddleware,
   FileService: new FileService(),
-  AntiSpam: new AntiSpam(),
   GameStateManager,
 };

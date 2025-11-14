@@ -46,7 +46,7 @@ export function initChat(socket) {
 
   socket.on("users:list", (l) => {
     if (usersCount)
-      usersCount.textContent = `Utilisateurs en ligne: ${l.length}`;
+      usersCount.innerHTML = `Utilisateurs en ligne: <b>${l.length}</b>`;
   });
 
   socket.on("chat:message", (payload) => {

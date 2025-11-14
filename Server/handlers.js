@@ -1,4 +1,4 @@
-const { FileService, AntiSpam } = require("./util");
+const { FileService } = require("./util");
 const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
@@ -88,14 +88,26 @@ function initSocketHandlers(io, socket, gameState) {
   }
 
   const pseudo = user.pseudo;
+  // Joindre la room admin si Admin
+  if (pseudo === "Admin") {
+    try {
+      socket.join("admins");
+      // Envoyer l'historique récent des logs au nouvel admin connecté
+      if (io._serverLogBuffer && Array.isArray(io._serverLogBuffer)) {
+        socket.emit("server:log:init", io._serverLogBuffer);
+      }
+    } catch {}
+  }
   gameState.addUser(socket.id, pseudo, io);
-  console.log(`>> [${colorize(pseudo, orange)}] connecté`);
+  if (pseudo !== "Admin") {
+    console.log(`>> [${colorize(pseudo, orange)}] connecté`);
+  }
 
   // Envoi dada initiales
   socket.emit("you:name", pseudo);
   socket.emit("chat:history", FileService.data.historique);
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
-  // Normaliser les médailles (toujours objets { name, colors }) pour le client
+
   const rawUserMedalsInit = FileService.data.medals[pseudo] || [];
   const normalizedInit = rawUserMedalsInit.map((m) =>
     typeof m === "string"
@@ -112,7 +124,9 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastBlockBlastLB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
-  io.emit("system:info", `${pseudo} a rejoint le chat`);
+  if (pseudo !== "Admin") {
+    io.emit("system:info", `${pseudo} a rejoint le chat`);
+  }
 
   // ------- Chat -------
   socket.on("chat:message", ({ text }) => {
@@ -131,7 +145,6 @@ function initSocketHandlers(io, socket, gameState) {
 
   // ------- Clicker -------
   socket.on("clicker:click", () => {
-    if (!AntiSpam.allow(socket.id)) return;
     FileService.data.clicks[pseudo] =
       (FileService.data.clicks[pseudo] || 0) + 1;
     FileService.save("clicks", FileService.data.clicks);
@@ -1227,16 +1240,18 @@ function initSocketHandlers(io, socket, gameState) {
         duration: 8000,
         withCountdown: withCountdown || false,
       });
-      console.log(`[ADMIN] Notification globale envoyée: ${message}`);
+      console.log({
+        level: "action",
+        message: `Notification globale envoyée: ${message}`,
+      });
     }
   });
 
   // ------- Log off -------
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
-    AntiSpam.cleanup(socket.id);
 
-    if (fullyDisconnected) {
+    if (fullyDisconnected && pseudo !== "Admin") {
       io.emit("system:info", `${pseudo} a quitté le chat`);
       console.log(`>> [${colorize(pseudo, orange)}] déconnecté`);
     }

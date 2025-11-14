@@ -25,17 +25,21 @@
     <body>
         <div class="admin-container">
             <div class="admin-header">
+
                 <h1><i class="fa-solid fa-wrench"></i> PANEL
-                    ADMIN</h1>
-                <button class="log-off"
-                    onclick="window.location.replace('/login');">Se
-                    déconnecter</button>
+                    ADMIN</h1><div class="header-btns">
+                    <button class="log-off"
+                        onclick="window.location.replace('/login');">Se
+                        déconnecter</button>
+                    <button class="log-off"
+                        onclick="window.open('/admin/logs', '_blank');">Logs</button>
+                </div>
             </div>
 
             <div class="admin-sections">
                 <!-- LEADERBOARDS -->
                 <section class="admin-section">
-                    <h2><i class="fa-solid fa-trophy"></i> Leaderboards</h2>
+                    <h2><i class="fa-solid fa-trophy"></i> /Leaderboards</h2>
                     <center>
                         <div class="leaderboard-tabs">
                             <button class="lb-tab active"
@@ -149,7 +153,7 @@
                 <!-- CHAT LAN -->
                 <section class="admin-section" id="chat">
                     <h2><i class="fa-solid fa-comments"
-                            style="margin-right:10px"></i>Chat LAN</h2>
+                            style="margin-right:10px"></i>/Chat LAN</h2>
                     <div class="chat-card" role="region" aria-label="Chat LAN">
                         <div class="chat-header">
                             <h3>Chat.exe</h3>
@@ -174,7 +178,7 @@
                 <!-- USER INFO -->
                 <section class="admin-section">
                     <h2><i class="fa-solid fa-user"
-                            style="margin-right: 10px;"></i>Infos
+                            style="margin-right: 10px;"></i>/Infos
                         Utilisateur</h2>
 
                     <div class="user-search">
@@ -194,13 +198,13 @@
 
                 <!-- ADMINISTRATION -->
                 <section class="admin-section">
-                    <h2><i class="fa-solid fa-gear"></i> Commandes</h2>
+                    <h2><i class="fa-solid fa-gear"></i> /Commandes</h2>
 
                     <div class="admin-controls">
                         <!-- Modifier Stats -->
                         <div class="control-group">
                             <h3><i class="fa-solid fa-chart-simple"></i>
-                                Modifier Stats</h3>
+                                /Modifier Stats</h3>
                             <div class="control-form">
                                 <div class="form-row">
                                     <div class="form-field">
@@ -260,7 +264,7 @@
 
                         <!-- Supprimer Utilisateur -->
                         <div class="control-group">
-                            <h3><i class="fa-solid fa-trash"></i> Supprimer
+                            <h3><i class="fa-solid fa-trash"></i> /Supprimer
                                 Utilisateur</h3>
                             <div class="control-form">
                                 <div class="form-row">
@@ -283,7 +287,7 @@
                         <!-- Notification Globale -->
                         <div class="control-group">
                             <h3><i class="fa-solid fa-bullhorn"></i>
-                                Notif</h3>
+                                /Notif</h3>
                             <div class="control-form">
                                 <div class="form-field">
                                     <label>Message</label>
@@ -307,6 +311,13 @@
                             </div>
                         </div>
                     </div>
+                </section>
+                <section class="admin-section">
+                    <h2><i class="fa-solid fa-database"></i> /Logs</h2>
+                    <center>
+                        <iframe src="/admin/logs"
+                            class="logs-frame"></iframe>
+                    </center>
                 </section>
             </div>
         </div>
@@ -364,6 +375,21 @@
 
             socket.on('connect', () => {
                 console.log('> Connecté au serveur');
+            });
+
+            // Auto-reload sur modification de fichiers
+            socket.on('reload', (data) => {
+                const file = data?.file || '';
+                // Recharger seulement les CSS sans reset de socket
+                if (file.match(/\.css$/i)) {
+                    document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+                        const href = link.href.split('?')[0];
+                        link.href = href + '?v=' + Date.now();
+                    });
+                } else if (file.match(/\.js$/i) || file.match(/\.html$/i)) {
+                    // Pour les JS/HTML, reload complet nécessaire
+                    window.location.reload();
+                }
             });
 
             // Leaderboards

@@ -18,7 +18,4 @@ module.exports = {
     "192.168.193.193",
     "192.168.193.1",
   ],
-
-  // Anti-spam
-  MAX_CLICKS_MS: 2250,
 };

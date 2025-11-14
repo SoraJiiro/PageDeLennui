@@ -67,10 +67,28 @@ import { showNotif, keyBind } from "./util.js";
       reconnexionEssais: 5,
     });
 
-    window.socket = socket;
+    // Ne pas exposer le socket globalement pour limiter l'abus via console
+    // window.socket = socket;
     window.username = username;
 
-    socket.on("reload", () => window.location.reload());
+    socket.on("reload", (data) => {
+      const file = data?.file || "";
+      // Recharger seulement les CSS/JS sans reset de socket
+      if (file.match(/\.css$/i)) {
+        // Recharger les CSS
+        document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+          const href = link.href.split("?")[0];
+          link.href = href + "?v=" + Date.now();
+        });
+      } else if (file.match(/\.js$/i)) {
+        // Pour les JS, reload complet nécessaire
+        window.location.reload();
+      } else if (file.match(/\.html$/i)) {
+        // Pour les HTML, reload complet
+        window.location.reload();
+      }
+      // Ignorer les autres fichiers (images, etc.)
+    });
 
     if (chat?.initChat) chat.initChat(socket);
     if (clicker?.initClicker) clicker.initClicker(socket);
