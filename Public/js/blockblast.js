@@ -267,10 +267,32 @@ export function initBlockBlast(socket) {
     // 2 blocs
     [[1, 1]], // Horizontal
     [[1], [1]], // Vertical
+    // diagonale droite
+    [
+      [1, 0],
+      [0, 1],
+    ],
+    // diagonale gauche
+    [
+      [0, 1],
+      [1, 0],
+    ],
 
     // 3 blocs - Lignes
     [[1, 1, 1]], // Horizontal
     [[1], [1], [1]], // Vertical
+    // diagonale droite
+    [
+      [0, 0, 1],
+      [0, 1, 0],
+      [1, 0, 0],
+    ],
+    // diagonale gauche
+    [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ],
 
     // 3 blocs - L shapes
     [
