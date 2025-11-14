@@ -366,6 +366,31 @@ export function initBlockBlast(socket) {
       [1, 1],
     ], // L inversé long
 
+    // 5 blocs - L 2x2 branche haut droit
+    [
+      [1, 1, 1],
+      [0, 0, 1],
+      [0, 0, 1],
+    ],
+    // 5 blocs - L 2x2 branche haut gauche
+    [
+      [1, 1, 1],
+      [1, 0, 0],
+      [1, 0, 0],
+    ],
+    // 5 blocs - L 2x2 branche bas droit
+    [
+      [0, 0, 1],
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+    // 5 blocs - L 2x2 branche bas gauche
+    [
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 1, 1],
+    ],
+
     // 5 blocs - T grand
     [
       [1, 1, 1],
