@@ -54,6 +54,8 @@
                             <button class="lb-tab" data-board="p4">P4</button>
                             <button class="lb-tab" data-board="blockblast">Block
                                 Blast</button>
+                            <button class="lb-tab"
+                                data-board="snake">Snake</button>
                         </div>
                     </center>
 
@@ -143,9 +145,24 @@
                                     <th>Rang</th>
                                     <th>Pseudo</th>
                                     <th>Score</th>
+                                    <th>Temps</th>
                                 </tr>
                             </thead>
                             <tbody id="lb-blockblast"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="leaderboard-content" data-board="snake">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Score</th>
+                                    <th>Temps</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-snake"></tbody>
                         </table>
                     </div>
                 </section>
@@ -400,6 +417,7 @@
             socket.on('pictionary:leaderboard', (data) => updateLeaderboard('pictionary', data, 'points'));
             socket.on('p4:leaderboard', (data) => updateLeaderboard('p4', data, 'wins'));
             socket.on('blockblast:leaderboard', (data) => updateLeaderboard('blockblast', data, 'score'));
+            socket.on('snake:leaderboard', (data) => updateLeaderboard('snake', data, 'score'));
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {

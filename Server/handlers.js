@@ -76,6 +76,18 @@ const leaderboardManager = {
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("blockblast:leaderboard", arr);
   },
+  broadcastSnakeLB(io) {
+    const arr = Object.entries(FileService.data.snakeScores)
+      .map(([u, s]) => ({
+        pseudo: u,
+        score: s,
+        timeMs: FileService.data.snakeBestTimes
+          ? FileService.data.snakeBestTimes[u] || null
+          : null,
+      }))
+      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    io.emit("snake:leaderboard", arr);
+  },
 };
 
 // ------- Handler Socket -------
@@ -122,6 +134,7 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastPictionaryLB(io);
   leaderboardManager.broadcastP4LB(io);
   leaderboardManager.broadcastBlockBlastLB(io);
+  leaderboardManager.broadcastSnakeLB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
   if (pseudo !== "Admin") {
@@ -1148,8 +1161,20 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   socket.on("blockblast:reset", () => {
-    // Ne pas toucher au meilleur score (leaderboard all-time)
-    // Effacer également toute sauvegarde de grille associée à ce joueur
+    // Réinitialiser le meilleur score à 0
+    FileService.data.blockblastScores[pseudo] = 0;
+    FileService.save("blockblastScores", FileService.data.blockblastScores);
+
+    // Réinitialiser le temps du meilleur run
+    if (FileService.data.blockblastBestTimes) {
+      delete FileService.data.blockblastBestTimes[pseudo];
+      FileService.save(
+        "blockblastBestTimes",
+        FileService.data.blockblastBestTimes
+      );
+    }
+
+    // Effacer toute sauvegarde de grille associée à ce joueur
     if (
       FileService.data.blockblastSaves &&
       FileService.data.blockblastSaves[pseudo]
@@ -1220,6 +1245,68 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  // ------- Snake -------
+  let isAlreadyLogged_snake = false;
+
+  socket.on("snake:score", ({ score, elapsedMs, final }) => {
+    const s = Number(score);
+
+    if (isNaN(s) || s < 0) return;
+
+    const current = FileService.data.snakeScores[pseudo] || 0;
+
+    if (s > current) {
+      FileService.data.snakeScores[pseudo] = s;
+      FileService.save("snakeScores", FileService.data.snakeScores);
+      // Si score meilleur et indication finale, enregistrer le temps de run
+      if (final === true && typeof elapsedMs === "number") {
+        if (!FileService.data.snakeBestTimes)
+          FileService.data.snakeBestTimes = {};
+        FileService.data.snakeBestTimes[pseudo] = Math.max(0, elapsedMs);
+        FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+      }
+      if (isAlreadyLogged_snake === false) {
+        console.log(
+          withGame(
+            `\n🐍 Nouveau score Snake pour [${orange}${pseudo}${green}] -> ${s}\n`,
+            green
+          )
+        );
+        isAlreadyLogged_snake = true;
+      }
+    } else if (
+      final === true &&
+      s === current &&
+      typeof elapsedMs === "number"
+    ) {
+      // Si la partie se termine avec un score égal au record actuel, mettre à jour le temps du meilleur run
+      if (!FileService.data.snakeBestTimes)
+        FileService.data.snakeBestTimes = {};
+      FileService.data.snakeBestTimes[pseudo] = Math.max(0, elapsedMs);
+      FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+    }
+
+    leaderboardManager.broadcastSnakeLB(io);
+  });
+
+  socket.on("snake:reset", () => {
+    console.log(
+      withGame(`\n🔄 Reset Snake pour [${orange}${pseudo}${green}]\n`, green)
+    );
+    leaderboardManager.broadcastSnakeLB(io);
+    socket.emit("snake:resetConfirm", { success: true });
+  });
+
+  socket.on("snake:getBest", () => {
+    const bestScore = FileService.data.snakeScores[pseudo] || 0;
+    const bestTime = FileService.data.snakeBestTimes?.[pseudo] || 0;
+    socket.emit("snake:best", { score: bestScore, timeMs: bestTime });
+  });
+
+  socket.on("snake:requestLeaderboard", () => {
+    leaderboardManager.broadcastSnakeLB(io);
+  });
+
   // ------- Admin Events -------
   socket.on("admin:refresh", () => {
     if (pseudo === "Admin") {
@@ -1230,6 +1317,7 @@ function initSocketHandlers(io, socket, gameState) {
       leaderboardManager.broadcastPictionaryLB(io);
       leaderboardManager.broadcastP4LB(io);
       leaderboardManager.broadcastBlockBlastLB(io);
+      leaderboardManager.broadcastSnakeLB(io);
     }
   });
 

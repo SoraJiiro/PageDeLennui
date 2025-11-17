@@ -7,16 +7,12 @@ html {
 }
 
 #stage5 {
-  position: absolute;
-  top: calc(4 * 100dvh);
-  left: 0;
-  right: 0;
-  bottom: auto;
-  width: 100dvw;
-  height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+  padding-top: 5rem;
 }
 
 .uno-card {
@@ -25,6 +21,7 @@ html {
   color: var(--primary-color);
   border: 2px solid var(--primary-color);
   padding: 1rem;
+  height: fit-content;
 }
 
 .uno-header {

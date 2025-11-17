@@ -110,6 +110,7 @@ button.log-off:hover {
 .leaderboard-buttons button,
 .uno-lobby button,
 .flappy-btns-wrap button,
+.snake-btns-wrap button,
 .pictionary-actions button,
 .p4-btn-wrapper button,
 .chat-form button,
@@ -136,6 +137,7 @@ button.log-off:hover {
 .leaderboard-buttons button:not(:disabled):hover,
 .uno-lobby button:not(:disabled):hover,
 .flappy-btns-wrap button:not(:disabled):hover,
+.snake-btns-wrap button:not(:disabled):hover,
 .pictionary-actions button:not(:disabled):hover,
 .p4-btn-wrapper button:not(:disabled):hover,
 .chat-form button:not(:disabled):hover,
@@ -155,6 +157,7 @@ button.log-off:not(:disabled):hover {
 .leaderboard-buttons button:disabled,
 .uno-lobby button:disabled,
 .flappy-btns-wrap button:disabled,
+.snake-btns-wrap button:disabled,
 .pictionary-actions button:disabled,
 .p4-btn-wrapper button:disabled,
 .chat-form button:disabled,
@@ -170,7 +173,8 @@ button.reset,
 .dino-reset,
 .flappyResetBtn,
 .pic-clear-btn,
-.blockblast-reset {
+.blockblast-reset,
+.snake-reset {
   background: var(--bg-color) !important;
   color: var(--red-color) !important;
   border-color: var(--red-color) !important;
@@ -182,7 +186,8 @@ button.reset,
 .dino-reset,
 .flappyResetBtn,
 .pic-clear-btn,
-.blockblast-reset {
+.blockblast-reset,
+.snake-reset {
   background: var(--bg-color) !important;
   color: var(--red-color) !important;
   border-color: var(--red-color) !important;
@@ -192,7 +197,8 @@ button.reset:not(:disabled):hover,
 .dino-reset:not(:disabled):hover,
 .flappyResetBtn:not(:disabled):hover,
 .pic-clear-btn:not(:disabled):hover,
-.blockblast-reset:not(:disabled):hover {
+.blockblast-reset:not(:disabled):hover,
+.snake-reset:not(:disabled):hover {
   background: var(--red-color) !important;
   color: var(--bg-color) !important;
   border: 2px solid var(--bg-color) !important;

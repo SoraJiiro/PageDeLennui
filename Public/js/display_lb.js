@@ -11,6 +11,7 @@ function showLeaderboard(name) {
     pictionary: "#pictionary-leaderboard",
     p4: "#p4-leaderboard",
     blockblast: "#blockblast-leaderboard",
+    snake: "#snake-leaderboard",
   };
 
   const table = document.querySelector(idMap[name]);

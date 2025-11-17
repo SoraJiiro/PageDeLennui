@@ -179,6 +179,13 @@ export function initBlockBlast(socket) {
     }
   });
 
+  socket.on("blockblast:resetConfirm", ({ success }) => {
+    if (success) {
+      // Le reset a été confirmé côté serveur
+      console.log("Reset Block Blast confirmé");
+    }
+  });
+
   socket.on("blockblast:state", (payload) => {
     try {
       if (payload && payload.found && payload.state) {
@@ -1374,12 +1381,48 @@ export function initBlockBlast(socket) {
   });
 
   // ---------- Boutons ----------
-  ui.resetBtn?.addEventListener("click", () => resetGame(false));
+  // Reset button: réinitialise la partie actuelle + le meilleur score (avec mot de passe)
+  ui.resetBtn?.addEventListener("click", async () => {
+    const confirmReset = confirm(
+      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Block Blast ?\nTon meilleur score et ton temps seront définitivement perdus !"
+    );
+    if (!confirmReset) return;
+
+    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    if (!password) {
+      showNotif("❌ Réinitialisation annulée");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/verify-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showNotif("❌ Mot de passe incorrect !");
+        return;
+      }
+      socket.emit("blockblast:reset");
+      showNotif("🔄 Score Block Blast réinitialisé avec succès !");
+      myBest = 0;
+      scoreAttente = null;
+      lastBestReported = 0;
+      // Réinitialiser aussi la partie actuelle
+      resetGame(false);
+    } catch (err) {
+      showNotif("⚠️ Erreur lors de la vérification du mot de passe");
+      console.error(err);
+    }
+  });
+
   ui.restartBtn?.addEventListener("click", () => resetGame(true));
 
   // ---------- Initialisation ----------
   initGrid();
-  renderGrid();
+
   // Demander au serveur la sauvegarde existante (le serveur répondra par 'blockblast:state')
   try {
     socket.emit("blockblast:loadState");

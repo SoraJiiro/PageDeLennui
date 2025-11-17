@@ -36,6 +36,8 @@ import { showNotif, keyBind } from "./util.js";
       import("./p4_leaderboard.js"),
       import("./blockblast.js"),
       import("./blockblast_leaderboard.js"),
+      import("./snake.js"),
+      import("./snake_leaderboard.js"),
     ]);
 
     const [
@@ -54,6 +56,8 @@ import { showNotif, keyBind } from "./util.js";
       p4Leaderboard,
       blockblast,
       blockblastLeaderboard,
+      snake,
+      snakeLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -112,6 +116,9 @@ import { showNotif, keyBind } from "./util.js";
     if (blockblast?.initBlockBlast) blockblast.initBlockBlast(socket);
     if (blockblastLeaderboard?.initBlockBlastLeaderboard)
       blockblastLeaderboard.initBlockBlastLeaderboard(socket);
+    if (snake?.initSnake) snake.initSnake(socket);
+    if (snakeLeaderboard?.initSnakeLeaderboard)
+      snakeLeaderboard.initSnakeLeaderboard(socket);
 
     socket.connect();
 

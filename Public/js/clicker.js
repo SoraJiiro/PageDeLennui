@@ -20,21 +20,24 @@ export function initClicker(socket) {
     clicksManuels: [],
     cpsHumain: 0,
     timerHumain: null,
+    myPseudo: null,
   };
 
   // ---------- Storage manager ----------
-  const STORAGE_KEY = "autoCPS";
+  function getStorageKey() {
+    return state.myPseudo ? `autoCPS_${state.myPseudo}` : "autoCPS";
+  }
   function getSavedCPS() {
-    const v = parseInt(localStorage.getItem(STORAGE_KEY));
+    const v = parseInt(localStorage.getItem(getStorageKey()));
     return isNaN(v) ? 0 : v;
   }
   function saveCPS(cps) {
     if (typeof cps === "number" && cps > 0) {
-      localStorage.setItem(STORAGE_KEY, String(cps));
+      localStorage.setItem(getStorageKey(), String(cps));
     }
   }
   function clearSavedCPS() {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(getStorageKey());
   }
 
   // ---------- Médailles de base ----------
@@ -291,6 +294,17 @@ export function initClicker(socket) {
   }
 
   // ---------- Events socket ----------
+  socket.on("you:name", (pseudo) => {
+    const oldPseudo = state.myPseudo;
+    state.myPseudo = pseudo;
+
+    // Si on change de compte, réinitialiser le CPS auto
+    if (oldPseudo && oldPseudo !== pseudo) {
+      stopAutoClicks();
+      // Le CPS sera restauré lors de la réception de clicker:medals
+    }
+  });
+
   socket.on("clicker:you", ({ score }) => {
     state.scoreActuel = score;
     bumpZone();
@@ -355,11 +369,4 @@ export function initClicker(socket) {
       ui.cpsHumainEl.textContent =
         state.cpsHumain >= 0 ? `${state.cpsHumain.toFixed(1)} CPS` : "0.0 CPS";
   }, 750);
-
-  // ---------- Restauration du CPS auto au chargement ----------
-  const restored = getSavedCPS();
-  if (restored > 0) {
-    setAutoClick(restored);
-    setTimeout(() => console.log(`CPS AUTO : OK [${restored}]`), 1000);
-  }
 }

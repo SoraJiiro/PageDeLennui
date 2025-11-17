@@ -231,6 +231,7 @@ export function initFlappy(socket) {
     gameRunning = false;
     ui.startBtn.style.display = "block";
     ui.startBtn.textContent = "Rejouer";
+    if (ui.stopBtn) ui.stopBtn.style.display = "none";
     showGameOver();
     if (socket) socket.emit("flappy:score", { score });
     scoreAttente = score; // attendre confirmation serveur via leaderboard
@@ -381,4 +382,5 @@ export function initFlappy(socket) {
 
   // ---------- Init UI ----------
   ui.startBtn.style.display = "block";
+  if (ui.stopBtn) ui.stopBtn.style.display = "none";
 }

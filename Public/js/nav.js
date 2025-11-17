@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const sec7 = document.querySelector(".sec7");
   const sec8 = document.querySelector(".sec8");
   const sec9 = document.querySelector(".sec9");
+  const sec10 = document.querySelector(".sec10");
 
   sec1.addEventListener("click", () => goTo("stage1"));
   sec2.addEventListener("click", () => goTo("stage2"));
@@ -47,4 +48,5 @@ document.addEventListener("DOMContentLoaded", () => {
   sec7.addEventListener("click", () => goTo("stage7"));
   sec8.addEventListener("click", () => goTo("stage8"));
   sec9.addEventListener("click", () => goTo("stage9"));
+  sec10.addEventListener("click", () => goTo("stage10"));
 });
