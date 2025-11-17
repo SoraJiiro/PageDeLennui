@@ -981,7 +981,7 @@ export function initBlockBlast(socket) {
 
     // Score de placement
     const placementScore = calculatePlacementScore(piece);
-    state.score += placementScore;
+    state.score += placementScore + 75;
 
     moveData.gridAfter = state.grid.map((row) => [...row]);
     moveData.scoreAfter = state.score;
