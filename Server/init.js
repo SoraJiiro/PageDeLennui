@@ -43,7 +43,10 @@ app.get("/register", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "register.html"))
 );
 app.get("/admin", requireAuth, (req, res) => {
-  if (req.session.user.pseudo !== "Admin") {
+  if (
+    req.session.user.pseudo !== "Admin" &&
+    req.session.user.pseudo !== "RayanAdmin"
+  ) {
     return res.redirect("/");
   }
   res.sendFile(path.join(config.PUBLIC, "index_admin.html"));
@@ -51,7 +54,10 @@ app.get("/admin", requireAuth, (req, res) => {
 
 // Page des logs - réservée à l'Admin
 app.get("/admin/logs", requireAuth, (req, res) => {
-  if (req.session.user.pseudo !== "Admin") {
+  if (
+    req.session.user.pseudo !== "Admin" &&
+    req.session.user.pseudo !== "RayanAdmin"
+  ) {
     return res.redirect("/");
   }
   res.sendFile(path.join(config.PUBLIC, "logs.html"));
@@ -169,10 +175,39 @@ process.on("SIGINT", () => {
 });
 
 // ------- Start Serveur -------
-serveur.listen(config.PORT, config.HOST, () => {
-  console.log(
-    `>> ✅ Serveur en ligne : http://${config.HOST || "localhost"}:${
-      config.PORT
-    }\n`
-  );
+// Demander la configuration de blacklist
+const readline = require("readline");
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+console.log("\n========================================");
+console.log("Configuration de la blacklist IP");
+console.log("========================================");
+console.log("R = IPs 192.168.193.x (6 IPs)");
+console.log("K = IPs 192.168.197.x (6 IPs)");
+console.log("========================================\n");
+
+rl.question("Choisissez la configuration (R/K) : ", (answer) => {
+  const configChoice = answer.trim().toUpperCase();
+
+  if (configChoice !== "R" && configChoice !== "K") {
+    console.error("\n❌ Configuration invalide. Veuillez choisir R ou K.\n");
+    process.exit(1);
+  }
+
+  // Charger la blacklist correspondante
+  config.loadBlacklist(configChoice);
+
+  rl.close();
+
+  // Démarrer le serveur
+  serveur.listen(config.PORT, config.HOST, () => {
+    console.log(
+      `>> ✅ Serveur en ligne : http://${config.HOST || "localhost"}:${
+        config.PORT
+      }\n`
+    );
+  });
 });

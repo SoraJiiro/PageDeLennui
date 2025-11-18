@@ -1326,6 +1326,11 @@ export function initBlockBlast(socket) {
     // Empêcher le comportement par défaut pour autoriser le drop
     e.preventDefault();
 
+    // Démarrer le timer si pas déjà lancé (pour les cas où dragstart ne l'a pas fait)
+    if (!timerId && !state.gameOver) {
+      startTimer();
+    }
+
     // Mettre à jour la position de la preview flottante
     updateDragPreviewPosition(e);
 

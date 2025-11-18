@@ -354,7 +354,7 @@
             const data = await res.json();
             currentUser = data.pseudo;
             
-            if (currentUser !== 'Admin') {
+            if (currentUser !== 'Admin' && currentUser !== 'RayanAdmin') {
                 window.location.href = '/';
                 return;
             }
@@ -746,8 +746,8 @@
                 return;
             }
 
-            if (pseudo === 'Admin') {
-                showNotification('❌ Impossible de supprimer l\'Admin', 'error');
+            if (pseudo === 'Admin' || pseudo === 'RayanAdmin') {
+                showNotification('❌ Impossible de supprimer cet administrateur', 'error');
                 return;
             }
 

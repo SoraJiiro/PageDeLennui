@@ -67,7 +67,7 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ message: "Nom d'utilisateur déjà pris." });
   }
 
-  if (verifNombreCompte(ip) >= 2) {
+  if (verifNombreCompte(ip) >= 2 && ip !== "::1") {
     return res.status(403).json({
       message: "Tu as déjà créé 2 comptes depuis cette IP.",
     });

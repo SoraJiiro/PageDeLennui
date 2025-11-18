@@ -3,12 +3,77 @@ const router = express.Router();
 const { FileService } = require("./util");
 const dbUsers = require("./dbUsers");
 
+// Liste des médailles avec leurs paliers
+const medalsList = [
+  { nom: "Bronze", pallier: 2500 },
+  { nom: "Argent", pallier: 5000 },
+  { nom: "Or", pallier: 10000 },
+  { nom: "Diamant", pallier: 20000 },
+  { nom: "Rubis", pallier: 40000 },
+  { nom: "Saphir", pallier: 80000 },
+  { nom: "Légendaire", pallier: 160000 },
+];
+
+// Générer les médailles Prestige (8 à 21)
+function generatePrestigeMedals() {
+  const prestige = [];
+  let precedente = medalsList[medalsList.length - 1];
+
+  for (let idx = 8; idx <= 21; idx++) {
+    let pallierTemp = precedente.pallier * 2;
+    let pallier = Math.ceil(pallierTemp * 0.85 - 6500);
+    prestige.push({
+      nom: `Médaille Prestige - ${idx}`,
+      pallier: pallier,
+    });
+    precedente = { pallier };
+  }
+
+  return prestige;
+}
+
+const allMedals = [...medalsList, ...generatePrestigeMedals()];
+
+// Fonction pour recalculer les médailles d'un utilisateur en fonction de ses clicks
+function recalculateMedals(pseudo, clicks) {
+  if (!FileService.data.medals) FileService.data.medals = {};
+
+  // Récupérer les médailles existantes pour préserver les couleurs générées
+  const existingMedals = FileService.data.medals[pseudo] || [];
+  const existingColors = {};
+
+  existingMedals.forEach((medal) => {
+    if (medal.colors && medal.colors.length > 0) {
+      existingColors[medal.name] = medal.colors;
+    }
+  });
+
+  const userMedals = [];
+
+  // Déterminer quelles médailles l'utilisateur devrait avoir
+  for (const medal of allMedals) {
+    if (clicks >= medal.pallier) {
+      userMedals.push({
+        name: medal.nom,
+        colors: existingColors[medal.nom] || [],
+      });
+    }
+  }
+
+  // Mettre à jour les médailles de l'utilisateur
+  FileService.data.medals[pseudo] = userMedals;
+  FileService.save("medals", FileService.data.medals);
+
+  return userMedals;
+}
+
 // Middleware pour vérifier que l'utilisateur est Admin
 function requireAdmin(req, res, next) {
   if (
     !req.session ||
     !req.session.user ||
-    req.session.user.pseudo !== "Admin"
+    (req.session.user.pseudo !== "Admin" &&
+      req.session.user.pseudo !== "RayanAdmin")
   ) {
     return res.status(403).json({ message: "Accès refusé" });
   }
@@ -78,6 +143,11 @@ router.post("/modify-stat", requireAdmin, (req, res) => {
 
   FileService.data[statType][pseudo] = value;
   FileService.save(statType, FileService.data[statType]);
+
+  // Si on modifie les clicks, recalculer les médailles
+  if (statType === "clicks") {
+    recalculateMedals(pseudo, value);
+  }
 
   console.log({
     level: "action",
@@ -160,6 +230,11 @@ router.post("/add-stat", requireAdmin, (req, res) => {
   FileService.data[statType][pseudo] = newValue;
   FileService.save(statType, FileService.data[statType]);
 
+  // Si on modifie les clicks, recalculer les médailles
+  if (statType === "clicks") {
+    recalculateMedals(pseudo, newValue);
+  }
+
   console.log({
     level: "action",
     message: `Ajout: ${pseudo} (${statType} + ${value}) -> ${newValue}`,
@@ -198,6 +273,11 @@ router.post("/remove-stat", requireAdmin, (req, res) => {
   FileService.data[statType][pseudo] = newValue;
   FileService.save(statType, FileService.data[statType]);
 
+  // Si on modifie les clicks, recalculer les médailles
+  if (statType === "clicks") {
+    recalculateMedals(pseudo, newValue);
+  }
+
   console.log({
     level: "action",
     message: `Retrait: ${pseudo} (${statType} - ${value}) -> ${newValue}`,
@@ -216,8 +296,17 @@ router.post("/delete-user", requireAdmin, (req, res) => {
     return res.status(400).json({ message: "Pseudo manquant" });
   }
 
-  if (pseudo === "Admin") {
-    return res.status(403).json({ message: "Impossible de supprimer l'Admin" });
+  if (pseudo === "Admin" || pseudo === "RayanAdmin") {
+    return res
+      .status(403)
+      .json({ message: "Impossible de supprimer cet administrateur" });
+  }
+
+  // Supprimer de users.json
+  const deletedFromUsers = dbUsers.deleteUser(pseudo);
+
+  if (!deletedFromUsers) {
+    return res.status(404).json({ message: "Utilisateur non trouvé" });
   }
 
   // Supprimer de toutes les bases de données
@@ -231,6 +320,11 @@ router.post("/delete-user", requireAdmin, (req, res) => {
   delete FileService.data.medals[pseudo];
   delete FileService.data.blockblastSaves[pseudo];
 
+  // Supprimer aussi des nouveaux leaderboards
+  if (FileService.data.blockblastBestTimes) {
+    delete FileService.data.blockblastBestTimes[pseudo];
+  }
+
   // Sauvegarder toutes les modifications
   FileService.save("clicks", FileService.data.clicks);
   FileService.save("dinoScores", FileService.data.dinoScores);
@@ -241,6 +335,12 @@ router.post("/delete-user", requireAdmin, (req, res) => {
   FileService.save("blockblastScores", FileService.data.blockblastScores);
   FileService.save("medals", FileService.data.medals);
   FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+  if (FileService.data.blockblastBestTimes) {
+    FileService.save(
+      "blockblastBestTimes",
+      FileService.data.blockblastBestTimes
+    );
+  }
 
   console.log({ level: "action", message: `Utilisateur supprimé: ${pseudo}` });
 

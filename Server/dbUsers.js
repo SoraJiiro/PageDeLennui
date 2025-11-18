@@ -57,10 +57,24 @@ function findById(id) {
   return db.users.find((u) => u.id === id) || null;
 }
 
+function deleteUser(pseudo) {
+  const db = readAll();
+  const index = db.users.findIndex(
+    (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase()
+  );
+  if (index !== -1) {
+    db.users.splice(index, 1);
+    writeAll(db);
+    return true;
+  }
+  return false;
+}
+
 module.exports = {
   findBypseudo,
   findByPseudoExact,
   findById,
   countByIp,
   createUser,
+  deleteUser,
 };
