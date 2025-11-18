@@ -183,17 +183,19 @@ const rl = readline.createInterface({
 });
 
 console.log("\n========================================");
-console.log("Configuration de la blacklist IP");
+console.log("Configuration BLACKLIST du serveur PDE");
 console.log("========================================");
-console.log("R = IPs 192.168.193.x (6 IPs)");
-console.log("K = IPs 192.168.197.x (6 IPs)");
+console.log("R = IPs 192.168.193.x (6+2 IPs)");
+console.log("K = IPs 192.168.197.x (4+2 IPs)");
 console.log("========================================\n");
 
-rl.question("Choisissez la configuration (R/K) : ", (answer) => {
+rl.question("Config ? [R / K]: ", (answer) => {
   const configChoice = answer.trim().toUpperCase();
 
   if (configChoice !== "R" && configChoice !== "K") {
-    console.error("\n❌ Configuration invalide. Veuillez choisir R ou K.\n");
+    console.error(
+      "\n❌ Configuration invalide. Relancer 'npm start' et choisir R ou K.\n"
+    );
     process.exit(1);
   }
 
