@@ -363,6 +363,26 @@ export function initClicker(socket) {
     }
   });
 
+  // Événement forcé par l'admin pour nettoyer le localStorage
+  socket.on("clicker:forceReset", () => {
+    stopAutoClicks();
+    clearSavedCPS();
+    state.scoreActuel = 0;
+    state.medalsDebloquees.clear();
+
+    if (ui.yourScoreEl) ui.yourScoreEl.textContent = "0";
+    if (ui.acpsEl) ui.acpsEl.textContent = "";
+    if (ui.zone) ui.zone.innerHTML = `<i>0</i>`;
+    ui.medalsWrap?.querySelectorAll(".medal").forEach((m) => {
+      m.classList.remove("shown");
+      m.classList.add("hidden");
+      const idxSpan = m.querySelector(".medal-index");
+      if (idxSpan) idxSpan.textContent = "";
+    });
+
+    showNotif("⚠️ Tes stats Clicker ont été réinitialisées par un admin");
+  });
+
   // ---------- Affichage CPS humain ----------
   setInterval(() => {
     if (ui.cpsHumainEl)

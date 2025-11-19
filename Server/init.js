@@ -15,7 +15,7 @@ const {
 } = require("./util");
 const authRoutes = require("./authRoutes");
 const requireAuth = require("./requireAuth");
-const adminRoutes = require("./adminRoutes");
+const createAdminRouter = require("./adminRoutes");
 const { initSocketHandlers } = require("./handlers");
 const fileLogger = require("./logger");
 
@@ -35,7 +35,7 @@ io.use(sharedSession(expressSession, { autoSave: true }));
 
 // ------- Route -------
 app.use("/api", authRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", createAdminRouter(io));
 app.get("/login", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "login.html"))
 );
