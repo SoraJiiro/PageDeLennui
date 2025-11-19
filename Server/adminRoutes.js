@@ -349,4 +349,133 @@ router.post("/delete-user", requireAdmin, (req, res) => {
 
 // Modification du mot de passe désactivée (annulation)
 
+// Effacer les entrées de leaderboard d'un utilisateur (sans supprimer le compte)
+router.post("/clear-from-leaderboard", requireAdmin, (req, res) => {
+  const { pseudo, boardType } = req.body || {};
+
+  if (!pseudo) {
+    return res.status(400).json({ message: "Pseudo manquant" });
+  }
+
+  // Normaliser la cible
+  const type = String(boardType || "all").toLowerCase();
+
+  // Fonctions utilitaires
+  const removed = [];
+
+  const clearClicker = () => {
+    if (FileService.data.clicks && pseudo in FileService.data.clicks) {
+      delete FileService.data.clicks[pseudo];
+      FileService.save("clicks", FileService.data.clicks);
+      removed.push("clicker");
+    }
+    if (!FileService.data.medals) FileService.data.medals = {};
+    if (pseudo in FileService.data.medals) {
+      FileService.data.medals[pseudo] = [];
+      FileService.save("medals", FileService.data.medals);
+    }
+  };
+
+  const clearSimple = (key, label) => {
+    if (FileService.data[key] && pseudo in FileService.data[key]) {
+      delete FileService.data[key][pseudo];
+      FileService.save(key, FileService.data[key]);
+      removed.push(label);
+    }
+  };
+
+  const clearBlockblast = () => {
+    clearSimple("blockblastScores", "blockblast");
+    if (
+      FileService.data.blockblastBestTimes &&
+      pseudo in FileService.data.blockblastBestTimes
+    ) {
+      delete FileService.data.blockblastBestTimes[pseudo];
+      FileService.save(
+        "blockblastBestTimes",
+        FileService.data.blockblastBestTimes
+      );
+    }
+    if (
+      FileService.data.blockblastSaves &&
+      pseudo in FileService.data.blockblastSaves
+    ) {
+      delete FileService.data.blockblastSaves[pseudo];
+      FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+    }
+  };
+
+  const clearSnake = () => {
+    clearSimple("snakeScores", "snake");
+    if (
+      FileService.data.snakeBestTimes &&
+      pseudo in FileService.data.snakeBestTimes
+    ) {
+      delete FileService.data.snakeBestTimes[pseudo];
+      FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+    }
+  };
+
+  try {
+    switch (type) {
+      case "clicker":
+        clearClicker();
+        break;
+      case "dino":
+        clearSimple("dinoScores", "dino");
+        break;
+      case "flappy":
+        clearSimple("flappyScores", "flappy");
+        break;
+      case "uno":
+        clearSimple("unoWins", "uno");
+        break;
+      case "pictionary":
+        clearSimple("pictionaryWins", "pictionary");
+        break;
+      case "p4":
+        clearSimple("p4Wins", "p4");
+        break;
+      case "blockblast":
+        clearBlockblast();
+        break;
+      case "snake":
+        clearSnake();
+        break;
+      case "all":
+      default:
+        clearClicker();
+        clearSimple("dinoScores", "dino");
+        clearSimple("flappyScores", "flappy");
+        clearSimple("unoWins", "uno");
+        clearSimple("pictionaryWins", "pictionary");
+        clearSimple("p4Wins", "p4");
+        clearBlockblast();
+        clearSnake();
+        break;
+    }
+
+    if (removed.length === 0) {
+      return res.json({
+        message: `Aucune entrée de leaderboard trouvée pour ${pseudo}`,
+      });
+    }
+
+    console.log({
+      level: "action",
+      message: `Leaderboards nettoyés (${removed.join(", ")}) pour ${pseudo}`,
+    });
+    return res.json({
+      message: `Entrées supprimées des leaderboards (${removed.join(
+        ", "
+      )}) pour ${pseudo}`,
+    });
+  } catch (e) {
+    console.error("[ADMIN] clear-from-leaderboard error", e);
+    return res
+      .status(500)
+      .json({ message: "Erreur serveur lors du nettoyage" });
+  }
+});
+
 module.exports = router;

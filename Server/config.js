@@ -47,7 +47,7 @@ module.exports = {
       }
 
       console.log(
-        `\n>> Configuration ${config} chargée : ${this.BLACKLIST.length} IP(s) blacklistées`
+        `\n>> Configuration [ ${config} ] chargée : ${this.BLACKLIST.length} IP(s) blacklistées`
       );
       console.log(`>> IPs bloquées : ${this.BLACKLIST.join(", ")}\n`);
     } catch (err) {

@@ -298,6 +298,33 @@
                                         </button>
                                     </div>
                                 </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Leaderboard ?</label>
+                                        <select id="clearLbType">
+                                            <option value="all">Tous</option>
+                                            <option
+                                                value="clicker">Clicker</option>
+                                            <option value="dino">Dino</option>
+                                            <option
+                                                value="flappy">Flappy</option>
+                                            <option value="uno">UNO</option>
+                                            <option
+                                                value="pictionary">Pictionary</option>
+                                            <option value="p4">P4</option>
+                                            <option value="blockblast">Block
+                                                Blast</option>
+                                            <option value="snake">Snake</option>
+                                        </select>
+                                    </div>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-red"
+                                            onclick="clearFromLeaderboard()">
+                                            <i class="fa-solid fa-eraser"></i>
+                                            Supprimer des Leaderboards
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -772,6 +799,50 @@
             } catch (err) {
                 console.error(err);
                 showNotification('⚠️ Erreur lors de la suppression', 'error');
+            }
+        }
+
+        // Supprimer des Leaderboards (sans supprimer l'utilisateur)
+        async function clearFromLeaderboard() {
+            const pseudo = document.getElementById('deleteUser').value.trim();
+            const boardType = document.getElementById('clearLbType').value;
+
+            if (!pseudo) {
+                showNotification('⚠️ Veuillez entrer un pseudo', 'error');
+                return;
+            }
+
+            const labelMap = {
+                all: 'tous les leaderboards',
+                clicker: 'Clicker',
+                dino: 'Dino',
+                flappy: 'Flappy',
+                uno: 'UNO',
+                pictionary: 'Pictionary',
+                p4: 'P4',
+                blockblast: 'Block Blast',
+                snake: 'Snake',
+            };
+
+            const label = labelMap[boardType] || boardType;
+            if (!confirm(`Supprimer les entrées ${label} de "${pseudo}" ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/clear-from-leaderboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, boardType })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    if (socket) socket.emit('admin:refresh');
+                } else {
+                    showNotification(`❌ ${data.message || 'Erreur lors du nettoyage'}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors du nettoyage des leaderboards', 'error');
             }
         }
 
