@@ -321,7 +321,7 @@
                                         <button class="btn btn-red"
                                             onclick="clearFromLeaderboard()">
                                             <i class="fa-solid fa-eraser"></i>
-                                            Supprimer des Leaderboards
+                                            Remettre à 0 (Leaderboards)
                                         </button>
                                     </div>
                                 </div>
@@ -802,7 +802,7 @@
             }
         }
 
-        // Supprimer des Leaderboards (sans supprimer l'utilisateur)
+        // Remettre à 0 des Leaderboards (sans supprimer l'utilisateur)
         async function clearFromLeaderboard() {
             const pseudo = document.getElementById('deleteUser').value.trim();
             const boardType = document.getElementById('clearLbType').value;
@@ -825,7 +825,7 @@
             };
 
             const label = labelMap[boardType] || boardType;
-            if (!confirm(`Supprimer les entrées ${label} de "${pseudo}" ?`)) return;
+            if (!confirm(`Remettre à 0 les stats ${label} de "${pseudo}" ?`)) return;
 
             try {
                 const res = await fetch('/api/admin/clear-from-leaderboard', {

@@ -349,7 +349,7 @@ router.post("/delete-user", requireAdmin, (req, res) => {
 
 // Modification du mot de passe désactivée (annulation)
 
-// Effacer les entrées de leaderboard d'un utilisateur (sans supprimer le compte)
+// Remettre à 0 les entrées de leaderboard d'un utilisateur (sans supprimer le compte)
 router.post("/clear-from-leaderboard", requireAdmin, (req, res) => {
   const { pseudo, boardType } = req.body || {};
 
@@ -364,11 +364,10 @@ router.post("/clear-from-leaderboard", requireAdmin, (req, res) => {
   const removed = [];
 
   const clearClicker = () => {
-    if (FileService.data.clicks && pseudo in FileService.data.clicks) {
-      delete FileService.data.clicks[pseudo];
-      FileService.save("clicks", FileService.data.clicks);
-      removed.push("clicker");
-    }
+    if (!FileService.data.clicks) FileService.data.clicks = {};
+    FileService.data.clicks[pseudo] = 0;
+    FileService.save("clicks", FileService.data.clicks);
+    removed.push("clicker");
     if (!FileService.data.medals) FileService.data.medals = {};
     if (pseudo in FileService.data.medals) {
       FileService.data.medals[pseudo] = [];
@@ -377,11 +376,10 @@ router.post("/clear-from-leaderboard", requireAdmin, (req, res) => {
   };
 
   const clearSimple = (key, label) => {
-    if (FileService.data[key] && pseudo in FileService.data[key]) {
-      delete FileService.data[key][pseudo];
-      FileService.save(key, FileService.data[key]);
-      removed.push(label);
-    }
+    if (!FileService.data[key]) FileService.data[key] = {};
+    FileService.data[key][pseudo] = 0;
+    FileService.save(key, FileService.data[key]);
+    removed.push(label);
   };
 
   const clearBlockblast = () => {
@@ -457,18 +455,16 @@ router.post("/clear-from-leaderboard", requireAdmin, (req, res) => {
 
     if (removed.length === 0) {
       return res.json({
-        message: `Aucune entrée de leaderboard trouvée pour ${pseudo}`,
+        message: `Aucune stat à remettre à 0 pour ${pseudo}`,
       });
     }
 
     console.log({
       level: "action",
-      message: `Leaderboards nettoyés (${removed.join(", ")}) pour ${pseudo}`,
+      message: `Stats remises à 0 (${removed.join(", ")}) pour ${pseudo}`,
     });
     return res.json({
-      message: `Entrées supprimées des leaderboards (${removed.join(
-        ", "
-      )}) pour ${pseudo}`,
+      message: `Stats remises à 0 (${removed.join(", ")}) pour ${pseudo}`,
     });
   } catch (e) {
     console.error("[ADMIN] clear-from-leaderboard error", e);
