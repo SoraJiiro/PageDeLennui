@@ -4,68 +4,144 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Accès refusé</title>
+        <link rel="preload"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+            as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript>
+            <link rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        </noscript>
         <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @import url('https://fonts.googleapis.com/css?family=Lato');
+ * {
+	 position: relative;
+	 margin: 0;
+	 padding: 0;
+	 box-sizing: border-box;
+	 font-family: 'Lato', sans-serif;
+}
+ body {
+	 height: 100vh;
+	 display: flex;
+	 flex-direction: column;
+	 justify-content: center;
+	 align-items: center;
+	 background: linear-gradient(to bottom right, #282828, #000000);
+     color: #00ff00;
+     padding: 20px;
+     overflow: hidden;
+}
+ h1 {
+	 margin: 40px 0 20px;
+     font-size: clamp(1.5rem, 5vw, 2.5rem);
+     text-align: center;
+}
+ h1 i {
+     font-size: clamp(1.3rem, 6vw, 3rem);
+ }
+ .message {
+     max-width: 600px;
+     width: 100%;
+     padding: 0 15px;
+ }
+ .message p {
+     font-size: clamp(0.9rem, 3vw, 1.1rem);
+     text-align: center;
+     line-height: 1.6;
+ }
+ .lock {
+	 border-radius: 5px;
+	 width: clamp(40px, 10vw, 55px);
+	 height: clamp(35px, 8vw, 45px);
+	 background-color: #00ff00;
+	 animation: dip 0.55s;
+	 animation-delay: 1.5s;
+}
+ .lock::before, .lock::after {
+	 content: '';
+	 position: absolute;
+	 border-left: 5px solid #00ff00;
+	 height: 20px;
+	 width: 15px;
+	 left: calc(50% - 12.5px);
+}
+ .lock::before {
+	 top: -30px;
+	 border: 5px solid #00ff00;
+	 border-bottom-color: transparent;
+	 border-radius: 15px 15px 0 0;
+	 height: 30px;
+	 animation: lock 2s, spin 2s;
+}
+ .lock::after {
+	 top: -10px;
+	 border-right: 5px solid transparent;
+	 animation: spin 2s;
+}
+ @keyframes lock {
+	 0% {
+		 top: -45px;
+	}
+	 65% {
+		 top: -45px;
+	}
+	 100% {
+		 top: -30px;
+	}
+}
+ @keyframes spin {
+	 0% {
+		 transform: scaleX(-1);
+		 left: calc(50% - 30px);
+	}
+	 65% {
+		 transform: scaleX(1);
+		 left: calc(50% - 12.5px);
+	}
+}
+ @keyframes dip {
+	 0% {
+		 transform: translateY(0px);
+	}
+	 50% {
+		 transform: translateY(10px);
+	}
+	 100% {
+		 transform: translateY(0px);
+	}
+}
+ 
+ @media (max-width: 600px) {
+     h1 {
+         margin: 30px 0 15px;
+     }
+     .lock {
+         margin-bottom: 10px;
+     }
+ }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-
-        .container {
-            text-align: center;
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-
-        h1 {
-            font-size: 6rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        h2 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-top: 1rem;
-        }
-
-        .emoji {
-            font-size: 8rem;
-            margin-bottom: 1rem;
-            animation: shake 0.5s infinite;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-10deg); }
-            75% { transform: rotate(10deg); }
-        }
+ @media (max-width: 400px) {
+     h1 {
+         margin: 20px 0 10px;
+     }
+     body {
+         padding: 15px;
+     }
+ }
     </style>
     </head>
     <body>
-        <div class="container">
-            <div class="emoji">🚫</div>
-            <h1>403</h1>
-            <h2>Accès refusé</h2>
-            <p id="ip-info">Votre adresse IP est bloquée</p>
-        </div>
+        <div class="lock"></div>
+        <center>
+            <div class="message">
+                <h1><i class="fa-solid fa-ban"
+                        style="margin-right: 10px; font-size: 2rem;"></i>Accès à
+                    cette page
+                    restreint</h1>
+                <p>Vous n'êtes pas autorisé à accéder à cette page, et vous
+                    savez très bien
+                    pourquoi.</p>
+            </div>
+        </center>
     </body>
 </html>
