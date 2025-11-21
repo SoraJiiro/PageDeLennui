@@ -8,6 +8,7 @@
   --transition-speed: 185ms;
   --transition-ease: ease;
   --primary-hover: #66ff66;
+  --container-max-width: 1200px;
 }
 
 :focus {
@@ -44,6 +45,63 @@ body {
   font-family: monospace, monospace;
   width: 100dvw;
   overflow-x: hidden;
+}
+
+/* Layout helpers */
+.container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.col {
+  flex: 1 1 0px;
+  min-width: 0;
+}
+
+/* Canvas / Game area helpers */
+.canvas-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+}
+
+/* Keep canvas large but never overflow viewport - preserve aspect visually with CSS scaling.
+   Note: some games may use canvas width/height attributes in JS, ideally they should adapt to
+   CSS size. This rule prevents canvas from exceeding viewport while keeping it playable. */
+canvas,
+.game-canvas {
+  max-width: min(100%, 1100px);
+  width: min(94vw, 1100px);
+  height: auto !important;
+  max-height: calc(100vh - 160px) !important;
+  display: block;
+}
+
+/* Utility to force canvas to maintain a fixed aspect ratio container */
+.aspect-16-9 {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  padding-top: calc(9 / 16 * 100%); /* 16:9 */
+}
+.aspect-16-9 canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 html,

@@ -255,8 +255,7 @@
                                         <label>Nouvelle Valeur</label>
                                         <input type="number"
                                             id="modifyStatValue"
-                                            placeholder="Nouvelle valeur"
-                                            min="0" />
+                                            placeholder="Nouvelle valeur" />
                                     </div>
                                     <div class="action-buttons">
                                         <button class="btn"
@@ -624,7 +623,7 @@
             const statType = document.getElementById('modifyStatType').value;
             const value = parseInt(document.getElementById('modifyStatValue').value);
 
-            if (!pseudo || isNaN(value) || value < 0) {
+            if (!pseudo || isNaN(value)) {
                 showNotification('⚠️ Veuillez remplir tous les champs', 'error');
                 return;
             }

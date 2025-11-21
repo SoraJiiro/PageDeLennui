@@ -15,11 +15,28 @@ export function initFlappy(socket) {
   if (ui.scoreEl) ui.scoreEl.style.display = "none";
 
   function resizeCanvas() {
-    ui.canvas.width = ui.canvas.clientWidth;
-    ui.canvas.height = ui.canvas.clientHeight * 0.88;
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = ui.canvas.getBoundingClientRect();
+      const clientW = Math.max(1, Math.round(rect.width));
+      // keep a slightly shorter height for UI controls if needed
+      const clientH = Math.max(1, Math.round(rect.height * 0.88));
+      ui.canvas.width = clientW * dpr;
+      ui.canvas.height = clientH * dpr;
+      ui.canvas.style.width = `${clientW}px`;
+      ui.canvas.style.height = `${clientH}px`;
+      const ctx = ui.canvas.getContext("2d");
+      if (ctx && typeof ctx.setTransform === "function")
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    } catch (e) {}
+    updateScales();
   }
   resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
+  window.addEventListener("resize", () => {
+    try {
+      resizeCanvas();
+    } catch (e) {}
+  });
 
   // ---------- Variables de jeu (échelle dynamique) ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;

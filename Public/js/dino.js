@@ -70,20 +70,44 @@ export function initDino(socket) {
     }
   });
 
-  // ---------- Canvas sizing ----------
+  // ---------- Canvas sizing (responsive) ----------
+  let CLIENT_W = 800;
+  let CLIENT_H = 450;
+
   function resizeCanvas() {
-    ui.canvas.width = ui.canvas.clientWidth;
-    ui.canvas.height = ui.canvas.clientHeight;
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = ui.canvas.getBoundingClientRect();
+      CLIENT_W = Math.max(200, Math.round(rect.width));
+      CLIENT_H = Math.max(120, Math.round(rect.height));
+      ui.canvas.width = CLIENT_W * dpr;
+      ui.canvas.height = CLIENT_H * dpr;
+      ui.canvas.style.width = `${CLIENT_W}px`;
+      ui.canvas.style.height = `${CLIENT_H}px`;
+      // ensure drawing uses CSS pixel coordinates
+      if (c && typeof c.setTransform === "function")
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // update dynamic sizes used by the game
+      dino.x = Math.floor(CLIENT_W * 0.1);
+      dino.width = Math.max(8, Math.floor(CLIENT_W * 0.05));
+      dino.height = Math.max(8, Math.floor(CLIENT_H * 0.09));
+    } catch (e) {}
   }
+
   resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
+  window.addEventListener("resize", () => {
+    try {
+      resizeCanvas();
+    } catch (e) {}
+  });
 
   // ---------- Entités ----------
   const dino = {
-    x: 80,
+    x: Math.floor(CLIENT_W * 0.1),
     y: 0,
-    width: 40,
-    height: 40,
+    width: Math.max(8, Math.floor(CLIENT_W * 0.05)),
+    height: Math.max(8, Math.floor(CLIENT_H * 0.09)),
     dy: 0,
     jumping: false,
     jumpVelocity: MIN_JUMP_VELOCITY,
@@ -92,7 +116,7 @@ export function initDino(socket) {
       c.fillStyle = "#0f0";
       c.fillRect(
         this.x,
-        ui.canvas.height - this.y - this.height,
+        CLIENT_H - this.y - this.height,
         this.width,
         this.height
       );
@@ -129,11 +153,15 @@ export function initDino(socket) {
 
   class Cloud {
     constructor() {
-      this.x = ui.canvas.width;
-      this.y = Math.random() * (ui.canvas.height * 0.4);
-      this.width = 50 + Math.random() * 40;
-      this.height = 15 + Math.random() * 10;
-      this.speed = 1.5 + Math.random() * 1;
+      this.x = CLIENT_W;
+      this.y = Math.random() * (CLIENT_H * 0.4);
+      this.width =
+        Math.max(20, Math.floor(CLIENT_W * 0.06)) +
+        Math.random() * Math.max(10, CLIENT_W * 0.04);
+      this.height =
+        Math.max(8, Math.floor(CLIENT_H * 0.03)) +
+        Math.random() * Math.max(6, CLIENT_H * 0.02);
+      this.speed = Math.max(0.6, CLIENT_W * 0.003) + Math.random() * 1;
     }
     draw() {
       c.fillStyle = "#0f0";
@@ -152,29 +180,31 @@ export function initDino(socket) {
       const distance =
         Math.random() * (MAX_OBSTACLE_DISTANCE - MIN_OBSTACLE_DISTANCE) +
         MIN_OBSTACLE_DISTANCE;
-      const baseX = ui.canvas.width + minDistance + distance;
+      const baseX = CLIENT_W + minDistance + distance;
 
       const count = Math.floor(Math.random() * 3) + 1;
       this.cacti = [];
 
+      // sizes relative to canvas
       for (let i = 0; i < count; i++) {
         const type = Math.floor(Math.random() * 3);
         let width, height;
         switch (type) {
           case 0:
-            width = 19;
-            height = 45;
+            width = Math.max(12, Math.floor(CLIENT_W * 0.025));
+            height = Math.max(28, Math.floor(CLIENT_H * 0.12));
             break;
           case 1:
-            width = 20;
-            height = 57;
+            width = Math.max(14, Math.floor(CLIENT_W * 0.03));
+            height = Math.max(36, Math.floor(CLIENT_H * 0.15));
             break;
           case 2:
-            width = 22;
-            height = 66;
+            width = Math.max(16, Math.floor(CLIENT_W * 0.035));
+            height = Math.max(42, Math.floor(CLIENT_H * 0.18));
             break;
         }
-        this.cacti.push({ x: baseX + i * CACTUS_SPACING, width, height, type });
+        const spacing = Math.max(8, Math.floor(CLIENT_W * 0.04));
+        this.cacti.push({ x: baseX + i * spacing, width, height, type });
       }
       this.passed = false;
     }
@@ -182,12 +212,12 @@ export function initDino(socket) {
     draw() {
       c.fillStyle = "#0f0";
       this.cacti.forEach((cactus) => {
-        const groundY = ui.canvas.height - 10;
+        const groundY = CLIENT_H - 10;
         const cactusY = groundY - cactus.height;
         // Corps principal
         c.fillRect(cactus.x, cactusY, cactus.width, cactus.height);
         // Bras
-        const armHeight = Math.max(10, Math.floor(cactus.height * 0.35));
+        const armHeight = Math.max(6, Math.floor(cactus.height * 0.35));
         const armY = cactusY + Math.floor(cactus.height * 0.4);
         c.fillRect(cactus.x - 6, armY, 6, armHeight);
         c.fillRect(cactus.x + cactus.width, armY + 3, 6, armHeight - 5);
@@ -204,14 +234,14 @@ export function initDino(socket) {
     collides() {
       const dinoLeft = dino.x + 5;
       const dinoRight = dino.x + dino.width - 5;
-      const dinoTop = ui.canvas.height - dino.y - dino.height;
-      const dinoBottom = ui.canvas.height - dino.y - 5;
+      const dinoTop = CLIENT_H - dino.y - dino.height;
+      const dinoBottom = CLIENT_H - dino.y - 5;
 
       for (let cactus of this.cacti) {
         const cactusLeft = cactus.x;
         const cactusRight = cactus.x + cactus.width;
-        const cactusTop = ui.canvas.height - 10 - cactus.height;
-        const cactusBottom = ui.canvas.height - 10;
+        const cactusTop = CLIENT_H - 10 - cactus.height;
+        const cactusBottom = CLIENT_H - 10;
         if (
           dinoRight > cactusLeft &&
           dinoLeft < cactusRight &&
@@ -243,25 +273,21 @@ export function initDino(socket) {
 
   function showPaused() {
     c.fillStyle = "rgba(0, 0, 0, 0.7)";
-    c.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
     c.fillStyle = "#0f0";
     c.font = "bold 40px monospace";
     c.textAlign = "center";
 
     if (state.countdown > 0) {
-      c.fillText(
-        state.countdown.toString(),
-        ui.canvas.width / 2,
-        ui.canvas.height / 2
-      );
+      c.fillText(state.countdown.toString(), CLIENT_W / 2, CLIENT_H / 2);
     } else {
-      c.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
+      c.fillText("PAUSE", CLIENT_W / 2, CLIENT_H / 2);
       c.font = "18px monospace";
       c.fillText(
         `Appuie sur ${pauseKeyText} pour reprendre`,
-        ui.canvas.width / 2,
-        ui.canvas.height / 2 + 40
+        CLIENT_W / 2,
+        CLIENT_H / 2 + 40
       );
     }
   }
@@ -274,11 +300,11 @@ export function initDino(socket) {
       state.frameCount++;
 
       c.fillStyle = "#000";
-      c.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+      c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
       c.fillStyle = "#0f0";
-      const groundY = ui.canvas.height - 10;
-      c.fillRect(0, groundY, ui.canvas.width, 10);
+      const groundY = CLIENT_H - 10;
+      c.fillRect(0, groundY, CLIENT_W, 10);
 
       state.clouds.forEach((cl) => cl.draw());
       dino.draw();
@@ -306,11 +332,11 @@ export function initDino(socket) {
     state.frameCount++;
 
     c.fillStyle = "#000";
-    c.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
     c.fillStyle = "#0f0";
-    const groundY = ui.canvas.height - 10;
-    c.fillRect(0, groundY, ui.canvas.width, 10);
+    const groundY = CLIENT_H - 10;
+    c.fillRect(0, groundY, CLIENT_W, 10);
 
     state.cloudTimer++;
     if (state.cloudTimer > 100) {
@@ -362,41 +388,37 @@ export function initDino(socket) {
     c.textAlign = "right";
     c.fillText(
       `${String(Math.floor(state.score)).padStart(8, "0")}`,
-      ui.canvas.width - 20,
+      CLIENT_W - 20,
       30
     );
 
     c.font = "14px monospace";
-    c.fillText(
-      `Vitesse : ${state.gameSpeed.toFixed(1)}`,
-      ui.canvas.width - 20,
-      50
-    );
+    c.fillText(`Vitesse : ${state.gameSpeed.toFixed(1)}`, CLIENT_W - 20, 50);
 
     requestAnimationFrame(loop);
   }
 
   function showGameOver() {
     c.fillStyle = "rgba(0, 0, 0, 0.8)";
-    c.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
     c.fillStyle = "#0f0";
     c.font = "bold 40px monospace";
     c.textAlign = "center";
-    c.fillText("GAME OVER", ui.canvas.width / 2, ui.canvas.height / 2 - 20);
+    c.fillText("GAME OVER", CLIENT_W / 2, CLIENT_H / 2 - 20);
 
     c.font = "20px monospace";
     c.fillText(
       `Score: ${Math.floor(state.score)}`,
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 + 20
+      CLIENT_W / 2,
+      CLIENT_H / 2 + 20
     );
 
     c.font = "18px monospace";
     c.fillText(
       "Appuie sur ESPACE pour rejouer",
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 + 60
+      CLIENT_W / 2,
+      CLIENT_H / 2 + 60
     );
   }
 

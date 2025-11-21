@@ -4,8 +4,9 @@ body {
 }
 
 .admin-container {
-  max-width: 1400px;
-  margin: 50px auto;
+  max-width: clamp(320px, 95%, 1400px);
+  margin: 24px auto;
+  padding: 12px;
 }
 
 .admin-header {
@@ -14,6 +15,15 @@ body {
   padding: 20px;
   border: 2px solid var(--primary-color);
   background: rgba(0, 255, 0, 0.05);
+}
+
+@media (max-width: 900px) {
+  .admin-header {
+    padding: 12px;
+  }
+  .admin-header h1 {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+  }
 }
 
 .admin-header h1 {
@@ -288,9 +298,27 @@ input[type="checkbox"]:focus {
 
 iframe.logs-frame {
   width: 100%;
-  height: 750px;
+  height: min(75vh, 900px);
   border: 2px solid var(--primary-color);
   background: var(--bg-color);
+}
+
+/* Ensure tables don't overflow on small screens */
+.admin-section table {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .admin-container {
+    margin: 12px auto;
+  }
+  .admin-header {
+    margin-bottom: 20px;
+  }
+  .admin-section {
+    padding: 12px;
+  }
 }
 
 @keyframes slideIn {

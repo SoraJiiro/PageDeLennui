@@ -24,6 +24,56 @@ const grey = "\x1b[38;5;246m"; // Pictionary
 const colorize = (s, color) => `${color}${s}${reset}`;
 const withGame = (s, color) => `${color}${s}${reset}`;
 
+// --- CPS / Anti-cheat tracker ---
+const cpsTracker = new Map();
+const CPS_THRESHOLD = Number(process.env.CPS_THRESHOLD) || 50; // clicks/sec
+const CPS_DURATION_MS = Number(process.env.CPS_DURATION_MS) || 3000; // ms
+const CPS_PENALTY = Number(process.env.CPS_PENALTY) || 1000; // clicks to remove
+const BLACKLIST_PATH = path.join(__dirname, "..", "blacklist.json");
+
+function getIpFromSocket(s) {
+  try {
+    const ipHeader = s.handshake.headers["x-forwarded-for"];
+    const ip = (
+      ipHeader ||
+      s.request.socket.remoteAddress ||
+      s.handshake.address ||
+      ""
+    ).replace("::ffff:", "");
+    return ip || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function persistBanIp(ip) {
+  try {
+    if (!fs.existsSync(BLACKLIST_PATH)) {
+      const defaultData = { alwaysBlocked: [], configR: [], configK: [] };
+      fs.writeFileSync(
+        BLACKLIST_PATH,
+        JSON.stringify(defaultData, null, 2),
+        "utf8"
+      );
+    }
+    const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
+    const data = JSON.parse(raw || "{}");
+    data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
+      ? data.alwaysBlocked
+      : [];
+    if (!data.alwaysBlocked.includes(ip)) {
+      data.alwaysBlocked.push(ip);
+      fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+    }
+    // Update runtime config blacklist too
+    if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
+    return true;
+  } catch (e) {
+    console.error("Erreur persistance blacklist:", e);
+    return false;
+  }
+}
+
 let isAlreadyLogged_bb = false;
 
 // ------- LB manager -------
@@ -158,11 +208,128 @@ function initSocketHandlers(io, socket, gameState) {
 
   // ------- Clicker -------
   socket.on("clicker:click", () => {
-    FileService.data.clicks[pseudo] =
-      (FileService.data.clicks[pseudo] || 0) + 1;
-    FileService.save("clicks", FileService.data.clicks);
-    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
-    leaderboardManager.broadcastClickerLB(io);
+    try {
+      const ip = getIpFromSocket(socket);
+      const now = Date.now();
+
+      // Tracker per-IP timestamps (sliding window)
+      let track = cpsTracker.get(ip);
+      if (!track) {
+        track = { timestamps: [], violationStart: null, banned: false };
+        cpsTracker.set(ip, track);
+      }
+
+      // push and prune older than 2s
+      track.timestamps.push(now);
+      const cutoff = now - 2000;
+      while (track.timestamps.length && track.timestamps[0] < cutoff)
+        track.timestamps.shift();
+
+      // compute cps over last 1s
+      const oneSecCut = now - 1000;
+      const cps = track.timestamps.filter((t) => t >= oneSecCut).length;
+
+      // Normal click increment
+      FileService.data.clicks[pseudo] =
+        (FileService.data.clicks[pseudo] || 0) + 1;
+      FileService.save("clicks", FileService.data.clicks);
+      socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+      leaderboardManager.broadcastClickerLB(io);
+
+      // If already banned earlier in this runtime, ignore
+      if (track.banned) return;
+
+      if (cps > CPS_THRESHOLD) {
+        if (!track.violationStart) track.violationStart = now;
+        // If sustained over duration -> Ban
+        if (now - track.violationStart >= CPS_DURATION_MS) {
+          track.banned = true;
+          // Penalize: remove clicks
+          const current = FileService.data.clicks[pseudo] || 0;
+          const penalized = Math.max(0, current - CPS_PENALTY);
+          FileService.data.clicks[pseudo] = penalized;
+          FileService.save("clicks", FileService.data.clicks);
+
+          // Recalculate medals (local simplified version)
+          try {
+            // Recompute medals similarly to adminRoutes
+            const medalsList = [
+              { nom: "Bronze", pallier: 2500 },
+              { nom: "Argent", pallier: 5000 },
+              { nom: "Or", pallier: 10000 },
+              { nom: "Diamant", pallier: 20000 },
+              { nom: "Rubis", pallier: 40000 },
+              { nom: "Saphir", pallier: 80000 },
+              { nom: "Légendaire", pallier: 160000 },
+            ];
+            function generatePrestigeMedals() {
+              const prestige = [];
+              let precedente = medalsList[medalsList.length - 1];
+              for (let idx = 8; idx <= 21; idx++) {
+                let pallierTemp = precedente.pallier * 2;
+                let pallier = Math.ceil(pallierTemp * 0.85 - 6500);
+                prestige.push({ nom: `Médaille Prestige - ${idx}`, pallier });
+                precedente = { pallier };
+              }
+              return prestige;
+            }
+            const allMedals = [...medalsList, ...generatePrestigeMedals()];
+            if (!FileService.data.medals) FileService.data.medals = {};
+            const existingMedals = FileService.data.medals[pseudo] || [];
+            const existingColors = {};
+            existingMedals.forEach((m) => {
+              if (m && m.colors && m.colors.length > 0)
+                existingColors[m.name] = m.colors;
+            });
+            const userMedals = [];
+            for (const medal of allMedals) {
+              if (penalized >= medal.pallier) {
+                userMedals.push({
+                  name: medal.nom,
+                  colors: existingColors[medal.nom] || [],
+                });
+              }
+            }
+            FileService.data.medals[pseudo] = userMedals;
+            FileService.save("medals", FileService.data.medals);
+          } catch (e) {
+            console.warn("Erreur recalcul médailles après pénalité", e);
+          }
+
+          // Persist ban in blacklist.json (alwaysBlocked)
+          persistBanIp(ip);
+
+          console.log({
+            level: "action",
+            message: `IP ${ip} bannie automatiquement pour CPS élevé. ${CPS_PENALTY} clicks retirés à ${pseudo}`,
+          });
+
+          // Notify and disconnect sockets from that IP
+          io.sockets.sockets.forEach((s) => {
+            const sIp = getIpFromSocket(s);
+            if (sIp === ip) {
+              try {
+                s.emit("system:notification", {
+                  message: "🚫 Your IP has been banned for abnormal CPS",
+                  duration: 8000,
+                });
+              } catch (e) {}
+              try {
+                s.disconnect(true);
+              } catch (e) {}
+            }
+          });
+
+          // Broadcast updated leaderboard
+          leaderboardManager.broadcastClickerLB(io);
+        }
+      } else {
+        // reset violationStart when under threshold
+        track.violationStart = null;
+      }
+    } catch (e) {
+      console.error("Erreur lors du traitement clicker:click:", e);
+    }
   });
 
   socket.on("clicker:reset", () => {

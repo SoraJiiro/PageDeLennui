@@ -273,7 +273,7 @@ function createAdminRouter(io) {
     }
 
     const currentValue = FileService.data[statType][pseudo] || 0;
-    const newValue = Math.max(0, currentValue - value);
+    const newValue = currentValue - value;
 
     FileService.data[statType][pseudo] = newValue;
     FileService.save(statType, FileService.data[statType]);

@@ -66,12 +66,35 @@ export function initSnake(socket) {
   });
 
   // ---------- Canvas sizing ----------
-  ui.canvas.width = GRID_SIZE * CELL_SIZE;
-  ui.canvas.height = GRID_SIZE * CELL_SIZE;
+  // ---------- Canvas sizing (responsive) ----------
+  let CELL_SIZE_DYNAMIC = CELL_SIZE;
 
-  // ---------- Canvas sizing ----------
-  ui.canvas.width = GRID_SIZE * CELL_SIZE;
-  ui.canvas.height = GRID_SIZE * CELL_SIZE;
+  function resizeCanvas() {
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = ui.canvas.getBoundingClientRect();
+      const clientW = Math.max(1, Math.round(rect.width));
+      const clientH = Math.max(1, Math.round(rect.height));
+      // compute cell size in CSS pixels so GRID fits inside the canvas
+      CELL_SIZE_DYNAMIC =
+        Math.floor(Math.min(clientW, clientH) / GRID_SIZE) || 1;
+      const desiredW = CELL_SIZE_DYNAMIC * GRID_SIZE;
+      const desiredH = CELL_SIZE_DYNAMIC * GRID_SIZE;
+      ui.canvas.width = desiredW * dpr;
+      ui.canvas.height = desiredH * dpr;
+      ui.canvas.style.width = `${desiredW}px`;
+      ui.canvas.style.height = `${desiredH}px`;
+      if (ctx && typeof ctx.setTransform === "function")
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    } catch (e) {}
+  }
+
+  resizeCanvas();
+  window.addEventListener("resize", () => {
+    try {
+      resizeCanvas();
+    } catch (e) {}
+  });
 
   // ---------- Fonctions de jeu ----------
   function initGame() {
@@ -206,18 +229,24 @@ export function initSnake(socket) {
 
   function draw() {
     ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    // ctx coordinates are in CSS pixels thanks to setTransform
+    ctx.fillRect(
+      0,
+      0,
+      CELL_SIZE_DYNAMIC * GRID_SIZE,
+      CELL_SIZE_DYNAMIC * GRID_SIZE
+    );
 
     // Dessiner la grille
     ctx.strokeStyle = "#4e3e5e";
     for (let i = 0; i <= GRID_SIZE; i++) {
       ctx.beginPath();
-      ctx.moveTo(i * CELL_SIZE, 0);
-      ctx.lineTo(i * CELL_SIZE, ui.canvas.height);
+      ctx.moveTo(i * CELL_SIZE_DYNAMIC, 0);
+      ctx.lineTo(i * CELL_SIZE_DYNAMIC, CELL_SIZE_DYNAMIC * GRID_SIZE);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(0, i * CELL_SIZE);
-      ctx.lineTo(ui.canvas.width, i * CELL_SIZE);
+      ctx.moveTo(0, i * CELL_SIZE_DYNAMIC);
+      ctx.lineTo(CELL_SIZE_DYNAMIC * GRID_SIZE, i * CELL_SIZE_DYNAMIC);
       ctx.stroke();
     }
 
@@ -229,10 +258,10 @@ export function initSnake(socket) {
         ctx.fillStyle = "#00cc00";
       }
       ctx.fillRect(
-        seg.x * CELL_SIZE + 1,
-        seg.y * CELL_SIZE + 1,
-        CELL_SIZE - 2,
-        CELL_SIZE - 2
+        seg.x * CELL_SIZE_DYNAMIC + 1,
+        seg.y * CELL_SIZE_DYNAMIC + 1,
+        CELL_SIZE_DYNAMIC - 2,
+        CELL_SIZE_DYNAMIC - 2
       );
     });
 
@@ -240,10 +269,10 @@ export function initSnake(socket) {
     if (state.food) {
       ctx.fillStyle = "#ff0000";
       ctx.fillRect(
-        state.food.x * CELL_SIZE + 1,
-        state.food.y * CELL_SIZE + 1,
-        CELL_SIZE - 2,
-        CELL_SIZE - 2
+        state.food.x * CELL_SIZE_DYNAMIC + 1,
+        state.food.y * CELL_SIZE_DYNAMIC + 1,
+        CELL_SIZE_DYNAMIC - 2,
+        CELL_SIZE_DYNAMIC - 2
       );
     }
 
@@ -253,7 +282,7 @@ export function initSnake(socket) {
     ctx.textAlign = "right";
     ctx.fillText(
       `${String(state.score).padStart(3, "0")}`,
-      ui.canvas.width - 10,
+      CELL_SIZE_DYNAMIC * GRID_SIZE - 10,
       30
     );
   }

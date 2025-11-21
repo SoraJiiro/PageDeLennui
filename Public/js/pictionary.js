@@ -118,12 +118,12 @@ export function initPictionary(socket) {
 
   // Remplissage tool
   function fillAt(x, y, fillColor) {
-    if (!canvas || !ctx) return;
+    if (!ui.canvas || !ctx) return;
     const dpr = window.devicePixelRatio || 1;
     const px = Math.floor(x * dpr);
     const py = Math.floor(y * dpr);
-    const w = canvas.width;
-    const h = canvas.height;
+    const w = ui.canvas.width;
+    const h = ui.canvas.height;
     let img;
     try {
       img = ctx.getImageData(0, 0, w, h);

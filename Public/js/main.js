@@ -1,4 +1,5 @@
 import { showNotif, keyBind } from "./util.js";
+import { initCanvasResizer } from "./canvas_resize.js";
 
 (async () => {
   // ---------- Conexion Socket ----------
@@ -15,6 +16,12 @@ import { showNotif, keyBind } from "./util.js";
 
   try {
     keyBind(username);
+    try {
+      // initialize canvas resizer early so games get correct backing buffer sizes
+      initCanvasResizer();
+    } catch (e) {
+      console.warn("canvas resizer init failed", e);
+    }
   } catch (e) {
     console.warn("keyBind init error", e);
   }
