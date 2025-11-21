@@ -15,40 +15,65 @@ module.exports = {
   // Blacklist
   BLACKLIST: [],
 
-  // Charger la blacklist selon la config (R = 193, K = 197)
+  // Charger la blacklist selon la config (R, K ou S)
   loadBlacklist(config) {
-    const blacklistPath = path.join(__dirname, "..", "ips_blacklist.txt");
+    if (config !== "R" && config !== "K" && config !== "S") {
+      throw new Error("Configuration invalide. Utilisez 'R', 'K' ou 'S'.");
+    }
+
+    const blacklistPath = path.join(__dirname, "..", "blacklist.json");
 
     try {
-      const content = fs.readFileSync(blacklistPath, "utf8");
-      const allIPs = content
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-
-      // IPs toujours bannies (2 premières de chaque groupe)
-      const alwaysBanned = [
-        "192.168.197.197",
-        "192.168.197.1",
-        "192.168.193.193",
-        "192.168.193.1",
-      ];
-
-      if (config === "R") {
-        // Config R : IPs contenant "193"
-        const r193IPs = allIPs.filter((ip) => ip.includes(".193."));
-        this.BLACKLIST = [...new Set([...alwaysBanned, ...r193IPs])];
-      } else if (config === "K") {
-        // Config K : IPs contenant "197" (41 et 61 uniquement, 42 et 63 retirées)
-        const k197IPs = allIPs.filter((ip) => ip.includes(".197."));
-        this.BLACKLIST = [...new Set([...alwaysBanned, ...k197IPs])];
-      } else {
-        throw new Error("Configuration invalide. Utilisez 'R' ou 'K'.");
+      if (!fs.existsSync(blacklistPath)) {
+        console.warn(
+          `⚠️ Fichier blacklist.json introuvable, création d'un fichier vide...`
+        );
+        const defaultData = {
+          alwaysBlocked: [],
+          configR: [],
+          configK: [],
+        };
+        fs.writeFileSync(
+          blacklistPath,
+          JSON.stringify(defaultData, null, 2),
+          "utf8"
+        );
       }
+
+      const content = fs.readFileSync(blacklistPath, "utf8");
+      const data = JSON.parse(content);
+
+      const alwaysBlocked = Array.isArray(data.alwaysBlocked)
+        ? data.alwaysBlocked
+        : [];
+
+      // Si config === 'S', on ne charge que les IPs alwaysBlocked
+      if (config === "S") {
+        this.BLACKLIST = [...new Set(alwaysBlocked)];
+        console.log(
+          `\n>> Configuration [ ${config} ] chargée : ${this.BLACKLIST.length} IP(s) blacklistées`
+        );
+        console.log(`   - Toujours bloquées : ${alwaysBlocked.length}`);
+        console.log(`>> IPs bloquées : ${this.BLACKLIST.join(", ")}\n`);
+        return;
+      }
+
+      const configIPs =
+        config === "R"
+          ? Array.isArray(data.configR)
+            ? data.configR
+            : []
+          : Array.isArray(data.configK)
+          ? data.configK
+          : [];
+
+      this.BLACKLIST = [...new Set([...alwaysBlocked, ...configIPs])];
 
       console.log(
         `\n>> Configuration [ ${config} ] chargée : ${this.BLACKLIST.length} IP(s) blacklistées`
       );
+      console.log(`   - Toujours bloquées : ${alwaysBlocked.length}`);
+      console.log(`   - Config ${config} : ${configIPs.length}`);
       console.log(`>> IPs bloquées : ${this.BLACKLIST.join(", ")}\n`);
     } catch (err) {
       console.error(

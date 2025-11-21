@@ -185,16 +185,39 @@ const rl = readline.createInterface({
 console.log("\n========================================");
 console.log("Configuration BLACKLIST du serveur PDE");
 console.log("========================================");
-console.log("R = IPs 192.168.193.x (6+2 IPs)");
-console.log("K = IPs 192.168.197.x (4+2 IPs)");
+
+// Lire le fichier pour afficher le nombre d'IPs
+const fs = require("fs");
+let countAlways = 0;
+let countR = 0;
+let countK = 0;
+
+try {
+  const data = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "..", "blacklist.json"), "utf8")
+  );
+  countAlways = Array.isArray(data.alwaysBlocked)
+    ? data.alwaysBlocked.length
+    : 0;
+  countR = Array.isArray(data.configR) ? data.configR.length : 0;
+  countK = Array.isArray(data.configK) ? data.configK.length : 0;
+} catch (e) {
+  countAlways = 0;
+  countR = 0;
+  countK = 0;
+}
+
+console.log(`R = ${countAlways + countR} IPs (${countR} + ${countAlways})`);
+console.log(`K = ${countAlways + countK} IPs (${countK} + ${countAlways})`);
+console.log(`S = ${countAlways} IPs (seulement toujours bloquées)`);
 console.log("========================================\n");
 
-rl.question("Config ? [R / K]: ", (answer) => {
+rl.question("Config ? [R / K / S]: ", (answer) => {
   const configChoice = answer.trim().toUpperCase();
 
-  if (configChoice !== "R" && configChoice !== "K") {
+  if (configChoice !== "R" && configChoice !== "K" && configChoice !== "S") {
     console.error(
-      "\n❌ Configuration invalide. Relancer 'npm start' et choisir R ou K.\n"
+      "\n❌ Configuration invalide. Relancer 'npm start' et choisir R, K ou S.\n"
     );
     process.exit(1);
   }
