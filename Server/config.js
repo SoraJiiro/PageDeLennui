@@ -47,7 +47,6 @@ module.exports = {
         ? data.alwaysBlocked
         : [];
 
-      // Si config === 'S', on ne charge que les IPs alwaysBlocked
       if (config === "S") {
         this.BLACKLIST = [...new Set(alwaysBlocked)];
         console.log(

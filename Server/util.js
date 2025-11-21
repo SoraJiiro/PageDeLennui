@@ -17,6 +17,8 @@ const expressSession = session({
 });
 
 // ------- Blacklist + Middleware -------
+const alreadyTriedToConnect = [];
+
 const blacklistMiddleware = (req, res, next) => {
   const ip = (
     req.headers["x-forwarded-for"] ||
@@ -25,10 +27,11 @@ const blacklistMiddleware = (req, res, next) => {
   ).replace("::ffff:", "");
 
   if (config.BLACKLIST.includes(ip)) {
-    console.log(`\n🚫 Accès refusé à ${ip}\n`);
-    return res
-      .status(403)
-      .send(`<html><body><h1>Accès refusé</h1><p>IP: ${ip}</p></body></html>`);
+    if (!alreadyTriedToConnect.includes(ip)) {
+      console.log(`\n🚫 Accès refusé à ${ip}\n`);
+      alreadyTriedToConnect.push(ip);
+    }
+    return res.status(403).sendFile(path.join(config.PUBLIC, "403.html"));
   }
   next();
 };
