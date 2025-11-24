@@ -14,7 +14,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  width: min(85vw, 650px);
+  width: min(92vw, 650px);
   max-height: 62.5vh;
   position: relative;
 }
@@ -62,9 +62,45 @@
 
 #snake-canvas {
   width: 100%;
-  height: 100%;
+  max-width: 650px;
+  aspect-ratio: 1/1;
+  max-height: calc(100vh - 220px);
+  height: auto;
   outline: 2px solid var(--primary-color);
   background: #000;
+}
+
+@media (max-width: 700px) {
+  #snake-canvas {
+    max-height: calc(100vh - 160px);
+    aspect-ratio: 1/1;
+  }
+}
+
+@media (max-width: 420px) {
+  .snake-wrap {
+    width: 98vw;
+    gap: 8px;
+  }
+  .snake-wrap .snake-btns-wrap button {
+    height: 40px;
+    font-size: 0.95rem;
+  }
+  #snake-canvas {
+    outline-width: 1.5px;
+  }
+}
+
+@media (max-width: 700px) {
+  .snake-wrap {
+    width: 95vw;
+    gap: 8px;
+  }
+  .snake-wrap .snake-btns-wrap button {
+    width: 48%;
+    height: 42px;
+    font-size: 0.95rem;
+  }
 }
 
 .snake-btns-wrap button {

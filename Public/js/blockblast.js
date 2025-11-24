@@ -626,7 +626,7 @@ export function initBlockBlast(socket) {
       let attempts = 0;
 
       // S'assurer qu'au moins une pièce est plaçable
-      while (i === 0 && attempts < 20 && !hasValidPlacement({ shape })) {
+      while (i === 0 && attempts < 25 && !hasValidPlacement({ shape })) {
         shape = selectWeightedPiece();
         attempts++;
       }
@@ -664,10 +664,6 @@ export function initBlockBlast(socket) {
       elapsedMs: state.elapsedMs,
       gameOver: false,
     });
-    // sauvegarde locale en plus (fallback si socket indisponible)
-    try {
-      saveLocalState();
-    } catch (e) {}
 
     // Ne pas démarrer automatiquement le timer lors de génération de nouvelles pièces.
     // Le timer doit démarrer uniquement lorsque le joueur clique sur une pièce ou commence un drag.

@@ -143,7 +143,56 @@
   margin: 0 auto 12px;
   max-width: 100%;
   width: 100%;
-  height: calc(100% - 160px);
+  max-width: 1000px;
+  aspect-ratio: 4/3;
+  max-height: calc(100vh - 260px);
+  height: auto;
+}
+
+/* Responsive improvements */
+@media (max-width: 900px) {
+  .pictionary-card {
+    width: 95vw;
+    padding: 0.75rem;
+  }
+  .pictionary-controls {
+    gap: 10px;
+  }
+  .pictionary-palette > button {
+    width: 32px;
+    height: 32px;
+  }
+  .pictionary-brushsize {
+    width: 80px;
+  }
+}
+
+@media (max-width: 420px) {
+  .pictionary-card {
+    width: 98vw;
+    padding: 8px;
+  }
+  .pictionary-canvas {
+    aspect-ratio: 3/2;
+    max-height: calc(100vh - 160px);
+  }
+  .pictionary-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pictionary-controls input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .pictionary-canvas {
+    aspect-ratio: 3/2;
+    max-height: calc(100vh - 220px);
+  }
+  .pictionary-controls {
+    gap: 8px;
+  }
 }
 .pictionary-controls {
   display: flex;

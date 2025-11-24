@@ -13,6 +13,13 @@ export function initFlappy(socket) {
   if (!ui.canvas) return;
   ui.ctx = ui.canvas.getContext("2d");
   if (ui.scoreEl) ui.scoreEl.style.display = "none";
+  // ---------- Variables de jeu (échelle dynamique) (déclarées tôt pour éviter TDZ) ----------
+  let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
+  let birdY, birdVel, pipes, score, gameRunning;
+  let paused = false;
+  let countdown = 0;
+  let frameCount = 0;
+  let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
 
   function resizeCanvas() {
     try {
@@ -21,30 +28,23 @@ export function initFlappy(socket) {
       const clientW = Math.max(1, Math.round(rect.width));
       // keep a slightly shorter height for UI controls if needed
       const clientH = Math.max(1, Math.round(rect.height * 0.88));
-      ui.canvas.width = clientW * dpr;
-      ui.canvas.height = clientH * dpr;
+      // Only update CSS size here; backing buffer and transform are handled
+      // by the central canvas resizer module to keep DPR consistent.
       ui.canvas.style.width = `${clientW}px`;
       ui.canvas.style.height = `${clientH}px`;
-      const ctx = ui.canvas.getContext("2d");
-      if (ctx && typeof ctx.setTransform === "function")
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     } catch (e) {}
     updateScales();
   }
-  resizeCanvas();
+  // The global `canvas_resize` module sets the backing buffer and transform.
+  // Here we only compute scale-dependent variables and keep a small debounce on resize.
+  updateScales();
+  let _resizeTO = null;
   window.addEventListener("resize", () => {
     try {
-      resizeCanvas();
+      clearTimeout(_resizeTO);
+      _resizeTO = setTimeout(() => updateScales(), 120);
     } catch (e) {}
   });
-
-  // ---------- Variables de jeu (échelle dynamique) ----------
-  let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
-  let birdY, birdVel, pipes, score, gameRunning;
-  let paused = false;
-  let countdown = 0;
-  let frameCount = 0;
-  let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
   try {
     window.addEventListener("pauseKey:changed", (e) => {
       const k = e?.detail?.key;
@@ -69,21 +69,28 @@ export function initFlappy(socket) {
   });
 
   function updateScales() {
-    gravity = ui.canvas.height * 0.00035;
-    jump = -ui.canvas.height * 0.009;
-    pipeGap = ui.canvas.height * 0.25;
-    pipeWidth = ui.canvas.width * 0.08;
-    pipeSpeed = ui.canvas.width * 0.0035;
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.round(ui.canvas.width / dpr);
+    const cssH = Math.round(ui.canvas.height / dpr);
+    gravity = cssH * 0.00035;
+    jump = -cssH * 0.009;
+    pipeGap = cssH * 0.25;
+    pipeWidth = cssW * 0.08;
+    pipeSpeed = cssW * 0.0035;
   }
 
   const bird = {
     xRatio: 0.17, // position horizontale relative
     radiusRatio: 0.02, // taille relative
     get x() {
-      return this.xRatio * ui.canvas.width;
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = Math.round(ui.canvas.width / dpr);
+      return this.xRatio * cssW;
     },
     get radius() {
-      return this.radiusRatio * ui.canvas.height;
+      const dpr = window.devicePixelRatio || 1;
+      const cssH = Math.round(ui.canvas.height / dpr);
+      return this.radiusRatio * cssH;
     },
     draw() {
       ui.ctx.fillStyle = "#0f0";
@@ -95,7 +102,9 @@ export function initFlappy(socket) {
 
   function resetGame() {
     updateScales();
-    birdY = ui.canvas.height / 3.55;
+    const dpr = window.devicePixelRatio || 1;
+    const cssH = Math.round(ui.canvas.height / dpr);
+    birdY = cssH / 3.55;
     birdVel = 0;
     pipes = [];
     score = 0;
@@ -109,13 +118,19 @@ export function initFlappy(socket) {
 
   function clearToBlack() {
     try {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = Math.round(ui.canvas.width / dpr);
+      const cssH = Math.round(ui.canvas.height / dpr);
       ui.ctx.fillStyle = "#000";
-      ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+      ui.ctx.fillRect(0, 0, cssW, cssH);
     } catch {}
   }
 
   function drawPipes() {
     ui.ctx.fillStyle = "#0f0";
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.round(ui.canvas.width / dpr);
+    const cssH = Math.round(ui.canvas.height / dpr);
     pipes.forEach((p) => {
       // Tuyau haut
       ui.ctx.fillRect(p.x, 0, pipeWidth, p.top);
@@ -124,32 +139,31 @@ export function initFlappy(socket) {
         p.x,
         p.top + pipeGap,
         pipeWidth,
-        ui.canvas.height - (p.top + pipeGap)
+        cssH - (p.top + pipeGap)
       );
     });
   }
 
   function showPaused() {
     ui.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.round(ui.canvas.width / dpr);
+    const cssH = Math.round(ui.canvas.height / dpr);
+    ui.ctx.fillRect(0, 0, cssW, cssH);
 
     ui.ctx.fillStyle = "#0f0";
     ui.ctx.font = "bold 40px monospace";
     ui.ctx.textAlign = "center";
 
     if (countdown > 0) {
-      ui.ctx.fillText(
-        countdown.toString(),
-        ui.canvas.width / 2,
-        ui.canvas.height / 2
-      );
+      ui.ctx.fillText(countdown.toString(), cssW / 2, cssH / 2);
     } else {
-      ui.ctx.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
+      ui.ctx.fillText("PAUSE", cssW / 2, cssH / 2);
       ui.ctx.font = "18px monospace";
       ui.ctx.fillText(
         `Appuie sur ${pauseKeyText} pour reprendre`,
-        ui.canvas.width / 2,
-        ui.canvas.height / 2 + 40
+        cssW / 2,
+        cssH / 2 + 40
       );
     }
   }
@@ -157,13 +171,17 @@ export function initFlappy(socket) {
   function update() {
     if (!gameRunning) return;
 
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.round(ui.canvas.width / dpr);
+    const cssH = Math.round(ui.canvas.height / dpr);
+
     // Gestion du compte à rebours
     if (countdown > 0) {
       frameCount++;
 
-      ui.ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+      ui.ctx.clearRect(0, 0, cssW, cssH);
       ui.ctx.fillStyle = "#000";
-      ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+      ui.ctx.fillRect(0, 0, cssW, cssH);
 
       drawPipes();
       bird.draw();
@@ -187,19 +205,16 @@ export function initFlappy(socket) {
       return;
     }
 
-    ui.ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+    ui.ctx.clearRect(0, 0, cssW, cssH);
     ui.ctx.fillStyle = "#000";
-    ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    ui.ctx.fillRect(0, 0, cssW, cssH);
 
     birdVel += gravity;
     birdY += birdVel;
 
-    if (
-      pipes.length === 0 ||
-      pipes[pipes.length - 1].x < ui.canvas.width * 0.65
-    ) {
-      const topHeight = Math.random() * (ui.canvas.height - pipeGap - 100) + 40;
-      pipes.push({ x: ui.canvas.width, top: topHeight, passed: false });
+    if (pipes.length === 0 || pipes[pipes.length - 1].x < cssW * 0.65) {
+      const topHeight = Math.random() * (cssH - pipeGap - 100) + 40;
+      pipes.push({ x: cssW, top: topHeight, passed: false });
     }
 
     pipes.forEach((p) => {
@@ -227,7 +242,7 @@ export function initFlappy(socket) {
       }
     }
 
-    if (birdY + bird.radius >= ui.canvas.height || birdY - bird.radius <= 0) {
+    if (birdY + bird.radius >= cssH || birdY - bird.radius <= 0) {
       gameOver();
     }
 
@@ -235,11 +250,7 @@ export function initFlappy(socket) {
     ui.ctx.fillStyle = "#fff";
     ui.ctx.font = "bold 24px monospace";
     ui.ctx.textAlign = "right";
-    ui.ctx.fillText(
-      `${String(score).padStart(3, "0")}`,
-      ui.canvas.width - 20,
-      30
-    );
+    ui.ctx.fillText(`${String(score).padStart(3, "0")}`, cssW - 20, 30);
 
     requestAnimationFrame(update);
   }
@@ -257,31 +268,22 @@ export function initFlappy(socket) {
   function showGameOver() {
     // Overlay sombre
     ui.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ui.ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.round(ui.canvas.width / dpr);
+    const cssH = Math.round(ui.canvas.height / dpr);
+    ui.ctx.fillRect(0, 0, cssW, cssH);
 
     // Texte
     ui.ctx.fillStyle = "#0f0";
     ui.ctx.font = "bold 40px monospace";
     ui.ctx.textAlign = "center";
-    ui.ctx.fillText(
-      "GAME OVER",
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 - 20
-    );
+    ui.ctx.fillText("GAME OVER", cssW / 2, cssH / 2 - 20);
 
     ui.ctx.font = "20px monospace";
-    ui.ctx.fillText(
-      `Score: ${score}`,
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 + 20
-    );
+    ui.ctx.fillText(`Score: ${score}`, cssW / 2, cssH / 2 + 20);
 
     ui.ctx.font = "18px monospace";
-    ui.ctx.fillText(
-      "Appuie sur ESPACE pour rejouer",
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 + 60
-    );
+    ui.ctx.fillText("Appuie sur ESPACE pour rejouer", cssW / 2, cssH / 2 + 60);
   }
 
   // ---------- Eventlisteners ----------

@@ -20,6 +20,22 @@ export function initPictionary(socket) {
 
   const ctx = ui.canvas?.getContext("2d");
 
+  function clearCanvasSafe() {
+    if (!ctx || !ui.canvas) return;
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = Math.round(ui.canvas.width / dpr);
+      const cssH = Math.round(ui.canvas.height / dpr);
+      ctx.clearRect(0, 0, cssW, cssH);
+      return;
+    } catch (e) {}
+    try {
+      ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+    } catch (e) {
+      // nothing else to do
+    }
+  }
+
   // ---------- Etat local ----------
   const state = {
     drawing: false,
@@ -53,7 +69,14 @@ export function initPictionary(socket) {
   ui.startBtn?.addEventListener("click", () => socket.emit("pictionary:start"));
   ui.clearBtn?.addEventListener("click", () => {
     if (state.estDessinateur) {
-      ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+      try {
+        const dpr = window.devicePixelRatio || 1;
+        const cssW = Math.round(ui.canvas.width / dpr);
+        const cssH = Math.round(ui.canvas.height / dpr);
+        ctx.clearRect(0, 0, cssW, cssH);
+      } catch (e) {
+        clearCanvasSafe();
+      }
       socket.emit("pictionary:clear");
     }
   });
@@ -192,22 +215,17 @@ export function initPictionary(socket) {
     );
     const displayWidth = Math.max(1, clientW);
     const displayHeight = Math.max(1, clientH);
-
-    if (
-      ui.canvas.width !== displayWidth * dpr ||
-      ui.canvas.height !== displayHeight * dpr
-    ) {
-      ui.canvas.width = displayWidth * dpr;
-      ui.canvas.height = displayHeight * dpr;
+    // Only update CSS size here; backing buffer and transform are handled
+    // by the central canvas resizer. Emit state so server can resend canvas
+    // contents if necessary.
+    try {
       ui.canvas.style.width = `${displayWidth}px`;
       ui.canvas.style.height = `${displayHeight}px`;
-      const ctxLocal = ui.canvas.getContext("2d");
-      ctxLocal.setTransform(dpr, 0, 0, dpr, 0, 0);
-      try {
-        socket.emit("pictionary:getState");
-      } catch (e) {
-        console.error("Erreur interne : ", e.toString());
-      }
+    } catch (e) {}
+    try {
+      socket.emit("pictionary:getState");
+    } catch (e) {
+      console.error("Erreur interne : ", e.toString());
     }
   }
 
@@ -347,7 +365,7 @@ export function initPictionary(socket) {
         clearBtnEl.addEventListener("click", () => {
           if (!state.estDessinateur) return;
           if (confirm("Effacer le canevas pour tous les joueurs ?")) {
-            ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+            clearCanvasSafe();
             socket.emit("pictionary:clear");
           }
         });
@@ -475,7 +493,14 @@ export function initPictionary(socket) {
   });
 
   socket.on("pictionary:clear", () => {
-    ctx.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = Math.round(ui.canvas.width / dpr);
+      const cssH = Math.round(ui.canvas.height / dpr);
+      ctx.clearRect(0, 0, cssW, cssH);
+    } catch (e) {
+      clearCanvasSafe();
+    }
   });
 
   socket.on("pictionary:stroke", (data) => {

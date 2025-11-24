@@ -78,8 +78,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
       reconnexionEssais: 5,
     });
 
-    // Ne pas exposer le socket globalement pour limiter l'abus via console
-    // window.socket = socket;
     window.username = username;
 
     socket.on("reload", (data) => {
@@ -98,7 +96,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
         // Pour les HTML, reload complet
         window.location.reload();
       }
-      // Ignorer les autres fichiers (images, etc.)
     });
 
     if (chat?.initChat) chat.initChat(socket);

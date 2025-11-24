@@ -15,7 +15,8 @@ export function initSnake(socket) {
   const GRID_SIZE = 23;
   const CELL_SIZE = 23;
   const MAX_LENGTH = 52;
-  const GAME_SPEED = 135;
+  // ms per logical tick (lower = faster). Tunable for smoothness.
+  const GAME_SPEED = 100;
 
   // ---------- État local ----------
   const state = {
@@ -25,6 +26,10 @@ export function initSnake(socket) {
     food: null,
     score: 0,
     gameLoop: null,
+    rafId: null,
+    tickAccumulator: 0,
+    prevSnake: [],
+    lastFrameTime: 0,
     gameActive: false,
     gameStarted: false,
     startTime: null,
@@ -71,7 +76,6 @@ export function initSnake(socket) {
 
   function resizeCanvas() {
     try {
-      const dpr = window.devicePixelRatio || 1;
       const rect = ui.canvas.getBoundingClientRect();
       const clientW = Math.max(1, Math.round(rect.width));
       const clientH = Math.max(1, Math.round(rect.height));
@@ -79,20 +83,49 @@ export function initSnake(socket) {
       CELL_SIZE_DYNAMIC =
         Math.floor(Math.min(clientW, clientH) / GRID_SIZE) || 1;
       const desiredW = CELL_SIZE_DYNAMIC * GRID_SIZE;
-      const desiredH = CELL_SIZE_DYNAMIC * GRID_SIZE;
-      ui.canvas.width = desiredW * dpr;
-      ui.canvas.height = desiredH * dpr;
-      ui.canvas.style.width = `${desiredW}px`;
-      ui.canvas.style.height = `${desiredH}px`;
-      if (ctx && typeof ctx.setTransform === "function")
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // keep canvas CSS size aligned with grid so layout doesn't jump
+      try {
+        ui.canvas.style.width = `${desiredW}px`;
+        ui.canvas.style.height = `${desiredW}px`;
+      } catch (e) {}
     } catch (e) {}
   }
 
+  // Ensure the canvas backing buffer and transform match the CSS size + DPR
+  function ensureBackingBuffer() {
+    try {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = ui.canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, Math.round(rect.width));
+      const cssHeight = Math.max(1, Math.round(rect.height));
+      const displayWidth = Math.floor(cssWidth * ratio);
+      const displayHeight = Math.floor(cssHeight * ratio);
+
+      if (
+        ui.canvas.width !== displayWidth ||
+        ui.canvas.height !== displayHeight
+      ) {
+        ui.canvas.width = displayWidth;
+        ui.canvas.height = displayHeight;
+        try {
+          ui.canvas.style.width = `${cssWidth}px`;
+          ui.canvas.style.height = `${cssHeight}px`;
+        } catch (e) {}
+        try {
+          if (ctx && typeof ctx.setTransform === "function")
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        } catch (e) {}
+      }
+    } catch (e) {}
+  }
+
+  // initial scale computation and debounced resize updates
   resizeCanvas();
+  let _snakeResizeTO = null;
   window.addEventListener("resize", () => {
     try {
-      resizeCanvas();
+      clearTimeout(_snakeResizeTO);
+      _snakeResizeTO = setTimeout(() => resizeCanvas(), 120);
     } catch (e) {}
   });
 
@@ -113,79 +146,25 @@ export function initSnake(socket) {
     state.pausedTime = 0;
     spawnFood();
     startTimer();
-    if (state.gameLoop) clearInterval(state.gameLoop);
-    state.gameLoop = setInterval(update, GAME_SPEED);
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    // ensure backing buffer & transform are correctly set before first frame
+    ensureBackingBuffer();
+    // reset rAF timing state
+    state.tickAccumulator = 0;
+    state.lastFrameTime = 0;
+    // copy initial positions so we can interpolate on first frame
+    state.prevSnake = state.snake.map((s) => ({ x: s.x, y: s.y }));
+    state.rafId = requestAnimationFrame(loop);
   }
 
-  function spawnFood() {
-    let validPosition = false;
-    while (!validPosition) {
-      state.food = {
-        x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE),
-      };
-      validPosition = !state.snake.some(
-        (seg) => seg.x === state.food.x && seg.y === state.food.y
-      );
-    }
-  }
-
-  function showPaused() {
-    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
-
-    ctx.fillStyle = "#0f0";
-    ctx.font = "bold 40px monospace";
-    ctx.textAlign = "center";
-
-    if (state.countdown > 0) {
-      ctx.fillText(
-        state.countdown.toString(),
-        ui.canvas.width / 2,
-        ui.canvas.height / 2
-      );
-    } else {
-      ctx.fillText("PAUSE", ui.canvas.width / 2, ui.canvas.height / 2);
-      ctx.font = "18px monospace";
-      ctx.fillText(
-        `Appuie sur ${pauseKeyText} pour reprendre`,
-        ui.canvas.width / 2,
-        ui.canvas.height / 2 + 40
-      );
-    }
-  }
-
-  function update() {
+  // perform one logical tick (grid-step)
+  function performTick() {
     if (!state.gameActive) return;
 
-    // Gestion du compte à rebours
-    if (state.countdown > 0) {
-      state.frameCount++;
-
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
-
-      draw();
-      showPaused();
-
-      if (state.frameCount % 60 === 0) {
-        state.countdown--;
-        if (state.countdown === 0) {
-          state.paused = false;
-          // Ajuster le temps de pause
-          state.pausedTime = Date.now() - state.startTime - state.elapsedMs;
-        }
-      }
-
-      return;
-    }
-
-    if (state.paused) {
-      showPaused();
-      return;
-    }
-
     state.direction = state.nextDirection;
+    // store previous positions for interpolation
+    state.prevSnake = state.snake.map((s) => ({ x: s.x, y: s.y }));
+
     const head = {
       x: state.snake[0].x + state.direction.x,
       y: state.snake[0].y + state.direction.y,
@@ -223,19 +202,174 @@ export function initSnake(socket) {
     } else {
       state.snake.pop();
     }
+  }
 
-    draw();
+  // main loop using requestAnimationFrame: accumulates dt and ticks at GAME_SPEED
+  function loop(ts) {
+    if (!state.lastFrameTime) state.lastFrameTime = ts;
+    const delta = ts - state.lastFrameTime;
+    state.lastFrameTime = ts;
+
+    // handle countdown using frame-based approach (approx 60fps)
+    if (state.countdown > 0) {
+      state.frameCount++;
+      // render pause/countdown
+      draw(0);
+      if (state.frameCount % 60 === 0) {
+        state.countdown--;
+        if (state.countdown === 0) {
+          state.paused = false;
+          state.pausedTime = Date.now() - state.startTime - state.elapsedMs;
+        }
+      }
+      state.rafId = requestAnimationFrame(loop);
+      return;
+    }
+
+    if (state.paused) {
+      draw(0);
+      state.rafId = requestAnimationFrame(loop);
+      return;
+    }
+
+    // accumulate and perform ticks
+    state.tickAccumulator += delta;
+    let ticked = false;
+    while (state.tickAccumulator >= GAME_SPEED) {
+      performTick();
+      state.tickAccumulator -= GAME_SPEED;
+      ticked = true;
+    }
+
+    // progress between ticks (0..1)
+    const progress = Math.min(1, state.tickAccumulator / GAME_SPEED);
+
+    // update elapsed time periodically
+    state.frameCount++;
+    if (ticked) {
+      // if we ticked at least once, update elapsedMs reference
+      if (
+        state.gameActive &&
+        state.startTime &&
+        !state.paused &&
+        state.countdown === 0
+      ) {
+        state.elapsedMs = Date.now() - state.startTime - state.pausedTime;
+      }
+    }
+
+    draw(progress);
+    state.rafId = requestAnimationFrame(loop);
+  }
+
+  function spawnFood() {
+    let validPosition = false;
+    while (!validPosition) {
+      state.food = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE),
+      };
+      validPosition = !state.snake.some(
+        (seg) => seg.x === state.food.x && seg.y === state.food.y
+      );
+    }
+  }
+
+  function showPaused() {
+    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillRect(0, 0, cssSize, cssSize);
+
+    ctx.fillStyle = "#0f0";
+    ctx.font = "bold 40px monospace";
+    ctx.textAlign = "center";
+
+    if (state.countdown > 0) {
+      ctx.fillText(state.countdown.toString(), cssSize / 2, cssSize / 2);
+    } else {
+      ctx.fillText("PAUSE", cssSize / 2, cssSize / 2);
+      ctx.font = "18px monospace";
+      ctx.fillText(
+        `Appuie sur ${pauseKeyText} pour reprendre`,
+        cssSize / 2,
+        cssSize / 2 + 40
+      );
+    }
+  }
+
+  // draw interpolated frame; progress between 0..1
+  function draw(progress = 1) {
+    // Recompute cell size from actual CSS pixel size each frame to avoid zoom issues
+    try {
+      const rect = ui.canvas.getBoundingClientRect();
+      const clientW = Math.max(1, Math.round(rect.width));
+      const clientH = Math.max(1, Math.round(rect.height));
+      CELL_SIZE_DYNAMIC =
+        Math.floor(Math.min(clientW, clientH) / GRID_SIZE) || 1;
+    } catch (e) {}
+
+    ctx.fillStyle = "#000";
+    // ctx coordinates are in CSS pixels thanks to setTransform
+    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
+    ctx.fillRect(0, 0, cssSize, cssSize);
+
+    // Dessiner la grille
+    ctx.strokeStyle = "#4e3e5e";
+    for (let i = 0; i <= GRID_SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * CELL_SIZE_DYNAMIC, 0);
+      ctx.lineTo(i * CELL_SIZE_DYNAMIC, CELL_SIZE_DYNAMIC * GRID_SIZE);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, i * CELL_SIZE_DYNAMIC);
+      ctx.lineTo(CELL_SIZE_DYNAMIC * GRID_SIZE, i * CELL_SIZE_DYNAMIC);
+      ctx.stroke();
+    }
+
+    // Dessiner le serpent (interpolé)
+    for (let index = 0; index < state.snake.length; index++) {
+      const seg = state.snake[index];
+      const prev = state.prevSnake[index] || seg;
+      const lerpX = prev.x + (seg.x - prev.x) * progress;
+      const lerpY = prev.y + (seg.y - prev.y) * progress;
+
+      if (index === 0) {
+        ctx.fillStyle = "#00ff00";
+      } else {
+        ctx.fillStyle = "#00cc00";
+      }
+      ctx.fillRect(
+        lerpX * CELL_SIZE_DYNAMIC + 1,
+        lerpY * CELL_SIZE_DYNAMIC + 1,
+        CELL_SIZE_DYNAMIC - 2,
+        CELL_SIZE_DYNAMIC - 2
+      );
+    }
+
+    // Dessiner la nourriture
+    if (state.food) {
+      // interpolate food too if desired (food doesn't move so just draw at exact)
+      ctx.fillStyle = "#ff0000";
+      ctx.fillRect(
+        state.food.x * CELL_SIZE_DYNAMIC + 1,
+        state.food.y * CELL_SIZE_DYNAMIC + 1,
+        CELL_SIZE_DYNAMIC - 2,
+        CELL_SIZE_DYNAMIC - 2
+      );
+    }
+
+    // Afficher le score
+    ctx.fillStyle = "#0f0";
+    ctx.font = "bold 24px monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`${String(state.score).padStart(3, "0")}`, cssSize - 10, 30);
   }
 
   function draw() {
     ctx.fillStyle = "#000";
     // ctx coordinates are in CSS pixels thanks to setTransform
-    ctx.fillRect(
-      0,
-      0,
-      CELL_SIZE_DYNAMIC * GRID_SIZE,
-      CELL_SIZE_DYNAMIC * GRID_SIZE
-    );
+    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
+    ctx.fillRect(0, 0, cssSize, cssSize);
 
     // Dessiner la grille
     ctx.strokeStyle = "#4e3e5e";
@@ -280,11 +414,7 @@ export function initSnake(socket) {
     ctx.fillStyle = "#0f0";
     ctx.font = "bold 24px monospace";
     ctx.textAlign = "right";
-    ctx.fillText(
-      `${String(state.score).padStart(3, "0")}`,
-      CELL_SIZE_DYNAMIC * GRID_SIZE - 10,
-      30
-    );
+    ctx.fillText(`${String(state.score).padStart(3, "0")}`, cssSize - 10, 30);
   }
 
   function startTimer() {
@@ -310,15 +440,22 @@ export function initSnake(socket) {
 
   function clearToBlack() {
     try {
+      const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
       ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+      ctx.fillRect(0, 0, cssSize, cssSize);
     } catch {}
   }
 
   function gameOver() {
     state.gameActive = false;
     stopTimer();
-    if (state.gameLoop) clearInterval(state.gameLoop);
+    if (state.rafId) {
+      cancelAnimationFrame(state.rafId);
+      state.rafId = null;
+    }
+
+    // ensure backing buffer is correct before drawing Game Over (fixes invisible overlay issue)
+    ensureBackingBuffer();
 
     const finalScore = state.score;
     socket.emit("snake:score", {
@@ -327,24 +464,37 @@ export function initSnake(socket) {
       final: true,
     });
     scoreAttente = finalScore;
+    // draw on canvas
     showGameOver();
+    // fallback: also show a DOM overlay in case canvas overlay is not visible
+    try {
+      showDOMGameOverOverlay();
+    } catch (e) {
+      console.log("snake: failed to show DOM overlay", e);
+    }
   }
 
   function showGameOver() {
+    // Recompute cell size from actual CSS pixel size to ensure overlay covers canvas
+    try {
+      const rect = ui.canvas.getBoundingClientRect();
+      const clientW = Math.max(1, Math.round(rect.width));
+      const clientH = Math.max(1, Math.round(rect.height));
+      CELL_SIZE_DYNAMIC =
+        Math.floor(Math.min(clientW, clientH) / GRID_SIZE) || 1;
+    } catch (e) {}
+
+    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
     ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ctx.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+    ctx.fillRect(0, 0, cssSize, cssSize);
 
     ctx.fillStyle = "#0f0";
     ctx.font = "bold 40px monospace";
     ctx.textAlign = "center";
-    ctx.fillText("GAME OVER", ui.canvas.width / 2, ui.canvas.height / 2 - 20);
+    ctx.fillText("GAME OVER", cssSize / 2, cssSize / 2 - 20);
 
     ctx.font = "20px monospace";
-    ctx.fillText(
-      `Score: ${state.score}`,
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 + 20
-    );
+    ctx.fillText(`Score: ${state.score}`, cssSize / 2, cssSize / 2 + 20);
 
     const totalSeconds = Math.floor(state.elapsedMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -353,18 +503,52 @@ export function initSnake(socket) {
       seconds
     ).padStart(2, "0")}`;
 
-    ctx.fillText(
-      `Temps: ${timeStr}`,
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 + 50
-    );
+    ctx.fillText(`Temps: ${timeStr}`, cssSize / 2, cssSize / 2 + 50);
 
     ctx.font = "18px monospace";
     ctx.fillText(
       "Appuie sur ESPACE pour rejouer",
-      ui.canvas.width / 2,
-      ui.canvas.height / 2 + 90
+      cssSize / 2,
+      cssSize / 2 + 90
     );
+  }
+
+  // DOM fallback overlay for Game Over (in case canvas overlay doesn't appear)
+  function showDOMGameOverOverlay() {
+    const parent = ui.canvas.parentElement || document.body;
+    // ensure parent is positioned so absolute overlay aligns
+    try {
+      const computed = window.getComputedStyle(parent);
+      if (computed.position === "static") parent.style.position = "relative";
+    } catch (e) {}
+
+    // remove existing overlay if any
+    removeDOMGameOverOverlay();
+
+    const rect = ui.canvas.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const overlay = document.createElement("div");
+    overlay.className = "snake-dom-gameover-overlay";
+    overlay.style.position = "absolute";
+    overlay.style.left = `${rect.left - parentRect.left}px`;
+    overlay.style.top = `${rect.top - parentRect.top}px`;
+    overlay.style.width = `${rect.width}px`;
+    overlay.style.height = `${rect.height}px`;
+    overlay.style.display = "flex";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.pointerEvents = "none";
+    overlay.style.background = "rgba(0,0,0,0.8)";
+    overlay.style.color = "#0f0";
+    overlay.style.zIndex = "9999";
+    overlay.innerHTML = `<div style="text-align:center;font-family:monospace"><div style="font-weight:700;font-size:32px;margin-bottom:8px">GAME OVER</div><div style="font-size:18px">Score: ${state.score}</div></div>`;
+    parent.appendChild(overlay);
+  }
+
+  function removeDOMGameOverOverlay() {
+    const parent = ui.canvas.parentElement || document.body;
+    const existing = parent.querySelector(".snake-dom-gameover-overlay");
+    if (existing) existing.remove();
   }
 
   function startGame() {
@@ -374,6 +558,10 @@ export function initSnake(socket) {
     state.countdown = 0;
     initGame();
     if (ui.stopBtn) ui.stopBtn.style.display = "inline-block";
+    // remove any DOM overlay left from previous run
+    try {
+      removeDOMGameOverOverlay();
+    } catch (e) {}
   }
 
   function stopCurrentRun() {
@@ -391,9 +579,15 @@ export function initSnake(socket) {
     state.paused = false;
     state.countdown = 0;
     stopTimer();
-    if (state.gameLoop) clearInterval(state.gameLoop);
+    if (state.rafId) {
+      cancelAnimationFrame(state.rafId);
+      state.rafId = null;
+    }
     if (ui.stopBtn) ui.stopBtn.style.display = "none";
     clearToBlack();
+    try {
+      removeDOMGameOverOverlay();
+    } catch (e) {}
     showNotif(`# Partie stoppée.`);
   }
 

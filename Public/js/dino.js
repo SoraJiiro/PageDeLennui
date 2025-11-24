@@ -76,29 +76,23 @@ export function initDino(socket) {
 
   function resizeCanvas() {
     try {
-      const dpr = window.devicePixelRatio || 1;
       const rect = ui.canvas.getBoundingClientRect();
       CLIENT_W = Math.max(200, Math.round(rect.width));
       CLIENT_H = Math.max(120, Math.round(rect.height));
-      ui.canvas.width = CLIENT_W * dpr;
-      ui.canvas.height = CLIENT_H * dpr;
-      ui.canvas.style.width = `${CLIENT_W}px`;
-      ui.canvas.style.height = `${CLIENT_H}px`;
-      // ensure drawing uses CSS pixel coordinates
-      if (c && typeof c.setTransform === "function")
-        c.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      // update dynamic sizes used by the game
+      // update dynamic sizes used by the game (based on CSS pixels)
       dino.x = Math.floor(CLIENT_W * 0.1);
       dino.width = Math.max(8, Math.floor(CLIENT_W * 0.05));
       dino.height = Math.max(8, Math.floor(CLIENT_H * 0.09));
     } catch (e) {}
   }
 
+  // initial compute and debounced listener; central resizer handles backing buffer
   resizeCanvas();
+  let _dinoResizeTO = null;
   window.addEventListener("resize", () => {
     try {
-      resizeCanvas();
+      clearTimeout(_dinoResizeTO);
+      _dinoResizeTO = setTimeout(() => resizeCanvas(), 120);
     } catch (e) {}
   });
 
@@ -265,7 +259,7 @@ export function initDino(socket) {
       state.cactusGroups.push(new CactusGroup(0));
     } else {
       const lastGroup = state.cactusGroups[state.cactusGroups.length - 1];
-      if (lastGroup.getRightmostX() < ui.canvas.width - MIN_OBSTACLE_DISTANCE) {
+      if (lastGroup.getRightmostX() < CLIENT_W - MIN_OBSTACLE_DISTANCE) {
         state.cactusGroups.push(new CactusGroup(0));
       }
     }
@@ -439,7 +433,7 @@ export function initDino(socket) {
   function clearToBlack() {
     try {
       c.fillStyle = "#000";
-      c.fillRect(0, 0, ui.canvas.width, ui.canvas.height);
+      c.fillRect(0, 0, CLIENT_W, CLIENT_H);
     } catch {}
   }
 

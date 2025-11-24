@@ -24,6 +24,17 @@
   letter-spacing: 0.125rem;
 }
 
+/* Reduce heavy letter-spacing on small screens to improve readability */
+@media (max-width: 600px) {
+  * {
+    letter-spacing: 0.06rem;
+  }
+  .btn,
+  .btns-wrap button {
+    font-size: clamp(0.85rem, 2.5vw, 1rem);
+  }
+}
+
 ::before,
 ::after {
   box-sizing: border-box;
@@ -43,7 +54,7 @@ body {
   background: var(--bg-color);
   color: var(--primary-color);
   font-family: monospace, monospace;
-  width: 100dvw;
+  width: 100vw;
   overflow-x: hidden;
 }
 
@@ -262,6 +273,11 @@ button.reset:not(:disabled):hover,
   border: 2px solid var(--bg-color) !important;
   outline: 2px solid var(--red-color) !important;
 }
+
+button {
+  user-select: none;
+}
+
 .fa,
 .fa-solid,
 .fa-regular,
