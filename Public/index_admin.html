@@ -227,7 +227,7 @@
                                     <div class="form-field">
                                         <label>Pseudo</label>
                                         <input type="text" id="modifyUser"
-                                            placeholder="Pseudo de l'utilisateur" />
+                                            placeholder="Pseudo (ou ALL pour cibler tout le monde)" />
                                     </div>
                                     <div class="form-field">
                                         <label>Stat ?</label>
@@ -263,14 +263,13 @@
                                             <i class="fa-solid fa-pen"></i>
                                             Modifier
                                         </button>
-                                        <button class="btn"
-                                            onclick="addStat()">
-                                            <i class="fa-solid fa-pen"></i>
+                                        <button class="btn" onclick="addStat()">
+                                            <i class="fa-solid fa-plus"></i>
                                             Ajouter
                                         </button>
                                         <button class="btn btn-red"
                                             onclick="removeStat()">
-                                            <i class="fa-solid fa-pen"></i>
+                                            <i class="fa-solid fa-minus"></i>
                                             Retirer
                                         </button>
                                     </div>
@@ -619,149 +618,143 @@
 
         // Modifier Stat
         async function modifyStat() {
-            const pseudo = document.getElementById('modifyUser').value.trim();
-            const statType = document.getElementById('modifyStatType').value;
-            const value = parseInt(document.getElementById('modifyStatValue').value);
+  const pseudo = document.getElementById('modifyUser').value.trim();
+  const statType = document.getElementById('modifyStatType').value;
+  const value = parseInt(document.getElementById('modifyStatValue').value);
 
-            if (!pseudo || isNaN(value)) {
-                showNotification('⚠️ Veuillez remplir tous les champs', 'error');
-                return;
-            }
+  if (!pseudo || isNaN(value)) {
+    showNotification('⚠️ Veuillez remplir tous les champs', 'error');
+    return;
+  }
 
-            if (!confirm(`Modifier ${statType} de ${pseudo} à ${value} ?`)) return;
+  const targetAll = pseudo.toUpperCase() === 'ALL';
+  const confirmMsg = targetAll 
+    ? `Modifier ${statType} de ALL LES JOUEURS à ${value} ?`
+    : `Modifier ${statType} de ${pseudo} à ${value} ?`;
+  
+  if (!confirm(confirmMsg)) return;
 
-            if (statType === 'all') {
-                if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats de ${pseudo} à ${value} ! Confirmer ?`)) return;
-            }
+  if (statType === 'all') {
+    if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats ${targetAll ? 'de ALL LES JOUEURS' : 'de ' + pseudo} à ${value} ! Confirmer ?`)) return;
+  }
 
-            try {
-                if (statType === 'all') {
-                    // Construire un objet stats avec toutes les clés valides = value
-                    const stats = {
-                        clicks: value,
-                        dinoScores: value,
-                        flappyScores: value,
-                        unoWins: value,
-                        pictionaryWins: value,
-                        p4Wins: value,
-                        blockblastScores: value,
-                    };
+  try {
+    const endpoint = targetAll ? '/api/admin/modify-all-users-stat' : '/api/admin/modify-stat';
+    const body = targetAll 
+      ? { statType, value }
+      : { pseudo, statType, value };
 
-                    const res = await fetch('/api/admin/modify-all-stats', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pseudo, stats })
-                    });
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
 
-                    const data = await res.json();
-                    
-                    if (res.ok) {
-                        showNotification(`✅ ${data.message}`, 'success');
-                        socket.emit('admin:refresh');
-                        document.getElementById('modifyUser').value = '';
-                        document.getElementById('modifyStatValue').value = '';
-                    } else {
-                        showNotification(`❌ ${data.message}`, 'error');
-                    }
-                    return;
-                }
+    const data = await res.json();
+    
+    if (res.ok) {
+      showNotification(`✅ ${data.message}`, 'success');
+      socket.emit('admin:refresh');
+      document.getElementById('modifyUser').value = '';
+      document.getElementById('modifyStatValue').value = '';
+    } else {
+      showNotification(`❌ ${data.message}`, 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showNotification('⚠️ Erreur lors de la modification', 'error');
+  }
+}
 
-            } catch (err) {
-                console.error(err);
-                showNotification('⚠️ Erreur lors de la modification', 'error');
-            }
+async function addStat() {
+  const pseudo = document.getElementById('modifyUser').value.trim();
+  const statType = document.getElementById('modifyStatType').value;
+  const value = parseInt(document.getElementById('modifyStatValue').value);
 
-            try {
-                const res = await fetch('/api/admin/modify-stat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, statType, value })
-                });
+  if (!pseudo || isNaN(value) || value <= 0) {
+    showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
+    return;
+  }
 
-                const data = await res.json();
-                
-                if (res.ok) {
-                    showNotification(`✅ ${data.message}`, 'success');
-                    socket.emit('admin:refresh');
-                    document.getElementById('modifyUser').value = '';
-                    document.getElementById('modifyStatValue').value = '';
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-                
-            } catch (err) {
-                console.error(err);
-                showNotification('⚠️ Erreur lors de la modification', 'error');
-            }
-        }
+  const targetAll = pseudo.toUpperCase() === 'ALL';
+  const confirmMsg = targetAll 
+    ? `Ajouter ${value} à ${statType} de ALL LES JOUEURS ?`
+    : `Ajouter ${value} à ${statType} de ${pseudo} ?`;
+  
+  if (!confirm(confirmMsg)) return;
 
-        // Ajouter Stat
-        async function addStat() {
-            const pseudo = document.getElementById('modifyUser').value.trim();
-            const statType = document.getElementById('modifyStatType').value;
-            const value = parseInt(document.getElementById('modifyStatValue').value);
+  try {
+    const endpoint = targetAll ? '/api/admin/add-all-users-stat' : '/api/admin/add-stat';
+    const body = targetAll 
+      ? { statType, value }
+      : { pseudo, statType, value };
 
-            if (!pseudo || isNaN(value) || value <= 0) {
-                showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
-                return;
-            }
-            if (!confirm(`Ajouter ${value} à ${statType} de ${pseudo} ?`)) return;
-            try {
-                const res = await fetch('/api/admin/add-stat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, statType, value })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showNotification(`✅ ${data.message}`, 'success');
-                    socket.emit('admin:refresh');
-                    document.getElementById('modifyUser').value = '';
-                    document.getElementById('modifyStatValue').value = '';
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showNotification('⚠️ Erreur lors de l\'ajout', 'error');
-            }
-        }
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
 
-        // Retirer Stat
-        async function removeStat() {
-            const pseudo = document.getElementById('modifyUser').value.trim();
-            const statType = document.getElementById('modifyStatType').value;
-            const value = parseInt(document.getElementById('modifyStatValue').value);
+    const data = await res.json();
+    
+    if (res.ok) {
+      showNotification(`✅ ${data.message}`, 'success');
+      socket.emit('admin:refresh');
+      document.getElementById('modifyUser').value = '';
+      document.getElementById('modifyStatValue').value = '';
+    } else {
+      showNotification(`❌ ${data.message}`, 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showNotification('⚠️ Erreur lors de l\'ajout', 'error');
+  }
+}
 
-            if (!pseudo || isNaN(value) || value <= 0) {
-                showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
-                return;
-            }
+async function removeStat() {
+  const pseudo = document.getElementById('modifyUser').value.trim();
+  const statType = document.getElementById('modifyStatType').value;
+  const value = parseInt(document.getElementById('modifyStatValue').value);
 
-            if (!confirm(`Retirer ${value} de ${statType} de ${pseudo} ?`)) return;
+  if (!pseudo || isNaN(value) || value <= 0) {
+    showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
+    return;
+  }
 
-            try {
-                const res = await fetch('/api/admin/remove-stat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, statType, value })
-                });
+  const targetAll = pseudo.toUpperCase() === 'ALL';
+  const confirmMsg = targetAll 
+    ? `Retirer ${value} de ${statType} de ALL LES JOUEURS ?`
+    : `Retirer ${value} de ${statType} de ${pseudo} ?`;
+  
+  if (!confirm(confirmMsg)) return;
 
-                const data = await res.json();
-                
-                if (res.ok) {
-                    showNotification(`✅ ${data.message}`, 'success');
-                    socket.emit('admin:refresh');
-                    document.getElementById('modifyUser').value = '';
-                    document.getElementById('modifyStatValue').value = '';
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showNotification('⚠️ Erreur lors de la suppression', 'error');
-            }
-        }
+  try {
+    const endpoint = targetAll ? '/api/admin/remove-all-users-stat' : '/api/admin/remove-stat';
+    const body = targetAll 
+      ? { statType, value }
+      : { pseudo, statType, value };
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    
+    if (res.ok) {
+      showNotification(`✅ ${data.message}`, 'success');
+      socket.emit('admin:refresh');
+      document.getElementById('modifyUser').value = '';
+      document.getElementById('modifyStatValue').value = '';
+    } else {
+      showNotification(`❌ ${data.message}`, 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showNotification('⚠️ Erreur lors de la suppression', 'error');
+  }
+}
 
         // Supprimer Utilisateur
         async function deleteUser() {

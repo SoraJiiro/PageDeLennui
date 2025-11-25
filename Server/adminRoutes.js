@@ -207,6 +207,135 @@ function createAdminRouter(io) {
     });
   });
 
+  router.post("/modify-all-users-stat", requireAdmin, (req, res) => {
+    const { statType, value } = req.body;
+
+    if (!statType || typeof value !== "number") {
+      return res.status(400).json({ message: "Données invalides" });
+    }
+
+    const validStats = [
+      "clicks",
+      "dinoScores",
+      "flappyScores",
+      "unoWins",
+      "pictionaryWins",
+      "p4Wins",
+      "blockblastScores",
+    ];
+
+    if (!validStats.includes(statType)) {
+      return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    const users = Object.keys(FileService.data[statType]);
+    users.forEach((pseudo) => {
+      FileService.data[statType][pseudo] = value;
+      if (statType === "clicks") {
+        recalculateMedals(pseudo, value);
+      }
+    });
+
+    FileService.save(statType, FileService.data[statType]);
+
+    console.log({
+      level: "action",
+      message: `Modification massive: ${statType} = ${value} pour ${users.length} joueurs`,
+    });
+
+    res.json({
+      message: `${statType} de ${users.length} joueurs mis à ${value}`,
+    });
+  });
+
+  // Ajouter stat pour ALL les utilisateurs
+  router.post("/add-all-users-stat", requireAdmin, (req, res) => {
+    const { statType, value } = req.body;
+
+    if (!statType || typeof value !== "number") {
+      return res.status(400).json({ message: "Données invalides" });
+    }
+
+    const validStats = [
+      "clicks",
+      "dinoScores",
+      "flappyScores",
+      "unoWins",
+      "pictionaryWins",
+      "p4Wins",
+      "blockblastScores",
+    ];
+
+    if (!validStats.includes(statType)) {
+      return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    const users = Object.keys(FileService.data[statType]);
+    users.forEach((pseudo) => {
+      const current = FileService.data[statType][pseudo] || 0;
+      const newValue = current + value;
+      FileService.data[statType][pseudo] = newValue;
+      if (statType === "clicks") {
+        recalculateMedals(pseudo, newValue);
+      }
+    });
+
+    FileService.save(statType, FileService.data[statType]);
+
+    console.log({
+      level: "action",
+      message: `Ajout massif: ${statType} +${value} pour ${users.length} joueurs`,
+    });
+
+    res.json({
+      message: `${value} ajouté à ${statType} de ${users.length} joueurs`,
+    });
+  });
+
+  // Retirer stat pour ALL les utilisateurs
+  router.post("/remove-all-users-stat", requireAdmin, (req, res) => {
+    const { statType, value } = req.body;
+
+    if (!statType || typeof value !== "number") {
+      return res.status(400).json({ message: "Données invalides" });
+    }
+
+    const validStats = [
+      "clicks",
+      "dinoScores",
+      "flappyScores",
+      "unoWins",
+      "pictionaryWins",
+      "p4Wins",
+      "blockblastScores",
+    ];
+
+    if (!validStats.includes(statType)) {
+      return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    const users = Object.keys(FileService.data[statType]);
+    users.forEach((pseudo) => {
+      const current = FileService.data[statType][pseudo] || 0;
+      const newValue = Math.max(0, current - value);
+      FileService.data[statType][pseudo] = newValue;
+      if (statType === "clicks") {
+        recalculateMedals(pseudo, newValue);
+      }
+    });
+
+    FileService.save(statType, FileService.data[statType]);
+
+    console.log({
+      level: "action",
+      message: `Retrait massif: ${statType} -${value} pour ${users.length} joueurs`,
+    });
+
+    res.json({
+      message: `${value} retiré de ${statType} de ${users.length} joueurs`,
+    });
+  });
+
   // Ajouter stat
   router.post("/add-stat", requireAdmin, (req, res) => {
     const { pseudo, statType, value } = req.body;
@@ -354,8 +483,6 @@ function createAdminRouter(io) {
 
     res.json({ message: `Utilisateur ${pseudo} supprimé avec succès` });
   });
-
-  // Modification du mot de passe désactivée (annulation)
 
   // Remettre à 0 les entrées de leaderboard d'un utilisateur (sans supprimer le compte)
   router.post("/clear-from-leaderboard", requireAdmin, (req, res) => {

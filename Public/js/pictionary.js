@@ -201,32 +201,27 @@ export function initPictionary(socket) {
     if (!ui.canvas) return;
     const rect = ui.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    const clientW = Math.round(
-      ui.canvas.clientWidth ||
-        rect.width ||
-        Number(ui.canvas.getAttribute("width")) ||
-        700
-    );
-    const clientH = Math.round(
-      ui.canvas.clientHeight ||
-        rect.height ||
-        Number(ui.canvas.getAttribute("height")) ||
-        450
-    );
-    const displayWidth = Math.max(1, clientW);
-    const displayHeight = Math.max(1, clientH);
-    // Only update CSS size here; backing buffer and transform are handled
-    // by the central canvas resizer. Emit state so server can resend canvas
-    // contents if necessary.
+    const clientW = Math.round(ui.canvas.clientWidth || rect.width || 700);
+    const clientH = Math.round(ui.canvas.clientHeight || rect.height || 450);
+
+    // Définir le backing buffer avec DPR
+    ui.canvas.width = clientW * dpr;
+    ui.canvas.height = clientH * dpr;
+
+    // Appliquer le setTransform pour dessiner en CSS pixels
     try {
-      ui.canvas.style.width = `${displayWidth}px`;
-      ui.canvas.style.height = `${displayHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     } catch (e) {}
+
+    try {
+      ui.canvas.style.width = `${clientW}px`;
+      ui.canvas.style.height = `${clientH}px`;
+    } catch (e) {}
+
+    // Redemander l'état pour redessiner
     try {
       socket.emit("pictionary:getState");
-    } catch (e) {
-      console.error("Erreur interne : ", e.toString());
-    }
+    } catch (e) {}
   }
 
   window.addEventListener("resize", resizeCanvas);
@@ -392,8 +387,10 @@ export function initPictionary(socket) {
     ui.canvas.addEventListener("mousedown", (e) => {
       if (!state.estDessinateur) return;
       const rect = ui.canvas.getBoundingClientRect();
+      // Coordonnées CSS pixels (pas DPR)
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+
       if (currentTool === "fill") {
         fillAt(x, y, strokeColor);
         sendFill(x, y, strokeColor);
@@ -410,6 +407,7 @@ export function initPictionary(socket) {
       const rect = ui.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+
       ctx.lineTo(x, y);
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = strokeSize;
