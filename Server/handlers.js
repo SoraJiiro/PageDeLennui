@@ -1477,6 +1477,150 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   // ------- Admin Events -------
+  // Admin: blacklist management via socket (Admin only)
+  socket.on("admin:blacklist:get", () => {
+    if (pseudo !== "Admin") return;
+    try {
+      let data = { alwaysBlocked: [], configR: [], configK: [] };
+      if (fs.existsSync(BLACKLIST_PATH)) {
+        const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
+        data = JSON.parse(raw || "{}");
+      }
+      socket.emit("admin:blacklist:result", { success: true, data });
+    } catch (e) {
+      socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Erreur lecture blacklist",
+      });
+    }
+  });
+
+  socket.on("admin:blacklist:add", ({ ip }) => {
+    if (pseudo !== "Admin") return;
+    if (!ip)
+      return socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "IP manquante",
+      });
+    try {
+      let data = { alwaysBlocked: [], configR: [], configK: [] };
+      if (fs.existsSync(BLACKLIST_PATH)) {
+        const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
+        data = JSON.parse(raw || "{}");
+      }
+      data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
+        ? data.alwaysBlocked
+        : [];
+      if (!data.alwaysBlocked.includes(ip)) {
+        data.alwaysBlocked.push(ip);
+        fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+      }
+      // update runtime config
+      if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
+      // disconnect any currently connected sockets from that IP
+      try {
+        io.sockets.sockets.forEach((s) => {
+          try {
+            const sIp = getIpFromSocket(s);
+            if (sIp === ip) {
+              try {
+                s.emit("system:notification", {
+                  message: "🚫 Votre IP a été bannie",
+                  duration: 8000,
+                });
+              } catch (e) {}
+              try {
+                setTimeout(() => s.disconnect(true), 2500);
+              } catch (e) {}
+            }
+          } catch (e) {}
+        });
+      } catch (e) {}
+      // notify all admins of updated list
+      io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
+      socket.emit("admin:blacklist:result", { success: true, data });
+    } catch (e) {
+      socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Erreur ajout blacklist",
+      });
+    }
+  });
+
+  socket.on("admin:blacklist:remove", ({ ip }) => {
+    if (pseudo !== "Admin") return;
+    if (!ip)
+      return socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "IP manquante",
+      });
+    try {
+      let data = { alwaysBlocked: [], configR: [], configK: [] };
+      if (fs.existsSync(BLACKLIST_PATH)) {
+        const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
+        data = JSON.parse(raw || "{}");
+      }
+      data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
+        ? data.alwaysBlocked
+        : [];
+      const idx = data.alwaysBlocked.indexOf(ip);
+      if (idx !== -1) {
+        data.alwaysBlocked.splice(idx, 1);
+        fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+      }
+      // update runtime config
+      config.BLACKLIST = config.BLACKLIST.filter((v) => v !== ip);
+      // notify admins
+      io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
+      socket.emit("admin:blacklist:result", { success: true, data });
+    } catch (e) {
+      socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Erreur suppression blacklist",
+      });
+    }
+  });
+
+  socket.on("admin:blacklist:set", ({ alwaysBlocked }) => {
+    if (pseudo !== "Admin") return;
+    try {
+      const data = {
+        alwaysBlocked: Array.isArray(alwaysBlocked)
+          ? Array.from(new Set(alwaysBlocked))
+          : [],
+        configR: [],
+        configK: [],
+      };
+      fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+      config.BLACKLIST = data.alwaysBlocked.slice();
+      // disconnect any currently connected sockets that are now blacklisted
+      try {
+        io.sockets.sockets.forEach((s) => {
+          try {
+            const sIp = getIpFromSocket(s);
+            if (config.BLACKLIST.includes(sIp)) {
+              try {
+                s.emit("system:notification", {
+                  message: "🚫 Votre IP a été bannie",
+                  duration: 8000,
+                });
+              } catch (e) {}
+              try {
+                s.disconnect(true);
+              } catch (e) {}
+            }
+          } catch (e) {}
+        });
+      } catch (e) {}
+      io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
+      socket.emit("admin:blacklist:result", { success: true, data });
+    } catch (e) {
+      socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Erreur écriture blacklist",
+      });
+    }
+  });
   socket.on("admin:refresh", () => {
     if (pseudo === "Admin") {
       leaderboardManager.broadcastClickerLB(io);

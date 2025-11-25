@@ -354,6 +354,39 @@
                         </div>
                     </div>
                 </section>
+                <!-- BLACKLIST -->
+                <section class="admin-section">
+                    <h2><i class="fa-solid fa-ban"></i> /Blacklist</h2>
+                    <div class="control-form">
+                        <div style="margin-bottom:8px">IP(s) blacklistées:
+                            <strong id="blacklistCount">0</strong></div>
+
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>IP à bannir</label>
+                                <input type="text" id="blacklistInput"
+                                    placeholder="127.0.0.1" />
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn"
+                                    onclick="addBanFromInput()">Bannir</button>
+                                <button class="btn"
+                                    onclick="loadBlacklist()">Rafraîchir</button>
+                            </div>
+                        </div>
+
+                        <!-- textarea removed: blacklist managed via add/remove buttons -->
+
+                        <div style="margin-top:12px">
+                            <label>Liste actuelle</label>
+                            <table
+                                style="width:100%;border-collapse:collapse;margin-top:6px"><tbody
+                                    id="blacklistList"></tbody></table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- LOGS -->
                 <section class="admin-section">
                     <h2><i class="fa-solid fa-database"></i> /Logs</h2>
                     <center>
@@ -451,6 +484,20 @@
                     (data && data.duration) ? data.duration : 8000,
                     !!(data && data.withCountdown)
                 );
+            });
+
+            // Blacklist admin socket handlers
+            socket.on('admin:blacklist:result', (res) => {
+                if (!res) return;
+                if (!res.success) return showNotification(`❌ ${res.message || 'Erreur blacklist'}`, 'error');
+                window.__adminBlacklistData = res.data || { alwaysBlocked: [] };
+                renderBlacklist();
+            });
+
+            socket.on('admin:blacklist:updated', (alwaysBlocked) => {
+                window.__adminBlacklistData = { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [] };
+                renderBlacklist();
+                showNotification('✅ Blacklist mise à jour', 'success');
             });
         }
 
@@ -837,6 +884,68 @@ async function removeStat() {
                 showNotification('⚠️ Erreur lors du nettoyage des leaderboards', 'error');
             }
         }
+
+        // Blacklist admin helpers
+        function loadBlacklist() {
+            if (!socket) return;
+            socket.emit('admin:blacklist:get');
+        }
+
+        socket && socket.on && socket.on('admin:blacklist:result', (res) => {
+            if (!res) return;
+            if (!res.success) return showNotification(`❌ ${res.message || 'Erreur blacklist'}`, 'error');
+            window.__adminBlacklistData = res.data || { alwaysBlocked: [] };
+            renderBlacklist();
+        });
+
+        socket && socket.on && socket.on('admin:blacklist:updated', (alwaysBlocked) => {
+            window.__adminBlacklistData = { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [] };
+            renderBlacklist();
+            showNotification('✅ Blacklist mise à jour', 'success');
+        });
+
+        function renderBlacklist() {
+            const data = window.__adminBlacklistData || { alwaysBlocked: [] };
+            const arr = Array.isArray(data.alwaysBlocked) ? data.alwaysBlocked : [];
+            const list = document.getElementById('blacklistList');
+            const count = document.getElementById('blacklistCount');
+            if (count) count.textContent = arr.length;
+            if (!list) return;
+            list.innerHTML = '';
+            arr.forEach(ip => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip}</td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn btn-red" onclick="removeBan('${ip}')">Unban</button></td>`;
+                list.appendChild(tr);
+            });
+            // textarea removed — no sync needed
+        }
+
+        function addBanFromInput() {
+            const ip = document.getElementById('blacklistInput').value.trim();
+            if (!ip) return showNotification('⚠️ Entrez une IP', 'error');
+            if (!confirm(`Bannir ${ip} ?`)) return;
+            socket.emit('admin:blacklist:add', { ip });
+            document.getElementById('blacklistInput').value = '';
+        }
+
+        function removeBan(ip) {
+            if (!confirm(`Retirer le ban pour ${ip} ?`)) return;
+            socket.emit('admin:blacklist:remove', { ip });
+        }
+
+        // setBlacklistFromTextarea removed — blacklist is managed via add/remove
+
+        // load initial list when admin page connects
+        (function waitForSocketThenLoad() {
+            const attempt = () => {
+                if (socket && socket.connected) {
+                    loadBlacklist();
+                } else {
+                    setTimeout(attempt, 250);
+                }
+            };
+            attempt();
+        })();
 
         // Notification Globale
         function sendGlobalNotification() {
