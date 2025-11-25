@@ -14,6 +14,13 @@ module.exports = {
 
   // Blacklist
   BLACKLIST: [],
+  // IPs qui doivent TOUJOURS être bloquées (forcées)
+  FORCED_ALWAYS_BLOCKED: [
+    "192.168.197.197",
+    "192.168.197.1",
+    "192.168.197.193",
+    "192.168.193.1",
+  ],
 
   // Save blockblast move history to disk (set env SAVE_BLOCKBLAST_HISTORY=true to enable)
   SAVE_BLOCKBLAST_HISTORY:
@@ -21,22 +28,11 @@ module.exports = {
 
   // Charger la blacklist selon la config (R, K ou S)
   loadBlacklist(config) {
-    if (config !== "R" && config !== "K" && config !== "S") {
-      throw new Error("Configuration invalide. Utilisez 'R', 'K' ou 'S'.");
-    }
-
+    // Simplified: only keep the alwaysBlocked list (merged with forced IPs).
     const blacklistPath = path.join(__dirname, "..", "blacklist.json");
-
     try {
       if (!fs.existsSync(blacklistPath)) {
-        console.warn(
-          `⚠️ Fichier blacklist.json introuvable, création d'un fichier vide...`
-        );
-        const defaultData = {
-          alwaysBlocked: [],
-          configR: [],
-          configK: [],
-        };
+        const defaultData = { alwaysBlocked: [] };
         fs.writeFileSync(
           blacklistPath,
           JSON.stringify(defaultData, null, 2),
@@ -44,44 +40,35 @@ module.exports = {
         );
       }
 
-      const content = fs.readFileSync(blacklistPath, "utf8");
+      const content = fs.readFileSync(blacklistPath, "utf8") || "{}";
       const data = JSON.parse(content);
 
-      const alwaysBlocked = Array.isArray(data.alwaysBlocked)
+      const fileAlways = Array.isArray(data.alwaysBlocked)
         ? data.alwaysBlocked
         : [];
+      const forced = Array.isArray(this.FORCED_ALWAYS_BLOCKED)
+        ? this.FORCED_ALWAYS_BLOCKED
+        : [];
+      const alwaysBlocked = [...new Set([...forced, ...fileAlways])];
 
-      if (config === "S") {
-        this.BLACKLIST = [...new Set(alwaysBlocked)];
-        console.log(
-          `\n>> Configuration [ ${config} ] chargée : ${this.BLACKLIST.length} IP(s) blacklistées`
-        );
-        console.log(`   - Toujours bloquées : ${alwaysBlocked.length}`);
-        console.log(`>> IPs bloquées : ${this.BLACKLIST.join(", ")}\n`);
-        return;
+      // Persist forced IPs to file if missing (only forced IPs are written)
+      try {
+        const missing = forced.filter((ip) => !fileAlways.includes(ip));
+        if (missing.length > 0) {
+          data.alwaysBlocked = alwaysBlocked;
+          fs.writeFileSync(
+            blacklistPath,
+            JSON.stringify(data, null, 2),
+            "utf8"
+          );
+        }
+      } catch (e) {
+        // ignore persistence errors silently
       }
 
-      const configIPs =
-        config === "R"
-          ? Array.isArray(data.configR)
-            ? data.configR
-            : []
-          : Array.isArray(data.configK)
-          ? data.configK
-          : [];
-
-      this.BLACKLIST = [...new Set([...alwaysBlocked, ...configIPs])];
-
-      console.log(
-        `\n>> Configuration [ ${config} ] chargée : ${this.BLACKLIST.length} IP(s) blacklistées`
-      );
-      console.log(`   - Toujours bloquées : ${alwaysBlocked.length}`);
-      console.log(`   - Config ${config} : ${configIPs.length}`);
-      console.log(`>> IPs bloquées : ${this.BLACKLIST.join(", ")}\n`);
+      // Set runtime blacklist to the merged alwaysBlocked (forced + file)
+      this.BLACKLIST = [...new Set(alwaysBlocked)];
     } catch (err) {
-      console.error(
-        `Erreur lors du chargement de la blacklist : ${err.message}`
-      );
       this.BLACKLIST = [];
     }
   },

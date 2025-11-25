@@ -1481,12 +1481,16 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("admin:blacklist:get", () => {
     if (pseudo !== "Admin") return;
     try {
-      let data = { alwaysBlocked: [], configR: [], configK: [] };
-      if (fs.existsSync(BLACKLIST_PATH)) {
-        const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
-        data = JSON.parse(raw || "{}");
-      }
-      socket.emit("admin:blacklist:result", { success: true, data });
+      // Return the runtime blacklist and the forced list. Do not expose or rely on file writes here.
+      const data = {
+        alwaysBlocked: Array.isArray(config.BLACKLIST)
+          ? config.BLACKLIST.slice()
+          : [],
+      };
+      const forced = Array.isArray(config.FORCED_ALWAYS_BLOCKED)
+        ? config.FORCED_ALWAYS_BLOCKED
+        : [];
+      socket.emit("admin:blacklist:result", { success: true, data, forced });
     } catch (e) {
       socket.emit("admin:blacklist:result", {
         success: false,
@@ -1503,20 +1507,10 @@ function initSocketHandlers(io, socket, gameState) {
         message: "IP manquante",
       });
     try {
-      let data = { alwaysBlocked: [], configR: [], configK: [] };
-      if (fs.existsSync(BLACKLIST_PATH)) {
-        const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
-        data = JSON.parse(raw || "{}");
-      }
-      data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
-        ? data.alwaysBlocked
-        : [];
-      if (!data.alwaysBlocked.includes(ip)) {
-        data.alwaysBlocked.push(ip);
-        fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
-      }
-      // update runtime config
+      // Do not persist admin-added IPs to disk. Keep them runtime-only in config.BLACKLIST.
+      if (!Array.isArray(config.BLACKLIST)) config.BLACKLIST = [];
       if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
+      const data = { alwaysBlocked: config.BLACKLIST.slice() };
       // disconnect any currently connected sockets from that IP
       try {
         io.sockets.sockets.forEach((s) => {
@@ -1536,7 +1530,7 @@ function initSocketHandlers(io, socket, gameState) {
           } catch (e) {}
         });
       } catch (e) {}
-      // notify all admins of updated list
+      // notify all admins of updated runtime list
       io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
       socket.emit("admin:blacklist:result", { success: true, data });
     } catch (e) {
@@ -1555,21 +1549,20 @@ function initSocketHandlers(io, socket, gameState) {
         message: "IP manquante",
       });
     try {
-      let data = { alwaysBlocked: [], configR: [], configK: [] };
-      if (fs.existsSync(BLACKLIST_PATH)) {
-        const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
-        data = JSON.parse(raw || "{}");
-      }
-      data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
-        ? data.alwaysBlocked
+      // Prevent removing forced IPs
+      const forcedList = Array.isArray(config.FORCED_ALWAYS_BLOCKED)
+        ? config.FORCED_ALWAYS_BLOCKED
         : [];
-      const idx = data.alwaysBlocked.indexOf(ip);
-      if (idx !== -1) {
-        data.alwaysBlocked.splice(idx, 1);
-        fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+      if (forcedList.includes(ip)) {
+        return socket.emit("admin:blacklist:result", {
+          success: false,
+          message: "Impossible de retirer une IP forcée",
+        });
       }
-      // update runtime config
+      // Remove from runtime-only blacklist (do not touch blacklist.json)
+      if (!Array.isArray(config.BLACKLIST)) config.BLACKLIST = [];
       config.BLACKLIST = config.BLACKLIST.filter((v) => v !== ip);
+      const data = { alwaysBlocked: config.BLACKLIST.slice() };
       // notify admins
       io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
       socket.emit("admin:blacklist:result", { success: true, data });
@@ -1584,14 +1577,13 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("admin:blacklist:set", ({ alwaysBlocked }) => {
     if (pseudo !== "Admin") return;
     try {
-      const data = {
-        alwaysBlocked: Array.isArray(alwaysBlocked)
-          ? Array.from(new Set(alwaysBlocked))
-          : [],
-        configR: [],
-        configK: [],
-      };
-      fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+      // Replace the runtime blacklist only. Forced IPs are merged but we DO NOT persist admin changes to disk.
+      const forcedList = Array.isArray(config.FORCED_ALWAYS_BLOCKED)
+        ? config.FORCED_ALWAYS_BLOCKED
+        : [];
+      const provided = Array.isArray(alwaysBlocked) ? alwaysBlocked : [];
+      const merged = Array.from(new Set([...forcedList, ...provided]));
+      const data = { alwaysBlocked: merged };
       config.BLACKLIST = data.alwaysBlocked.slice();
       // disconnect any currently connected sockets that are now blacklisted
       try {

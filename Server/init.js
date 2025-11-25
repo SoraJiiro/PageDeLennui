@@ -175,64 +175,15 @@ process.on("SIGINT", () => {
 });
 
 // ------- Start Serveur -------
-// Demander la configuration de blacklist
-const readline = require("readline");
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
 
-console.log("\n========================================");
-console.log("Configuration BLACKLIST du serveur PDE");
-console.log("========================================");
+// Démarrer sans prompt interactif — charger le mode S (IPs forcées seulement)
+// Démarrer sans affichage relatif à la blacklist. Charger en silence le mode S (IPs forcées seulement)
+config.loadBlacklist("S");
 
-// Lire le fichier pour afficher le nombre d'IPs
-const fs = require("fs");
-let countAlways = 0;
-let countR = 0;
-let countK = 0;
-
-try {
-  const data = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "..", "blacklist.json"), "utf8")
+serveur.listen(config.PORT, config.HOST, () => {
+  console.log(
+    `>> ✅ Serveur en ligne : http://${config.HOST || "localhost"}:${
+      config.PORT
+    }\n`
   );
-  countAlways = Array.isArray(data.alwaysBlocked)
-    ? data.alwaysBlocked.length
-    : 0;
-  countR = Array.isArray(data.configR) ? data.configR.length : 0;
-  countK = Array.isArray(data.configK) ? data.configK.length : 0;
-} catch (e) {
-  countAlways = 0;
-  countR = 0;
-  countK = 0;
-}
-
-console.log(`R = ${countAlways + countR} IPs (${countR} + ${countAlways})`);
-console.log(`K = ${countAlways + countK} IPs (${countK} + ${countAlways})`);
-console.log(`S = ${countAlways} IPs (seulement toujours bloquées)`);
-console.log("========================================\n");
-
-rl.question("Config ? [R / K / S]: ", (answer) => {
-  const configChoice = answer.trim().toUpperCase();
-
-  if (configChoice !== "R" && configChoice !== "K" && configChoice !== "S") {
-    console.error(
-      "\n❌ Configuration invalide. Relancer 'npm start' et choisir R, K ou S.\n"
-    );
-    process.exit(1);
-  }
-
-  // Charger la blacklist correspondante
-  config.loadBlacklist(configChoice);
-
-  rl.close();
-
-  // Démarrer le serveur
-  serveur.listen(config.PORT, config.HOST, () => {
-    console.log(
-      `>> ✅ Serveur en ligne : http://${config.HOST || "localhost"}:${
-        config.PORT
-      }\n`
-    );
-  });
 });

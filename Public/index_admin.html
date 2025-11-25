@@ -491,11 +491,13 @@
                 if (!res) return;
                 if (!res.success) return showNotification(`❌ ${res.message || 'Erreur blacklist'}`, 'error');
                 window.__adminBlacklistData = res.data || { alwaysBlocked: [] };
+                window.__adminBlacklistForced = Array.isArray(res.forced) ? res.forced : [];
                 renderBlacklist();
             });
 
             socket.on('admin:blacklist:updated', (alwaysBlocked) => {
                 window.__adminBlacklistData = { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [] };
+                if (!Array.isArray(window.__adminBlacklistForced)) window.__adminBlacklistForced = [];
                 renderBlacklist();
                 showNotification('✅ Blacklist mise à jour', 'success');
             });
@@ -895,11 +897,15 @@ async function removeStat() {
             if (!res) return;
             if (!res.success) return showNotification(`❌ ${res.message || 'Erreur blacklist'}`, 'error');
             window.__adminBlacklistData = res.data || { alwaysBlocked: [] };
+            window.__adminBlacklistForced = Array.isArray(res.forced) ? res.forced : [];
             renderBlacklist();
         });
 
         socket && socket.on && socket.on('admin:blacklist:updated', (alwaysBlocked) => {
+            // admin:blacklist:updated provides updated alwaysBlocked array; forced list remains from initial payload
             window.__adminBlacklistData = { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [] };
+            // ensure forced list exists
+            if (!Array.isArray(window.__adminBlacklistForced)) window.__adminBlacklistForced = [];
             renderBlacklist();
             showNotification('✅ Blacklist mise à jour', 'success');
         });
@@ -912,12 +918,17 @@ async function removeStat() {
             if (count) count.textContent = arr.length;
             if (!list) return;
             list.innerHTML = '';
+            const forced = Array.isArray(window.__adminBlacklistForced) ? window.__adminBlacklistForced : [];
             arr.forEach(ip => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip}</td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn btn-red" onclick="removeBan('${ip}')">Unban</button></td>`;
+                const isForced = forced.includes(ip);
+                if (isForced) {
+                    tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip} <span style="color:#b00;font-weight:700;margin-left:8px">(FORCÉE)</span></td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn" disabled style="opacity:0.5;cursor:not-allowed">Unban</button></td>`;
+                } else {
+                    tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip}</td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn btn-red" onclick="removeBan('${ip}')">Unban</button></td>`;
+                }
                 list.appendChild(tr);
             });
-            // textarea removed — no sync needed
         }
 
         function addBanFromInput() {
