@@ -40,6 +40,7 @@
 #me {
   border-right: 2px solid var(--primary-color);
   padding-right: 10px;
+  user-select: none;
 }
 
 #me::before {
@@ -53,6 +54,7 @@
 #usersCount {
   border-left: 2px solid var(--primary-color);
   padding-left: 10px;
+  user-select: none;
 }
 
 #usersCount::before {

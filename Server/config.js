@@ -15,6 +15,10 @@ module.exports = {
   // Blacklist
   BLACKLIST: [],
 
+  // Save blockblast move history to disk (set env SAVE_BLOCKBLAST_HISTORY=true to enable)
+  SAVE_BLOCKBLAST_HISTORY:
+    (process.env.SAVE_BLOCKBLAST_HISTORY || "false") === "true",
+
   // Charger la blacklist selon la config (R, K ou S)
   loadBlacklist(config) {
     if (config !== "R" && config !== "K" && config !== "S") {

@@ -2,6 +2,8 @@ export function initCanvasResizer() {
   function resizeCanvasToDisplaySize(canvas) {
     if (!canvas) return false;
 
+    if (canvas.classList.contains("game")) return false;
+
     // Exclure le canvas Pictionary du setTransform automatique
     const isPictionaryCanvas = canvas.classList.contains("pictionary-canvas");
 

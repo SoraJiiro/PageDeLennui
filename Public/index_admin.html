@@ -881,26 +881,24 @@ async function removeStat() {
                 document.body.appendChild(notif);
 
                 if (withCountdown) {
-                   principale,
+                    // After `duration` ms show a 3..1 countdown, then a short final marker and remove
                     setTimeout(() => {
                         let countdown = 3;
+                        notif.style.fontSize = '1.8rem';
                         const countdownInterval = setInterval(() => {
                             if (countdown > 0) {
                                 notif.textContent = `[${countdown}]`;
-                                notif.style.fontSize = '1.8rem';
                                 countdown--;
                             } else {
+                                // final marker
                                 notif.textContent = '!';
                                 notif.style.background = '#ff0';
                                 notif.style.border = '2px solid #ff0';
                                 clearInterval(countdownInterval);
-                                setTimeout(() => {
-                                    notif.remove();
-                                }, 800);
+                                setTimeout(() => notif.remove(), 800);
                             }
                         }, 1000);
                     }, duration);
-                    setTimeout(() => notif.remove(), duration + 4800);
                 } else {
                     setTimeout(() => notif.remove(), duration);
                 }

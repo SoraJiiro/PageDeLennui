@@ -1299,6 +1299,8 @@ function initSocketHandlers(io, socket, gameState) {
 
   socket.on("blockblast:saveMove", (moveData) => {
     try {
+      // If saving blockblast history is disabled in config, skip
+      if (!config.SAVE_BLOCKBLAST_HISTORY) return;
       // Créer le dossier d'historique si nécessaire
       const historyDir = path.join(config.DATA, "blockblast_history");
       if (!fs.existsSync(historyDir)) {
@@ -1497,7 +1499,7 @@ function initSocketHandlers(io, socket, gameState) {
       });
       console.log({
         level: "action",
-        message: `Notification globale envoyée: ${message}`,
+        message: `Notification globale envoyée: ${message} -- withCountdown?: ${withCountdown}`,
       });
     }
   });

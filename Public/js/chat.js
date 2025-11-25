@@ -45,8 +45,14 @@ export function initChat(socket) {
   );
 
   socket.on("users:list", (l) => {
-    if (usersCount)
+    if (usersCount) {
       usersCount.innerHTML = `Utilisateurs en ligne: <b>${l.length}</b>`;
+      l.forEach((u) => {
+        if (u === socket.id) return;
+        usersCount.title += `\n‣ ${u}`;
+      });
+      //usersCount.title = `Utilisateurs en ligne:\n${l.join("‣")}`;
+    }
   });
 
   socket.on("chat:message", (payload) => {

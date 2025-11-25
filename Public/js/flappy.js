@@ -23,26 +23,41 @@ export function initFlappy(socket) {
 
   function resizeCanvas() {
     try {
-      const dpr = window.devicePixelRatio || 1;
+      const ratio = window.devicePixelRatio || 1;
       const rect = ui.canvas.getBoundingClientRect();
-      const clientW = Math.max(1, Math.round(rect.width));
-      // keep a slightly shorter height for UI controls if needed
-      const clientH = Math.max(1, Math.round(rect.height * 0.88));
-      // Only update CSS size here; backing buffer and transform are handled
-      // by the central canvas resizer module to keep DPR consistent.
-      ui.canvas.style.width = `${clientW}px`;
-      ui.canvas.style.height = `${clientH}px`;
+      if (!rect.width) return;
+
+      const cssW = Math.max(1, Math.round(rect.width));
+      const cssH = Math.max(
+        1,
+        Math.round(rect.height || (rect.width * 9) / 16)
+      );
+
+      const displayWidth = Math.floor(cssW * ratio);
+      const displayHeight = Math.floor(cssH * ratio);
+
+      if (
+        ui.canvas.width !== displayWidth ||
+        ui.canvas.height !== displayHeight
+      ) {
+        ui.canvas.width = displayWidth;
+        ui.canvas.height = displayHeight;
+      }
+
+      if (ui.ctx && typeof ui.ctx.setTransform === "function") {
+        ui.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
     } catch (e) {}
+
     updateScales();
   }
-  // The global `canvas_resize` module sets the backing buffer and transform.
-  // Here we only compute scale-dependent variables and keep a small debounce on resize.
-  updateScales();
+
+  resizeCanvas();
   let _resizeTO = null;
   window.addEventListener("resize", () => {
     try {
       clearTimeout(_resizeTO);
-      _resizeTO = setTimeout(() => updateScales(), 120);
+      _resizeTO = setTimeout(() => resizeCanvas(), 120);
     } catch (e) {}
   });
   try {
@@ -72,6 +87,8 @@ export function initFlappy(socket) {
     const dpr = window.devicePixelRatio || 1;
     const cssW = Math.round(ui.canvas.width / dpr);
     const cssH = Math.round(ui.canvas.height / dpr);
+    if (!cssW || !cssH) return;
+
     gravity = cssH * 0.00035;
     jump = -cssH * 0.009;
     pipeGap = cssH * 0.25;
@@ -101,7 +118,8 @@ export function initFlappy(socket) {
   };
 
   function resetGame() {
-    updateScales();
+    resizeCanvas();
+
     const dpr = window.devicePixelRatio || 1;
     const cssH = Math.round(ui.canvas.height / dpr);
     birdY = cssH / 3.55;

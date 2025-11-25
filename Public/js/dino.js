@@ -77,8 +77,31 @@ export function initDino(socket) {
   function resizeCanvas() {
     try {
       const rect = ui.canvas.getBoundingClientRect();
+      if (!rect.width) return;
+
+      const ratio = window.devicePixelRatio || 1;
+
       CLIENT_W = Math.max(200, Math.round(rect.width));
-      CLIENT_H = Math.max(120, Math.round(rect.height));
+      CLIENT_H = Math.max(
+        120,
+        Math.round(rect.height || (rect.width * 9) / 16)
+      );
+
+      const displayWidth = Math.floor(CLIENT_W * ratio);
+      const displayHeight = Math.floor(CLIENT_H * ratio);
+
+      if (
+        ui.canvas.width !== displayWidth ||
+        ui.canvas.height !== displayHeight
+      ) {
+        ui.canvas.width = displayWidth;
+        ui.canvas.height = displayHeight;
+      }
+
+      if (c && typeof c.setTransform === "function") {
+        c.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+
       // update dynamic sizes used by the game (based on CSS pixels)
       dino.x = Math.floor(CLIENT_W * 0.1);
       dino.width = Math.max(8, Math.floor(CLIENT_W * 0.05));
@@ -86,7 +109,7 @@ export function initDino(socket) {
     } catch (e) {}
   }
 
-  // initial compute and debounced listener; central resizer handles backing buffer
+  // appel initial
   resizeCanvas();
   let _dinoResizeTO = null;
   window.addEventListener("resize", () => {
@@ -417,6 +440,8 @@ export function initDino(socket) {
   }
 
   function startGame() {
+    resizeCanvas();
+
     state.gameOver = false;
     state.isFirstStart = false;
     state.score = 0;
