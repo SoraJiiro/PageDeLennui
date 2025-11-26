@@ -175,9 +175,6 @@ process.on("SIGINT", () => {
 });
 
 // ------- Start Serveur -------
-
-// Démarrer sans prompt interactif — charger le mode S (IPs forcées seulement)
-// Démarrer sans affichage relatif à la blacklist. Charger en silence le mode S (IPs forcées seulement)
 config.loadBlacklist("S");
 
 serveur.listen(config.PORT, config.HOST, () => {

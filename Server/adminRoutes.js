@@ -96,6 +96,7 @@ function createAdminRouter(io) {
       clicks: FileService.data.clicks[pseudo] || 0,
       dinoScore: FileService.data.dinoScores[pseudo] || 0,
       flappyScore: FileService.data.flappyScores[pseudo] || 0,
+      snakeScore: FileService.data.snakeScores[pseudo] || 0,
       unoWins: FileService.data.unoWins[pseudo] || 0,
       pictionaryPoints: FileService.data.pictionaryWins[pseudo] || 0,
       p4Wins: FileService.data.p4Wins[pseudo] || 0,
@@ -138,6 +139,7 @@ function createAdminRouter(io) {
       "pictionaryWins",
       "p4Wins",
       "blockblastScores",
+      "snakeScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -185,6 +187,7 @@ function createAdminRouter(io) {
         "pictionaryWins",
         "p4Wins",
         "blockblastScores",
+        "snakeScores",
       ];
 
       if (!validStats.includes(statType)) {
@@ -222,6 +225,7 @@ function createAdminRouter(io) {
       "pictionaryWins",
       "p4Wins",
       "blockblastScores",
+      "snakeScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -264,6 +268,7 @@ function createAdminRouter(io) {
       "pictionaryWins",
       "p4Wins",
       "blockblastScores",
+      "snakeScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -308,13 +313,14 @@ function createAdminRouter(io) {
       "pictionaryWins",
       "p4Wins",
       "blockblastScores",
+      "snakeScores",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
     }
 
-    const users = Object.keys(FileService.data[statType]);
+    const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
       const current = FileService.data[statType][pseudo] || 0;
       const newValue = Math.max(0, current - value);
@@ -379,6 +385,86 @@ function createAdminRouter(io) {
     });
   });
 
+  // Modifier un best-time (snake / blockblast)
+  router.post("/modify-time", requireAdmin, (req, res) => {
+    const { pseudo, boardType, time } = req.body || {};
+
+    if (!pseudo || !boardType || typeof time !== "number" || time < 0) {
+      return res.status(400).json({ message: "Données invalides" });
+    }
+
+    const type = String(boardType).toLowerCase();
+    if (type === "snake") {
+      if (!FileService.data.snakeBestTimes)
+        FileService.data.snakeBestTimes = {};
+      FileService.data.snakeBestTimes[pseudo] = time;
+      FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+      return res.json({ message: `Durée snake mise à jour pour ${pseudo}` });
+    }
+
+    if (type === "blockblast") {
+      if (!FileService.data.blockblastBestTimes)
+        FileService.data.blockblastBestTimes = {};
+      FileService.data.blockblastBestTimes[pseudo] = time;
+      FileService.save(
+        "blockblastBestTimes",
+        FileService.data.blockblastBestTimes
+      );
+      return res.json({
+        message: `Durée blockblast mise à jour pour ${pseudo}`,
+      });
+    }
+
+    return res
+      .status(400)
+      .json({ message: "boardType invalide (snake | blockblast)" });
+  });
+
+  // Supprimer un best-time (snake / blockblast)
+  router.post("/remove-time", requireAdmin, (req, res) => {
+    const { pseudo, boardType } = req.body || {};
+    if (!pseudo || !boardType)
+      return res.status(400).json({ message: "Données invalides" });
+
+    const type = String(boardType).toLowerCase();
+    if (type === "snake") {
+      if (
+        FileService.data.snakeBestTimes &&
+        pseudo in FileService.data.snakeBestTimes
+      ) {
+        delete FileService.data.snakeBestTimes[pseudo];
+        FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+        return res.json({ message: `Durée snake supprimée pour ${pseudo}` });
+      }
+      return res
+        .status(404)
+        .json({ message: "Aucune durée snake trouvée pour ce pseudo" });
+    }
+
+    if (type === "blockblast") {
+      if (
+        FileService.data.blockblastBestTimes &&
+        pseudo in FileService.data.blockblastBestTimes
+      ) {
+        delete FileService.data.blockblastBestTimes[pseudo];
+        FileService.save(
+          "blockblastBestTimes",
+          FileService.data.blockblastBestTimes
+        );
+        return res.json({
+          message: `Durée blockblast supprimée pour ${pseudo}`,
+        });
+      }
+      return res
+        .status(404)
+        .json({ message: "Aucune durée blockblast trouvée pour ce pseudo" });
+    }
+
+    return res
+      .status(400)
+      .json({ message: "boardType invalide (snake | blockblast)" });
+  });
+
   // Retirer stat
   router.post("/remove-stat", requireAdmin, (req, res) => {
     const { pseudo, statType, value } = req.body;
@@ -395,6 +481,7 @@ function createAdminRouter(io) {
       "pictionaryWins",
       "p4Wins",
       "blockblastScores",
+      "snakeScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -402,7 +489,7 @@ function createAdminRouter(io) {
     }
 
     const currentValue = FileService.data[statType][pseudo] || 0;
-    const newValue = currentValue - value;
+    const newValue = Math.max(0, currentValue - value);
 
     FileService.data[statType][pseudo] = newValue;
     FileService.save(statType, FileService.data[statType]);
@@ -458,6 +545,19 @@ function createAdminRouter(io) {
     if (FileService.data.blockblastBestTimes) {
       delete FileService.data.blockblastBestTimes[pseudo];
     }
+    // Supprimer Snake data
+    if (
+      FileService.data.snakeScores &&
+      pseudo in FileService.data.snakeScores
+    ) {
+      delete FileService.data.snakeScores[pseudo];
+    }
+    if (
+      FileService.data.snakeBestTimes &&
+      pseudo in FileService.data.snakeBestTimes
+    ) {
+      delete FileService.data.snakeBestTimes[pseudo];
+    }
 
     // Sauvegarder toutes les modifications
     FileService.save("clicks", FileService.data.clicks);
@@ -475,6 +575,11 @@ function createAdminRouter(io) {
         FileService.data.blockblastBestTimes
       );
     }
+    // Save snake data if existed
+    if (FileService.data.snakeScores)
+      FileService.save("snakeScores", FileService.data.snakeScores);
+    if (FileService.data.snakeBestTimes)
+      FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
 
     console.log({
       level: "action",
@@ -486,7 +591,8 @@ function createAdminRouter(io) {
 
   // Remettre à 0 les entrées de leaderboard d'un utilisateur (sans supprimer le compte)
   router.post("/clear-from-leaderboard", requireAdmin, (req, res) => {
-    const { pseudo, boardType } = req.body || {};
+    const { pseudo, boardType, resetTimes } = req.body || {};
+    const reset = !!resetTimes;
 
     if (!pseudo) {
       return res.status(400).json({ message: "Pseudo manquant" });
@@ -530,33 +636,37 @@ function createAdminRouter(io) {
 
     const clearBlockblast = () => {
       clearSimple("blockblastScores", "blockblast");
-      if (
-        FileService.data.blockblastBestTimes &&
-        pseudo in FileService.data.blockblastBestTimes
-      ) {
-        delete FileService.data.blockblastBestTimes[pseudo];
-        FileService.save(
-          "blockblastBestTimes",
-          FileService.data.blockblastBestTimes
-        );
-      }
-      if (
-        FileService.data.blockblastSaves &&
-        pseudo in FileService.data.blockblastSaves
-      ) {
-        delete FileService.data.blockblastSaves[pseudo];
-        FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+      if (reset) {
+        if (
+          FileService.data.blockblastBestTimes &&
+          pseudo in FileService.data.blockblastBestTimes
+        ) {
+          delete FileService.data.blockblastBestTimes[pseudo];
+          FileService.save(
+            "blockblastBestTimes",
+            FileService.data.blockblastBestTimes
+          );
+        }
+        if (
+          FileService.data.blockblastSaves &&
+          pseudo in FileService.data.blockblastSaves
+        ) {
+          delete FileService.data.blockblastSaves[pseudo];
+          FileService.save("blockblastSaves", FileService.data.blockblastSaves);
+        }
       }
     };
 
     const clearSnake = () => {
       clearSimple("snakeScores", "snake");
-      if (
-        FileService.data.snakeBestTimes &&
-        pseudo in FileService.data.snakeBestTimes
-      ) {
-        delete FileService.data.snakeBestTimes[pseudo];
-        FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+      if (reset) {
+        if (
+          FileService.data.snakeBestTimes &&
+          pseudo in FileService.data.snakeBestTimes
+        ) {
+          delete FileService.data.snakeBestTimes[pseudo];
+          FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+        }
       }
     };
 

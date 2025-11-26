@@ -81,6 +81,15 @@ button.pill {
   border-color: #fff;
 }
 
+#autoscroll {
+  padding: 5.5px;
+}
+
+#autoscroll.active {
+  background: #1fd379;
+  border-color: #fff;
+}
+
 .logs {
   padding: 10px 40px;
 }

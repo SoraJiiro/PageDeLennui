@@ -10,6 +10,7 @@ export function initBlockBlast(socket) {
     scoreEl: document.querySelector(".blockblast-score"),
     timeEl: document.querySelector(".blockblast-time"),
     resetBtn: document.querySelector(".blockblast-reset"),
+    resetGridBtn: document.querySelector(".blockblast-reset-grid"),
     gameoverEl: document.querySelector(".blockblast-gameover"),
     gameoverScore: document.querySelector(".blockblast-gameover-score"),
     gameoverTime: document.querySelector(".blockblast-gameover-time"),
@@ -1416,6 +1417,23 @@ export function initBlockBlast(socket) {
     } catch (err) {
       showNotif("⚠️ Erreur lors de la vérification du mot de passe");
       console.error(err);
+    }
+  });
+
+  // Nouveau bouton : reset de la grille / nouvelle partie sans toucher au meilleur score
+  ui.resetGridBtn?.addEventListener("click", async () => {
+    const confirmReset = confirm(
+      "⚠️ Réinitialiser la grille actuelle pour commencer une nouvelle partie ?\nLe meilleur score ne sera PAS supprimé."
+    );
+    if (!confirmReset) return;
+
+    try {
+      // Générer une nouvelle partie localement sans toucher à myBest
+      resetGame(false);
+      showNotif("🔄 Grille réinitialisée — meilleur score conservé.");
+    } catch (e) {
+      console.error("Erreur lors du reset grille:", e);
+      showNotif("⚠️ Impossible de réinitialiser la grille");
     }
   });
 

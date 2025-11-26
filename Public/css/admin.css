@@ -5,7 +5,8 @@ body {
 
 .admin-container {
   max-width: clamp(320px, 95%, 1400px);
-  margin: 24px auto;
+  min-width: 80px;
+  margin: 20px auto;
   padding: 12px;
 }
 
@@ -23,6 +24,9 @@ body {
   }
   .admin-header h1 {
     font-size: clamp(1.4rem, 4vw, 2rem);
+  }
+  .admin-container {
+    margin: 5px auto;
   }
 }
 
@@ -236,6 +240,36 @@ table tr:hover {
   border: 2px solid var(--primary-color);
   color: var(--primary-color);
   font-size: 1rem;
+}
+
+/* Make buttons match inputs height and vertical alignment */
+.form-field input,
+.form-field select,
+.form-field textarea,
+.action-buttons .btn,
+.action-buttons button,
+.leaderboard-tabs button,
+.admin-header .header-btns button,
+.btn,
+button.log-off {
+  box-sizing: border-box;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 2px solid var(--primary-color);
+  background: var(--bg-color);
+  color: var(--primary-color);
+  min-height: 44px;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Keep textarea taller when needed */
+.form-field textarea {
+  min-height: 80px;
+  padding: 10px;
 }
 
 .form-field textarea {

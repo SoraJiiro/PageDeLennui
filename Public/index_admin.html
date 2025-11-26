@@ -245,6 +245,8 @@
                                             <option
                                                 value="blockblastScores">Block
                                                 Blast</option>
+                                            <option
+                                                value="snakeScores">Snake</option>
                                             <option value="all">Toutes les
                                                 stats</option>
                                         </select>
@@ -256,6 +258,11 @@
                                         <input type="number"
                                             id="modifyStatValue"
                                             placeholder="Nouvelle valeur" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Nouvelle durée (ms)</label>
+                                        <input type="number" id="modifyStatTime"
+                                            placeholder="Durée en ms" />
                                     </div>
                                     <div class="action-buttons">
                                         <button class="btn"
@@ -271,6 +278,19 @@
                                             onclick="removeStat()">
                                             <i class="fa-solid fa-minus"></i>
                                             Retirer
+                                        </button>
+                                        <button class="btn"
+                                            onclick="modifyTime()"
+                                            title="Modifier le meilleur temps">
+                                            <i class="fa-solid fa-clock"></i>
+                                            Modifier Temps
+                                        </button>
+                                        <button class="btn btn-red"
+                                            onclick="removeTime()"
+                                            title="Supprimer le meilleur temps">
+                                            <i
+                                                class="fa-solid fa-trash-can"></i>
+                                            Supprimer Temps
                                         </button>
                                     </div>
                                 </div>
@@ -315,6 +335,7 @@
                                             <option value="snake">Snake</option>
                                         </select>
                                     </div>
+
                                     <div class="action-buttons">
                                         <button class="btn btn-red"
                                             onclick="clearFromLeaderboard()">
@@ -368,10 +389,10 @@
                                     placeholder="127.0.0.1" />
                             </div>
                             <div class="action-buttons">
-                                <button class="btn"
+                                <button class="btn btn-red"
                                     onclick="addBanFromInput()">Bannir</button>
-                                <button class="btn"
-                                    onclick="loadBlacklist()">Rafraîchir</button>
+                                <!--<button class="btn"
+                                    onclick="loadBlacklist()">Rafraîchir</button>-->
                             </div>
                         </div>
 
@@ -390,7 +411,7 @@
                 <section class="admin-section">
                     <h2><i class="fa-solid fa-database"></i> /Logs</h2>
                     <center>
-                        <iframe src="/admin/logs"
+                        <iframe src="logs.html"
                             class="logs-frame"></iframe>
                     </center>
                 </section>
@@ -720,7 +741,7 @@ async function addStat() {
   const statType = document.getElementById('modifyStatType').value;
   const value = parseInt(document.getElementById('modifyStatValue').value);
 
-  if (!pseudo || isNaN(value) || value <= 0) {
+  if (!pseudo || isNaN(value)) {
     showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
     return;
   }
@@ -778,10 +799,10 @@ async function removeStat() {
   if (!confirm(confirmMsg)) return;
 
   try {
-    const endpoint = targetAll ? '/api/admin/remove-all-users-stat' : '/api/admin/remove-stat';
-    const body = targetAll 
-      ? { statType, value }
-      : { pseudo, statType, value };
+        const endpoint = targetAll ? '/api/admin/remove-all-users-stat' : '/api/admin/remove-stat';
+        const body = targetAll 
+            ? { statType, value }
+            : { pseudo, statType, value };
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -803,6 +824,81 @@ async function removeStat() {
     console.error(err);
     showNotification('⚠️ Erreur lors de la suppression', 'error');
   }
+}
+
+// Modifier / Supprimer les best-times (snake, blockblast)
+async function modifyTime() {
+    const pseudo = document.getElementById('modifyUser').value.trim();
+    const board = document.getElementById('modifyStatType').value;
+    const time = parseInt(document.getElementById('modifyStatTime').value);
+
+    if (!pseudo || isNaN(time) || time < 0) {
+        showNotification('⚠️ Veuillez entrer un pseudo et une durée valide (ms)', 'error');
+        return;
+    }
+
+    // Accept only snakeScores or blockblastScores as boards for time editing
+    const allowed = { snakeScores: 'snake', blockblastScores: 'blockblast' };
+    if (!allowed[board]) {
+        showNotification('⚠️ Sélectionnez Snake ou Block Blast dans Stat ?', 'error');
+        return;
+    }
+
+    if (!confirm(`Définir la durée (${time} ms) pour ${pseudo} sur ${allowed[board]} ?`)) return;
+
+    try {
+        const res = await fetch('/api/admin/modify-time', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pseudo, boardType: allowed[board], time })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showNotification(`✅ ${data.message}`, 'success');
+            if (socket) socket.emit('admin:refresh');
+        } else {
+            showNotification(`❌ ${data.message}`, 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        showNotification('⚠️ Erreur lors de la modification du temps', 'error');
+    }
+}
+
+async function removeTime() {
+    const pseudo = document.getElementById('modifyUser').value.trim();
+    const board = document.getElementById('modifyStatType').value;
+
+    if (!pseudo) {
+        showNotification('⚠️ Veuillez entrer un pseudo', 'error');
+        return;
+    }
+
+    const allowed = { snakeScores: 'snake', blockblastScores: 'blockblast' };
+    if (!allowed[board]) {
+        showNotification('⚠️ Sélectionnez Snake ou Block Blast dans Stat ?', 'error');
+        return;
+    }
+
+    if (!confirm(`Supprimer la durée enregistrée pour ${pseudo} sur ${allowed[board]} ?`)) return;
+
+    try {
+        const res = await fetch('/api/admin/remove-time', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pseudo, boardType: allowed[board] })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showNotification(`✅ ${data.message}`, 'success');
+            if (socket) socket.emit('admin:refresh');
+        } else {
+            showNotification(`❌ ${data.message}`, 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        showNotification('⚠️ Erreur lors de la suppression du temps', 'error');
+    }
 }
 
         // Supprimer Utilisateur
@@ -847,6 +943,7 @@ async function removeStat() {
         async function clearFromLeaderboard() {
             const pseudo = document.getElementById('deleteUser').value.trim();
             const boardType = document.getElementById('clearLbType').value;
+            const resetTimes = !!document.getElementById('clearResetTimes') && document.getElementById('clearResetTimes').checked;
 
             if (!pseudo) {
                 showNotification('⚠️ Veuillez entrer un pseudo', 'error');
@@ -872,7 +969,7 @@ async function removeStat() {
                 const res = await fetch('/api/admin/clear-from-leaderboard', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, boardType })
+                    body: JSON.stringify({ pseudo, boardType, resetTimes })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -933,9 +1030,12 @@ async function removeStat() {
 
         function addBanFromInput() {
             const ip = document.getElementById('blacklistInput').value.trim();
+            var ipv4Regex = /^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (!ipv4Regex.test(ip)) return showNotification('⚠️ Entrez une IP IPv4 valide', 'error');
             if (!ip) return showNotification('⚠️ Entrez une IP', 'error');
             if (!confirm(`Bannir ${ip} ?`)) return;
             socket.emit('admin:blacklist:add', { ip });
+            loadBlacklist();
             document.getElementById('blacklistInput').value = '';
         }
 
@@ -943,8 +1043,6 @@ async function removeStat() {
             if (!confirm(`Retirer le ban pour ${ip} ?`)) return;
             socket.emit('admin:blacklist:remove', { ip });
         }
-
-        // setBlacklistFromTextarea removed — blacklist is managed via add/remove
 
         // load initial list when admin page connects
         (function waitForSocketThenLoad() {

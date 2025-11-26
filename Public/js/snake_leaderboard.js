@@ -34,7 +34,7 @@ export function initSnakeLeaderboard(socket) {
           tdTime.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
         }
       } else {
-        tdTime.textContent = "-";
+        tdTime.textContent = "—";
       }
 
       tr.appendChild(tdRank);

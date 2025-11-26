@@ -42,6 +42,14 @@ export function initClicker(socket) {
 
   // ---------- Médailles de base ----------
   let medalsList = [
+    // Médaille spéciale pour scores négatifs
+    {
+      nom: "Tricheur",
+      icon: "🚫",
+      pallier: -1,
+      cps: 0,
+      couleurs: ["#dcdcdc", "#ffffff", "#bfbfbf"],
+    },
     { nom: "Bronze", icon: "🥉", pallier: 2500, cps: 1 },
     { nom: "Argent", icon: "🥈", pallier: 5000, cps: 3 },
     { nom: "Or", icon: "🥇", pallier: 10000, cps: 5 },
@@ -100,7 +108,14 @@ export function initClicker(socket) {
     indexSpan.textContent = "";
     indexSpan.setAttribute("aria-hidden", "true");
     el.appendChild(indexSpan);
-    el.classList.add("medal", "hidden");
+    // Default: hidden for normal medals. For 'Tricheur' we hide via display:none
+    // so it doesn't get the "non débloquée" styling.
+    if (m.nom === "Tricheur") {
+      el.classList.add("medal");
+      el.style.display = "none";
+    } else {
+      el.classList.add("medal", "hidden");
+    }
     el.dataset.name = m.nom;
     el.dataset.index = (index + 1).toString();
     el.setAttribute(
@@ -118,6 +133,17 @@ export function initClicker(socket) {
         el.style.setProperty(`--grad${idx + 1}`, c);
       });
       m.couleurs = savedColors.slice();
+    }
+
+    // Si la médaille a des couleurs prédéfinies (ex: Tricheur), les appliquer
+    if (
+      (!savedColors || savedColors.length === 0) &&
+      Array.isArray(m.couleurs) &&
+      m.couleurs.length > 0
+    ) {
+      m.couleurs.forEach((c, idx) =>
+        el.style.setProperty(`--grad${idx + 1}`, c)
+      );
     }
 
     // Si pas de couleurs (nouvelle médaille non sauvegardée), générer maintenant (évite flicker ultérieur)
@@ -159,7 +185,12 @@ export function initClicker(socket) {
       el.style.setProperty("--rainbow-delay", `${delay}s`);
     }
 
-    ui.medalsWrap.appendChild(el);
+    // Placer la médaille en première position si c'est la première de la liste
+    if (index === 0 && ui.medalsWrap.firstChild) {
+      ui.medalsWrap.insertBefore(el, ui.medalsWrap.firstChild);
+    } else {
+      ui.medalsWrap.appendChild(el);
+    }
   }
 
   // ---------- Auto click ----------
@@ -191,10 +222,17 @@ export function initClicker(socket) {
   // ---------- Vérif + déblocage de médailles ----------
   function verifMedals(score) {
     let medalCible = null;
-    for (let i = medalsList.length - 1; i >= 0; i--) {
-      if (score >= medalsList[i].pallier) {
-        medalCible = medalsList[i];
-        break;
+    // Si score négatif, cibler la médaille spéciale Tricheur
+    if (typeof score === "number" && score < 0) {
+      medalCible = medalsList.find((m) => m.nom === "Tricheur") || null;
+    } else {
+      for (let i = medalsList.length - 1; i >= 0; i--) {
+        // Ignorer la médaille Tricheur lors du calcul normal
+        if (medalsList[i].nom === "Tricheur") continue;
+        if (score >= medalsList[i].pallier) {
+          medalCible = medalsList[i];
+          break;
+        }
       }
     }
 
@@ -204,6 +242,29 @@ export function initClicker(socket) {
           `.medal[data-name="${m.nom}"]`
         );
         if (!medalEl) return;
+
+        // Spécial: n'afficher "Tricheur" que pour score négatif
+        if (m.nom === "Tricheur") {
+          if (score < 0) {
+            medalEl.classList.add("shown");
+            medalEl.classList.remove("hidden");
+            if (!state.medalsDebloquees.has(m.nom)) {
+              state.medalsDebloquees.add(m.nom);
+              socket.emit("clicker:medalUnlock", {
+                medalName: m.nom,
+                colors: m.couleurs || [],
+              });
+              showNotif(`🏅 ${m.nom} débloquée ! ${m.icon}`);
+            }
+          } else {
+            medalEl.classList.remove("shown");
+            medalEl.classList.add("hidden");
+            const idxSpan = medalEl.querySelector(".medal-index");
+            if (idxSpan) idxSpan.textContent = "";
+            return;
+          }
+          return;
+        }
 
         if (m.pallier <= medalCible.pallier) {
           medalEl.classList.add("shown");
@@ -231,6 +292,11 @@ export function initClicker(socket) {
 
   // ---------- Reset avec vérification mot de passe ----------
   async function resetProgress() {
+    // Ne pas autoriser le reset si le score affiché est négatif
+    if (state.scoreActuel < 0) {
+      showNotif("⚠️ Impossible de réinitialiser : ton score est négatif");
+      return;
+    }
     const confirmReset = confirm(
       "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score, tes médailles et ton CPS auto seront perdus !"
     );

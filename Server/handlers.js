@@ -49,7 +49,7 @@ function getIpFromSocket(s) {
 function persistBanIp(ip) {
   try {
     if (!fs.existsSync(BLACKLIST_PATH)) {
-      const defaultData = { alwaysBlocked: [], configR: [], configK: [] };
+      const defaultData = { alwaysBlocked: [] };
       fs.writeFileSync(
         BLACKLIST_PATH,
         JSON.stringify(defaultData, null, 2),
