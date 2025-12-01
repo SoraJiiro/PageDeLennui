@@ -8,7 +8,7 @@ export function initChat(socket) {
   const messages = document.getElementById("chat-messages");
   const submit = document.querySelector(".submit");
 
-  function addMessage({ auteur, text, at, type = "user" }) {
+  function addMessage({ auteur, text, at, type = "user", tag = null }) {
     const el = document.createElement("div");
     el.className = `msg ${type}`;
     const time = at
@@ -17,9 +17,12 @@ export function initChat(socket) {
           timeStyle: "medium",
         })
       : "";
+
+    const tagHtml = tag ? ` <span class="user-tag">${tag}</span>` : "";
+
     el.innerHTML = `
       <div class="meta">
-        <span class="auteur">[${auteur}]</span>
+        <span class="auteur">${auteur} - [${tagHtml}]</span>
         <span class="time"><i>${time}</i></span>
       </div>
       <div class="text"></div>`;
@@ -36,7 +39,7 @@ export function initChat(socket) {
     if (!Array.isArray(history)) return;
     messages.innerHTML = "";
     history.forEach((msg) =>
-      addMessage({ auteur: msg.name, text: msg.text, at: msg.at })
+      addMessage({ auteur: msg.name, text: msg.text, at: msg.at, tag: msg.tag })
     );
   });
 
@@ -60,6 +63,7 @@ export function initChat(socket) {
       auteur: payload.name,
       text: payload.text,
       at: payload.at,
+      tag: payload.tag,
     });
 
     if (

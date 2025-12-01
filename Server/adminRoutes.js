@@ -41,6 +41,15 @@ function createAdminRouter(io) {
   function recalculateMedals(pseudo, clicks) {
     if (!FileService.data.medals) FileService.data.medals = {};
 
+    // Gestion des tricheurs (score négatif)
+    if (clicks < 0) {
+      if (!FileService.data.cheaters) FileService.data.cheaters = [];
+      if (!FileService.data.cheaters.includes(pseudo)) {
+        FileService.data.cheaters.push(pseudo);
+        FileService.save("cheaters", FileService.data.cheaters);
+      }
+    }
+
     // Récupérer les médailles existantes pour préserver les couleurs générées
     const existingMedals = FileService.data.medals[pseudo] || [];
     const existingColors = {};
@@ -66,6 +75,45 @@ function createAdminRouter(io) {
     // Mettre à jour les médailles de l'utilisateur
     FileService.data.medals[pseudo] = userMedals;
     FileService.save("medals", FileService.data.medals);
+
+    // Si l'utilisateur est connecté, lui envoyer ses nouvelles médailles
+    if (io) {
+      io.sockets.sockets.forEach((socket) => {
+        const user = socket.handshake.session?.user;
+        if (user && user.pseudo === pseudo) {
+          // Normaliser pour l'envoi
+          const normalized = userMedals.map((m) => ({
+            name: m.name,
+            colors: m.colors || [],
+          }));
+
+          // Si tricheur, ajouter la médaille Tricheur
+          if (
+            FileService.data.cheaters &&
+            FileService.data.cheaters.includes(pseudo)
+          ) {
+            if (!normalized.find((m) => m.name === "Tricheur")) {
+              normalized.unshift({
+                name: "Tricheur",
+                colors: [
+                  "#dcdcdc",
+                  "#ffffff",
+                  "#222",
+                  "#dcdcdc",
+                  "#ffffff",
+                  "#222",
+                ],
+              });
+            }
+          }
+
+          socket.emit("clicker:medals", normalized);
+
+          // Recalculer le CPS auto basé sur la meilleure médaille
+          // Le client le fait à la réception de clicker:medals, mais on peut forcer une update si besoin
+        }
+      });
+    }
 
     return userMedals;
   }
@@ -102,6 +150,7 @@ function createAdminRouter(io) {
       p4Wins: FileService.data.p4Wins[pseudo] || 0,
       blockblastScore: FileService.data.blockblastScores[pseudo] || 0,
       medals: FileService.data.medals[pseudo] || [],
+      tag: FileService.data.tags ? FileService.data.tags[pseudo] || "" : "",
     };
 
     try {
@@ -198,6 +247,11 @@ function createAdminRouter(io) {
 
       FileService.data[statType][pseudo] = stats[statType];
       FileService.save(statType, FileService.data[statType]);
+
+      // Si on modifie les clicks, recalculer les médailles
+      if (statType === "clicks") {
+        recalculateMedals(pseudo, stats[statType]);
+      }
 
       console.log({
         level: "action",
@@ -730,6 +784,60 @@ function createAdminRouter(io) {
         .status(500)
         .json({ message: "Erreur serveur lors du nettoyage" });
     }
+  });
+
+  // Définir un tag pour un utilisateur
+  router.post("/set-tag", requireAdmin, (req, res) => {
+    const { pseudo, tag } = req.body;
+
+    if (!pseudo) {
+      return res.status(400).json({ message: "Pseudo manquant" });
+    }
+
+    if (!FileService.data.tags) FileService.data.tags = {};
+
+    if (!tag || tag.trim() === "") {
+      // Si tag vide, on le supprime
+      if (FileService.data.tags[pseudo]) {
+        delete FileService.data.tags[pseudo];
+        FileService.save("tags", FileService.data.tags);
+        return res.json({ message: `Tag supprimé pour ${pseudo}` });
+      }
+      return res.json({ message: `Aucun tag à supprimer pour ${pseudo}` });
+    }
+
+    FileService.data.tags[pseudo] = tag.trim();
+    FileService.save("tags", FileService.data.tags);
+
+    console.log({
+      level: "action",
+      message: `Tag défini pour ${pseudo} : [${tag}]`,
+    });
+
+    res.json({ message: `Tag [${tag}] défini pour ${pseudo}` });
+  });
+
+  // Supprimer un tag
+  router.post("/remove-tag", requireAdmin, (req, res) => {
+    const { pseudo } = req.body;
+
+    if (!pseudo) {
+      return res.status(400).json({ message: "Pseudo manquant" });
+    }
+
+    if (FileService.data.tags && FileService.data.tags[pseudo]) {
+      delete FileService.data.tags[pseudo];
+      FileService.save("tags", FileService.data.tags);
+
+      console.log({
+        level: "action",
+        message: `Tag supprimé pour ${pseudo}`,
+      });
+
+      return res.json({ message: `Tag supprimé pour ${pseudo}` });
+    }
+
+    res.status(404).json({ message: "Aucun tag trouvé pour cet utilisateur" });
   });
 
   return router;

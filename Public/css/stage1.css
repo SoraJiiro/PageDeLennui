@@ -509,14 +509,16 @@ p.cps-humain {
   filter: brightness(1.05);
 }
 
-.medal[data-name^="Médaille"].shown {
+.medal[data-name^="Médaille"].shown,
+.medal[data-name="Tricheur"].shown {
   border: 5px solid #fff !important;
   animation: glowLegend 2s ease-in-out infinite alternate;
   overflow: hidden;
   box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
 }
 
-.medal[data-name^="Médaille"].shown::before {
+.medal[data-name^="Médaille"].shown::before,
+.medal[data-name="Tricheur"].shown::before {
   content: "";
   position: absolute;
   top: -50%;
@@ -539,7 +541,8 @@ p.cps-humain {
   z-index: 0;
 }
 
-.medal[data-name^="Médaille"].shown::after {
+.medal[data-name^="Médaille"].shown::after,
+.medal[data-name="Tricheur"].shown::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -552,7 +555,8 @@ p.cps-humain {
   z-index: 1;
 }
 
-.medal[data-name^="Médaille"].shown .medal-index {
+.medal[data-name^="Médaille"].shown .medal-index,
+.medal[data-name="Tricheur"].shown .medal-index {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -574,7 +578,8 @@ p.cps-humain {
   overflow: hidden;
 }
 
-.medal[data-name^="Médaille"].shown .medal-index::before {
+.medal[data-name^="Médaille"].shown .medal-index::before,
+.medal[data-name="Tricheur"].shown .medal-index::before {
   content: "";
   position: absolute;
   top: -50%;

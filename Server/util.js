@@ -58,6 +58,8 @@ class FileService {
       blockblastBestTimes: path.join(config.DATA, "blockblast_best_times.json"),
       snakeScores: path.join(config.DATA, "snake_scores.json"),
       snakeBestTimes: path.join(config.DATA, "snake_best_times.json"),
+      cheaters: path.join(config.DATA, "cheaters.json"),
+      tags: path.join(config.DATA, "tags.json"),
     };
 
     this.data = this.loadAll();
@@ -97,6 +99,8 @@ class FileService {
       blockblastBestTimes: this.readJSON(this.files.blockblastBestTimes, {}),
       snakeScores: this.readJSON(this.files.snakeScores, {}),
       snakeBestTimes: this.readJSON(this.files.snakeBestTimes, {}),
+      cheaters: this.readJSON(this.files.cheaters, []),
+      tags: this.readJSON(this.files.tags, {}),
     };
   }
 
@@ -143,6 +147,8 @@ class FileService {
       blockblastBestTimes: this.files.blockblastBestTimes,
       snakeScores: this.files.snakeScores,
       snakeBestTimes: this.files.snakeBestTimes,
+      cheaters: this.files.cheaters,
+      tags: this.files.tags,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

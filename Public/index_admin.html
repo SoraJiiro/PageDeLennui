@@ -297,6 +297,36 @@
                             </div>
                         </div>
 
+                        <!-- Gestion des Tags -->
+                        <div class="control-group">
+                            <h3><i class="fa-solid fa-tag"></i> /Tags</h3>
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Pseudo</label>
+                                        <input type="text" id="tagUser"
+                                            placeholder="Pseudo" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Tag</label>
+                                        <input type="text" id="tagValue"
+                                            placeholder="Ex: [VIP]" />
+                                    </div>
+                                    <div class="action-buttons">
+                                        <button class="btn" onclick="setTag()">
+                                            <i class="fa-solid fa-check"></i>
+                                            Définir
+                                        </button>
+                                        <button class="btn btn-red"
+                                            onclick="removeTag()">
+                                            <i class="fa-solid fa-trash"></i>
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Supprimer Utilisateur -->
                         <div class="control-group">
                             <h3><i class="fa-solid fa-trash"></i> /Supprimer
@@ -633,6 +663,10 @@
                     <span class="label">Médailles:</span>
                     <span class="value">${data.medals ? data.medals.length : 0}</span>
                 </div>
+                <div class="user-stat">
+                    <span class="label">Tag:</span>
+                    <span class="value">${data.tag ? data.tag : '—'}</span>
+                </div>
             `;
 
             pwdLength = data.password ? data.password.length : 0;
@@ -900,6 +934,70 @@ async function removeTime() {
         showNotification('⚠️ Erreur lors de la suppression du temps', 'error');
     }
 }
+
+        // Gestion des Tags
+        async function setTag() {
+            const pseudo = document.getElementById('tagUser').value.trim();
+            const tag = document.getElementById('tagValue').value.trim();
+
+            if (!pseudo) {
+                showNotification('⚠️ Veuillez entrer un pseudo', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/set-tag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, tag })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    document.getElementById('tagUser').value = '';
+                    document.getElementById('tagValue').value = '';
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de la définition du tag', 'error');
+            }
+        }
+
+        async function removeTag() {
+            const pseudo = document.getElementById('tagUser').value.trim();
+
+            if (!pseudo) {
+                showNotification('⚠️ Veuillez entrer un pseudo', 'error');
+                return;
+            }
+
+            if (!confirm(`Supprimer le tag de ${pseudo} ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/remove-tag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    document.getElementById('tagUser').value = '';
+                    document.getElementById('tagValue').value = '';
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors de la suppression du tag', 'error');
+            }
+        }
 
         // Supprimer Utilisateur
         async function deleteUser() {

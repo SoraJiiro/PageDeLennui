@@ -23,21 +23,12 @@ export function initClicker(socket) {
     myPseudo: null,
   };
 
-  // ---------- Storage manager ----------
-  function getStorageKey() {
-    return state.myPseudo ? `autoCPS_${state.myPseudo}` : "autoCPS";
-  }
-  function getSavedCPS() {
-    const v = parseInt(localStorage.getItem(getStorageKey()));
-    return isNaN(v) ? 0 : v;
-  }
-  function saveCPS(cps) {
-    if (typeof cps === "number" && cps > 0) {
-      localStorage.setItem(getStorageKey(), String(cps));
+  // ---------- Storage manager (Désactivé / Nettoyage) ----------
+  function cleanupStorage() {
+    if (state.myPseudo) {
+      localStorage.removeItem(`autoCPS_${state.myPseudo}`);
     }
-  }
-  function clearSavedCPS() {
-    localStorage.removeItem(getStorageKey());
+    localStorage.removeItem("autoCPS");
   }
 
   // ---------- Médailles de base ----------
@@ -48,7 +39,7 @@ export function initClicker(socket) {
       icon: "🚫",
       pallier: -1,
       cps: 0,
-      couleurs: ["#dcdcdc", "#ffffff", "#bfbfbf"],
+      couleurs: ["#dcdcdc", "#ffffff", "#222", "#dcdcdc", "#ffffff", "#222"],
     },
     { nom: "Bronze", icon: "🥉", pallier: 2500, cps: 1 },
     { nom: "Argent", icon: "🥈", pallier: 5000, cps: 3 },
@@ -243,12 +234,15 @@ export function initClicker(socket) {
         );
         if (!medalEl) return;
 
-        // Spécial: n'afficher "Tricheur" que pour score négatif
+        // Spécial: n'afficher "Tricheur" que pour score négatif ou si déjà débloquée
         if (m.nom === "Tricheur") {
-          if (score < 0) {
+          const isUnlocked = state.medalsDebloquees.has(m.nom);
+          if (score < 0 || isUnlocked) {
             medalEl.classList.add("shown");
             medalEl.classList.remove("hidden");
-            if (!state.medalsDebloquees.has(m.nom)) {
+            medalEl.style.display = ""; // S'assurer qu'elle est visible
+
+            if (score < 0 && !isUnlocked) {
               state.medalsDebloquees.add(m.nom);
               socket.emit("clicker:medalUnlock", {
                 medalName: m.nom,
@@ -256,12 +250,15 @@ export function initClicker(socket) {
               });
               showNotif(`🏅 ${m.nom} débloquée ! ${m.icon}`);
             }
+            document.querySelector(
+              ".medal[data-name=Tricheur] .medal-index"
+            ).textContent = "T";
           } else {
             medalEl.classList.remove("shown");
             medalEl.classList.add("hidden");
+            medalEl.style.display = "none"; // La cacher complètement si pas débloquée
             const idxSpan = medalEl.querySelector(".medal-index");
             if (idxSpan) idxSpan.textContent = "";
-            return;
           }
           return;
         }
@@ -278,14 +275,11 @@ export function initClicker(socket) {
             });
             if (m === medalCible)
               showNotif(`🏅 ${m.nom} débloquée ! ${m.icon}`);
-
-            saveCPS(medalCible.cps);
           }
         }
       });
 
-      const saved = getSavedCPS();
-      const cpsToUse = Math.max(saved, medalCible.cps);
+      const cpsToUse = medalCible.cps;
       if (cpsToUse !== state.cpsActuel) setAutoClick(cpsToUse);
     }
   }
@@ -324,7 +318,6 @@ export function initClicker(socket) {
 
       socket.emit("clicker:reset");
       stopAutoClicks();
-      clearSavedCPS();
       state.scoreActuel = 0;
       state.medalsDebloquees.clear();
 
@@ -369,6 +362,9 @@ export function initClicker(socket) {
       stopAutoClicks();
       // Le CPS sera restauré lors de la réception de clicker:medals
     }
+
+    // Nettoyage préventif du localStorage pour éviter les conflits
+    cleanupStorage();
   });
 
   socket.on("clicker:you", ({ score }) => {
@@ -404,6 +400,9 @@ export function initClicker(socket) {
       if (names.includes(m.nom)) {
         el.classList.add("shown");
         el.classList.remove("hidden");
+        // Force display pour Tricheur (qui est display:none par défaut)
+        if (m.nom === "Tricheur") el.style.display = "";
+
         const idxSpan = el.querySelector(".medal-index");
         if (idxSpan && !idxSpan.textContent) {
           idxSpan.textContent = (idx + 1).toString();
@@ -411,6 +410,9 @@ export function initClicker(socket) {
       } else {
         el.classList.remove("shown");
         el.classList.add("hidden");
+        // Cacher complètement Tricheur si pas débloquée
+        if (m.nom === "Tricheur") el.style.display = "none";
+
         const idxSpan = el.querySelector(".medal-index");
         if (idxSpan) idxSpan.textContent = "";
       }
@@ -420,22 +422,18 @@ export function initClicker(socket) {
       .filter((m) => names.includes(m.nom))
       .sort((a, b) => b.pallier - a.pallier)[0];
 
-    const saved = getSavedCPS();
+    // On fait confiance au serveur : le CPS est déterminé par la meilleure médaille possédée
+    // Cela permet de corriger le CPS si l'admin a retiré des médailles/clicks
     const highestCps = medaillePlusHaute ? medaillePlusHaute.cps : 0;
-    const cpsToUse = Math.max(saved || 0, highestCps);
-    if (cpsToUse > 0) {
-      setAutoClick(cpsToUse);
-      saveCPS(cpsToUse);
-    }
+
+    setAutoClick(highestCps);
   });
 
   // Événement forcé par l'admin pour nettoyer le localStorage
   socket.on("clicker:forceReset", () => {
     stopAutoClicks();
-    clearSavedCPS();
     state.scoreActuel = 0;
     state.medalsDebloquees.clear();
-
     if (ui.yourScoreEl) ui.yourScoreEl.textContent = "0";
     if (ui.acpsEl) ui.acpsEl.textContent = "";
     if (ui.zone) ui.zone.innerHTML = `<i>0</i>`;

@@ -176,6 +176,19 @@ function initSocketHandlers(io, socket, gameState) {
       ? { name: m, colors: [] }
       : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
   );
+
+  // Si le joueur est dans la liste des tricheurs, on force l'ajout de la médaille Tricheur
+  if (
+    FileService.data.cheaters &&
+    FileService.data.cheaters.includes(pseudo) &&
+    !normalizedInit.find((m) => m.name === "Tricheur")
+  ) {
+    normalizedInit.unshift({
+      name: "Tricheur",
+      colors: ["#dcdcdc", "#ffffff", "#222", "#dcdcdc", "#ffffff", "#222"],
+    });
+  }
+
   socket.emit("clicker:medals", normalizedInit);
   leaderboardManager.broadcastClickerLB(io);
   leaderboardManager.broadcastDinoLB(io);
@@ -196,7 +209,14 @@ function initSocketHandlers(io, socket, gameState) {
     const msg = String(text || "").trim();
     if (!msg) return;
 
-    const payload = { name: pseudo, text: msg, at: new Date().toISOString() };
+    const tag = FileService.data.tags ? FileService.data.tags[pseudo] : null;
+    const payload = {
+      name: pseudo,
+      text: msg,
+      at: new Date().toISOString(),
+      tag: tag || null,
+    };
+
     FileService.data.historique.push(payload);
     if (FileService.data.historique.length > 200) {
       FileService.data.historique = FileService.data.historique.slice(-200);
@@ -246,9 +266,19 @@ function initSocketHandlers(io, socket, gameState) {
           track.banned = true;
           // Penalize: remove clicks
           const current = FileService.data.clicks[pseudo] || 0;
-          const penalized = Math.max(0, current - CPS_PENALTY);
+          // Autoriser score négatif pour marquer le tricheur
+          const penalized = current - CPS_PENALTY;
           FileService.data.clicks[pseudo] = penalized;
           FileService.save("clicks", FileService.data.clicks);
+
+          // Si score négatif, ajouter aux tricheurs
+          if (penalized < 0) {
+            if (!FileService.data.cheaters) FileService.data.cheaters = [];
+            if (!FileService.data.cheaters.includes(pseudo)) {
+              FileService.data.cheaters.push(pseudo);
+              FileService.save("cheaters", FileService.data.cheaters);
+            }
+          }
 
           // Recalculate medals (local simplified version)
           try {
@@ -339,7 +369,19 @@ function initSocketHandlers(io, socket, gameState) {
     FileService.data.medals[pseudo] = [];
     FileService.save("medals", FileService.data.medals);
     socket.emit("clicker:you", { score: 0 });
-    socket.emit("clicker:medals", []);
+
+    // Si le joueur est un tricheur, on lui renvoie la médaille Tricheur même après reset
+    const medalsToSend = [];
+    if (
+      FileService.data.cheaters &&
+      FileService.data.cheaters.includes(pseudo)
+    ) {
+      medalsToSend.push({
+        name: "Tricheur",
+        colors: ["#dcdcdc", "#ffffff", "#222", "#dcdcdc", "#ffffff", "#222"],
+      });
+    }
+    socket.emit("clicker:medals", medalsToSend);
 
     leaderboardManager.broadcastClickerLB(io);
 
