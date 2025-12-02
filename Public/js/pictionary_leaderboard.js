@@ -9,7 +9,9 @@ export function initPictionaryLeaderboard(socket) {
       tr.innerHTML = `
         <td>${i + 1}</td>
         <td>${row.pseudo}</td>
-        <td>${row.points}</td>
+        <td>${Number(row.points)
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}</td>
       `;
       leaderboard.appendChild(tr);
     });

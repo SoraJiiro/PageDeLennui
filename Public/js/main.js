@@ -139,6 +139,10 @@ import { initCanvasResizer } from "./canvas_resize.js";
         data.withCountdown || false
       );
     });
+
+    socket.on("system:redirect", (url) => {
+      window.location.href = url;
+    });
   } catch (err) {
     console.error("Erreur chargement modules : ", err);
   }

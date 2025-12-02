@@ -618,7 +618,9 @@ export function initPictionary(socket) {
         .map((p) => {
           const cls =
             p.pseudo === gameState.currentDrawer ? ' class="drawer"' : "";
-          return `<div${cls}>${p.pseudo} (${p.score})</div>`;
+          return `<div${cls}>${p.pseudo} (${p.score
+            .toLocaleString("fr-FR")
+            .replace(/\s/g, "\u00a0")})</div>`;
         })
         .join("");
     }

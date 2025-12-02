@@ -9,7 +9,9 @@ export function initUnoLeaderboard(socket) {
       tr.innerHTML = `
         <td>${i + 1}</td>
         <td>${row.pseudo}</td>
-        <td>${row.wins}</td>
+        <td>${Number(row.wins)
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}</td>
       `;
       leaderboard.appendChild(tr);
     });

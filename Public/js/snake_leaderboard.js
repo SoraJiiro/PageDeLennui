@@ -16,7 +16,9 @@ export function initSnakeLeaderboard(socket) {
       tdPseudo.textContent = item.pseudo;
 
       const tdScore = document.createElement("td");
-      tdScore.textContent = item.score;
+      tdScore.textContent = Number(item.score)
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0");
 
       const tdTime = document.createElement("td");
       if (item.timeMs) {

@@ -65,7 +65,11 @@ export function initDino(socket) {
     const prevBest = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
     if (scoreAttente != null && myBest >= scoreAttente && myBest > prevBest) {
-      showNotif(`🦖 Nouveau record ! Score: ${myBest}`);
+      showNotif(
+        `🦖 Nouveau record ! Score: ${myBest
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}`
+      );
       scoreAttente = null;
     }
   });
@@ -404,7 +408,9 @@ export function initDino(socket) {
     c.font = "bold 24px monospace";
     c.textAlign = "right";
     c.fillText(
-      `${String(Math.floor(state.score)).padStart(8, "0")}`,
+      `${Math.floor(state.score)
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0")}`,
       CLIENT_W - 20,
       30
     );
@@ -426,7 +432,9 @@ export function initDino(socket) {
 
     c.font = "20px monospace";
     c.fillText(
-      `Score: ${Math.floor(state.score)}`,
+      `Score: ${Math.floor(state.score)
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0")}`,
       CLIENT_W / 2,
       CLIENT_H / 2 + 20
     );

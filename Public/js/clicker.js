@@ -56,11 +56,9 @@ export function initClicker(socket) {
 
     el.setAttribute(
       "title",
-      `${medalData.nom} ${
-        medalData.icon
-      }\nPalier : ${medalData.pallier.toLocaleString()} clics\nCPS auto : ${
-        medalData.cps
-      }`
+      `${medalData.nom} ${medalData.icon}\nPalier : ${medalData.pallier
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0")} clics\nCPS auto : ${medalData.cps}`
     );
   });
 
@@ -111,9 +109,9 @@ export function initClicker(socket) {
     el.dataset.index = (index + 1).toString();
     el.setAttribute(
       "title",
-      `${m.nom} ${
-        m.icon
-      }\nPalier : ${m.pallier.toLocaleString()} clics\nCPS auto : ${m.cps}`
+      `${m.nom} ${m.icon}\nPalier : ${m.pallier
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0")} clics\nCPS auto : ${m.cps}`
     );
     // Accessibilité: chaque médaille agit comme une image décorative informative.
     el.setAttribute("role", "img");
@@ -162,11 +160,9 @@ export function initClicker(socket) {
       : "";
     el.setAttribute(
       "aria-label",
-      `${m.nom} - Rang ${(
-        index + 1
-      ).toString()} - Palier ${m.pallier.toLocaleString()} clics - CPS auto ${
-        m.cps
-      }.${couleursPart}`
+      `${m.nom} - Rang ${(index + 1).toString()} - Palier ${m.pallier
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0")} clics - CPS auto ${m.cps}.${couleursPart}`
     );
 
     // Timing animation prestige (après la 7ème base)
@@ -370,8 +366,14 @@ export function initClicker(socket) {
   socket.on("clicker:you", ({ score }) => {
     state.scoreActuel = score;
     bumpZone();
-    if (ui.zone) ui.zone.innerHTML = `<i>${score.toLocaleString()}</i>`;
-    if (ui.yourScoreEl) ui.yourScoreEl.textContent = score;
+    if (ui.zone)
+      ui.zone.innerHTML = `<i>${Number(score)
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0")}</i>`;
+    if (ui.yourScoreEl)
+      ui.yourScoreEl.textContent = Number(score)
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0");
     verifMedals(score);
   });
 
@@ -404,8 +406,12 @@ export function initClicker(socket) {
         if (m.nom === "Tricheur") el.style.display = "";
 
         const idxSpan = el.querySelector(".medal-index");
-        if (idxSpan && !idxSpan.textContent) {
-          idxSpan.textContent = (idx + 1).toString();
+        if (idxSpan) {
+          if (m.nom === "Tricheur") {
+            idxSpan.textContent = "T";
+          } else if (!idxSpan.textContent) {
+            idxSpan.textContent = idx.toString();
+          }
         }
       } else {
         el.classList.remove("shown");
@@ -453,4 +459,11 @@ export function initClicker(socket) {
       ui.cpsHumainEl.textContent =
         state.cpsHumain >= 0 ? `${state.cpsHumain.toFixed(1)} CPS` : "0.0 CPS";
   }, 750);
+
+  // ---------- Pénalité Tricheur ----------
+  setInterval(() => {
+    if (state.medalsDebloquees.has("Tricheur")) {
+      socket.emit("clicker:penalty");
+    }
+  }, 15000);
 }

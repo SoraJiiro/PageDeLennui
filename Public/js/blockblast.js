@@ -166,7 +166,11 @@ export function initBlockBlast(socket) {
     myBest = me ? Number(me.score) || 0 : 0;
     if (myBest > lastBestReported) lastBestReported = myBest;
     if (scoreAttente != null && myBest >= scoreAttente && myBest > prevBest) {
-      showNotif(`Nouveau record Block Blast ! Score: ${myBest}`);
+      showNotif(
+        `Nouveau record Block Blast ! Score: ${myBest
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}`
+      );
       scoreAttente = null;
     }
   });
@@ -1115,7 +1119,9 @@ export function initBlockBlast(socket) {
 
   function endGame() {
     state.gameOver = true;
-    ui.gameoverScore.textContent = state.score;
+    ui.gameoverScore.textContent = state.score
+      .toLocaleString("fr-FR")
+      .replace(/\s/g, "\u00a0");
     ui.gameoverEl.classList.add("active");
     if (ui.gameoverTime)
       ui.gameoverTime.textContent = ` ${formatTime(state.elapsedMs)}`;
@@ -1160,7 +1166,9 @@ export function initBlockBlast(socket) {
   }
 
   function updateScore() {
-    ui.scoreEl.textContent = `Score: ${state.score}`;
+    ui.scoreEl.textContent = `Score: ${state.score
+      .toLocaleString("fr-FR")
+      .replace(/\s/g, "\u00a0")}`;
   }
 
   function resetGame(fromGameOver = false) {

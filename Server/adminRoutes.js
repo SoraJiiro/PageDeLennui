@@ -788,7 +788,7 @@ function createAdminRouter(io) {
 
   // Définir un tag pour un utilisateur
   router.post("/set-tag", requireAdmin, (req, res) => {
-    const { pseudo, tag } = req.body;
+    const { pseudo, tag, color } = req.body;
 
     if (!pseudo) {
       return res.status(400).json({ message: "Pseudo manquant" });
@@ -806,12 +806,12 @@ function createAdminRouter(io) {
       return res.json({ message: `Aucun tag à supprimer pour ${pseudo}` });
     }
 
-    FileService.data.tags[pseudo] = tag.trim();
+    FileService.data.tags[pseudo] = { text: tag.trim(), color: color || null };
     FileService.save("tags", FileService.data.tags);
 
     console.log({
       level: "action",
-      message: `Tag défini pour ${pseudo} : [${tag}]`,
+      message: `Tag défini pour ${pseudo} : [${tag}] (color: ${color})`,
     });
 
     res.json({ message: `Tag [${tag}] défini pour ${pseudo}` });

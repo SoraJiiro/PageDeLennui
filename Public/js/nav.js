@@ -2,6 +2,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const nav = document.querySelector(".btns-wrap");
   const showBtn = document.querySelector(".show-nav");
   const hideBtn = document.querySelector(".hide-nav");
+  const colorPicker = document.getElementById("mainColorPicker");
+
+  const savedColor = localStorage.getItem("primaryColor");
+  if (savedColor) {
+    document.documentElement.style.setProperty("--primary-color", savedColor);
+    if (colorPicker) colorPicker.value = savedColor;
+  } else {
+    if (colorPicker) colorPicker.value = "#00ff00";
+  }
+
+  if (colorPicker) {
+    // Mise à jour visuelle fluide pendant le déplacement
+    colorPicker.addEventListener("input", (e) => {
+      const color = e.target.value;
+      document.documentElement.style.setProperty("--primary-color", color);
+    });
+
+    // Sauvegarde uniquement à la fin de la sélection (évite le lag)
+    colorPicker.addEventListener("change", (e) => {
+      const color = e.target.value;
+      localStorage.setItem("primaryColor", color);
+    });
+  }
 
   const navState = localStorage.getItem("navVisible");
   if (navState === "true") {

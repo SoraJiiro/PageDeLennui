@@ -9,7 +9,9 @@ export function initFlappyLeaderboard(socket) {
       tr.innerHTML = `
         <td>${i + 1}</td>
         <td>${row.pseudo}</td>
-        <td>${row.score}</td>
+        <td>${Number(row.score)
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}</td>
       `;
       leaderboard.appendChild(tr);
     });

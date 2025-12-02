@@ -309,8 +309,15 @@
                                     </div>
                                     <div class="form-field">
                                         <label>Tag</label>
-                                        <input type="text" id="tagValue"
-                                            placeholder="Ex: [VIP]" />
+                                        <div style="display:flex; gap:5px;">
+                                            <input type="text" id="tagValue"
+                                                placeholder="Tag..."
+                                                style="flex:1" />
+                                            <input type="color" id="tagColor"
+                                                value="#ff0000"
+                                                style="width:50px;padding:0;border:none;height:38px;cursor:pointer;"
+                                                title="Couleur du tag" />
+                                        </div>
                                     </div>
                                     <div class="action-buttons">
                                         <button class="btn" onclick="setTag()">
@@ -537,6 +544,10 @@
                 );
             });
 
+            socket.on('system:redirect', (url) => {
+                window.location.href = url;
+            });
+
             // Blacklist admin socket handlers
             socket.on('admin:blacklist:result', (res) => {
                 if (!res) return;
@@ -561,10 +572,36 @@
             tbody.innerHTML = '';
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
+                
+                let val = item[valueKey];
+                if (typeof val === 'number') {
+                    val = val.toLocaleString('fr-FR');
+                }
+
+                let extraTd = '';
+                // Gestion spécifique pour afficher le temps si présent (BlockBlast / Snake)
+                if ((type === 'blockblast' || type === 'snake')) {
+                     const t = item.timeMs;
+                     let timeTxt = '—';
+                     if (typeof t === 'number') {
+                        const totalSec = Math.floor(t / 1000);
+                        const h = Math.floor(totalSec / 3600);
+                        const m = Math.floor((totalSec % 3600) / 60);
+                        const s = totalSec % 60;
+                        if (h > 0) {
+                            timeTxt = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                        } else {
+                            timeTxt = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                        }
+                     }
+                     extraTd = `<td>${timeTxt}</td>`;
+                }
+
                 tr.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${item.pseudo}</td>
-                    <td>${item[valueKey]}</td>
+                    <td>${val}</td>
+                    ${extraTd}
                 `;
                 tbody.appendChild(tr);
             });
@@ -665,7 +702,11 @@
                 </div>
                 <div class="user-stat">
                     <span class="label">Tag:</span>
-                    <span class="value">${data.tag ? data.tag : '—'}</span>
+                    <span class="value">${
+                        typeof data.tag === 'object' && data.tag !== null
+                            ? `<span style="color:${data.tag.color || 'inherit'}">${data.tag.text}</span>`
+                            : (data.tag || '—')
+                    }</span>
                 </div>
             `;
 
@@ -939,6 +980,7 @@ async function removeTime() {
         async function setTag() {
             const pseudo = document.getElementById('tagUser').value.trim();
             const tag = document.getElementById('tagValue').value.trim();
+            const color = document.getElementById('tagColor').value;
 
             if (!pseudo) {
                 showNotification('⚠️ Veuillez entrer un pseudo', 'error');
@@ -949,7 +991,7 @@ async function removeTime() {
                 const res = await fetch('/api/admin/set-tag', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, tag })
+                    body: JSON.stringify({ pseudo, tag, color })
                 });
 
                 const data = await res.json();

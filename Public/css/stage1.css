@@ -260,6 +260,19 @@ p.cps-humain {
   background: var(--primary-color);
 }
 
+.btns-wrap .main-color-picker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  margin: 7.5px;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--primary-color);
+  background: var(--bg-color);
+  cursor: pointer;
+  padding: 2px;
+}
+
 .show-nav {
   position: fixed;
   left: 25px;

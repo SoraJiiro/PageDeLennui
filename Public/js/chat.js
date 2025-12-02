@@ -18,17 +18,37 @@ export function initChat(socket) {
         })
       : "";
 
-    const tagHtml = tag ? ` <span class="user-tag">${tag}</span>` : "";
-
-    el.innerHTML = `
+    if (auteur === "Système") {
+      el.innerHTML = `
       <div class="meta">
-        <span class="auteur">${auteur} - [${tagHtml}]</span>
+        <span class="auteur">${auteur}</span>
         <span class="time"><i>${time}</i></span>
       </div>
       <div class="text"></div>`;
-    el.querySelector(".text").textContent = text;
-    messages.appendChild(el);
-    messages.scrollTop = messages.scrollHeight;
+      el.querySelector(".text").textContent = text;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+    } else {
+      let tagHtml = "";
+      if (tag) {
+        if (typeof tag === "string") {
+          tagHtml = ` [<span class="user-tag">${tag}</span>]`;
+        } else if (typeof tag === "object" && tag.text) {
+          const style = tag.color ? `style="color:${tag.color}"` : "";
+          tagHtml = ` [<span class="user-tag" ${style}>${tag.text}</span>]`;
+        }
+      }
+
+      el.innerHTML = `
+      <div class="meta">
+        <span class="auteur">${auteur}${tagHtml}</span>
+        <span class="time"><i>${time}</i></span>
+      </div>
+      <div class="text"></div>`;
+      el.querySelector(".text").textContent = text;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+    }
   }
 
   socket.on("you:name", (name) => {
@@ -50,11 +70,7 @@ export function initChat(socket) {
   socket.on("users:list", (l) => {
     if (usersCount) {
       usersCount.innerHTML = `Utilisateurs en ligne: <b>${l.length}</b>`;
-      l.forEach((u) => {
-        if (u === socket.id) return;
-        usersCount.title += `\n‣ ${u}`;
-      });
-      //usersCount.title = `Utilisateurs en ligne:\n${l.join("‣")}`;
+      usersCount.title = `‣ ${l.join("\n‣ ")}`;
     }
   });
 
@@ -74,14 +90,12 @@ export function initChat(socket) {
   });
 
   if (form) {
-    // Auto-resize du textarea à la saisie (évite le script inline dans le HTML)
     if (input) {
       const autoResize = () => {
         input.style.height = "auto";
         input.style.height = input.scrollHeight + "px";
       };
       input.addEventListener("input", autoResize);
-      // Ajuste une première fois (au cas où il y a du contenu pré-rempli)
       autoResize();
     }
 

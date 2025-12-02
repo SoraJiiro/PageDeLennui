@@ -209,12 +209,23 @@ function initSocketHandlers(io, socket, gameState) {
     const msg = String(text || "").trim();
     if (!msg) return;
 
-    const tag = FileService.data.tags ? FileService.data.tags[pseudo] : null;
+    const tagData = FileService.data.tags
+      ? FileService.data.tags[pseudo]
+      : null;
+    let tagPayload = null;
+    if (tagData) {
+      if (typeof tagData === "string") {
+        tagPayload = { text: tagData, color: null };
+      } else if (typeof tagData === "object") {
+        tagPayload = tagData;
+      }
+    }
+
     const payload = {
       name: pseudo,
       text: msg,
       at: new Date().toISOString(),
-      tag: tag || null,
+      tag: tagPayload,
     };
 
     FileService.data.historique.push(payload);
@@ -359,6 +370,38 @@ function initSocketHandlers(io, socket, gameState) {
       }
     } catch (e) {
       console.error("Erreur lors du traitement clicker:click:", e);
+    }
+  });
+
+  socket.on("clicker:penalty", () => {
+    try {
+      const userMedals = FileService.data.medals[pseudo] || [];
+      const hasTricheurMedal = userMedals.some((m) =>
+        typeof m === "string" ? m === "Tricheur" : m.name === "Tricheur"
+      );
+      const isInCheatersList =
+        FileService.data.cheaters && FileService.data.cheaters.includes(pseudo);
+
+      // Vérifier si le joueur est bien un tricheur (soit dans la liste, soit a la médaille)
+      if (isInCheatersList || hasTricheurMedal) {
+        const current = FileService.data.clicks[pseudo] || 0;
+        FileService.data.clicks[pseudo] = current - 2;
+        FileService.save("clicks", FileService.data.clicks);
+        socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+        leaderboardManager.broadcastClickerLB(io);
+
+        // Sync cheaters list if needed
+        if (!isInCheatersList) {
+          if (!FileService.data.cheaters) FileService.data.cheaters = [];
+          FileService.data.cheaters.push(pseudo);
+          FileService.save("cheaters", FileService.data.cheaters);
+        }
+
+        // Log optionnel pour debug
+        // console.log(`Pénalité appliquée à ${pseudo}`);
+      }
+    } catch (e) {
+      console.error("Erreur lors du traitement clicker:penalty:", e);
     }
   });
 
@@ -1670,15 +1713,22 @@ function initSocketHandlers(io, socket, gameState) {
 
   socket.on("admin:global-notification", ({ message, withCountdown }) => {
     if (pseudo === "Admin" && message) {
+      const duration = 8000;
       io.emit("system:notification", {
         message: `📢 [ADMIN] ${message}`,
-        duration: 8000,
+        duration: duration,
         withCountdown: withCountdown || false,
       });
       console.log({
         level: "action",
         message: `Notification globale envoyée: ${message} -- withCountdown?: ${withCountdown}`,
       });
+
+      if (withCountdown) {
+        setTimeout(() => {
+          io.emit("system:redirect", "/ferme.html");
+        }, duration + 4000);
+      }
     }
   });
 

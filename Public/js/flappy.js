@@ -78,7 +78,11 @@ export function initFlappy(socket) {
     const prev = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
     if (scoreAttente != null && myBest >= scoreAttente && myBest > prev) {
-      showNotif(`🐤 Nouveau record ! Score: ${myBest}`);
+      showNotif(
+        `🐤 Nouveau record ! Score: ${myBest
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}`
+      );
       scoreAttente = null;
     }
   });
@@ -268,7 +272,11 @@ export function initFlappy(socket) {
     ui.ctx.fillStyle = "#fff";
     ui.ctx.font = "bold 24px monospace";
     ui.ctx.textAlign = "right";
-    ui.ctx.fillText(`${String(score).padStart(3, "0")}`, cssW - 20, 30);
+    ui.ctx.fillText(
+      `${score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
+      cssW - 20,
+      30
+    );
 
     requestAnimationFrame(update);
   }
@@ -298,7 +306,11 @@ export function initFlappy(socket) {
     ui.ctx.fillText("GAME OVER", cssW / 2, cssH / 2 - 20);
 
     ui.ctx.font = "20px monospace";
-    ui.ctx.fillText(`Score: ${score}`, cssW / 2, cssH / 2 + 20);
+    ui.ctx.fillText(
+      `Score: ${score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
+      cssW / 2,
+      cssH / 2 + 20
+    );
 
     ui.ctx.font = "18px monospace";
     ui.ctx.fillText("Appuie sur ESPACE pour rejouer", cssW / 2, cssH / 2 + 60);

@@ -65,7 +65,11 @@ export function initSnake(socket) {
     const prevBest = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
     if (scoreAttente != null && myBest >= scoreAttente && myBest > prevBest) {
-      showNotif(`🐍 Nouveau record ! Score: ${myBest}`);
+      showNotif(
+        `🐍 Nouveau record ! Score: ${myBest
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}`
+      );
       scoreAttente = null;
     }
   });
@@ -362,7 +366,11 @@ export function initSnake(socket) {
     ctx.fillStyle = "#0f0";
     ctx.font = "bold 24px monospace";
     ctx.textAlign = "right";
-    ctx.fillText(`${String(state.score).padStart(3, "0")}`, cssSize - 10, 30);
+    ctx.fillText(
+      `${state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
+      cssSize - 10,
+      30
+    );
   }
 
   function draw() {
@@ -414,7 +422,11 @@ export function initSnake(socket) {
     ctx.fillStyle = "#0f0";
     ctx.font = "bold 24px monospace";
     ctx.textAlign = "right";
-    ctx.fillText(`${String(state.score).padStart(3, "0")}`, cssSize - 10, 30);
+    ctx.fillText(
+      `${state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
+      cssSize - 10,
+      30
+    );
   }
 
   function startTimer() {
@@ -494,7 +506,11 @@ export function initSnake(socket) {
     ctx.fillText("GAME OVER", cssSize / 2, cssSize / 2 - 20);
 
     ctx.font = "20px monospace";
-    ctx.fillText(`Score: ${state.score}`, cssSize / 2, cssSize / 2 + 20);
+    ctx.fillText(
+      `Score: ${state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
+      cssSize / 2,
+      cssSize / 2 + 20
+    );
 
     const totalSeconds = Math.floor(state.elapsedMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -541,7 +557,9 @@ export function initSnake(socket) {
     overlay.style.background = "rgba(0,0,0,0.8)";
     overlay.style.color = "#0f0";
     overlay.style.zIndex = "9999";
-    overlay.innerHTML = `<div style="text-align:center;font-family:monospace"><div style="font-weight:700;font-size:32px;margin-bottom:8px">GAME OVER</div><div style="font-size:18px">Score: ${state.score}</div></div>`;
+    overlay.innerHTML = `<div style="text-align:center;font-family:monospace"><div style="font-weight:700;font-size:32px;margin-bottom:8px">GAME OVER</div><div style="font-size:18px">Score: ${state.score
+      .toLocaleString("fr-FR")
+      .replace(/\s/g, "\u00a0")}</div></div>`;
     parent.appendChild(overlay);
   }
 
