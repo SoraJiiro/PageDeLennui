@@ -1732,6 +1732,32 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  socket.on("admin:disconnect-others", () => {
+    if (pseudo !== "Admin") return;
+    try {
+      const adminSockets = gameState.userSockets.get("Admin");
+      if (adminSockets) {
+        let count = 0;
+        adminSockets.forEach((sId) => {
+          if (sId !== socket.id) {
+            const s = io.sockets.sockets.get(sId);
+            if (s) {
+              s.emit("system:redirect", "/login");
+              setTimeout(() => s.disconnect(true), 500);
+              count++;
+            }
+          }
+        });
+        socket.emit("system:notification", {
+          message: `✅ ${count} autre(s) session(s) Admin déconnectée(s)`,
+          duration: 4000,
+        });
+      }
+    } catch (e) {
+      console.error("Erreur disconnect-others:", e);
+    }
+  });
+
   // ------- Log off -------
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);

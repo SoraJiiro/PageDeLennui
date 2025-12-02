@@ -43,10 +43,7 @@ app.get("/register", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "register.html"))
 );
 app.get("/admin", requireAuth, (req, res) => {
-  if (
-    req.session.user.pseudo !== "Admin" &&
-    req.session.user.pseudo !== "RayanAdmin"
-  ) {
+  if (req.session.user.pseudo !== "Admin") {
     return res.redirect("/");
   }
   res.sendFile(path.join(config.PUBLIC, "index_admin.html"));
@@ -54,10 +51,7 @@ app.get("/admin", requireAuth, (req, res) => {
 
 // Page des logs - réservée à l'Admin
 app.get("/admin/logs", requireAuth, (req, res) => {
-  if (
-    req.session.user.pseudo !== "Admin" &&
-    req.session.user.pseudo !== "RayanAdmin"
-  ) {
+  if (req.session.user.pseudo !== "Admin") {
     return res.redirect("/");
   }
   res.sendFile(path.join(config.PUBLIC, "logs.html"));

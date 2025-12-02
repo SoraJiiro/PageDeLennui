@@ -123,8 +123,7 @@ function createAdminRouter(io) {
     if (
       !req.session ||
       !req.session.user ||
-      (req.session.user.pseudo !== "Admin" &&
-        req.session.user.pseudo !== "RayanAdmin")
+      req.session.user.pseudo !== "Admin"
     ) {
       return res.status(403).json({ message: "Accès refusé" });
     }
@@ -571,7 +570,7 @@ function createAdminRouter(io) {
       return res.status(400).json({ message: "Pseudo manquant" });
     }
 
-    if (pseudo === "Admin" || pseudo === "RayanAdmin") {
+    if (pseudo === "Admin") {
       return res
         .status(403)
         .json({ message: "Impossible de supprimer cet administrateur" });

@@ -32,6 +32,8 @@
                         onclick="window.location.replace('/login');">Se
                         déconnecter</button>
                     <button class="log-off"
+                        onclick="disconnectOtherAdmins()">Déco autres</button>
+                    <button class="log-off"
                         onclick="window.open('/admin/logs', '_blank');">Logs</button>
                 </div>
             </div>
@@ -470,7 +472,7 @@
             const data = await res.json();
             currentUser = data.pseudo;
             
-            if (currentUser !== 'Admin' && currentUser !== 'RayanAdmin') {
+            if (currentUser !== 'Admin') {
                 window.location.href = '/';
                 return;
             }
@@ -1050,7 +1052,7 @@ async function removeTime() {
                 return;
             }
 
-            if (pseudo === 'Admin' || pseudo === 'RayanAdmin') {
+            if (pseudo === 'Admin') {
                 showNotification('❌ Impossible de supprimer cet administrateur', 'error');
                 return;
             }
@@ -1182,6 +1184,11 @@ async function removeTime() {
         function removeBan(ip) {
             if (!confirm(`Retirer le ban pour ${ip} ?`)) return;
             socket.emit('admin:blacklist:remove', { ip });
+        }
+
+        function disconnectOtherAdmins() {
+            if (!confirm("Déconnecter toutes les autres sessions Admin ?")) return;
+            socket.emit('admin:disconnect-others');
         }
 
         // load initial list when admin page connects

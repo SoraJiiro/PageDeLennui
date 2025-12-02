@@ -172,17 +172,20 @@ class GameStateManager {
   addUser(socketId, pseudo, io) {
     if (this.userSockets.has(pseudo)) {
       const oldSockets = this.userSockets.get(pseudo); // Déco anciennes instances
-      oldSockets.forEach((oldId) => {
-        if (oldId !== socketId) {
-          const oldSocket = io.sockets.sockets.get(oldId);
-          if (oldSocket) {
-            if (pseudo !== "Admin")
+
+      // Si ce n'est pas l'Admin, on déconnecte les anciennes sessions pour éviter les doublons
+      if (pseudo !== "Admin") {
+        oldSockets.forEach((oldId) => {
+          if (oldId !== socketId) {
+            const oldSocket = io.sockets.sockets.get(oldId);
+            if (oldSocket) {
               console.log(`\n🔄 Reset socket ${oldId} -> ${pseudo}\n`);
-            oldSocket.disconnect(true);
+              oldSocket.disconnect(true);
+            }
           }
-        }
-      });
-      oldSockets.clear();
+        });
+        oldSockets.clear();
+      }
     }
 
     if (!this.userSockets.has(pseudo)) {
