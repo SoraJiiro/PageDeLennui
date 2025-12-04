@@ -49,7 +49,7 @@
                 déconnecter</button>
             <h1 class="display"></h1>
             <center><pre
-                    style="margin-top: 10vh; border: 2px solid var(--primary-color); padding: 2px 5px;width: fit-content;">Vous pouvez changer la couleur de l'<u>UI</u> depuis la Navigation!</pre></center>
+                    style="margin-top: 10vh; border: 2px solid var(--primary-color); padding: 2px 5px;width: fit-content;">Vous pouvez changer la couleur de l'<u>UI</u> et de votre <u>TAG</u> depuis la Navigation!</pre></center>
             <div class="keybind-wrap">
                 <label for="keybind">Changer la touche de Pause</label>
                 <input type="text" class="keybind" id="keybind"
@@ -73,9 +73,15 @@
                 <button class="sec9">Block Blast</button>
                 <button class="sec10">Snake</button>
                 <p class="hide-nav" role="button">Cacher</p>
+                <label for="mainColorPicker" id="ui">UI</label>
                 <input type="color" id="mainColorPicker"
-                    class="main-color-picker"
-                    title="Changer la couleur principale">
+                    class="ui-color-picker"
+                    title="Changer la couleur DE l'UI">
+                <label for="tagColorPicker" id="tag">TAG</label>
+                <input type="color" id="tagColorPicker"
+                    class="tag-color-picker"
+                    title="Changer la couleur du Tag"
+                    style="margin-left: 5px;">
             </div>
 
             <div class="zone-wrap">

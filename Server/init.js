@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 const sharedSession = require("express-socket.io-session");
 const chokidar = require("chokidar");
 const path = require("path");
+const exec = require("child_process").execSync;
 
 // ------- Imports -------
 const config = require("./config");

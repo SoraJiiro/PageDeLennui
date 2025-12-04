@@ -1,4 +1,4 @@
-import { showNotif, keyBind } from "./util.js";
+import { keyBind } from "./util.js";
 import { initCanvasResizer } from "./canvas_resize.js";
 
 (async () => {
@@ -45,6 +45,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./blockblast_leaderboard.js"),
       import("./snake.js"),
       import("./snake_leaderboard.js"),
+      import("./tagColor.js"),
+      import("./system.js"),
     ]);
 
     const [
@@ -65,6 +67,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       blockblastLeaderboard,
       snake,
       snakeLeaderboard,
+      tagColor,
+      system,
     ] = modules;
 
     const socket = io({
@@ -123,6 +127,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (snake?.initSnake) snake.initSnake(socket);
     if (snakeLeaderboard?.initSnakeLeaderboard)
       snakeLeaderboard.initSnakeLeaderboard(socket);
+    if (tagColor?.initTagColor) tagColor.initTagColor(socket);
+    if (system?.initSystem) system.initSystem(socket);
 
     socket.connect();
 
@@ -130,18 +136,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
       socket.emit("uno:getState");
       socket.emit("pictionary:getState");
       socket.emit("p4:getState");
-    });
-
-    socket.on("system:notification", (data) => {
-      showNotif(
-        data.message,
-        data.duration || 8000,
-        data.withCountdown || false
-      );
-    });
-
-    socket.on("system:redirect", (url) => {
-      window.location.href = url;
     });
   } catch (err) {
     console.error("Erreur chargement modules : ", err);

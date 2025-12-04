@@ -170,6 +170,20 @@ function initSocketHandlers(io, socket, gameState) {
   socket.emit("chat:history", FileService.data.historique);
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
 
+  // Send current tag color
+  const currentTagData = FileService.data.tags
+    ? FileService.data.tags[pseudo]
+    : null;
+  let currentTagColor = "#ff0000";
+  if (
+    currentTagData &&
+    typeof currentTagData === "object" &&
+    currentTagData.color
+  ) {
+    currentTagColor = currentTagData.color;
+  }
+  socket.emit("user:tagColor", { color: currentTagColor });
+
   const rawUserMedalsInit = FileService.data.medals[pseudo] || [];
   const normalizedInit = rawUserMedalsInit.map((m) =>
     typeof m === "string"
@@ -222,6 +236,7 @@ function initSocketHandlers(io, socket, gameState) {
     }
 
     const payload = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
       name: pseudo,
       text: msg,
       at: new Date().toISOString(),
@@ -235,6 +250,59 @@ function initSocketHandlers(io, socket, gameState) {
     FileService.save("historique", FileService.data.historique);
     FileService.appendLog(payload);
     io.emit("chat:message", payload);
+  });
+
+  socket.on("chat:delete", ({ id }) => {
+    if (pseudo !== "Admin") return;
+    const idx = FileService.data.historique.findIndex((m) => m.id === id);
+    if (idx !== -1) {
+      FileService.data.historique.splice(idx, 1);
+      FileService.save("historique", FileService.data.historique);
+      io.emit("chat:delete", { id });
+    }
+  });
+
+  socket.on("user:setTagColor", ({ color }) => {
+    if (!color || typeof color !== "string") return;
+
+    // Check tricheur
+    const userMedals = FileService.data.medals[pseudo] || [];
+    const hasTricheurMedal = userMedals.some((m) =>
+      typeof m === "string" ? m === "Tricheur" : m.name === "Tricheur"
+    );
+    const isInCheatersList =
+      FileService.data.cheaters && FileService.data.cheaters.includes(pseudo);
+
+    if (hasTricheurMedal || isInCheatersList) {
+      return socket.emit("system:notification", {
+        message:
+          "🚫 Les tricheurs ne peuvent pas changer la couleur de leur tag",
+        duration: 4000,
+      });
+    }
+
+    if (!FileService.data.tags) FileService.data.tags = {};
+    let currentTag = FileService.data.tags[pseudo];
+
+    if (!currentTag) {
+      // Pas de tag, on ne fait rien
+      return;
+    }
+
+    if (typeof currentTag === "string") {
+      currentTag = { text: currentTag, color: color };
+    } else if (typeof currentTag === "object") {
+      currentTag.color = color;
+    }
+
+    FileService.data.tags[pseudo] = currentTag;
+    FileService.save("tags", FileService.data.tags);
+
+    socket.emit("user:tagColor", { color });
+    socket.emit("system:notification", {
+      message: "✅ Couleur du tag mise à jour",
+      duration: 3000,
+    });
   });
 
   // ------- Clicker -------
@@ -1711,6 +1779,8 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  const { exec } = require("child_process");
+
   socket.on("admin:global-notification", ({ message, withCountdown }) => {
     if (pseudo === "Admin" && message) {
       const duration = 8000;
@@ -1727,6 +1797,21 @@ function initSocketHandlers(io, socket, gameState) {
       if (withCountdown) {
         setTimeout(() => {
           io.emit("system:redirect", "/ferme.html");
+
+          // On éteint le serveur peu après pour laisser le temps de charger la page
+          setTimeout(() => {
+            console.log({
+              level: "warn",
+              message: "Arrêt du serveur suite au countdown...",
+            });
+            if (process.platform === "win32") {
+              exec("taskkill /IM node.exe /F /T");
+            } else {
+              exec("pkill node");
+            }
+            // Fallback
+            setTimeout(() => process.exit(0), 500);
+          }, 2000);
         }, duration + 4000);
       }
     }

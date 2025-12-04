@@ -35,6 +35,8 @@
                         onclick="disconnectOtherAdmins()">Déco autres</button>
                     <button class="log-off"
                         onclick="window.open('/admin/logs', '_blank');">Logs</button>
+                    <button class="log-off" style="background-color: #ff0000;"
+                        onclick="shutdownServer()">OFF</button>
                 </div>
             </div>
 
@@ -166,6 +168,28 @@
                             </thead>
                             <tbody id="lb-snake"></tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- GESTION TRICHEURS -->
+                <section class="admin-section">
+                    <h2><i class="fa-solid fa-ban"></i> /Gestion Tricheurs</h2>
+                    <div class="admin-card">
+                        <div class="input-group">
+                            <label>Pseudo du joueur :</label>
+                            <input type="text" id="cheater-pseudo"
+                                placeholder="Pseudo">
+                        </div>
+                        <div class="btn-group"
+                            style="margin-top: 10px; display: flex; gap: 10px;">
+                            <button class="btn-danger" onclick="addCheater()"
+                                style="background-color: #ff4444; color: white; padding: 8px 16px; border: none; cursor: pointer;">Ajouter
+                                Tricheur</button>
+                            <button class="btn-success"
+                                onclick="removeCheater()"
+                                style="background-color: #00cc00; color: white; padding: 8px 16px; border: none; cursor: pointer;">Retirer
+                                Tricheur</button>
+                        </div>
                     </div>
                 </section>
 
@@ -1289,6 +1313,71 @@ async function removeTime() {
             setTimeout(() => {
                 notif.remove();
             }, 4000);
+        }
+
+        // Gestion Tricheurs
+        async function addCheater() {
+            const pseudo = document.getElementById('cheater-pseudo').value.trim();
+            if (!pseudo) return showNotification('⚠️ Pseudo requis', 'error');
+
+            try {
+                const res = await fetch('/api/admin/cheater/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification('✅ Joueur ajouté aux tricheurs', 'success');
+                    document.getElementById('cheater-pseudo').value = '';
+                } else {
+                    showNotification('❌ ' + data.message, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('❌ Erreur serveur', 'error');
+            }
+        }
+
+        async function removeCheater() {
+            const pseudo = document.getElementById('cheater-pseudo').value.trim();
+            if (!pseudo) return showNotification('⚠️ Pseudo requis', 'error');
+
+            try {
+                const res = await fetch('/api/admin/cheater/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification('✅ Joueur retiré des tricheurs', 'success');
+                    document.getElementById('cheater-pseudo').value = '';
+                } else {
+                    showNotification('❌ ' + data.message, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('❌ Erreur serveur', 'error');
+            }
+        }
+
+        async function shutdownServer() {
+            if (!confirm("⚠️ Êtes-vous sûr de vouloir éteindre le serveur ?\nCela coupera l'accès à tout le monde.")) return;
+            
+            try {
+                const res = await fetch('/api/admin/shutdown', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.redirect) {
+                    window.location.replace(data.redirect);
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('❌ Erreur lors de l\'arrêt', 'error');
+            }
         }
 
     // Initialiser

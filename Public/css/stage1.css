@@ -260,7 +260,7 @@ p.cps-humain {
   background: var(--primary-color);
 }
 
-.btns-wrap .main-color-picker {
+.btns-wrap .ui-color-picker {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -269,7 +269,38 @@ p.cps-humain {
   height: 30px;
   border: 2px solid var(--primary-color);
   background: var(--bg-color);
-  cursor: pointer;
+  cursor: crosshair;
+  padding: 2px;
+}
+
+.btns-wrap label#ui {
+  position: absolute;
+  bottom: 40px;
+  left: 15px;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  user-select: none;
+}
+
+.btns-wrap label#tag {
+  position: absolute;
+  bottom: 40px;
+  left: 47.5px;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  user-select: none;
+}
+
+.btns-wrap .tag-color-picker {
+  position: absolute;
+  bottom: 0;
+  left: 40px;
+  margin: 7.5px;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--primary-color);
+  background: var(--bg-color);
+  cursor: crosshair;
   padding: 2px;
 }
 

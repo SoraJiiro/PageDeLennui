@@ -7,10 +7,13 @@ export function initChat(socket) {
   const input = document.getElementById("chat-input");
   const messages = document.getElementById("chat-messages");
   const submit = document.querySelector(".submit");
+  let myPseudo = null;
 
-  function addMessage({ auteur, text, at, type = "user", tag = null }) {
+  function addMessage({ id, auteur, text, at, type = "user", tag = null }) {
     const el = document.createElement("div");
     el.className = `msg ${type}`;
+    if (id) el.dataset.id = id;
+
     const time = at
       ? new Date(at).toLocaleString("fr-FR", {
           dateStyle: "short",
@@ -46,12 +49,27 @@ export function initChat(socket) {
       </div>
       <div class="text"></div>`;
       el.querySelector(".text").textContent = text;
+
+      if (myPseudo === "Admin" && id) {
+        const btn = document.createElement("button");
+        btn.className = "msg-delete-btn";
+        btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        btn.title = "Supprimer ce message";
+        btn.onclick = () => {
+          if (confirm("Supprimer ce message ?")) {
+            socket.emit("chat:delete", { id });
+          }
+        };
+        el.appendChild(btn);
+      }
+
       messages.appendChild(el);
       messages.scrollTop = messages.scrollHeight;
     }
   }
 
   socket.on("you:name", (name) => {
+    myPseudo = name;
     if (meSpan) meSpan.innerHTML += `<span id="pseudo">${name}</span>`;
   });
 
@@ -59,7 +77,13 @@ export function initChat(socket) {
     if (!Array.isArray(history)) return;
     messages.innerHTML = "";
     history.forEach((msg) =>
-      addMessage({ auteur: msg.name, text: msg.text, at: msg.at, tag: msg.tag })
+      addMessage({
+        id: msg.id,
+        auteur: msg.name,
+        text: msg.text,
+        at: msg.at,
+        tag: msg.tag,
+      })
     );
   });
 
@@ -76,6 +100,7 @@ export function initChat(socket) {
 
   socket.on("chat:message", (payload) => {
     addMessage({
+      id: payload.id,
       auteur: payload.name,
       text: payload.text,
       at: payload.at,
@@ -87,6 +112,11 @@ export function initChat(socket) {
     ) {
       showNotif(`💬 Nouveau message de ${payload.name} dans le Chat`);
     }
+  });
+
+  socket.on("chat:delete", ({ id }) => {
+    const el = messages.querySelector(`.msg[data-id="${id}"]`);
+    if (el) el.remove();
   });
 
   if (form) {

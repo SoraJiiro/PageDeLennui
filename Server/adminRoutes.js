@@ -1,6 +1,7 @@
 const express = require("express");
 const { FileService } = require("./util");
 const dbUsers = require("./dbUsers");
+const { exec } = require("child_process");
 
 // Fonction pour créer le router avec accès à io
 function createAdminRouter(io) {
@@ -210,6 +211,58 @@ function createAdminRouter(io) {
     res.json({
       message: `Statistique ${statType} de ${pseudo} mise à jour à ${value}`,
     });
+  });
+
+  // Ajouter un tricheur
+  router.post("/cheater/add", requireAdmin, (req, res) => {
+    const { pseudo } = req.body;
+    if (!pseudo) return res.status(400).json({ message: "Pseudo requis" });
+
+    // 1. Ajouter à la liste des cheaters
+    if (!FileService.data.cheaters) FileService.data.cheaters = [];
+    if (!FileService.data.cheaters.includes(pseudo)) {
+      FileService.data.cheaters.push(pseudo);
+      FileService.save("cheaters", FileService.data.cheaters);
+    }
+
+    // 2. Ajouter le tag Tricheur (gris)
+    if (!FileService.data.tags) FileService.data.tags = {};
+    FileService.data.tags[pseudo] = { text: "Tricheur", color: "#808080" };
+    FileService.save("tags", FileService.data.tags);
+
+    // 3. Mettre à jour les médailles (envoie via socket)
+    const clicks = FileService.data.clicks[pseudo] || 0;
+    recalculateMedals(pseudo, clicks);
+
+    res.json({ message: "Joueur ajouté aux tricheurs" });
+  });
+
+  // Retirer un tricheur
+  router.post("/cheater/remove", requireAdmin, (req, res) => {
+    const { pseudo } = req.body;
+    if (!pseudo) return res.status(400).json({ message: "Pseudo requis" });
+
+    // 1. Retirer de la liste des cheaters
+    if (FileService.data.cheaters) {
+      FileService.data.cheaters = FileService.data.cheaters.filter(
+        (p) => p !== pseudo
+      );
+      FileService.save("cheaters", FileService.data.cheaters);
+    }
+
+    // 2. Retirer le tag Tricheur
+    if (FileService.data.tags && FileService.data.tags[pseudo]) {
+      if (FileService.data.tags[pseudo].text === "Tricheur") {
+        delete FileService.data.tags[pseudo];
+        FileService.save("tags", FileService.data.tags);
+      }
+    }
+
+    // 3. Mettre à jour les médailles
+    const clicks = FileService.data.clicks[pseudo] || 0;
+    recalculateMedals(pseudo, clicks);
+
+    res.json({ message: "Joueur retiré des tricheurs" });
   });
 
   // Modifier toutes les stats
@@ -783,6 +836,28 @@ function createAdminRouter(io) {
         .status(500)
         .json({ message: "Erreur serveur lors du nettoyage" });
     }
+  });
+
+  // Route pour éteindre le serveur
+  router.post("/shutdown", requireAdmin, (req, res) => {
+    console.log({
+      level: "warn",
+      message: "Arrêt du serveur demandé par l'admin...",
+    });
+
+    // On renvoie d'abord la redirection pour que le client puisse naviguer
+    res.json({ redirect: "/ferme.html" });
+
+    // On attend un peu que la réponse parte avant de tuer le processus
+    setTimeout(() => {
+      if (process.platform === "win32") {
+        exec("taskkill /IM node.exe /F /T");
+      } else {
+        exec("pkill node");
+      }
+      // Fallback si les commandes échouent
+      setTimeout(() => process.exit(0), 500);
+    }, 1000);
   });
 
   // Définir un tag pour un utilisateur

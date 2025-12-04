@@ -154,3 +154,30 @@ span#pseudo {
     height: 45vh;
   }
 }
+
+.msg {
+  position: relative;
+}
+
+.msg-delete-btn {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: transparent;
+  border: none;
+  color: var(--red-color);
+  cursor: pointer;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  padding: 2px;
+  min-height: auto;
+}
+
+.msg-delete-btn:hover {
+  opacity: 1;
+  background: transparent;
+  color: var(--red-color);
+  border: none;
+  outline: none;
+}
