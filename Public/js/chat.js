@@ -1,7 +1,6 @@
 import { showNotif } from "./util.js";
 
 export function initChat(socket) {
-  const meSpan = document.getElementById("me");
   const usersCount = document.getElementById("usersCount");
   const form = document.getElementById("chat-form");
   const input = document.getElementById("chat-input");
@@ -70,7 +69,6 @@ export function initChat(socket) {
 
   socket.on("you:name", (name) => {
     myPseudo = name;
-    if (meSpan) meSpan.innerHTML += `<span id="pseudo">${name}</span>`;
   });
 
   socket.on("chat:history", (history) => {
@@ -93,7 +91,7 @@ export function initChat(socket) {
 
   socket.on("users:list", (l) => {
     if (usersCount) {
-      usersCount.innerHTML = `Utilisateurs en ligne: <b>${l.length}</b>`;
+      usersCount.innerHTML = `En ligne: <b>${l.length}</b>`;
       usersCount.title = `‣ ${l.join("\n‣ ")}`;
     }
   });
@@ -107,9 +105,7 @@ export function initChat(socket) {
       tag: payload.tag,
     });
 
-    if (
-      payload.name !== meSpan.textContent.replace("Connecté en tant que : ", "")
-    ) {
+    if (payload.name !== myPseudo) {
       showNotif(`💬 Nouveau message de ${payload.name} dans le Chat`);
     }
   });

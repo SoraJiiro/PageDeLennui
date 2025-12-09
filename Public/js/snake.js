@@ -43,7 +43,17 @@ export function initSnake(socket) {
 
   // Texte de touche pause dynamique
   let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
+  let uiColor =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary-color")
+      .trim() || "#00ff00";
+
   try {
+    window.addEventListener("uiColor:changed", (e) => {
+      if (e.detail && e.detail.color) {
+        uiColor = e.detail.color;
+      }
+    });
     window.addEventListener("pauseKey:changed", (e) => {
       const k = e?.detail?.key;
       if (typeof k === "string" && k.length === 1) {
@@ -284,7 +294,7 @@ export function initSnake(socket) {
     ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.fillRect(0, 0, cssSize, cssSize);
 
-    ctx.fillStyle = "#0f0";
+    ctx.fillStyle = uiColor;
     ctx.font = "bold 40px monospace";
     ctx.textAlign = "center";
 
@@ -337,17 +347,18 @@ export function initSnake(socket) {
       const lerpX = prev.x + (seg.x - prev.x) * progress;
       const lerpY = prev.y + (seg.y - prev.y) * progress;
 
-      if (index === 0) {
-        ctx.fillStyle = "#00ff00";
-      } else {
-        ctx.fillStyle = "#00cc00";
+      ctx.fillStyle = uiColor;
+      if (index !== 0) {
+        ctx.globalAlpha = 0.8;
       }
+
       ctx.fillRect(
         lerpX * CELL_SIZE_DYNAMIC + 1,
         lerpY * CELL_SIZE_DYNAMIC + 1,
         CELL_SIZE_DYNAMIC - 2,
         CELL_SIZE_DYNAMIC - 2
       );
+      ctx.globalAlpha = 1.0;
     }
 
     // Dessiner la nourriture

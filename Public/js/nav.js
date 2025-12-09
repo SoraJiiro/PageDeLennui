@@ -17,6 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
     colorPicker.addEventListener("input", (e) => {
       const color = e.target.value;
       document.documentElement.style.setProperty("--primary-color", color);
+      window.dispatchEvent(
+        new CustomEvent("uiColor:changed", { detail: { color } })
+      );
     });
 
     // Sauvegarde uniquement à la fin de la sélection (évite le lag)

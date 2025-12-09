@@ -3,6 +3,51 @@ const path = require("path");
 const session = require("express-session");
 const config = require("./config");
 
+const BLACKLIST_PATH = path.join(__dirname, "..", "blacklist.json");
+
+function getIpFromSocket(s) {
+  try {
+    const ipHeader = s.handshake.headers["x-forwarded-for"];
+    const ip = (
+      ipHeader ||
+      s.request.socket.remoteAddress ||
+      s.handshake.address ||
+      ""
+    ).replace("::ffff:", "");
+    return ip || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function persistBanIp(ip) {
+  try {
+    if (!fs.existsSync(BLACKLIST_PATH)) {
+      const defaultData = { alwaysBlocked: [] };
+      fs.writeFileSync(
+        BLACKLIST_PATH,
+        JSON.stringify(defaultData, null, 2),
+        "utf8"
+      );
+    }
+    const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
+    const data = JSON.parse(raw || "{}");
+    data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
+      ? data.alwaysBlocked
+      : [];
+    if (!data.alwaysBlocked.includes(ip)) {
+      data.alwaysBlocked.push(ip);
+      fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+    }
+    // Update runtime config blacklist too
+    if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
+    return true;
+  } catch (e) {
+    console.error("Erreur persistance blacklist:", e);
+    return false;
+  }
+}
+
 // ------- Session -------
 const expressSession = session({
   name: "sid",
@@ -218,4 +263,6 @@ module.exports = {
   blacklistMiddleware,
   FileService: new FileService(),
   GameStateManager,
+  getIpFromSocket,
+  persistBanIp,
 };

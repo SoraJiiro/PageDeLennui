@@ -43,7 +43,17 @@ export function initDino(socket) {
 
   // Texte de touche pause dynamique (mis à jour via événement global)
   let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
+  let uiColor =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary-color")
+      .trim() || "#00ff00";
+
   try {
+    window.addEventListener("uiColor:changed", (e) => {
+      if (e.detail && e.detail.color) {
+        uiColor = e.detail.color;
+      }
+    });
     window.addEventListener("pauseKey:changed", (e) => {
       const k = e?.detail?.key;
       if (typeof k === "string" && k.length === 1) {
@@ -134,7 +144,7 @@ export function initDino(socket) {
     jumpVelocity: MIN_JUMP_VELOCITY,
 
     draw() {
-      c.fillStyle = "#0f0";
+      c.fillStyle = uiColor;
       c.fillRect(
         this.x,
         CLIENT_H - this.y - this.height,
@@ -185,7 +195,7 @@ export function initDino(socket) {
       this.speed = Math.max(0.6, CLIENT_W * 0.003) + Math.random() * 1;
     }
     draw() {
-      c.fillStyle = "#0f0";
+      c.fillStyle = uiColor;
       c.globalAlpha = 0.3;
       c.fillRect(this.x, this.y, this.width, this.height);
       c.globalAlpha = 1.0;
@@ -231,7 +241,7 @@ export function initDino(socket) {
     }
 
     draw() {
-      c.fillStyle = "#0f0";
+      c.fillStyle = uiColor;
       this.cacti.forEach((cactus) => {
         const groundY = CLIENT_H - 10;
         const cactusY = groundY - cactus.height;
@@ -296,7 +306,7 @@ export function initDino(socket) {
     c.fillStyle = "rgba(0, 0, 0, 0.7)";
     c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
-    c.fillStyle = "#0f0";
+    c.fillStyle = uiColor;
     c.font = "bold 40px monospace";
     c.textAlign = "center";
 
@@ -323,7 +333,7 @@ export function initDino(socket) {
       c.fillStyle = "#000";
       c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
-      c.fillStyle = "#0f0";
+      c.fillStyle = uiColor;
       const groundY = CLIENT_H - 10;
       c.fillRect(0, groundY, CLIENT_W, 10);
 
@@ -355,7 +365,7 @@ export function initDino(socket) {
     c.fillStyle = "#000";
     c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
-    c.fillStyle = "#0f0";
+    c.fillStyle = uiColor;
     const groundY = CLIENT_H - 10;
     c.fillRect(0, groundY, CLIENT_W, 10);
 
@@ -404,7 +414,7 @@ export function initDino(socket) {
 
     state.score += Math.floor(state.gameSpeed * 0.2);
 
-    c.fillStyle = "#0f0";
+    c.fillStyle = uiColor;
     c.font = "bold 24px monospace";
     c.textAlign = "right";
     c.fillText(
@@ -425,7 +435,7 @@ export function initDino(socket) {
     c.fillStyle = "rgba(0, 0, 0, 0.8)";
     c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
-    c.fillStyle = "#0f0";
+    c.fillStyle = uiColor;
     c.font = "bold 40px monospace";
     c.textAlign = "center";
     c.fillText("GAME OVER", CLIENT_W / 2, CLIENT_H / 2 - 20);

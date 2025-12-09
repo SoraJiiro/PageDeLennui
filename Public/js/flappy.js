@@ -20,6 +20,18 @@ export function initFlappy(socket) {
   let countdown = 0;
   let frameCount = 0;
   let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
+  let uiColor =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--primary-color")
+      .trim() || "#00ff00";
+
+  try {
+    window.addEventListener("uiColor:changed", (e) => {
+      if (e.detail && e.detail.color) {
+        uiColor = e.detail.color;
+      }
+    });
+  } catch {}
 
   function resizeCanvas() {
     try {
@@ -114,7 +126,7 @@ export function initFlappy(socket) {
       return this.radiusRatio * cssH;
     },
     draw() {
-      ui.ctx.fillStyle = "#0f0";
+      ui.ctx.fillStyle = uiColor;
       ui.ctx.beginPath();
       ui.ctx.arc(this.x, birdY, this.radius, 0, Math.PI * 2);
       ui.ctx.fill();
@@ -149,7 +161,7 @@ export function initFlappy(socket) {
   }
 
   function drawPipes() {
-    ui.ctx.fillStyle = "#0f0";
+    ui.ctx.fillStyle = uiColor;
     const dpr = window.devicePixelRatio || 1;
     const cssW = Math.round(ui.canvas.width / dpr);
     const cssH = Math.round(ui.canvas.height / dpr);
@@ -173,7 +185,7 @@ export function initFlappy(socket) {
     const cssH = Math.round(ui.canvas.height / dpr);
     ui.ctx.fillRect(0, 0, cssW, cssH);
 
-    ui.ctx.fillStyle = "#0f0";
+    ui.ctx.fillStyle = uiColor;
     ui.ctx.font = "bold 40px monospace";
     ui.ctx.textAlign = "center";
 
@@ -269,7 +281,7 @@ export function initFlappy(socket) {
     }
 
     // ---------- Score ----------
-    ui.ctx.fillStyle = "#fff";
+    ui.ctx.fillStyle = uiColor;
     ui.ctx.font = "bold 24px monospace";
     ui.ctx.textAlign = "right";
     ui.ctx.fillText(
@@ -300,7 +312,7 @@ export function initFlappy(socket) {
     ui.ctx.fillRect(0, 0, cssW, cssH);
 
     // Texte
-    ui.ctx.fillStyle = "#0f0";
+    ui.ctx.fillStyle = uiColor;
     ui.ctx.font = "bold 40px monospace";
     ui.ctx.textAlign = "center";
     ui.ctx.fillText("GAME OVER", cssW / 2, cssH / 2 - 20);

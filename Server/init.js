@@ -18,6 +18,7 @@ const authRoutes = require("./authRoutes");
 const requireAuth = require("./requireAuth");
 const createAdminRouter = require("./adminRoutes");
 const { initSocketHandlers } = require("./handlers");
+const { checkReconnect } = require("./reconnectHandler");
 const fileLogger = require("./logger");
 
 // ------- Init -------
@@ -64,7 +65,10 @@ app.get("/logs.html", (req, res) => res.redirect("/admin/logs"));
 app.use(requireAuth);
 app.use(express.static(config.PUBLIC));
 
-io.on("connection", (socket) => initSocketHandlers(io, socket, gameState));
+io.on("connection", (socket) => {
+  checkReconnect(io, socket);
+  initSocketHandlers(io, socket, gameState);
+});
 
 // --- Diffusion des logs serveur vers les admins ---
 // Patch léger de console pour ré-émettre les logs côté clients admin

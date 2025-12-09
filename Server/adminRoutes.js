@@ -237,10 +237,27 @@ function createAdminRouter(io) {
     res.json({ message: "Joueur ajouté aux tricheurs" });
   });
 
+  // Obtenir la liste des tricheurs
+  router.get("/cheater/list", requireAdmin, (req, res) => {
+    const cheaters = FileService.data.cheaters || [];
+    res.json(cheaters);
+  });
+
   // Retirer un tricheur
   router.post("/cheater/remove", requireAdmin, (req, res) => {
     const { pseudo } = req.body;
     if (!pseudo) return res.status(400).json({ message: "Pseudo requis" });
+
+    // Vérifier si le score est négatif
+    const currentClicks = FileService.data.clicks[pseudo] || 0;
+    if (currentClicks < 0) {
+      return res.status(400).json({
+        message:
+          "Impossible de retirer ce tricheur : son score est négatif (" +
+          currentClicks +
+          ")",
+      });
+    }
 
     // 1. Retirer de la liste des cheaters
     if (FileService.data.cheaters) {

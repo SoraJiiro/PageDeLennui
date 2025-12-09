@@ -190,6 +190,13 @@
                                 style="background-color: #00cc00; color: white; padding: 8px 16px; border: none; cursor: pointer;">Retirer
                                 Tricheur</button>
                         </div>
+                        <div style="margin-top: 20px;">
+                            <h3>Liste des tricheurs :</h3>
+                            <ul id="cheaters-list"
+                                style="list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #333; padding: 10px;">
+                                <!-- Liste chargée dynamiquement -->
+                            </ul>
+                        </div>
                     </div>
                 </section>
 
@@ -508,7 +515,9 @@
                 chatModule = null;
             }
 
-            initSocket();
+            if (!socket) {
+                initSocket();
+            }
         }
 
         // Initialiser Socket.IO
@@ -1316,6 +1325,36 @@ async function removeTime() {
         }
 
         // Gestion Tricheurs
+        async function loadCheaters() {
+            try {
+                const res = await fetch('/api/admin/cheater/list');
+                const cheaters = await res.json();
+                const list = document.getElementById('cheaters-list');
+                list.innerHTML = '';
+                
+                if (cheaters.length === 0) {
+                    list.innerHTML = '<li style="color: #888;">Aucun tricheur</li>';
+                    return;
+                }
+
+                cheaters.forEach(pseudo => {
+                    const li = document.createElement('li');
+                    li.textContent = pseudo;
+                    li.style.padding = '5px';
+                    li.style.borderBottom = '1px solid #333';
+                    li.style.cursor = 'pointer';
+                    li.onclick = () => {
+                        document.getElementById('cheater-pseudo').value = pseudo;
+                    };
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.error("Erreur chargement tricheurs", err);
+            }
+        }
+
+        loadCheaters();
+
         async function addCheater() {
             const pseudo = document.getElementById('cheater-pseudo').value.trim();
             if (!pseudo) return showNotification('⚠️ Pseudo requis', 'error');
@@ -1330,6 +1369,7 @@ async function removeTime() {
                 if (res.ok) {
                     showNotification('✅ Joueur ajouté aux tricheurs', 'success');
                     document.getElementById('cheater-pseudo').value = '';
+                    loadCheaters();
                 } else {
                     showNotification('❌ ' + data.message, 'error');
                 }
@@ -1351,8 +1391,7 @@ async function removeTime() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    showNotification('✅ Joueur retiré des tricheurs', 'success');
-                    document.getElementById('cheater-pseudo').value = '';
+                    loadCheaters();
                 } else {
                     showNotification('❌ ' + data.message, 'error');
                 }

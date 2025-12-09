@@ -1,4 +1,4 @@
-const { FileService } = require("./util");
+const { FileService, getIpFromSocket, persistBanIp } = require("./util");
 const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
@@ -29,50 +29,6 @@ const cpsTracker = new Map();
 const CPS_THRESHOLD = Number(process.env.CPS_THRESHOLD) || 50; // clicks/sec
 const CPS_DURATION_MS = Number(process.env.CPS_DURATION_MS) || 3000; // ms
 const CPS_PENALTY = Number(process.env.CPS_PENALTY) || 1000; // clicks to remove
-const BLACKLIST_PATH = path.join(__dirname, "..", "blacklist.json");
-
-function getIpFromSocket(s) {
-  try {
-    const ipHeader = s.handshake.headers["x-forwarded-for"];
-    const ip = (
-      ipHeader ||
-      s.request.socket.remoteAddress ||
-      s.handshake.address ||
-      ""
-    ).replace("::ffff:", "");
-    return ip || "";
-  } catch (e) {
-    return "";
-  }
-}
-
-function persistBanIp(ip) {
-  try {
-    if (!fs.existsSync(BLACKLIST_PATH)) {
-      const defaultData = { alwaysBlocked: [] };
-      fs.writeFileSync(
-        BLACKLIST_PATH,
-        JSON.stringify(defaultData, null, 2),
-        "utf8"
-      );
-    }
-    const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
-    const data = JSON.parse(raw || "{}");
-    data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
-      ? data.alwaysBlocked
-      : [];
-    if (!data.alwaysBlocked.includes(ip)) {
-      data.alwaysBlocked.push(ip);
-      fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
-    }
-    // Update runtime config blacklist too
-    if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
-    return true;
-  } catch (e) {
-    console.error("Erreur persistance blacklist:", e);
-    return false;
-  }
-}
 
 let isAlreadyLogged_bb = false;
 
@@ -413,6 +369,11 @@ function initSocketHandlers(io, socket, gameState) {
             message: `IP ${ip} bannie automatiquement pour CPS élevé. ${CPS_PENALTY} clicks retirés à ${pseudo}`,
           });
 
+          io.emit(
+            "system:info",
+            `${pseudo} a été banni pour triche (CPS trop élevé) !`
+          );
+
           // Notify and disconnect sockets from that IP
           io.sockets.sockets.forEach((s) => {
             const sIp = getIpFromSocket(s);
@@ -529,6 +490,7 @@ function initSocketHandlers(io, socket, gameState) {
     console.log(
       withGame(`🏅 [${orange}${pseudo}${green}] a débloqué ${medalName}`, green)
     );
+    io.emit("system:info", `${pseudo} a débloqué la médaille ${medalName} !`);
 
     // Ré-émission normalisée (objets complets)
     const normalized = userMedals.map((m) =>
@@ -552,6 +514,10 @@ function initSocketHandlers(io, socket, gameState) {
           `\n🦖 Nouveau score Dino pour [${orange}${pseudo}${blue}] -> ${s}\n`,
           blue
         )
+      );
+      io.emit(
+        "system:info",
+        `${pseudo} a fait un nouveau score de ${s} à Dino !`
       );
     }
     leaderboardManager.broadcastDinoLB(io);
@@ -580,6 +546,10 @@ function initSocketHandlers(io, socket, gameState) {
           `\n🐤 Nouveau score Flappy pour [${orange}${pseudo}${pink}] -> ${s}\n`,
           pink
         )
+      );
+      io.emit(
+        "system:info",
+        `${pseudo} a fait un nouveau score de ${s} à Flappy !`
       );
     }
     leaderboardManager.broadcastFlappyLB(io);
@@ -1430,6 +1400,10 @@ function initSocketHandlers(io, socket, gameState) {
             green
           )
         );
+        io.emit(
+          "system:info",
+          `${pseudo} a fait un nouveau score de ${s} à Block Blast !`
+        );
         isAlreadyLogged_bb = true;
       }
     } else if (
@@ -1593,6 +1567,10 @@ function initSocketHandlers(io, socket, gameState) {
             `\n🐍 Nouveau score Snake pour [${orange}${pseudo}${green}] -> ${s}\n`,
             green
           )
+        );
+        io.emit(
+          "system:info",
+          `${pseudo} a fait un nouveau score de ${s} à Snake !`
         );
         isAlreadyLogged_snake = true;
       }

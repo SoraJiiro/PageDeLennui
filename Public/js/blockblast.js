@@ -593,43 +593,127 @@ export function initBlockBlast(socket) {
     return false;
   }
 
-  function generateNewPieces() {
-    // Vérifier d'abord si le jeu est vraiment terminé
-    if (!PIECE_SHAPES.some((shape) => hasValidPlacement({ shape }))) {
-      endGame();
-      return;
+  // ---------- Solver pour garantir la solvabilité ----------
+  function cloneGrid(grid) {
+    return grid.map((row) => [...row]);
+  }
+
+  function simulatePlace(grid, piece, r, c) {
+    const newGrid = cloneGrid(grid);
+    const shape = piece.shape;
+    for (let i = 0; i < shape.length; i++) {
+      for (let j = 0; j < shape[i].length; j++) {
+        if (shape[i][j] === 1) {
+          newGrid[r + i][c + j] = true;
+        }
+      }
+    }
+    return newGrid;
+  }
+
+  function simulateClear(grid) {
+    const rowsToClear = [];
+    const colsToClear = [];
+
+    for (let r = 0; r < GRID_SIZE; r++) {
+      if (grid[r].every((cell) => cell)) rowsToClear.push(r);
+    }
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (grid.every((row) => row[c])) colsToClear.push(c);
     }
 
-    const pieces = [];
+    if (rowsToClear.length === 0 && colsToClear.length === 0) return grid;
+
+    const newGrid = cloneGrid(grid);
+    rowsToClear.forEach((r) => {
+      newGrid[r] = Array(GRID_SIZE).fill(false);
+    });
+    colsToClear.forEach((c) => {
+      for (let r = 0; r < GRID_SIZE; r++) {
+        newGrid[r][c] = false;
+      }
+    });
+    return newGrid;
+  }
+
+  let solveSteps = 0;
+  function canSolve(grid, pieces) {
+    if (pieces.length === 0) return true;
+    if (solveSteps > 5000) return false; // Limite de sécurité
+
+    for (let i = 0; i < pieces.length; i++) {
+      const piece = pieces[i];
+      const remaining = pieces.filter((_, idx) => idx !== i);
+
+      // Optimisation : essayer d'abord les positions qui clear des lignes ?
+      // Pour l'instant, parcours simple
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (canPlacePieceOn(grid, piece, r, c)) {
+            solveSteps++;
+            let nextGrid = simulatePlace(grid, piece, r, c);
+            nextGrid = simulateClear(nextGrid);
+            if (canSolve(nextGrid, remaining)) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  function generateNewPieces() {
+    // Vérifier d'abord si le jeu est vraiment terminé (aucune pièce simple ne rentre ?)
+    // Ici on garde la logique existante : si on ne peut rien placer, c'est game over.
+    // Mais attention, generateNewPieces est appelé quand on a vidé la main.
+    // Donc le board est dans un état où on vient de jouer.
+
     const now = Date.now();
+    let pieces = [];
+    let attempts = 0;
+    let solvable = false;
 
-    // Générer 3 pièces avec distribution pondérée
-    for (let i = 0; i < 3; i++) {
-      let shape = selectWeightedPiece();
-      let attempts = 0;
-
-      // S'assurer qu'au moins une pièce est plaçable
-      while (i === 0 && attempts < 25 && !hasValidPlacement({ shape })) {
-        shape = selectWeightedPiece();
-        attempts++;
+    // Essayer de générer un set solvable
+    while (!solvable && attempts < 50) {
+      pieces = [];
+      for (let i = 0; i < 3; i++) {
+        pieces.push({
+          shape: selectWeightedPiece(),
+          used: false,
+          id: now + i + attempts * 3,
+          color: randomPieceColor(),
+        });
       }
 
-      pieces.push({
-        shape,
-        used: false,
-        id: now + i,
-        color: randomPieceColor(),
-      });
+      solveSteps = 0;
+      if (canSolve(state.grid, pieces)) {
+        solvable = true;
+      } else {
+        attempts++;
+      }
     }
 
-    // Si aucune pièce n'est plaçable, forcer une petite pièce
-    if (!pieces.some((p) => hasValidPlacement(p))) {
-      pieces[0] = {
-        shape: [[1]],
-        used: false,
-        id: now,
-        color: randomPieceColor(),
-      };
+    // Si toujours pas solvable après 50 essais, on force des pièces très simples (1x1 ou 2x1)
+    if (!solvable) {
+      console.warn(
+        "BlockBlast: Impossible de générer un set complexe solvable, fallback sur pièces simples."
+      );
+      pieces = [];
+      const simpleShapes = [[[1]], [[1, 1]], [[1], [1]]];
+      for (let i = 0; i < 3; i++) {
+        const shape =
+          simpleShapes[Math.floor(Math.random() * simpleShapes.length)];
+        pieces.push({
+          shape: shape,
+          used: false,
+          id: now + i + 999,
+          color: randomPieceColor(),
+        });
+      }
+
+      // Vérification ultime : si même les 1x1 ne rentrent pas, c'est vraiment Game Over
+      // Mais normalement generateNewPieces est appelé après un clear, donc il y a de la place.
+      // Sauf si le joueur a rempli la grille sans clear et qu'il a fini ses pièces ?
+      // Non, s'il finit ses pièces, c'est qu'il a pu les placer. Donc il y a de la place ou il vient de clear.
     }
 
     state.currentPieces = pieces;
@@ -647,9 +731,6 @@ export function initBlockBlast(socket) {
       elapsedMs: state.elapsedMs,
       gameOver: false,
     });
-
-    // Ne pas démarrer automatiquement le timer lors de génération de nouvelles pièces.
-    // Le timer doit démarrer uniquement lorsque le joueur clique sur une pièce ou commence un drag.
   }
 
   function renderPieces() {
