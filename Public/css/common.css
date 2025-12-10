@@ -300,3 +300,74 @@ p.pause-info {
   display: flex;
   gap: 7.5px;
 }
+
+/* Refactored Inline Styles */
+.pre-container {
+  margin-top: 10vh;
+  border: 2px solid var(--primary-color);
+  padding: 2px 5px;
+  width: fit-content;
+}
+
+.color-input-margin {
+  margin-left: 5px;
+}
+
+.keybind-mark {
+  background: #0f0 !important;
+  color: #000 !important;
+  padding: 7px 7px;
+  text-align: center;
+  display: inline-block;
+}
+
+.keybind-mark-underline {
+  text-decoration: underline;
+  text-decoration-color: #000;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.display-none {
+  display: none;
+}
+
+.palette-btn {
+  width: 20px; 
+  height: 20px; 
+  /* Assuming size based on context, but inline style didn't specify size, just bg. 
+     Wait, the inline styles were just background colors. 
+     I should probably make a class for the button shape if needed, 
+     but the inline style was ONLY background (and border for the black one).
+  */
+}
+
+.palette-btn-black {
+  background: #000;
+  border: 1.5px solid #fff;
+}
+
+.palette-btn-white {
+  background: #fff;
+}
+
+.palette-btn-red {
+  background: #f00;
+}
+
+.palette-btn-green {
+  background: #0f0;
+}
+
+.palette-btn-blue {
+  background: #00f;
+}
+
+.palette-btn-yellow {
+  background: #ff0;
+}
+
+.palette-btn-magenta {
+  background: #f0f;
+}
+

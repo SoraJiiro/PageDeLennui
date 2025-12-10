@@ -90,7 +90,7 @@
 .chat-messages {
   background: var(--bg-color);
   border: 2px solid var(--primary-color);
-  height: 50vh;
+  height: 65vh;
   padding: 0.75rem;
   overflow-y: auto;
 }

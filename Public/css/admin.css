@@ -16,6 +16,7 @@ body {
   padding: 20px;
   border: 2px solid var(--primary-color);
   background: rgba(0, 255, 0, 0.05);
+  position: relative;
 }
 
 @media (max-width: 900px) {
@@ -38,35 +39,6 @@ body {
 .admin-header p {
   color: #fff;
   font-size: 1.1rem;
-}
-
-.admin-header .header-btns {
-  position: absolute;
-  top: 10px;
-  right: 50%;
-  transform: translateX(20%);
-  display: flex;
-  gap: 10px;
-}
-
-button.log-off {
-  position: relative;
-  background-color: var(--bg-color);
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
-  padding: clamp(8px, 1vh, 14px) clamp(14px, 2vw, 28px);
-  cursor: pointer;
-  font-size: clamp(0.9rem, 1.1vw + 0.6rem, 1.2rem);
-  z-index: 1000;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.22rem;
-  min-height: clamp(40px, 5.5vh, 56px);
-}
-
-.admin-header .header-btns button.log-off {
-  position: relative;
-  display: inline-block;
 }
 
 .admin-sections {
@@ -249,9 +221,7 @@ table tr:hover {
 .action-buttons .btn,
 .action-buttons button,
 .leaderboard-tabs button,
-.admin-header .header-btns button,
-.btn,
-button.log-off {
+.btn {
   box-sizing: border-box;
   padding: 10px 14px;
   font-size: 1rem;
@@ -378,4 +348,46 @@ iframe.logs-frame {
   .leaderboard-tabs {
     flex-direction: column;
   }
+}
+
+.admin-header .header-btns {
+  position: absolute;
+  top: -50px;
+  right: 50%;
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-evenly;
+  align-items: center;
+  transform: translateX(50%);
+  padding: 2px;
+  height: 100%;
+}
+
+.admin-header .header-btns button {
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: clamp(8px, 1vh, 14px) clamp(14px, 2vw, 28px);
+  cursor: pointer;
+  font-size: clamp(0.9rem, 1.1vw + 0.6rem, 1.2rem);
+  z-index: 1000;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.22rem;
+  min-height: clamp(40px, 5.5vh, 56px);
+}
+.admin-header .header-btns button:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.admin-header .header-btns button.shutdown {
+  background-color: #000;
+  color: #f00;
+}
+
+.admin-header .header-btns button.shutdown:hover {
+  color: #000;
+  background: #f00;
 }
