@@ -6,7 +6,7 @@ const MAX_CONNECTIONS = 3;
 
 function checkReconnect(io, socket) {
   const ip = getIpFromSocket(socket);
-  if (!ip) return;
+  if (!ip || ip === "::1") return;
 
   const now = Date.now();
   let timestamps = connectionHistory.get(ip) || [];

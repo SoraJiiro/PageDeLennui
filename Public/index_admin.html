@@ -176,25 +176,29 @@
                     <h2><i class="fa-solid fa-ban"></i> /Gestion Tricheurs</h2>
                     <div class="admin-card">
                         <div class="input-group">
-                            <label>Pseudo du joueur :</label>
-                            <input type="text" id="cheater-pseudo"
+                            <label>Pseudo</label>
+                            <input type="text"
+                                id="cheater-pseudo"
+                                style="width: 100%;
+  padding: 12px;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  font-size: 1rem;margin-top:10px;"
                                 placeholder="Pseudo">
                         </div>
                         <div class="btn-group"
                             style="margin-top: 10px; display: flex; gap: 10px;">
-                            <button class="btn-danger" onclick="addCheater()"
-                                style="background-color: #ff4444; color: white; padding: 8px 16px; border: none; cursor: pointer;">Ajouter
+                            <button class="btn btn-red"
+                                onclick="addCheater()">Ajouter
                                 Tricheur</button>
-                            <button class="btn-success"
-                                onclick="removeCheater()"
-                                style="background-color: #00cc00; color: white; padding: 8px 16px; border: none; cursor: pointer;">Retirer
+                            <button class="btn"
+                                onclick="removeCheater()">Retirer
                                 Tricheur</button>
                         </div>
                         <div style="margin-top: 20px;">
-                            <h3>Liste des tricheurs :</h3>
                             <ul id="cheaters-list"
                                 style="list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #333; padding: 10px;">
-                                <!-- Liste chargée dynamiquement -->
                             </ul>
                         </div>
                     </div>
@@ -1341,7 +1345,6 @@ async function removeTime() {
                     const li = document.createElement('li');
                     li.textContent = pseudo;
                     li.style.padding = '5px';
-                    li.style.borderBottom = '1px solid #333';
                     li.style.cursor = 'pointer';
                     li.onclick = () => {
                         document.getElementById('cheater-pseudo').value = pseudo;
