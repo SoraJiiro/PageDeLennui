@@ -7,13 +7,13 @@ export function showNotif(text, duration = 4000, withCountdown = false) {
       position: fixed;
       top: 20px;
       right: 20px;
-      background: #0f0;
+      background: var(--primary-color, #0f0);
       opacity: 0.88;
       color: #000;
       padding: 12px 18px;
       font-weight: 700;
       z-index: 9999;
-      border: 2px solid #0f0;
+      border: 2px solid var(--primary-color, #0f0);
       box-shadow: 0 0 0 2px #000 inset;
       animation: slideIn 0.25s ease-out;
       min-width: 200px;
@@ -130,4 +130,27 @@ export function keyBind() {
   });
 
   return keys;
+}
+
+export function darken(hex, percent) {
+  hex = hex.replace("#", "");
+
+  // Convertir en valeurs RGB
+  let r = parseInt(hex.substring(0, 2), 16);
+  let g = parseInt(hex.substring(2, 4), 16);
+  let b = parseInt(hex.substring(4, 6), 16);
+
+  // Appliquer le pourcentage d’assombrissement
+  r = Math.floor(r * (1 - percent));
+  g = Math.floor(g * (1 - percent));
+  b = Math.floor(b * (1 - percent));
+
+  // Limiter à [0, 255]
+  r = Math.max(0, r);
+  g = Math.max(0, g);
+  b = Math.max(0, b);
+
+  // Retour en HEX
+  const toHex = (c) => c.toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }

@@ -6,6 +6,9 @@ window.initNavSocket = (socket) => {
     if (color) {
       document.documentElement.style.setProperty("--primary-color", color);
       if (colorPicker) colorPicker.value = color;
+      window.dispatchEvent(
+        new CustomEvent("uiColor:changed", { detail: { color } })
+      );
     }
   });
 

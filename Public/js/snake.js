@@ -1,708 +1,592 @@
-import { showNotif, keys } from "./util.js";
+import { showNotif, keys, darken } from "./util.js";
 
-export function initSnake(socket) {
-  // ---------- Cache UI ----------
-  const ui = {
-    canvas: document.getElementById("snake-canvas"),
-    startBtn: document.querySelector(".snake-start"),
-    stopBtn: document.querySelector(".snake-stop"),
-    resetBtn: document.querySelector(".snake-reset"),
-  };
-  if (!ui.canvas) return;
-  const ctx = ui.canvas.getContext("2d");
+const CONSTANTS = {
+  GRID_SIZE: 23,
+  MAX_LENGTH: 52,
+  GAME_SPEED: 100, // ms per tick
+};
 
-  // ---------- Constantes ----------
-  const GRID_SIZE = 23;
-  const CELL_SIZE = 23;
-  const MAX_LENGTH = 52;
-  // ms per logical tick (lower = faster). Tunable for smoothness.
-  const GAME_SPEED = 100;
+class SnakeGame {
+  constructor(canvas, socket, uiElements) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext("2d");
+    this.socket = socket;
+    this.ui = uiElements;
 
-  // ---------- État local ----------
-  const state = {
-    snake: [],
-    direction: { x: 1, y: 0 },
-    nextDirection: { x: 1, y: 0 },
-    food: null,
-    score: 0,
-    gameLoop: null,
-    rafId: null,
-    tickAccumulator: 0,
-    prevSnake: [],
-    lastFrameTime: 0,
-    gameActive: false,
-    gameStarted: false,
-    startTime: null,
-    elapsedMs: 0,
-    pausedTime: 0,
-    timerInterval: null,
-    paused: false,
-    countdown: 0,
-    frameCount: 0,
-  };
-
-  // Texte de touche pause dynamique
-  let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
-  let uiColor =
-    getComputedStyle(document.documentElement)
-      .getPropertyValue("--primary-color")
-      .trim() || "#00ff00";
-
-  try {
-    window.addEventListener("uiColor:changed", (e) => {
-      if (e.detail && e.detail.color) {
-        uiColor = e.detail.color;
-      }
-    });
-    window.addEventListener("pauseKey:changed", (e) => {
-      const k = e?.detail?.key;
-      if (typeof k === "string" && k.length === 1) {
-        pauseKeyText = k.toUpperCase();
-      }
-    });
-  } catch {}
-
-  // ---------- Pseudo + meilleur score ----------
-  let myName = null;
-  let myBest = 0;
-  let scoreAttente = null;
-  socket.on("you:name", (name) => {
-    myName = name;
-  });
-  socket.on("snake:leaderboard", (arr) => {
-    if (!Array.isArray(arr) || !myName) return;
-    const me = arr.find((e) => e.pseudo === myName);
-    const prevBest = myBest;
-    myBest = me ? Number(me.score) || 0 : 0;
-    if (scoreAttente != null && myBest >= scoreAttente && myBest > prevBest) {
-      showNotif(
-        `🐍 Nouveau record ! Score: ${myBest
-          .toLocaleString("fr-FR")
-          .replace(/\s/g, "\u00a0")}`
-      );
-      scoreAttente = null;
-    }
-  });
-
-  // ---------- Canvas sizing ----------
-  // ---------- Canvas sizing (responsive) ----------
-  let CELL_SIZE_DYNAMIC = CELL_SIZE;
-
-  function resizeCanvas() {
-    try {
-      const rect = ui.canvas.getBoundingClientRect();
-      const clientW = Math.max(1, Math.round(rect.width));
-      const clientH = Math.max(1, Math.round(rect.height));
-      // compute cell size in CSS pixels so GRID fits inside the canvas
-      CELL_SIZE_DYNAMIC =
-        Math.floor(Math.min(clientW, clientH) / GRID_SIZE) || 1;
-      const desiredW = CELL_SIZE_DYNAMIC * GRID_SIZE;
-      // keep canvas CSS size aligned with grid so layout doesn't jump
-      try {
-        ui.canvas.style.width = `${desiredW}px`;
-        ui.canvas.style.height = `${desiredW}px`;
-      } catch (e) {}
-    } catch (e) {}
-  }
-
-  // Ensure the canvas backing buffer and transform match the CSS size + DPR
-  function ensureBackingBuffer() {
-    try {
-      const ratio = window.devicePixelRatio || 1;
-      const rect = ui.canvas.getBoundingClientRect();
-      const cssWidth = Math.max(1, Math.round(rect.width));
-      const cssHeight = Math.max(1, Math.round(rect.height));
-      const displayWidth = Math.floor(cssWidth * ratio);
-      const displayHeight = Math.floor(cssHeight * ratio);
-
-      if (
-        ui.canvas.width !== displayWidth ||
-        ui.canvas.height !== displayHeight
-      ) {
-        ui.canvas.width = displayWidth;
-        ui.canvas.height = displayHeight;
-        try {
-          ui.canvas.style.width = `${cssWidth}px`;
-          ui.canvas.style.height = `${cssHeight}px`;
-        } catch (e) {}
-        try {
-          if (ctx && typeof ctx.setTransform === "function")
-            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        } catch (e) {}
-      }
-    } catch (e) {}
-  }
-
-  // initial scale computation and debounced resize updates
-  resizeCanvas();
-  let _snakeResizeTO = null;
-  window.addEventListener("resize", () => {
-    try {
-      clearTimeout(_snakeResizeTO);
-      _snakeResizeTO = setTimeout(() => resizeCanvas(), 120);
-    } catch (e) {}
-  });
-
-  // ---------- Fonctions de jeu ----------
-  function initGame() {
-    state.snake = [
-      { x: 10, y: 10 },
-      { x: 9, y: 10 },
-      { x: 8, y: 10 },
-    ];
-    state.direction = { x: 1, y: 0 };
-    state.nextDirection = { x: 1, y: 0 };
-    state.score = 0;
-    state.gameActive = true;
-    state.gameStarted = true;
-    state.startTime = Date.now();
-    state.elapsedMs = 0;
-    state.pausedTime = 0;
-    spawnFood();
-    startTimer();
-    if (state.rafId) cancelAnimationFrame(state.rafId);
-    // ensure backing buffer & transform are correctly set before first frame
-    ensureBackingBuffer();
-    // reset rAF timing state
-    state.tickAccumulator = 0;
-    state.lastFrameTime = 0;
-    // copy initial positions so we can interpolate on first frame
-    state.prevSnake = state.snake.map((s) => ({ x: s.x, y: s.y }));
-    state.rafId = requestAnimationFrame(loop);
-  }
-
-  // perform one logical tick (grid-step)
-  function performTick() {
-    if (!state.gameActive) return;
-
-    state.direction = state.nextDirection;
-    // store previous positions for interpolation
-    state.prevSnake = state.snake.map((s) => ({ x: s.x, y: s.y }));
-
-    const head = {
-      x: state.snake[0].x + state.direction.x,
-      y: state.snake[0].y + state.direction.y,
+    this.state = {
+      snake: [],
+      direction: { x: 1, y: 0 },
+      nextDirection: { x: 1, y: 0 },
+      food: null,
+      score: 0,
+      rafId: null,
+      tickAccumulator: 0,
+      prevSnake: [],
+      lastFrameTime: 0,
+      gameActive: false,
+      gameStarted: false,
+      startTime: null,
+      elapsedMs: 0,
+      pausedTime: 0,
+      timerInterval: null,
+      paused: false,
+      countdown: 0,
+      frameCount: 0,
     };
 
-    // Vérifier collision avec les murs
+    this.cellSize = 23;
+    this.uiColor = "#00ff00";
+    this.pauseKeyText = "P";
+    this.myBest = 0;
+    this.scoreAttente = null;
+
+    this.initSettings();
+    this.bindEvents();
+    this.resize();
+    this.clearToBlack();
+    if (this.ui.stopBtn) this.ui.stopBtn.style.display = "none";
+  }
+
+  initSettings() {
+    // UI Color
+    const computedStyle = getComputedStyle(document.documentElement);
+    this.uiColor =
+      computedStyle.getPropertyValue("--primary-color").trim() || "#00ff00";
+
+    window.addEventListener("uiColor:changed", (e) => {
+      if (e.detail?.color) this.uiColor = e.detail.color;
+    });
+
+    // Pause Key
+    this.pauseKeyText = keys?.default?.[0] || "P";
+    window.addEventListener("pauseKey:changed", (e) => {
+      if (e.detail?.key?.length === 1)
+        this.pauseKeyText = e.detail.key.toUpperCase();
+    });
+
+    // Socket Events
+    this.socket.on("snake:leaderboard", (arr) => this.handleLeaderboard(arr));
+    this.socket.on("you:name", (name) => {
+      this.myName = name;
+    });
+  }
+
+  handleLeaderboard(arr) {
+    if (!Array.isArray(arr) || !this.myName) return;
+    const me = arr.find((e) => e.pseudo === this.myName);
+    const prevBest = this.myBest;
+    this.myBest = me ? Number(me.score) || 0 : 0;
+
     if (
-      head.x < 0 ||
-      head.x >= GRID_SIZE ||
-      head.y < 0 ||
-      head.y >= GRID_SIZE
+      this.scoreAttente != null &&
+      this.myBest >= this.scoreAttente &&
+      this.myBest > prevBest
     ) {
-      gameOver();
-      return;
-    }
-
-    // Vérifier collision avec soi-même
-    if (state.snake.some((seg) => seg.x === head.x && seg.y === head.y)) {
-      gameOver();
-      return;
-    }
-
-    state.snake.unshift(head);
-
-    // Vérifier si on mange la nourriture
-    if (head.x === state.food.x && head.y === state.food.y) {
-      state.score++;
-
-      // Ne pas grandir si on atteint la taille max
-      if (state.snake.length >= MAX_LENGTH) {
-        state.snake.pop();
-      }
-
-      spawnFood();
-    } else {
-      state.snake.pop();
+      showNotif(
+        `🐍 Nouveau record ! Score: ${this.myBest.toLocaleString("fr-FR")}`
+      );
+      this.scoreAttente = null;
     }
   }
 
-  // main loop using requestAnimationFrame: accumulates dt and ticks at GAME_SPEED
-  function loop(ts) {
-    if (!state.lastFrameTime) state.lastFrameTime = ts;
-    const delta = ts - state.lastFrameTime;
-    state.lastFrameTime = ts;
+  resize() {
+    if (!this.canvas) return;
+    try {
+      const rect = this.canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
 
-    // handle countdown using frame-based approach (approx 60fps)
-    if (state.countdown > 0) {
-      state.frameCount++;
-      // render pause/countdown
-      draw(0);
-      if (state.frameCount % 60 === 0) {
-        state.countdown--;
-        if (state.countdown === 0) {
-          state.paused = false;
-          state.pausedTime = Date.now() - state.startTime - state.elapsedMs;
+      const clientW = Math.max(1, Math.round(rect.width));
+      const clientH = Math.max(1, Math.round(rect.height));
+
+      this.cellSize =
+        Math.floor(Math.min(clientW, clientH) / CONSTANTS.GRID_SIZE) || 1;
+      const desiredSize = this.cellSize * CONSTANTS.GRID_SIZE;
+
+      // Set display size
+      this.canvas.style.width = `${desiredSize}px`;
+      this.canvas.style.height = `${desiredSize}px`;
+
+      // Set actual size
+      this.canvas.width = Math.floor(desiredSize * ratio);
+      this.canvas.height = Math.floor(desiredSize * ratio);
+
+      // Normalize coordinate system
+      this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    } catch (e) {
+      console.warn("Snake resize failed", e);
+    }
+  }
+
+  bindEvents() {
+    window.addEventListener("resize", () => {
+      clearTimeout(this._resizeTO);
+      this._resizeTO = setTimeout(() => this.resize(), 100);
+    });
+
+    this.ui.startBtn?.addEventListener("click", () => {
+      if (!this.state.gameStarted || !this.state.gameActive) this.start();
+    });
+
+    this.ui.stopBtn?.addEventListener("click", () => this.stop());
+
+    this.ui.resetBtn?.addEventListener("click", () => this.handleReset());
+
+    document.addEventListener("keydown", (e) => this.handleInput(e));
+  }
+
+  handleInput(e) {
+    const active = document.activeElement;
+    if (
+      active &&
+      (active.tagName === "INPUT" ||
+        active.tagName === "TEXTAREA" ||
+        active.isContentEditable)
+    )
+      return;
+
+    const snakeSection = document.getElementById("stage10");
+    if (!snakeSection) return;
+    const rect = snakeSection.getBoundingClientRect();
+    if (rect.top >= window.innerHeight || rect.bottom <= 0) return;
+
+    // Pause
+    if (keys.default.includes(e.key)) {
+      e.preventDefault();
+      this.togglePause();
+      return;
+    }
+
+    // Restart
+    if (e.code === "Space") {
+      e.preventDefault();
+      if (
+        !this.state.gameActive &&
+        !this.state.paused &&
+        this.state.countdown === 0
+      ) {
+        this.start();
+      }
+      return;
+    }
+
+    if (!this.state.gameActive || this.state.paused || this.state.countdown > 0)
+      return;
+
+    switch (e.key) {
+      case "ArrowUp":
+        if (this.state.direction.y === 0)
+          this.state.nextDirection = { x: 0, y: -1 };
+        e.preventDefault();
+        break;
+      case "ArrowDown":
+        if (this.state.direction.y === 0)
+          this.state.nextDirection = { x: 0, y: 1 };
+        e.preventDefault();
+        break;
+      case "ArrowLeft":
+        if (this.state.direction.x === 0)
+          this.state.nextDirection = { x: -1, y: 0 };
+        e.preventDefault();
+        break;
+      case "ArrowRight":
+        if (this.state.direction.x === 0)
+          this.state.nextDirection = { x: 1, y: 0 };
+        e.preventDefault();
+        break;
+    }
+  }
+
+  togglePause() {
+    if (!this.state.gameStarted || !this.state.gameActive) return;
+
+    if (this.state.paused && this.state.countdown === 0) {
+      this.state.countdown = 3;
+      this.state.frameCount = 0;
+    } else if (!this.state.paused && this.state.countdown === 0) {
+      this.state.paused = true;
+      // Anti-cheat / Boss key feature
+      try {
+        window.open("../search.html", "_blank");
+      } catch {
+        window.open("about:newtab", "_blank");
+      }
+    }
+  }
+
+  start() {
+    this.state = {
+      ...this.state,
+      snake: [
+        { x: 10, y: 10 },
+        { x: 9, y: 10 },
+        { x: 8, y: 10 },
+      ],
+      direction: { x: 1, y: 0 },
+      nextDirection: { x: 1, y: 0 },
+      score: 0,
+      gameActive: true,
+      gameStarted: true,
+      startTime: Date.now(),
+      elapsedMs: 0,
+      pausedTime: 0,
+      paused: false,
+      countdown: 0,
+      tickAccumulator: 0,
+      lastFrameTime: 0,
+    };
+
+    this.state.prevSnake = this.state.snake.map((s) => ({ ...s }));
+
+    this.spawnFood();
+    this.startTimer();
+    this.resize(); // Ensure correct size
+
+    if (this.state.rafId) cancelAnimationFrame(this.state.rafId);
+    this.state.rafId = requestAnimationFrame((ts) => this.loop(ts));
+
+    if (this.ui.stopBtn) this.ui.stopBtn.style.display = "inline-block";
+    this.removeDOMGameOverOverlay();
+  }
+
+  stop() {
+    if (!this.state.gameStarted) return;
+
+    this.socket.emit("snake:score", {
+      score: this.state.score,
+      elapsedMs: this.state.elapsedMs,
+      final: true,
+    });
+
+    this.state.gameActive = false;
+    this.state.gameStarted = false;
+    this.stopTimer();
+    if (this.state.rafId) cancelAnimationFrame(this.state.rafId);
+
+    if (this.ui.stopBtn) this.ui.stopBtn.style.display = "none";
+    this.clearToBlack();
+    this.removeDOMGameOverOverlay();
+    showNotif("# Partie stoppée.");
+  }
+
+  gameOver() {
+    this.state.gameActive = false;
+    this.stopTimer();
+    if (this.state.rafId) cancelAnimationFrame(this.state.rafId);
+
+    this.socket.emit("snake:score", {
+      score: this.state.score,
+      elapsedMs: this.state.elapsedMs,
+      final: true,
+    });
+    this.scoreAttente = this.state.score;
+
+    this.resize(); // Ensure buffer is correct
+    this.drawGameOver();
+    this.showDOMGameOverOverlay();
+  }
+
+  loop(ts) {
+    if (!this.state.lastFrameTime) this.state.lastFrameTime = ts;
+    const delta = ts - this.state.lastFrameTime;
+    this.state.lastFrameTime = ts;
+
+    if (this.state.countdown > 0) {
+      this.state.frameCount++;
+      this.draw(0);
+      if (this.state.frameCount % 60 === 0) {
+        this.state.countdown--;
+        if (this.state.countdown === 0) {
+          this.state.paused = false;
+          this.state.pausedTime =
+            Date.now() - this.state.startTime - this.state.elapsedMs;
         }
       }
-      state.rafId = requestAnimationFrame(loop);
+      this.state.rafId = requestAnimationFrame((t) => this.loop(t));
       return;
     }
 
-    if (state.paused) {
-      draw(0);
-      state.rafId = requestAnimationFrame(loop);
+    if (this.state.paused) {
+      this.draw(0);
+      this.state.rafId = requestAnimationFrame((t) => this.loop(t));
       return;
     }
 
-    // accumulate and perform ticks
-    state.tickAccumulator += delta;
+    this.state.tickAccumulator += delta;
     let ticked = false;
-    while (state.tickAccumulator >= GAME_SPEED) {
-      performTick();
-      state.tickAccumulator -= GAME_SPEED;
+    while (this.state.tickAccumulator >= CONSTANTS.GAME_SPEED) {
+      this.tick();
+      this.state.tickAccumulator -= CONSTANTS.GAME_SPEED;
       ticked = true;
     }
 
-    // progress between ticks (0..1)
-    const progress = Math.min(1, state.tickAccumulator / GAME_SPEED);
-
-    // update elapsed time periodically
-    state.frameCount++;
-    if (ticked) {
-      // if we ticked at least once, update elapsedMs reference
-      if (
-        state.gameActive &&
-        state.startTime &&
-        !state.paused &&
-        state.countdown === 0
-      ) {
-        state.elapsedMs = Date.now() - state.startTime - state.pausedTime;
-      }
+    if (ticked && this.state.gameActive) {
+      this.state.elapsedMs =
+        Date.now() - this.state.startTime - this.state.pausedTime;
     }
 
-    draw(progress);
-    state.rafId = requestAnimationFrame(loop);
+    const progress = Math.min(
+      1,
+      this.state.tickAccumulator / CONSTANTS.GAME_SPEED
+    );
+    this.draw(progress);
+
+    if (this.state.gameActive) {
+      this.state.rafId = requestAnimationFrame((t) => this.loop(t));
+    }
   }
 
-  function spawnFood() {
-    let validPosition = false;
-    while (!validPosition) {
-      state.food = {
-        x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE),
+  tick() {
+    if (!this.state.gameActive) return;
+
+    this.state.direction = this.state.nextDirection;
+    this.state.prevSnake = this.state.snake.map((s) => ({ ...s }));
+
+    const head = {
+      x: this.state.snake[0].x + this.state.direction.x,
+      y: this.state.snake[0].y + this.state.direction.y,
+    };
+
+    // Collisions
+    if (
+      head.x < 0 ||
+      head.x >= CONSTANTS.GRID_SIZE ||
+      head.y < 0 ||
+      head.y >= CONSTANTS.GRID_SIZE ||
+      this.state.snake.some((s) => s.x === head.x && s.y === head.y)
+    ) {
+      this.gameOver();
+      return;
+    }
+
+    this.state.snake.unshift(head);
+
+    if (head.x === this.state.food.x && head.y === this.state.food.y) {
+      this.state.score++;
+      if (this.state.snake.length >= CONSTANTS.MAX_LENGTH)
+        this.state.snake.pop();
+      this.spawnFood();
+    } else {
+      this.state.snake.pop();
+    }
+  }
+
+  spawnFood() {
+    let valid = false;
+    while (!valid) {
+      this.state.food = {
+        x: Math.floor(Math.random() * CONSTANTS.GRID_SIZE),
+        y: Math.floor(Math.random() * CONSTANTS.GRID_SIZE),
       };
-      validPosition = !state.snake.some(
-        (seg) => seg.x === state.food.x && seg.y === state.food.y
+      valid = !this.state.snake.some(
+        (s) => s.x === this.state.food.x && s.y === this.state.food.y
       );
     }
   }
 
-  function showPaused() {
-    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    ctx.fillRect(0, 0, cssSize, cssSize);
+  draw(progress = 1) {
+    // Ensure size is correct
+    this.resize();
 
-    ctx.fillStyle = uiColor;
-    ctx.font = "bold 40px monospace";
-    ctx.textAlign = "center";
+    const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
 
-    if (state.countdown > 0) {
-      ctx.fillText(state.countdown.toString(), cssSize / 2, cssSize / 2);
+    // Background
+    this.ctx.fillStyle = "#000";
+    this.ctx.fillRect(0, 0, cssSize, cssSize);
+
+    // Grid
+    this.ctx.strokeStyle = "#4e3e5e";
+    this.ctx.lineWidth = 1;
+    for (let i = 0; i <= CONSTANTS.GRID_SIZE; i++) {
+      const pos = i * this.cellSize;
+      this.ctx.beginPath();
+      this.ctx.moveTo(pos, 0);
+      this.ctx.lineTo(pos, cssSize);
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, pos);
+      this.ctx.lineTo(cssSize, pos);
+      this.ctx.stroke();
+    }
+
+    // Snake
+    for (let i = 0; i < this.state.snake.length; i++) {
+      const curr = this.state.snake[i];
+      const prev = this.state.prevSnake[i] || curr;
+
+      const x = prev.x + (curr.x - prev.x) * progress;
+      const y = prev.y + (curr.y - prev.y) * progress;
+
+      this.ctx.fillStyle = this.uiColor;
+      if (i !== 0) this.ctx.globalAlpha = 0.8;
+
+      this.ctx.fillRect(
+        x * this.cellSize + 1,
+        y * this.cellSize + 1,
+        this.cellSize - 2,
+        this.cellSize - 2
+      );
+      this.ctx.globalAlpha = 1.0;
+    }
+
+    // Food
+    if (this.state.food) {
+      this.ctx.fillStyle = "#ff0000";
+      this.ctx.fillRect(
+        this.state.food.x * this.cellSize + 1,
+        this.state.food.y * this.cellSize + 1,
+        this.cellSize - 2,
+        this.cellSize - 2
+      );
+    }
+
+    // Score
+    this.ctx.fillStyle = this.uiColor;
+    this.ctx.font = "bold 24px monospace";
+    this.ctx.textAlign = "right";
+    this.ctx.fillText(
+      this.state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0"),
+      cssSize - 10,
+      30
+    );
+
+    // Pause/Countdown Overlay
+    if (this.state.paused || this.state.countdown > 0) {
+      this.drawPauseOverlay(cssSize);
+    }
+  }
+
+  drawPauseOverlay(cssSize) {
+    this.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    this.ctx.fillRect(0, 0, cssSize, cssSize);
+
+    this.ctx.fillStyle = this.uiColor;
+    this.ctx.font = "bold 40px monospace";
+    this.ctx.textAlign = "center";
+
+    if (this.state.countdown > 0) {
+      this.ctx.fillText(
+        this.state.countdown.toString(),
+        cssSize / 2,
+        cssSize / 2
+      );
     } else {
-      ctx.fillText("PAUSE", cssSize / 2, cssSize / 2);
-      ctx.font = "18px monospace";
-      ctx.fillText(
-        `Appuie sur ${pauseKeyText} pour reprendre`,
+      this.ctx.fillText("PAUSE", cssSize / 2, cssSize / 2);
+      this.ctx.font = "18px monospace";
+      this.ctx.fillText(
+        `Appuie sur ${this.pauseKeyText} pour reprendre`,
         cssSize / 2,
         cssSize / 2 + 40
       );
     }
   }
 
-  // draw interpolated frame; progress between 0..1
-  function draw(progress = 1) {
-    // Recompute cell size from actual CSS pixel size each frame to avoid zoom issues
-    try {
-      const rect = ui.canvas.getBoundingClientRect();
-      const clientW = Math.max(1, Math.round(rect.width));
-      const clientH = Math.max(1, Math.round(rect.height));
-      CELL_SIZE_DYNAMIC =
-        Math.floor(Math.min(clientW, clientH) / GRID_SIZE) || 1;
-    } catch (e) {}
+  drawGameOver() {
+    const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
+    this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    this.ctx.fillRect(0, 0, cssSize, cssSize);
 
-    ctx.fillStyle = "#000";
-    // ctx coordinates are in CSS pixels thanks to setTransform
-    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
-    ctx.fillRect(0, 0, cssSize, cssSize);
+    this.ctx.fillStyle = this.uiColor;
+    this.ctx.font = "bold 40px monospace";
+    this.ctx.textAlign = "center";
+    this.ctx.fillText("GAME OVER", cssSize / 2, cssSize / 2 - 20);
 
-    // Dessiner la grille
-    ctx.strokeStyle = "#4e3e5e";
-    for (let i = 0; i <= GRID_SIZE; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * CELL_SIZE_DYNAMIC, 0);
-      ctx.lineTo(i * CELL_SIZE_DYNAMIC, CELL_SIZE_DYNAMIC * GRID_SIZE);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, i * CELL_SIZE_DYNAMIC);
-      ctx.lineTo(CELL_SIZE_DYNAMIC * GRID_SIZE, i * CELL_SIZE_DYNAMIC);
-      ctx.stroke();
-    }
-
-    // Dessiner le serpent (interpolé)
-    for (let index = 0; index < state.snake.length; index++) {
-      const seg = state.snake[index];
-      const prev = state.prevSnake[index] || seg;
-      const lerpX = prev.x + (seg.x - prev.x) * progress;
-      const lerpY = prev.y + (seg.y - prev.y) * progress;
-
-      ctx.fillStyle = uiColor;
-      if (index !== 0) {
-        ctx.globalAlpha = 0.8;
-      }
-
-      ctx.fillRect(
-        lerpX * CELL_SIZE_DYNAMIC + 1,
-        lerpY * CELL_SIZE_DYNAMIC + 1,
-        CELL_SIZE_DYNAMIC - 2,
-        CELL_SIZE_DYNAMIC - 2
-      );
-      ctx.globalAlpha = 1.0;
-    }
-
-    // Dessiner la nourriture
-    if (state.food) {
-      // interpolate food too if desired (food doesn't move so just draw at exact)
-      ctx.fillStyle = "#ff0000";
-      ctx.fillRect(
-        state.food.x * CELL_SIZE_DYNAMIC + 1,
-        state.food.y * CELL_SIZE_DYNAMIC + 1,
-        CELL_SIZE_DYNAMIC - 2,
-        CELL_SIZE_DYNAMIC - 2
-      );
-    }
-
-    // Afficher le score
-    ctx.fillStyle = "#0f0";
-    ctx.font = "bold 24px monospace";
-    ctx.textAlign = "right";
-    ctx.fillText(
-      `${state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
-      cssSize - 10,
-      30
-    );
-  }
-
-  function draw() {
-    ctx.fillStyle = "#000";
-    // ctx coordinates are in CSS pixels thanks to setTransform
-    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
-    ctx.fillRect(0, 0, cssSize, cssSize);
-
-    // Dessiner la grille
-    ctx.strokeStyle = "#4e3e5e";
-    for (let i = 0; i <= GRID_SIZE; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * CELL_SIZE_DYNAMIC, 0);
-      ctx.lineTo(i * CELL_SIZE_DYNAMIC, CELL_SIZE_DYNAMIC * GRID_SIZE);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, i * CELL_SIZE_DYNAMIC);
-      ctx.lineTo(CELL_SIZE_DYNAMIC * GRID_SIZE, i * CELL_SIZE_DYNAMIC);
-      ctx.stroke();
-    }
-
-    // Dessiner le serpent
-    state.snake.forEach((seg, index) => {
-      if (index === 0) {
-        ctx.fillStyle = "#00ff00";
-      } else {
-        ctx.fillStyle = "#00cc00";
-      }
-      ctx.fillRect(
-        seg.x * CELL_SIZE_DYNAMIC + 1,
-        seg.y * CELL_SIZE_DYNAMIC + 1,
-        CELL_SIZE_DYNAMIC - 2,
-        CELL_SIZE_DYNAMIC - 2
-      );
-    });
-
-    // Dessiner la nourriture
-    if (state.food) {
-      ctx.fillStyle = "#ff0000";
-      ctx.fillRect(
-        state.food.x * CELL_SIZE_DYNAMIC + 1,
-        state.food.y * CELL_SIZE_DYNAMIC + 1,
-        CELL_SIZE_DYNAMIC - 2,
-        CELL_SIZE_DYNAMIC - 2
-      );
-    }
-
-    // Afficher le score
-    ctx.fillStyle = "#0f0";
-    ctx.font = "bold 24px monospace";
-    ctx.textAlign = "right";
-    ctx.fillText(
-      `${state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
-      cssSize - 10,
-      30
-    );
-  }
-
-  function startTimer() {
-    if (state.timerInterval) clearInterval(state.timerInterval);
-    state.timerInterval = setInterval(() => {
-      if (
-        state.gameActive &&
-        state.startTime &&
-        !state.paused &&
-        state.countdown === 0
-      ) {
-        state.elapsedMs = Date.now() - state.startTime - state.pausedTime;
-      }
-    }, 100);
-  }
-
-  function stopTimer() {
-    if (state.timerInterval) {
-      clearInterval(state.timerInterval);
-      state.timerInterval = null;
-    }
-  }
-
-  function clearToBlack() {
-    try {
-      const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, cssSize, cssSize);
-    } catch {}
-  }
-
-  function gameOver() {
-    state.gameActive = false;
-    stopTimer();
-    if (state.rafId) {
-      cancelAnimationFrame(state.rafId);
-      state.rafId = null;
-    }
-
-    // ensure backing buffer is correct before drawing Game Over (fixes invisible overlay issue)
-    ensureBackingBuffer();
-
-    const finalScore = state.score;
-    socket.emit("snake:score", {
-      score: finalScore,
-      elapsedMs: state.elapsedMs,
-      final: true,
-    });
-    scoreAttente = finalScore;
-    // draw on canvas
-    showGameOver();
-    // fallback: also show a DOM overlay in case canvas overlay is not visible
-    try {
-      showDOMGameOverOverlay();
-    } catch (e) {
-      console.log("snake: failed to show DOM overlay", e);
-    }
-  }
-
-  function showGameOver() {
-    // Recompute cell size from actual CSS pixel size to ensure overlay covers canvas
-    try {
-      const rect = ui.canvas.getBoundingClientRect();
-      const clientW = Math.max(1, Math.round(rect.width));
-      const clientH = Math.max(1, Math.round(rect.height));
-      CELL_SIZE_DYNAMIC =
-        Math.floor(Math.min(clientW, clientH) / GRID_SIZE) || 1;
-    } catch (e) {}
-
-    const cssSize = CELL_SIZE_DYNAMIC * GRID_SIZE;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ctx.fillRect(0, 0, cssSize, cssSize);
-
-    ctx.fillStyle = "#0f0";
-    ctx.font = "bold 40px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("GAME OVER", cssSize / 2, cssSize / 2 - 20);
-
-    ctx.font = "20px monospace";
-    ctx.fillText(
-      `Score: ${state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
+    this.ctx.font = "20px monospace";
+    this.ctx.fillText(
+      `Score: ${this.state.score
+        .toLocaleString("fr-FR")
+        .replace(/\s/g, "\u00a0")}`,
       cssSize / 2,
       cssSize / 2 + 20
     );
 
-    const totalSeconds = Math.floor(state.elapsedMs / 1000);
+    const totalSeconds = Math.floor(this.state.elapsedMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const timeStr = `${String(minutes).padStart(2, "0")}:${String(
       seconds
     ).padStart(2, "0")}`;
 
-    ctx.fillText(`Temps: ${timeStr}`, cssSize / 2, cssSize / 2 + 50);
-
-    ctx.font = "18px monospace";
-    ctx.fillText(
+    this.ctx.fillText(`Temps: ${timeStr}`, cssSize / 2, cssSize / 2 + 50);
+    this.ctx.font = "18px monospace";
+    this.ctx.fillText(
       "Appuie sur ESPACE pour rejouer",
       cssSize / 2,
       cssSize / 2 + 90
     );
   }
 
-  // DOM fallback overlay for Game Over (in case canvas overlay doesn't appear)
-  function showDOMGameOverOverlay() {
-    const parent = ui.canvas.parentElement || document.body;
-    // ensure parent is positioned so absolute overlay aligns
-    try {
-      const computed = window.getComputedStyle(parent);
-      if (computed.position === "static") parent.style.position = "relative";
-    } catch (e) {}
+  showDOMGameOverOverlay() {
+    this.removeDOMGameOverOverlay();
+    const parent = this.canvas.parentElement || document.body;
+    if (getComputedStyle(parent).position === "static")
+      parent.style.position = "relative";
 
-    // remove existing overlay if any
-    removeDOMGameOverOverlay();
-
-    const rect = ui.canvas.getBoundingClientRect();
+    const rect = this.canvas.getBoundingClientRect();
     const parentRect = parent.getBoundingClientRect();
+
     const overlay = document.createElement("div");
     overlay.className = "snake-dom-gameover-overlay";
-    overlay.style.position = "absolute";
-    overlay.style.left = `${rect.left - parentRect.left}px`;
-    overlay.style.top = `${rect.top - parentRect.top}px`;
-    overlay.style.width = `${rect.width}px`;
-    overlay.style.height = `${rect.height}px`;
-    overlay.style.display = "flex";
-    overlay.style.alignItems = "center";
-    overlay.style.justifyContent = "center";
-    overlay.style.pointerEvents = "none";
-    overlay.style.background = "rgba(0,0,0,0.8)";
-    overlay.style.color = "#0f0";
-    overlay.style.zIndex = "9999";
-    overlay.innerHTML = `<div style="text-align:center;font-family:monospace"><div style="font-weight:700;font-size:32px;margin-bottom:8px">GAME OVER</div><div style="font-size:18px">Score: ${state.score
-      .toLocaleString("fr-FR")
-      .replace(/\s/g, "\u00a0")}</div></div>`;
+    overlay.style.cssText = `
+      position: absolute;
+      left: ${rect.left - parentRect.left}px;
+      top: ${rect.top - parentRect.top}px;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      background: rgba(0,0,0,0.8);
+      color: ${this.uiColor};
+      z-index: 9999;
+    `;
+
+    overlay.innerHTML = `
+      <div style="text-align:center;font-family:monospace">
+        <div style="font-weight:700;font-size:32px;margin-bottom:8px">GAME OVER</div>
+        <div style="font-size:18px">Score: ${this.state.score
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")}</div>
+      </div>
+    `;
     parent.appendChild(overlay);
   }
 
-  function removeDOMGameOverOverlay() {
-    const parent = ui.canvas.parentElement || document.body;
+  removeDOMGameOverOverlay() {
+    const parent = this.canvas.parentElement || document.body;
     const existing = parent.querySelector(".snake-dom-gameover-overlay");
     if (existing) existing.remove();
   }
 
-  function startGame() {
-    state.gameStarted = false;
-    state.gameActive = false;
-    state.paused = false;
-    state.countdown = 0;
-    initGame();
-    if (ui.stopBtn) ui.stopBtn.style.display = "inline-block";
-    // remove any DOM overlay left from previous run
-    try {
-      removeDOMGameOverOverlay();
-    } catch (e) {}
+  clearToBlack() {
+    const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
+    this.ctx.fillStyle = "#000";
+    this.ctx.fillRect(0, 0, cssSize, cssSize);
   }
 
-  function stopCurrentRun() {
-    if (!state.gameStarted || !state.gameActive) return;
-    const finalScore = state.score;
-    socket.emit("snake:score", {
-      score: finalScore,
-      elapsedMs: state.elapsedMs,
-      final: true,
-    });
-    state.gameActive = false;
-    state.gameStarted = false;
-    state.score = 0;
-    state.elapsedMs = 0;
-    state.paused = false;
-    state.countdown = 0;
-    stopTimer();
-    if (state.rafId) {
-      cancelAnimationFrame(state.rafId);
-      state.rafId = null;
-    }
-    if (ui.stopBtn) ui.stopBtn.style.display = "none";
-    clearToBlack();
-    try {
-      removeDOMGameOverOverlay();
-    } catch (e) {}
-    showNotif(`# Partie stoppée.`);
+  startTimer() {
+    if (this.state.timerInterval) clearInterval(this.state.timerInterval);
+    this.state.timerInterval = setInterval(() => {
+      if (
+        this.state.gameActive &&
+        !this.state.paused &&
+        this.state.countdown === 0
+      ) {
+        this.state.elapsedMs =
+          Date.now() - this.state.startTime - this.state.pausedTime;
+      }
+    }, 100);
   }
 
-  // ---------- Écouteurs UI ----------
-  ui.startBtn?.addEventListener("click", () => {
-    if (!state.gameStarted || !state.gameActive) {
-      startGame();
+  stopTimer() {
+    if (this.state.timerInterval) {
+      clearInterval(this.state.timerInterval);
+      this.state.timerInterval = null;
     }
-  });
+  }
 
-  ui.stopBtn?.addEventListener("click", stopCurrentRun);
-
-  // ---------- Écouteurs clavier ----------
-  document.addEventListener("keydown", (e) => {
-    const active = document.activeElement;
-    const tag = active && active.tagName;
-    const isTyping =
-      tag === "INPUT" ||
-      tag === "TEXTAREA" ||
-      (active && active.isContentEditable);
-    if (isTyping) return;
-
-    // Vérifier que la section Snake (stage10) est visible
-    const snakeSection = document.getElementById("stage10");
-    if (!snakeSection) return;
-    const rect = snakeSection.getBoundingClientRect();
-    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-    if (!isVisible) return;
-
-    // Touche pause
-    if (keys.default.includes(e.key)) {
-      e.preventDefault();
-      if (!state.gameStarted || !state.gameActive) return;
-
-      if (state.paused && state.countdown === 0) {
-        state.countdown = 3;
-        state.frameCount = 0;
-      } else if (!state.paused && state.countdown === 0) {
-        state.paused = true;
-        try {
-          window.open("../search.html", "_blank");
-          console.log("Chrome save");
-        } catch {
-          window.open("about:newtab", "_blank");
-          console.log("Firefox save");
-        }
-      }
-      return;
-    }
-
-    // Espace pour redémarrer après game over
-    if (e.code === "Space") {
-      e.preventDefault();
-      if (state.paused || state.countdown > 0) return;
-
-      if (!state.gameActive) {
-        startGame();
-        return;
-      }
-    }
-
-    // Contrôles directionnels
-    if (state.paused || state.countdown > 0 || !state.gameActive) return;
-
-    switch (e.key) {
-      case "ArrowUp":
-        if (state.direction.y === 0) state.nextDirection = { x: 0, y: -1 };
-        e.preventDefault();
-        break;
-      case "ArrowDown":
-        if (state.direction.y === 0) state.nextDirection = { x: 0, y: 1 };
-        e.preventDefault();
-        break;
-      case "ArrowLeft":
-        if (state.direction.x === 0) state.nextDirection = { x: -1, y: 0 };
-        e.preventDefault();
-        break;
-      case "ArrowRight":
-        if (state.direction.x === 0) state.nextDirection = { x: 1, y: 0 };
-        e.preventDefault();
-        break;
-    }
-  });
-
-  // ---------- Reset (confirm + password) ----------
-  ui.resetBtn?.addEventListener("click", async () => {
+  async handleReset() {
     const confirmReset = confirm(
       "⚠️ Es-tu sûr de vouloir réinitialiser ton score Snake ?\nTon meilleur score sera définitivement perdu !"
     );
@@ -725,17 +609,26 @@ export function initSnake(socket) {
         showNotif("❌ Mot de passe incorrect !");
         return;
       }
-      socket.emit("snake:reset");
+      this.socket.emit("snake:reset");
       showNotif("🔄 Score Snake réinitialisé avec succès !");
-      myBest = 0;
-      scoreAttente = null;
+      this.myBest = 0;
+      this.scoreAttente = null;
     } catch (err) {
       showNotif("⚠️ Erreur lors de la vérification du mot de passe");
       console.error(err);
     }
-  });
+  }
+}
 
-  // ---------- Init UI ----------
-  clearToBlack();
-  if (ui.stopBtn) ui.stopBtn.style.display = "none";
+export function initSnake(socket) {
+  const ui = {
+    canvas: document.getElementById("snake-canvas"),
+    startBtn: document.querySelector(".snake-start"),
+    stopBtn: document.querySelector(".snake-stop"),
+    resetBtn: document.querySelector(".snake-reset"),
+  };
+
+  if (!ui.canvas) return;
+
+  new SnakeGame(ui.canvas, socket, ui);
 }
