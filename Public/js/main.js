@@ -84,6 +84,10 @@ import { initCanvasResizer } from "./canvas_resize.js";
 
     window.username = username;
 
+    if (window.initNavSocket) {
+      window.initNavSocket(socket);
+    }
+
     socket.on("reload", (data) => {
       const file = data?.file || "";
       // Recharger seulement les CSS/JS sans reset de socket

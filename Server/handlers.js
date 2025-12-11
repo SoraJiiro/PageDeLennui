@@ -6,6 +6,25 @@ const fs = require("fs");
 const path = require("path");
 const config = require("./config");
 
+function broadcastSystemMessage(io, text, persist = false) {
+  io.emit("system:info", text);
+  if (persist) {
+    const payload = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      name: "Système",
+      text: text,
+      at: new Date().toISOString(),
+      tag: null,
+    };
+    FileService.data.historique.push(payload);
+    if (FileService.data.historique.length > 200) {
+      FileService.data.historique = FileService.data.historique.slice(-200);
+    }
+    FileService.save("historique", FileService.data.historique);
+    FileService.appendLog(payload);
+  }
+}
+
 // ------- Games -------
 let gameActuelle = new UnoGame();
 let pictionaryGame = new PictionaryGame();
@@ -140,6 +159,15 @@ function initSocketHandlers(io, socket, gameState) {
   }
   socket.emit("user:tagColor", { color: currentTagColor });
 
+  // Send saved UI color
+  const savedUiColor =
+    FileService.data.uis && FileService.data.uis[pseudo]
+      ? FileService.data.uis[pseudo]
+      : null;
+  if (savedUiColor) {
+    socket.emit("ui:color", { color: savedUiColor });
+  }
+
   const rawUserMedalsInit = FileService.data.medals[pseudo] || [];
   const normalizedInit = rawUserMedalsInit.map((m) =>
     typeof m === "string"
@@ -173,6 +201,14 @@ function initSocketHandlers(io, socket, gameState) {
   if (pseudo !== "Admin") {
     io.emit("system:info", `${pseudo} a rejoint le chat`);
   }
+
+  // ------- UI Color -------
+  socket.on("ui:saveColor", ({ color }) => {
+    if (!color || typeof color !== "string") return;
+    if (!FileService.data.uis) FileService.data.uis = {};
+    FileService.data.uis[pseudo] = color;
+    FileService.save("uis", FileService.data.uis);
+  });
 
   // ------- Chat -------
   socket.on("chat:message", ({ text }) => {
@@ -490,7 +526,11 @@ function initSocketHandlers(io, socket, gameState) {
     console.log(
       withGame(`🏅 [${orange}${pseudo}${green}] a débloqué ${medalName}`, green)
     );
-    io.emit("system:info", `${pseudo} a débloqué la médaille ${medalName} !`);
+    broadcastSystemMessage(
+      io,
+      `${pseudo} a débloqué la médaille ${medalName} !`,
+      true
+    );
 
     // Ré-émission normalisée (objets complets)
     const normalized = userMedals.map((m) =>
@@ -515,9 +555,10 @@ function initSocketHandlers(io, socket, gameState) {
           blue
         )
       );
-      io.emit(
-        "system:info",
-        `${pseudo} a fait un nouveau score de ${s} à Dino !`
+      broadcastSystemMessage(
+        io,
+        `${pseudo} a fait un nouveau score de ${s} à Dino !`,
+        true
       );
     }
     leaderboardManager.broadcastDinoLB(io);
@@ -547,9 +588,10 @@ function initSocketHandlers(io, socket, gameState) {
           pink
         )
       );
-      io.emit(
-        "system:info",
-        `${pseudo} a fait un nouveau score de ${s} à Flappy !`
+      broadcastSystemMessage(
+        io,
+        `${pseudo} a fait un nouveau score de ${s} à Flappy !`,
+        true
       );
     }
     leaderboardManager.broadcastFlappyLB(io);
@@ -1400,9 +1442,10 @@ function initSocketHandlers(io, socket, gameState) {
             green
           )
         );
-        io.emit(
-          "system:info",
-          `${pseudo} a fait un nouveau score de ${s} à Block Blast !`
+        broadcastSystemMessage(
+          io,
+          `${pseudo} a fait un nouveau score de ${s} à Block Blast !`,
+          true
         );
         isAlreadyLogged_bb = true;
       }
@@ -1568,9 +1611,10 @@ function initSocketHandlers(io, socket, gameState) {
             green
           )
         );
-        io.emit(
-          "system:info",
-          `${pseudo} a fait un nouveau score de ${s} à Snake !`
+        broadcastSystemMessage(
+          io,
+          `${pseudo} a fait un nouveau score de ${s} à Snake !`,
+          true
         );
         isAlreadyLogged_snake = true;
       }

@@ -1,16 +1,30 @@
+// Expose init function for main.js
+window.initNavSocket = (socket) => {
+  const colorPicker = document.getElementById("mainColorPicker");
+
+  socket.on("ui:color", ({ color }) => {
+    if (color) {
+      document.documentElement.style.setProperty("--primary-color", color);
+      if (colorPicker) colorPicker.value = color;
+    }
+  });
+
+  if (colorPicker) {
+    colorPicker.addEventListener("change", (e) => {
+      const color = e.target.value;
+      socket.emit("ui:saveColor", { color });
+    });
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const nav = document.querySelector(".btns-wrap");
   const showBtn = document.querySelector(".show-nav");
   const hideBtn = document.querySelector(".hide-nav");
   const colorPicker = document.getElementById("mainColorPicker");
 
-  const savedColor = localStorage.getItem("primaryColor");
-  if (savedColor) {
-    document.documentElement.style.setProperty("--primary-color", savedColor);
-    if (colorPicker) colorPicker.value = savedColor;
-  } else {
-    if (colorPicker) colorPicker.value = "#00ff00";
-  }
+  // Default color if not loaded yet
+  if (colorPicker) colorPicker.value = "#00ff00";
 
   if (colorPicker) {
     // Mise à jour visuelle fluide pendant le déplacement
@@ -21,12 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
         new CustomEvent("uiColor:changed", { detail: { color } })
       );
     });
-
-    // Sauvegarde uniquement à la fin de la sélection (évite le lag)
-    colorPicker.addEventListener("change", (e) => {
-      const color = e.target.value;
-      localStorage.setItem("primaryColor", color);
-    });
+    // Note: "change" event for saving is handled in initNavSocket
   }
 
   const navState = localStorage.getItem("navVisible");
@@ -47,7 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function goTo(section) {
-    document.querySelector("#" + section).scrollIntoView();
+    const el = document.querySelector("#" + section);
+    if (el) el.scrollIntoView();
   }
 
   const sec1 = document.querySelector(".sec1");
@@ -62,17 +72,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const sec9 = document.querySelector(".sec9");
   const sec10 = document.querySelector(".sec10");
 
-  sec1.addEventListener("click", () => goTo("stage1"));
-  sec2.addEventListener("click", () => goTo("stage2"));
-  sec3.addEventListener("click", () => goTo("stage3"));
-  sec4.addEventListener("click", () => goTo("stage4"));
-  sec5.addEventListener("click", () => goTo("stage5"));
-  mario.addEventListener("click", () =>
-    window.open("https://supermario-game.com/mario-game/mario.html", "_blank")
-  );
-  sec6.addEventListener("click", () => goTo("stage6"));
-  sec7.addEventListener("click", () => goTo("stage7"));
-  sec8.addEventListener("click", () => goTo("stage8"));
-  sec9.addEventListener("click", () => goTo("stage9"));
-  sec10.addEventListener("click", () => goTo("stage10"));
+  if (sec1) sec1.addEventListener("click", () => goTo("stage1"));
+  if (sec2) sec2.addEventListener("click", () => goTo("stage2"));
+  if (sec3) sec3.addEventListener("click", () => goTo("stage3"));
+  if (sec4) sec4.addEventListener("click", () => goTo("stage4"));
+  if (sec5) sec5.addEventListener("click", () => goTo("stage5"));
+  if (mario)
+    mario.addEventListener("click", () =>
+      window.open("https://supermario-game.com/mario-game/mario.html", "_blank")
+    );
+  if (sec6) sec6.addEventListener("click", () => goTo("stage6"));
+  if (sec7) sec7.addEventListener("click", () => goTo("stage7"));
+  if (sec8) sec8.addEventListener("click", () => goTo("stage8"));
+  if (sec9) sec9.addEventListener("click", () => goTo("stage9"));
+  if (sec10) sec10.addEventListener("click", () => goTo("stage10"));
 });

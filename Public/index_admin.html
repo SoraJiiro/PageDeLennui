@@ -371,6 +371,20 @@
                             </div>
                         </div>
 
+                        <!-- Demandes de Tag -->
+                        <div class="control-group">
+                            <h3><i class="fa-solid fa-envelope"></i> /Demandes
+                                de Tag</h3>
+                            <div class="control-form">
+                                <div id="tagRequestsList"
+                                    style="max-height: 200px; overflow-y: auto;">
+                                    <p>Chargement...</p>
+                                </div>
+                                <button class="btn" onclick="loadTagRequests()"
+                                    style="margin-top:10px">Rafraîchir</button>
+                            </div>
+                        </div>
+
                         <!-- Supprimer Utilisateur -->
                         <div class="control-group">
                             <h3><i class="fa-solid fa-trash"></i> /Supprimer
@@ -522,6 +536,7 @@
             if (!socket) {
                 initSocket();
             }
+            loadTagRequests();
         }
 
         // Initialiser Socket.IO
@@ -1419,6 +1434,66 @@ async function removeTime() {
             } catch (err) {
                 console.error(err);
                 showNotification('❌ Erreur lors de l\'arrêt', 'error');
+            }
+        }
+
+        // Gestion des demandes de Tag
+        async function loadTagRequests() {
+            const list = document.getElementById('tagRequestsList');
+            try {
+                const res = await fetch('/api/admin/tag/list');
+                const requests = await res.json();
+                
+                if (requests.length === 0) {
+                    list.innerHTML = '<p style="color:#888">Aucune demande en attente.</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                requests.forEach(req => {
+                    const div = document.createElement('div');
+                    div.style.border = '1px solid #333';
+                    div.style.padding = '10px';
+                    div.style.marginBottom = '5px';
+                    div.style.background = 'rgba(0,0,0,0.3)';
+                    
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center">
+                            <div>
+                                <strong>${req.pseudo}</strong> veut le tag: <span style="color:var(--primary-color)">${req.tag}</span><br>
+                                <small style="color:#aaa">${new Date(req.time).toLocaleString()}</small>
+                            </div>
+                            <div style="display:flex; gap:5px">
+                                <button class="btn" onclick="respondTag('${req.id}', 'accept')"><i class="fa-solid fa-check"></i></button>
+                                <button class="btn btn-red" onclick="respondTag('${req.id}', 'reject')"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                list.innerHTML = '<p style="color:red">Erreur chargement.</p>';
+            }
+        }
+
+        async function respondTag(requestId, action) {
+            if (!confirm(action === 'accept' ? 'Accepter ce tag ?' : 'Refuser ce tag ?')) return;
+            
+            try {
+                const res = await fetch('/api/admin/tag/respond', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId, action })
+                });
+                
+                if (res.ok) {
+                    showNotification('✅ Réponse envoyée', 'success');
+                    loadTagRequests();
+                } else {
+                    showNotification('❌ Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
             }
         }
 

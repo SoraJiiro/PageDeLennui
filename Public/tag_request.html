@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Demande de Tag</title>
+        <link rel="stylesheet" href="css/common.css">
+        <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .request-card {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--primary-color);
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+        }
+        .request-card h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            background: #000;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+        .status-message {
+            margin-top: 1rem;
+            padding: 10px;
+            border: 1px solid;
+            display: none;
+        }
+        .status-pending {
+            border-color: #ffcc00;
+            color: #ffcc00;
+        }
+        .status-rejected {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+        .status-accepted {
+            border-color: #0f0;
+            color: #0f0;
+        }
+        .btn-back {
+            margin-top: 1rem;
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        .btn-back:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+    </style>
+        <script type="text/javascript" src="js/nav.js"></script>
+    </head>
+    <body>
+
+        <div class="request-card">
+            <h2><i class="fa-solid fa-tag"></i> Demande de Tag</h2>
+
+            <div id="requestForm">
+                <div class="input-group">
+                    <label for="tagInput">Tag souhaité (max 32
+                        caractères)</label>
+                    <input type="text" id="tagInput" maxlength="32"
+                        placeholder="Tag...">
+                </div>
+                <button class="btn" onclick="submitRequest()">Envoyer la
+                    demande</button>
+            </div>
+
+            <div id="statusDisplay" class="status-message"></div>
+
+            <button class="btn btn-back"
+                onclick="window.location.href='/'">Retour à l'accueil</button>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+        let socket;
+
+        async function init() {
+            try {
+                // Get session to retrieve username for socket auth/identification
+                const res = await fetch('/api/session');
+                if (res.status === 401 || !res.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const sessionData = await res.json();
+                const currentUser = sessionData.pseudo;
+
+                // Init socket with username
+                socket = io({
+                    query: { username: currentUser }
+                });
+
+                // Listen for response
+                socket.on('tag:response', (data) => {
+                    const statusDisplay = document.getElementById('statusDisplay');
+                    const form = document.getElementById('requestForm');
+                    
+                    statusDisplay.style.display = 'block';
+                    form.style.display = 'none';
+
+                    if (data.accepted) {
+                        statusDisplay.className = 'status-message status-accepted';
+                        statusDisplay.innerHTML = `
+                            <h3>✅ Demande Acceptée !</h3>
+                            <p>Votre tag <strong>${data.tag}</strong> a été validé.</p>
+                        `;
+                        setTimeout(() => {
+                             // Optional: redirect or reset
+                        }, 5000);
+                    } else {
+                        statusDisplay.className = 'status-message status-rejected';
+                        statusDisplay.innerHTML = `
+                            <h3>❌ Demande Refusée</h3>
+                            <p>L'admin a refusé votre demande de tag.</p>
+                        `;
+                        setTimeout(() => {
+                             form.style.display = 'block';
+                             statusDisplay.style.display = 'none';
+                        }, 5000);
+                    }
+                });
+
+                checkStatus();
+            } catch (e) {
+                console.error("Init error", e);
+            }
+        }
+        
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/tag/status');
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const data = await res.json();
+                
+                const form = document.getElementById('requestForm');
+                const statusDisplay = document.getElementById('statusDisplay');
+
+                if (data.hasPending) {
+                    form.style.display = 'none';
+                    statusDisplay.style.display = 'block';
+                    statusDisplay.className = 'status-message status-pending';
+                    statusDisplay.innerHTML = `
+                        <h3>Demande en attente</h3>
+                        <p>Tag demandé : <strong>${data.request.tag}</strong></p>
+                        <p>Envoyé le : ${new Date(data.request.time).toLocaleString()}</p>
+                        <p><em>En attente de validation par l'admin...</em></p>
+                    `;
+                } else {
+                    form.style.display = 'block';
+                    statusDisplay.style.display = 'none';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function submitRequest() {
+            const tag = document.getElementById('tagInput').value.trim();
+            if (!tag) return alert('Veuillez entrer un tag');
+            if (tag.length > 15) return alert('Tag trop long');
+
+            try {
+                const res = await fetch('/api/tag/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tag })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    checkStatus();
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erreur lors de l\'envoi');
+            }
+        }
+
+        init();
+    </script>
+    </body>
+</html>

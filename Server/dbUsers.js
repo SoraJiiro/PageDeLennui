@@ -71,6 +71,8 @@ function deleteUser(pseudo) {
 }
 
 module.exports = {
+  readAll,
+  writeAll,
   findBypseudo,
   findByPseudoExact,
   findById,

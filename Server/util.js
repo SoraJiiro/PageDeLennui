@@ -105,6 +105,7 @@ class FileService {
       snakeBestTimes: path.join(config.DATA, "snake_best_times.json"),
       cheaters: path.join(config.DATA, "cheaters.json"),
       tags: path.join(config.DATA, "tags.json"),
+      uis: path.join(config.DATA, "uis.json"),
     };
 
     this.data = this.loadAll();
@@ -146,6 +147,7 @@ class FileService {
       snakeBestTimes: this.readJSON(this.files.snakeBestTimes, {}),
       cheaters: this.readJSON(this.files.cheaters, []),
       tags: this.readJSON(this.files.tags, {}),
+      uis: this.readJSON(this.files.uis, {}),
     };
   }
 
@@ -194,6 +196,7 @@ class FileService {
       snakeBestTimes: this.files.snakeBestTimes,
       cheaters: this.files.cheaters,
       tags: this.files.tags,
+      uis: this.files.uis,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

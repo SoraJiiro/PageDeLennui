@@ -81,6 +81,7 @@ export function initChat(socket) {
         text: msg.text,
         at: msg.at,
         tag: msg.tag,
+        type: msg.name === "Système" ? "system" : "user",
       })
     );
   });

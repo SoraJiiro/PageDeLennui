@@ -38,6 +38,7 @@ io.use(sharedSession(expressSession, { autoSave: true }));
 // ------- Route -------
 app.use("/api", authRoutes);
 app.use("/api/admin", createAdminRouter(io));
+app.use("/api/tag", require("./tagRoutes"));
 app.get("/login", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "login.html"))
 );

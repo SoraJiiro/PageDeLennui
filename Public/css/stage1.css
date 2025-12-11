@@ -304,6 +304,29 @@ p.cps-humain {
   padding: 2px;
 }
 
+.btns-wrap .tag-req-link {
+  position: absolute;
+  bottom: 17.5px;
+  left: 85px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  font-style: italic;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  color: var(--primary-color);
+  user-select: none;
+  transition: color 0.25s ease, scale 0.25s ease;
+}
+
+.btns-wrap .tag-req-link:hover {
+  color: #f1f1f1;
+  scale: 1.05;
+}
+
+.btns-wrap .tag-req-link:focus {
+  outline: 0px solid #000;
+}
+
 .show-nav {
   position: fixed;
   left: 25px;

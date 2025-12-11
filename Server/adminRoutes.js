@@ -1,4 +1,6 @@
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const { FileService } = require("./util");
 const dbUsers = require("./dbUsers");
 const { exec } = require("child_process");
@@ -929,6 +931,81 @@ function createAdminRouter(io) {
     }
 
     res.status(404).json({ message: "Aucun tag trouvé pour cet utilisateur" });
+  });
+
+  // --- Gestion des demandes de Tag ---
+  const REQUESTS_FILE = path.join(__dirname, "..", "data", "tag_requests.json");
+
+  function getTagRequests() {
+    if (!fs.existsSync(REQUESTS_FILE)) return [];
+    try {
+      return JSON.parse(fs.readFileSync(REQUESTS_FILE, "utf8"));
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveTagRequests(reqs) {
+    fs.writeFileSync(REQUESTS_FILE, JSON.stringify(reqs, null, 2));
+  }
+
+  router.get("/tag/list", (req, res) => {
+    const requests = getTagRequests();
+    const pending = requests.filter((r) => !r.fulfilled);
+    res.json(pending);
+  });
+
+  router.post("/tag/respond", (req, res) => {
+    const { requestId, action } = req.body; // action: 'accept' or 'reject'
+
+    const requests = getTagRequests();
+    const reqIndex = requests.findIndex((r) => r.id === requestId);
+
+    if (reqIndex === -1)
+      return res.status(404).json({ message: "Demande introuvable" });
+
+    const request = requests[reqIndex];
+    if (request.fulfilled)
+      return res.status(400).json({ message: "Déjà traitée" });
+
+    request.fulfilled = true;
+    request.status = action === "accept" ? "accepted" : "rejected";
+
+    if (action === "accept") {
+      // Update user tag
+      const db = dbUsers.readAll();
+      const userIndex = db.users.findIndex((u) => u.pseudo === request.pseudo);
+      if (userIndex !== -1) {
+        db.users[userIndex].tag = { text: request.tag, color: "#ffffff" }; // White by default
+        dbUsers.writeAll(db);
+      }
+
+      // Update user tag in FileService (for chat)
+      if (!FileService.data.tags) FileService.data.tags = {};
+      FileService.data.tags[request.pseudo] = {
+        text: request.tag,
+        color: "#ffffff",
+      };
+      FileService.save("tags", FileService.data.tags);
+    }
+
+    saveTagRequests(requests);
+
+    // Notify user via socket
+    const sockets = io.sockets.sockets;
+    for (const [id, socket] of sockets) {
+      if (
+        socket.handshake.query &&
+        socket.handshake.query.username === request.pseudo
+      ) {
+        socket.emit("tag:response", {
+          accepted: action === "accept",
+          tag: request.tag,
+        });
+      }
+    }
+
+    res.json({ success: true });
   });
 
   return router;
