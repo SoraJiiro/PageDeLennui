@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="fr">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Nouvel onglet</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="icon" href="imgs/firefox.svg" type="img/svg" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-            rel="stylesheet">
-        <style>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nouvel onglet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" href="imgs/firefox.svg" type="img/svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet">
+    <style>
     :root {
       --bg: #f6f7fb;
       --bg-hero: #ffffff;
@@ -59,12 +59,13 @@
       margin: 0 auto;
     }
 
-    /* Header */
+    /* Header */  
     header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       gap: 16px;
+      text-align: center;
     }
     .ff-brand {
       display: flex;
@@ -73,13 +74,13 @@
       user-select: none;
     }
     .logo {
-      width: 36px; height: 36px;
+      width: 56px; height: 56px;
       border-radius: 50%;
       background: none;
       position: relative;
     }
     
-    .ff-title { font-weight: 700; letter-spacing: -0.02em; }
+    .ff-title { font-weight: 700; letter-spacing: -0.02em; font-size: 2.75rem;}
 
     .header-actions { display: flex; gap: 8px; }
     .chip {
@@ -166,7 +167,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 20px;
       padding: 14px 10px;
       border-radius: var(--radius);
       background: var(--card);
@@ -176,6 +177,7 @@
       text-decoration: none;
       color: var(--text);
       transition: transform .2s ease;
+      width: 90px;
     }
     .site:hover { transform: translateY(-2px); }
 
@@ -239,6 +241,10 @@
 
     /* Footer */
     footer {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -253,123 +259,83 @@
 
     button.btn {color: #FFF;}
 
+    svg.icon {cursor: pointer;}
+
   </style>
-    </head>
-    <body>
-        <div class="page">
-            <header>
-                <div class="ff-brand" aria-label="Firefox">
-                    <div class="logo" aria-hidden="true"> <img
-                            src="imgs/firefox.svg" alt="///" width="37.5"
-                            height="37.5"></div>
-                    <div class="ff-title">Firefox</div>
-                </div>
-                <div class="header-actions">
-                    <div class="chip">Connexion</div>
-                    <div class="chip">Paramètres</div>
-                </div>
-            </header>
-
-            <section class="search" role="search">
-                <div class="glow" aria-hidden="true"></div>
-                <div class="search-box">
-                    <!-- simple magnifier icon -->
-                    <svg class="icon" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true"><circle cx="11" cy="11" r="7" /><line
-                            x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                    <input type="text" placeholder="Rechercher sur le Web"
-                        aria-label="Rechercher" />
-                    <button class="btn" type="button">Rechercher</button>
-                </div>
-                <div class="section-title">Sites populaires</div>
-                <div class="topsites">
-                    <!-- Example tiles; replace href and labels as needed -->
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #1e3a8a;">W</div>
-                        <span>wikipedia.org</span>
-                    </a>
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #ea4335;">G</div>
-                        <span>google.com</span>
-                    </a>
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #111827;">G</div>
-                        <span>github.com</span>
-                    </a>
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #0ea5e9;">T</div>
-                        <span>twitter.com</span>
-                    </a>
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #16a34a;">S</div>
-                        <span>spotify.com</span>
-                    </a>
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #dc2626;">Y</div>
-                        <span>youtube.com</span>
-                    </a>
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #6d28d9;">R</div>
-                        <span>reddit.com</span>
-                    </a>
-                    <a class="site" href="#">
-                        <div class="favicon"
-                            style="background: #4f46e5;">F</div>
-                        <span>firefox.com</span>
-                    </a>
-                </div>
-            </section>
-
-            <section>
-                <div class="section-title">Recommandé par Pocket</div>
-                <div class="stories">
-                    <article class="story">
-                        <div class="cover" aria-hidden="true"></div>
-                        <div class="meta">
-                            <span class="badge">Pocket</span>
-                            <h3>10 astuces pour gagner du temps en ligne</h3>
-                            <p>Des méthodes simples pour rester concentré et
-                                productif pendant votre navigation.</p>
-                        </div>
-                    </article>
-                    <article class="story">
-                        <div class="cover" aria-hidden="true"></div>
-                        <div class="meta">
-                            <span class="badge">Pocket</span>
-                            <h3>Les coulisses du design de Firefox</h3>
-                            <p>Découvrez les principes derrière l'interface
-                                moderne et accessible du navigateur.</p>
-                        </div>
-                    </article>
-                    <article class="story">
-                        <div class="cover" aria-hidden="true"></div>
-                        <div class="meta">
-                            <span class="badge">Tendance</span>
-                            <h3>Protéger votre vie privée en 2025</h3>
-                            <p>Un tour d'horizon des meilleurs réflexes pour
-                                garder le contrôle de vos données.</p>
-                        </div>
-                    </article>
-                </div>
-            </section>
-
-            <footer>
-                <div>Firefox - 2025</div>
-                <div class="links">
-                    <a href="#">Mentions légales</a>
-                    <a href="#">Vie privée</a>
-                    <a href="#">Paramètres</a>
-                </div>
-            </footer>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="ff-brand" aria-label="Firefox">
+          <div class="logo" aria-hidden="true"> <img
+              src="imgs/firefox.svg" alt="///" width="56"
+              height="56"></div>
+          <div class="ff-title">Firefox</div>
         </div>
-    </body>
+      </header>
+
+      <section class="search" role="search">
+        <div class="glow" aria-hidden="true"></div>
+        <div class="search-box">
+          <!-- simple magnifier icon -->
+          <svg class="icon" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"
+            aria-hidden="true"><circle cx="11" cy="11" r="7" /><line
+              x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <input type="text" placeholder="Rechercher sur le Web"
+            aria-label="Rechercher" />
+        </div>
+      </section>
+
+      <footer>
+        <div>Firefox - 2025</div>
+        <div class="links">
+          <a href="#">Mentions légales</a>
+          <a href="#">Vie privée</a>
+          <a href="#">Paramètres</a>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript">
+    // JavaScript for search functionality
+const searchInput = document.querySelector('.search input[type="text"]');
+const searchIcon = document.querySelector('.search .icon');
+
+function performSearch() {
+    const query = searchInput.value.trim();
+    if (query) {
+        // Check if the query is a URL
+        if (isURL(query)) {
+            // Redirect directly to the URL
+            window.location.href = query.startsWith('http') ? query : `https://${query}`;
+        } else {
+            // Perform a Google search
+            window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        }
+    }
+}
+
+function isURL(string) {
+    // Check if the string is a valid URL
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    return urlPattern.test(string);
+}
+
+// Event listener for clicking the search icon
+if (searchIcon) {
+    searchIcon.addEventListener('click', performSearch);
+}
+
+// Event listener for pressing Enter in the search input
+if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+}
+        </script>
+  </body>
 </html>

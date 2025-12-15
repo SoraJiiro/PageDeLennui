@@ -1,8 +1,8 @@
 const { getIpFromSocket, persistBanIp } = require("./util");
 
 const connectionHistory = new Map(); // IP -> [timestamp, timestamp, ...]
-const TIME_WINDOW = 2000; // 2 seconds
-const MAX_CONNECTIONS = 3;
+const TIME_WINDOW = 1250; // 1.25 seconds
+const MAX_CONNECTIONS = 5; // Max 5 connections in the time window
 
 function checkReconnect(io, socket) {
   const ip = getIpFromSocket(socket);

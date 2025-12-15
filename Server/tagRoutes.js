@@ -53,11 +53,11 @@ router.post("/request", (req, res) => {
     !tag ||
     typeof tag !== "string" ||
     tag.trim().length === 0 ||
-    tag.length > 15
+    tag.length > 32
   ) {
     return res
       .status(400)
-      .json({ message: "Tag invalide (max 15 caractères)" });
+      .json({ message: "Tag invalide (max 32 caractères)" });
   }
 
   // Check cheater

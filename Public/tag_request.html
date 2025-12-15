@@ -186,7 +186,7 @@
         async function submitRequest() {
             const tag = document.getElementById('tagInput').value.trim();
             if (!tag) return alert('Veuillez entrer un tag');
-            if (tag.length > 15) return alert('Tag trop long');
+            if (tag.length > 32) return alert('Tag trop long');
 
             try {
                 const res = await fetch('/api/tag/request', {
