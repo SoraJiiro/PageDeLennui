@@ -63,6 +63,12 @@ router.post("/register", async (req, res) => {
 
   const users = readUsers();
 
+  if (pseudo.toLowerCase() === "admin") {
+    return res
+      .status(400)
+      .json({ message: "Ce pseudo est réservé. (bien tenté, idiot)" });
+  }
+
   if (users.find((u) => u.pseudo === pseudo)) {
     return res.status(400).json({ message: "Nom d'utilisateur déjà pris." });
   }
