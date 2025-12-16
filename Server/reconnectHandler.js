@@ -20,7 +20,9 @@ function checkReconnect(io, socket) {
 
   if (timestamps.length >= MAX_CONNECTIONS) {
     console.log(
-      `\n🚫 Banning ${ip} for rapid reconnection (${timestamps.length} in ${TIME_WINDOW}ms)\n`
+      `\n🚫 ${ip} Banni pour reconnexion rapide (${timestamps.length} en ${
+        TIME_WINDOW / 1000
+      }s)\n`
     );
     persistBanIp(ip);
     io.emit(
