@@ -1,10 +1,10 @@
 #stage7 {
-  min-height: 100vh;
   width: 100vw;
   display: flex;
   justify-content: center;
-  padding: 2rem 1rem;
-  padding-top: 5rem;
+  align-items: center;
+  position: relative;
+  padding: 50px 0;
 }
 .pictionary-card {
   width: 95vw;

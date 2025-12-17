@@ -1,10 +1,10 @@
 #stage3 {
-  min-height: 100vh;
   width: 100vw;
   display: flex;
   justify-content: center;
-  padding: 2rem;
-  padding-top: 5rem;
+  align-items: center;
+  position: relative;
+  padding: 50px 0;
 }
 
 .chat-card {

@@ -6,7 +6,7 @@ const dbUsers = require("./dbUsers");
 const { exec } = require("child_process");
 
 // Fonction pour créer le router avec accès à io
-function createAdminRouter(io) {
+function createAdminRouter(io, motusGame) {
   const router = express.Router();
 
   // Liste des médailles avec leurs paliers
@@ -1006,6 +1006,37 @@ function createAdminRouter(io) {
     }
 
     res.json({ success: true });
+  });
+
+  router.post("/motus/reroll", (req, res) => {
+    if (!motusGame)
+      return res.status(500).json({ message: "Motus game not initialized" });
+
+    const newWord = motusGame.reroll();
+
+    // Reset history for everyone
+    FileService.data.motusState = {};
+    FileService.save("motusState", {});
+
+    // Broadcast new game state
+    const hyphens = [];
+    for (let i = 0; i < newWord.length; i++) {
+      if (newWord[i] === "-") hyphens.push(i);
+    }
+
+    io.emit("motus:init", {
+      length: newWord.length,
+      hyphens: hyphens,
+      history: [],
+      wonToday: false,
+    });
+
+    io.emit(
+      "system:info",
+      "Le mot du jour a été changé par l'administrateur !"
+    );
+
+    res.json({ message: "Motus rerolled", word: newWord });
   });
 
   return router;

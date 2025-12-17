@@ -17,7 +17,7 @@ const {
 const authRoutes = require("./authRoutes");
 const requireAuth = require("./requireAuth");
 const createAdminRouter = require("./adminRoutes");
-const { initSocketHandlers } = require("./handlers");
+const { initSocketHandlers, motusGame } = require("./handlers");
 const { checkReconnect } = require("./reconnectHandler");
 const fileLogger = require("./logger");
 
@@ -37,7 +37,7 @@ io.use(sharedSession(expressSession, { autoSave: true }));
 
 // ------- Route -------
 app.use("/api", authRoutes);
-app.use("/api/admin", createAdminRouter(io));
+app.use("/api/admin", createAdminRouter(io, motusGame));
 app.use("/api/tag", require("./tagRoutes"));
 app.get("/login", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "login.html"))

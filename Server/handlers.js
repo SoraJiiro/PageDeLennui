@@ -2,6 +2,7 @@ const { FileService, getIpFromSocket, persistBanIp } = require("./util");
 const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
+const MotusGame = require("./motusGame");
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
@@ -30,6 +31,7 @@ let gameActuelle = new UnoGame();
 let pictionaryGame = new PictionaryGame();
 let pictionaryTimer = null;
 let p4Game = new Puissance4Game();
+let motusGame = new MotusGame();
 
 // ------- Colors -------
 const orange = "\x1b[38;5;208m"; // pseudos
@@ -88,6 +90,21 @@ const leaderboardManager = {
       .map(([u, w]) => ({ pseudo: u, wins: w }))
       .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
     io.emit("p4:leaderboard", arr);
+  },
+  broadcastMotusLB(io) {
+    const arr = Object.entries(FileService.data.motusScores || {})
+      .map(([u, s]) => ({
+        pseudo: u,
+        words: s.words || 0,
+        tries: s.tries || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.words - a.words ||
+          a.tries - b.tries ||
+          a.pseudo.localeCompare(b.pseudo)
+      );
+    io.emit("motus:leaderboard", arr);
   },
   broadcastBlockBlastLB(io) {
     const arr = Object.entries(FileService.data.blockblastScores)
@@ -212,8 +229,35 @@ function initSocketHandlers(io, socket, gameState) {
 
   // ------- Chat -------
   socket.on("chat:message", ({ text }) => {
-    const msg = String(text || "").trim();
+    let msg = String(text || "").trim();
     if (!msg) return;
+
+    // Censure du mot du jour (Motus)
+    if (motusGame && motusGame.currentWord) {
+      const word = motusGame.currentWord.toUpperCase();
+      const leetMap = {
+        A: "[A4@àâä]",
+        B: "[B8&]",
+        E: "[E3éèêë£€]",
+        G: "[G69]",
+        I: "[I1!|lìíîï]",
+        L: "[L1|]",
+        O: "[O0°òóôõö¤]",
+        S: "[S5$š§]",
+        T: "[T17]",
+        Z: "[Z2²ž]",
+        U: "[Uùúûüµ]",
+        C: "[Cç]",
+      };
+
+      let regexPattern = "";
+      for (const char of word) {
+        regexPattern += leetMap[char] || char;
+      }
+
+      const regex = new RegExp(regexPattern, "gi");
+      msg = msg.replace(regex, (match) => "*".repeat(match.length));
+    }
 
     const tagData = FileService.data.tags
       ? FileService.data.tags[pseudo]
@@ -1865,6 +1909,150 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  // ------- Motus -------
+  socket.on("motus:guess", ({ guess }) => {
+    if (!guess || typeof guess !== "string") return;
+
+    const dailyWord = motusGame.getDailyWord();
+    const today = new Date().toISOString().split("T")[0];
+
+    // Init state if needed
+    if (!FileService.data.motusState) FileService.data.motusState = {};
+    if (
+      !FileService.data.motusState[pseudo] ||
+      FileService.data.motusState[pseudo].date !== today
+    ) {
+      FileService.data.motusState[pseudo] = {
+        date: today,
+        history: [],
+        wonToday: false,
+      };
+    }
+
+    const userState = FileService.data.motusState[pseudo];
+
+    // Check if already won (and not reset for fun)
+    // Actually, if they reset, we clear history but keep wonToday=true.
+    // If wonToday is true, they can play but don't get points.
+
+    // If history shows a win, stop.
+    const last = userState.history[userState.history.length - 1];
+    if (last && last.result.every((s) => s === 2)) return;
+
+    // If history full (lost), stop (unless reset handled elsewhere)
+    // But we allow unlimited tries now, so we don't stop on length >= 6.
+    // The client handles the visual reset, but server keeps history?
+    // Wait, if client resets grid, server history grows indefinitely?
+    // The previous prompt said "reset grid if full".
+    // If I keep appending to history, the client will reload all of it.
+    // Maybe I should clear history on server if it gets too long?
+    // Or just let it grow. The client handles pagination.
+
+    const { result, error } = motusGame.checkGuess(guess);
+
+    if (error) {
+      socket.emit("motus:error", { message: error });
+      return;
+    }
+
+    userState.history.push({ guess: guess.toUpperCase(), result });
+
+    // Check win
+    if (result.every((s) => s === 2)) {
+      if (!userState.wonToday) {
+        userState.wonToday = true;
+
+        // Update scores
+        if (!FileService.data.motusScores) FileService.data.motusScores = {};
+        if (!FileService.data.motusScores[pseudo]) {
+          FileService.data.motusScores[pseudo] = { words: 0, tries: 0 };
+        }
+
+        FileService.data.motusScores[pseudo].words++;
+        FileService.data.motusScores[pseudo].tries += userState.history.length;
+
+        FileService.save("motusScores", FileService.data.motusScores);
+        leaderboardManager.broadcastMotusLB(io);
+      }
+    }
+
+    FileService.save("motusState", FileService.data.motusState);
+
+    socket.emit("motus:result", {
+      result,
+      guess: guess.toUpperCase(),
+      wonToday: userState.wonToday,
+    });
+  });
+
+  socket.on("motus:reset", () => {
+    const today = new Date().toISOString().split("T")[0];
+    const word = motusGame.currentWord;
+    const hyphens = [];
+    for (let i = 0; i < word.length; i++) {
+      if (word[i] === "-") hyphens.push(i);
+    }
+
+    if (FileService.data.motusState && FileService.data.motusState[pseudo]) {
+      // Only allow reset if it's the same day (should be)
+      if (FileService.data.motusState[pseudo].date === today) {
+        FileService.data.motusState[pseudo].history = [];
+        // Keep wonToday as is
+        FileService.save("motusState", FileService.data.motusState);
+
+        socket.emit("motus:init", {
+          length: word.length,
+          hyphens: hyphens,
+          history: [],
+          wonToday: FileService.data.motusState[pseudo].wonToday,
+        });
+      }
+    }
+  });
+
+  // Send initial state on connect (or request)
+  const dailyWord = motusGame.currentWord;
+  //console.log("Motus Word:", dailyWord);
+  const today = new Date().toISOString().split("T")[0];
+  const dailyHyphens = [];
+  for (let i = 0; i < dailyWord.length; i++) {
+    if (dailyWord[i] === "-") dailyHyphens.push(i);
+  }
+
+  if (!FileService.data.motusState) FileService.data.motusState = {};
+  let userHistory = [];
+  let wonToday = false;
+
+  if (
+    FileService.data.motusState[pseudo] &&
+    FileService.data.motusState[pseudo].date === today
+  ) {
+    userHistory = FileService.data.motusState[pseudo].history;
+    wonToday = FileService.data.motusState[pseudo].wonToday || false;
+  }
+
+  socket.emit("motus:init", {
+    length: dailyWord.length,
+    hyphens: dailyHyphens,
+    history: userHistory,
+    wonToday: wonToday,
+  });
+
+  // Send LB on connect
+  const lb = Object.entries(FileService.data.motusScores || {})
+    .map(([u, s]) => ({
+      pseudo: u,
+      words: s.words || 0,
+      tries: s.tries || 0,
+    }))
+    .sort(
+      (a, b) =>
+        b.words - a.words ||
+        a.tries - b.tries ||
+        a.pseudo.localeCompare(b.pseudo)
+    );
+  socket.emit("motus:leaderboard", lb);
+
   // ------- Log off -------
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
@@ -1962,4 +2150,4 @@ function initSocketHandlers(io, socket, gameState) {
   });
 }
 
-module.exports = { initSocketHandlers, leaderboardManager };
+module.exports = { initSocketHandlers, leaderboardManager, motusGame };

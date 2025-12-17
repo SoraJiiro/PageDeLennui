@@ -106,6 +106,8 @@ class FileService {
       cheaters: path.join(config.DATA, "cheaters.json"),
       tags: path.join(config.DATA, "tags.json"),
       uis: path.join(config.DATA, "uis.json"),
+      motusState: path.join(config.DATA, "motus_state.json"),
+      motusScores: path.join(config.DATA, "motus_scores.json"),
     };
 
     this.data = this.loadAll();
@@ -148,6 +150,8 @@ class FileService {
       cheaters: this.readJSON(this.files.cheaters, []),
       tags: this.readJSON(this.files.tags, {}),
       uis: this.readJSON(this.files.uis, {}),
+      motusState: this.readJSON(this.files.motusState, {}),
+      motusScores: this.readJSON(this.files.motusScores, {}),
     };
   }
 
@@ -197,6 +201,8 @@ class FileService {
       cheaters: this.files.cheaters,
       tags: this.files.tags,
       uis: this.files.uis,
+      motusState: this.files.motusState,
+      motusScores: this.files.motusScores,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

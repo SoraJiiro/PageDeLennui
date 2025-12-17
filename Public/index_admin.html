@@ -204,6 +204,19 @@
                     </div>
                 </section>
 
+                <!-- MOTUS ADMIN -->
+                <section class="admin-section">
+                    <h2><i class="fa-solid fa-font"></i> /Motus</h2>
+                    <div class="admin-card">
+                        <h3>Gestion du Mot du Jour</h3>
+                        <p>Permet de changer le mot du jour aléatoirement et de
+                            réinitialiser la partie pour tout le monde.</p>
+                        <button class="btn btn-red" onclick="rerollMotus()">
+                            <i class="fa-solid fa-dice"></i> Reroll Motus
+                        </button>
+                    </div>
+                </section>
+
                 <!-- CHAT LAN -->
                 <section class="admin-section" id="chat">
                     <h2><i class="fa-solid fa-comments"
@@ -1494,6 +1507,27 @@ async function removeTime() {
                 }
             } catch (e) {
                 console.error(e);
+            }
+        }
+
+        async function rerollMotus() {
+            if (!confirm("⚠️ Êtes-vous sûr de vouloir changer le mot du jour ?\nCela réinitialisera la partie pour TOUS les joueurs connectés.")) return;
+
+            try {
+                const res = await fetch('/api/admin/motus/reroll', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification('✅ Mot changé : ' + data.word, 'success');
+                } else {
+                    showNotification('❌ Erreur : ' + data.message, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('❌ Erreur serveur', 'error');
             }
         }
 

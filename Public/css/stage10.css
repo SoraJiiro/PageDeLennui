@@ -1,12 +1,14 @@
 /* Snake Game - Stage 10 */
 
 #stage10 {
-  min-height: 100vh;
-  width: 100vw;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
-  padding-top: 5rem;
+  width: 100vw;
+  position: relative;
+  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+  padding: 50px 0;
 }
 
 .snake-wrap {
@@ -15,7 +17,6 @@
   align-items: center;
   gap: 12px;
   width: min(92vw, 650px);
-  max-height: 62.5vh;
   position: relative;
 }
 

@@ -26,6 +26,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage8.css" />
         <link rel="stylesheet" type="text/css" href="css/stage9.css" />
         <link rel="stylesheet" type="text/css" href="css/stage10.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage11.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
             media="(prefers-color-scheme: dark)" />
@@ -72,6 +73,7 @@
                 <button class="sec8">Puissance 4</button>
                 <button class="sec9">Block Blast</button>
                 <button class="sec10">Snake</button>
+                <button class="sec11">Motus</button>
                 <p class="hide-nav" role="button">Cacher</p>
                 <label for="mainColorPicker" id="ui">UI</label>
                 <input type="color" id="mainColorPicker"
@@ -175,6 +177,7 @@
                 <button data-board="p4">Puissance 4</button>
                 <button data-board="blockblast">Block Blast</button>
                 <button data-board="snake">Snake</button>
+                <button data-board="motus">Motus</button>
             </div>
 
             <center>
@@ -261,6 +264,16 @@
                 </div>
                 <table class="board" id="snake-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th><th>Temps</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD MOTUS -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Motus Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="motus-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Devinés</th><th>Essais</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -493,6 +506,20 @@
                         id="keybind-mark"
                         style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;"></mark>
                     pour mettre en pause</p>
+            </div>
+        </section>
+
+        <section id="stage11">
+            <div class="motus-container">
+                <div class="motus-header">Devinez la commune</div>
+                <div class="motus-grid"></div>
+                <div class="motus-keyboard"></div>
+                <div class="motus-message"></div>
+                <button class="motus-reset"
+                    style="display: none;">Rejouer</button>
+                <div class="motus-already-found"
+                    style="display: none;">Commune
+                    déjà trouvé aujourd'hui !</div>
             </div>
         </section>
 

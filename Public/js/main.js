@@ -47,6 +47,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./snake_leaderboard.js"),
       import("./tagColor.js"),
       import("./system.js"),
+      import("./motus.js"),
+      import("./motus_leaderboard.js"),
     ]);
 
     const [
@@ -69,6 +71,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       snakeLeaderboard,
       tagColor,
       system,
+      motus,
+      motusLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -133,6 +137,9 @@ import { initCanvasResizer } from "./canvas_resize.js";
       snakeLeaderboard.initSnakeLeaderboard(socket);
     if (tagColor?.initTagColor) tagColor.initTagColor(socket);
     if (system?.initSystem) system.initSystem(socket);
+    if (motus?.initMotus) motus.initMotus(socket);
+    if (motusLeaderboard?.initMotusLeaderboard)
+      motusLeaderboard.initMotusLeaderboard(socket);
 
     socket.connect();
 
