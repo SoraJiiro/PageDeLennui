@@ -6,8 +6,42 @@ const dbUsers = require("./dbUsers");
 const { exec } = require("child_process");
 
 // Fonction pour créer le router avec accès à io
-function createAdminRouter(io, motusGame) {
+function createAdminRouter(io, motusGame, leaderboardManager) {
   const router = express.Router();
+
+  // Helper pour refresh les leaderboards
+  function refreshLeaderboard(statType) {
+    if (!leaderboardManager) return;
+    switch (statType) {
+      case "clicks":
+        leaderboardManager.broadcastClickerLB(io);
+        break;
+      case "dinoScores":
+        leaderboardManager.broadcastDinoLB(io);
+        break;
+      case "flappyScores":
+        leaderboardManager.broadcastFlappyLB(io);
+        break;
+      case "unoWins":
+        leaderboardManager.broadcastUnoLB(io);
+        break;
+      case "pictionaryWins":
+        leaderboardManager.broadcastPictionaryLB(io);
+        break;
+      case "p4Wins":
+        leaderboardManager.broadcastP4LB(io);
+        break;
+      case "blockblastScores":
+        leaderboardManager.broadcastBlockBlastLB(io);
+        break;
+      case "snakeScores":
+        leaderboardManager.broadcastSnakeLB(io);
+        break;
+      case "motusScores":
+        leaderboardManager.broadcastMotusLB(io);
+        break;
+    }
+  }
 
   // Liste des médailles avec leurs paliers
   const medalsList = [
@@ -191,10 +225,31 @@ function createAdminRouter(io, motusGame) {
       "p4Wins",
       "blockblastScores",
       "snakeScores",
+      "motusScores",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "motusScores") {
+      if (!FileService.data.motusScores) FileService.data.motusScores = {};
+      const current = FileService.data.motusScores[pseudo] || {
+        words: 0,
+        tries: 0,
+      };
+      const currentTries = typeof current === "object" ? current.tries || 0 : 0;
+
+      FileService.data.motusScores[pseudo] = {
+        words: value,
+        tries: currentTries,
+      };
+      FileService.save("motusScores", FileService.data.motusScores);
+      refreshLeaderboard(statType);
+
+      return res.json({
+        message: `Statistique ${statType} (mots) de ${pseudo} mise à jour à ${value}`,
+      });
     }
 
     FileService.data[statType][pseudo] = value;
@@ -204,6 +259,8 @@ function createAdminRouter(io, motusGame) {
     if (statType === "clicks") {
       recalculateMedals(pseudo, value);
     }
+
+    refreshLeaderboard(statType);
 
     console.log({
       level: "action",
@@ -351,21 +408,36 @@ function createAdminRouter(io, motusGame) {
       "p4Wins",
       "blockblastScores",
       "snakeScores",
+      "motusScores",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
     }
 
-    const users = Object.keys(FileService.data[statType]);
+    const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      FileService.data[statType][pseudo] = value;
-      if (statType === "clicks") {
-        recalculateMedals(pseudo, value);
+      if (statType === "motusScores") {
+        const current = FileService.data.motusScores[pseudo] || {
+          words: 0,
+          tries: 0,
+        };
+        const currentTries =
+          typeof current === "object" ? current.tries || 0 : 0;
+        FileService.data.motusScores[pseudo] = {
+          words: value,
+          tries: currentTries,
+        };
+      } else {
+        FileService.data[statType][pseudo] = value;
+        if (statType === "clicks") {
+          recalculateMedals(pseudo, value);
+        }
       }
     });
 
     FileService.save(statType, FileService.data[statType]);
+    refreshLeaderboard(statType);
 
     console.log({
       level: "action",
@@ -394,23 +466,40 @@ function createAdminRouter(io, motusGame) {
       "p4Wins",
       "blockblastScores",
       "snakeScores",
+      "motusScores",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
     }
 
-    const users = Object.keys(FileService.data[statType]);
+    const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      const current = FileService.data[statType][pseudo] || 0;
-      const newValue = current + value;
-      FileService.data[statType][pseudo] = newValue;
-      if (statType === "clicks") {
-        recalculateMedals(pseudo, newValue);
+      if (statType === "motusScores") {
+        const current = FileService.data.motusScores[pseudo] || {
+          words: 0,
+          tries: 0,
+        };
+        const currentWords =
+          typeof current === "object" ? current.words || 0 : current;
+        const currentTries =
+          typeof current === "object" ? current.tries || 0 : 0;
+        FileService.data.motusScores[pseudo] = {
+          words: currentWords + value,
+          tries: currentTries,
+        };
+      } else {
+        const current = FileService.data[statType][pseudo] || 0;
+        const newValue = current + value;
+        FileService.data[statType][pseudo] = newValue;
+        if (statType === "clicks") {
+          recalculateMedals(pseudo, newValue);
+        }
       }
     });
 
     FileService.save(statType, FileService.data[statType]);
+    refreshLeaderboard(statType);
 
     console.log({
       level: "action",
@@ -439,6 +528,7 @@ function createAdminRouter(io, motusGame) {
       "p4Wins",
       "blockblastScores",
       "snakeScores",
+      "motusScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -447,15 +537,31 @@ function createAdminRouter(io, motusGame) {
 
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      const current = FileService.data[statType][pseudo] || 0;
-      const newValue = Math.max(0, current - value);
-      FileService.data[statType][pseudo] = newValue;
-      if (statType === "clicks") {
-        recalculateMedals(pseudo, newValue);
+      if (statType === "motusScores") {
+        const current = FileService.data.motusScores[pseudo] || {
+          words: 0,
+          tries: 0,
+        };
+        const currentWords =
+          typeof current === "object" ? current.words || 0 : current;
+        const currentTries =
+          typeof current === "object" ? current.tries || 0 : 0;
+        FileService.data.motusScores[pseudo] = {
+          words: Math.max(0, currentWords - value),
+          tries: currentTries,
+        };
+      } else {
+        const current = FileService.data[statType][pseudo] || 0;
+        const newValue = Math.max(0, current - value);
+        FileService.data[statType][pseudo] = newValue;
+        if (statType === "clicks") {
+          recalculateMedals(pseudo, newValue);
+        }
       }
     });
 
     FileService.save(statType, FileService.data[statType]);
+    refreshLeaderboard(statType);
 
     console.log({
       level: "action",
@@ -483,10 +589,36 @@ function createAdminRouter(io, motusGame) {
       "pictionaryWins",
       "p4Wins",
       "blockblastScores",
+      "snakeScores",
+      "motusScores",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "motusScores") {
+      if (!FileService.data.motusScores) FileService.data.motusScores = {};
+      const current = FileService.data.motusScores[pseudo] || {
+        words: 0,
+        tries: 0,
+      };
+      // Si c'est un nombre (ancien format), on convertit
+      const currentWords =
+        typeof current === "object" ? current.words || 0 : current;
+      const currentTries = typeof current === "object" ? current.tries || 0 : 0;
+
+      const newWords = currentWords + value;
+      FileService.data.motusScores[pseudo] = {
+        words: newWords,
+        tries: currentTries,
+      };
+      FileService.save("motusScores", FileService.data.motusScores);
+      refreshLeaderboard(statType);
+
+      return res.json({
+        message: `Statistique ${statType} (mots) de ${pseudo} augmentée de ${value} (total: ${newWords})`,
+      });
     }
 
     const currentValue = FileService.data[statType][pseudo] || 0;
@@ -499,6 +631,8 @@ function createAdminRouter(io, motusGame) {
     if (statType === "clicks") {
       recalculateMedals(pseudo, newValue);
     }
+
+    refreshLeaderboard(statType);
 
     console.log({
       level: "action",
@@ -524,6 +658,7 @@ function createAdminRouter(io, motusGame) {
         FileService.data.snakeBestTimes = {};
       FileService.data.snakeBestTimes[pseudo] = time;
       FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+      refreshLeaderboard("snakeScores");
       return res.json({ message: `Durée snake mise à jour pour ${pseudo}` });
     }
 
@@ -535,6 +670,7 @@ function createAdminRouter(io, motusGame) {
         "blockblastBestTimes",
         FileService.data.blockblastBestTimes
       );
+      refreshLeaderboard("blockblastScores");
       return res.json({
         message: `Durée blockblast mise à jour pour ${pseudo}`,
       });
@@ -543,6 +679,37 @@ function createAdminRouter(io, motusGame) {
     return res
       .status(400)
       .json({ message: "boardType invalide (snake | blockblast)" });
+  });
+
+  // Modifier le nombre d'essais (Motus)
+  router.post("/modify-tries", requireAdmin, (req, res) => {
+    const { pseudo, tries } = req.body || {};
+
+    if (!pseudo || typeof tries !== "number" || tries < 0) {
+      return res.status(400).json({ message: "Données invalides" });
+    }
+
+    if (!FileService.data.motusScores) FileService.data.motusScores = {};
+
+    // Si l'utilisateur n'existe pas, on l'initialise
+    if (!FileService.data.motusScores[pseudo]) {
+      FileService.data.motusScores[pseudo] = { words: 0, tries: tries };
+    } else {
+      // Si c'est un objet (nouveau format)
+      if (typeof FileService.data.motusScores[pseudo] === "object") {
+        FileService.data.motusScores[pseudo].tries = tries;
+      } else {
+        // Migration si jamais c'était un nombre (peu probable mais sécurité)
+        FileService.data.motusScores[pseudo] = {
+          words: FileService.data.motusScores[pseudo] || 0,
+          tries: tries,
+        };
+      }
+    }
+
+    FileService.save("motusScores", FileService.data.motusScores);
+    refreshLeaderboard("motusScores");
+    return res.json({ message: `Essais Motus mis à jour pour ${pseudo}` });
   });
 
   // Supprimer un best-time (snake / blockblast)
@@ -559,6 +726,7 @@ function createAdminRouter(io, motusGame) {
       ) {
         delete FileService.data.snakeBestTimes[pseudo];
         FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+        refreshLeaderboard("snakeScores");
         return res.json({ message: `Durée snake supprimée pour ${pseudo}` });
       }
       return res
@@ -576,6 +744,7 @@ function createAdminRouter(io, motusGame) {
           "blockblastBestTimes",
           FileService.data.blockblastBestTimes
         );
+        refreshLeaderboard("blockblastScores");
         return res.json({
           message: `Durée blockblast supprimée pour ${pseudo}`,
         });
@@ -607,10 +776,34 @@ function createAdminRouter(io, motusGame) {
       "p4Wins",
       "blockblastScores",
       "snakeScores",
+      "motusScores",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "motusScores") {
+      if (!FileService.data.motusScores) FileService.data.motusScores = {};
+      const current = FileService.data.motusScores[pseudo] || {
+        words: 0,
+        tries: 0,
+      };
+      const currentWords =
+        typeof current === "object" ? current.words || 0 : current;
+      const currentTries = typeof current === "object" ? current.tries || 0 : 0;
+
+      const newWords = Math.max(0, currentWords - value);
+      FileService.data.motusScores[pseudo] = {
+        words: newWords,
+        tries: currentTries,
+      };
+      FileService.save("motusScores", FileService.data.motusScores);
+      refreshLeaderboard(statType);
+
+      return res.json({
+        message: `Statistique ${statType} (mots) de ${pseudo} diminuée de ${value} (total: ${newWords})`,
+      });
     }
 
     const currentValue = FileService.data[statType][pseudo] || 0;
@@ -623,6 +816,8 @@ function createAdminRouter(io, motusGame) {
     if (statType === "clicks") {
       recalculateMedals(pseudo, newValue);
     }
+
+    refreshLeaderboard(statType);
 
     console.log({
       level: "action",

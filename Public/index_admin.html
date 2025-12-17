@@ -60,6 +60,8 @@
                                 Blast</button>
                             <button class="lb-tab"
                                 data-board="snake">Snake</button>
+                            <button class="lb-tab"
+                                data-board="motus">Motus</button>
                         </div>
                     </center>
 
@@ -169,6 +171,20 @@
                             <tbody id="lb-snake"></tbody>
                         </table>
                     </div>
+
+                    <div class="leaderboard-content" data-board="motus">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Pseudo</th>
+                                    <th>Mots trouvés</th>
+                                    <th>Essais</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-motus"></tbody>
+                        </table>
+                    </div>
                 </section>
 
                 <!-- GESTION TRICHEURS -->
@@ -206,11 +222,13 @@
 
                 <!-- MOTUS ADMIN -->
                 <section class="admin-section">
-                    <h2><i class="fa-solid fa-font"></i> /Motus</h2>
+                    <h2><i class="fa-solid fa-question"></i>/Motus</h2>
                     <div class="admin-card">
                         <h3>Gestion du Mot du Jour</h3>
+                        <br>
                         <p>Permet de changer le mot du jour aléatoirement et de
                             réinitialiser la partie pour tout le monde.</p>
+                        <br>
                         <button class="btn btn-red" onclick="rerollMotus()">
                             <i class="fa-solid fa-dice"></i> Reroll Motus
                         </button>
@@ -297,6 +315,8 @@
                                                 Blast</option>
                                             <option
                                                 value="snakeScores">Snake</option>
+                                            <option
+                                                value="motusScores">Motus</option>
                                             <option value="all">Toutes les
                                                 stats</option>
                                         </select>
@@ -313,6 +333,12 @@
                                         <label>Nouvelle durée (ms)</label>
                                         <input type="number" id="modifyStatTime"
                                             placeholder="Durée en ms" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Nouveaux essais</label>
+                                        <input type="number"
+                                            id="modifyStatTries"
+                                            placeholder="Nb essais" />
                                     </div>
                                     <div class="action-buttons">
                                         <button class="btn"
@@ -341,6 +367,12 @@
                                             <i
                                                 class="fa-solid fa-trash-can"></i>
                                             Supprimer Temps
+                                        </button>
+                                        <button class="btn"
+                                            onclick="modifyTries()"
+                                            title="Modifier le nombre d'essais">
+                                            <i class="fa-solid fa-list-ol"></i>
+                                            Modifier Essais
                                         </button>
                                     </div>
                                 </div>
@@ -434,6 +466,7 @@
                                             <option value="blockblast">Block
                                                 Blast</option>
                                             <option value="snake">Snake</option>
+                                            <option value="motus">Motus</option>
                                         </select>
                                     </div>
 
@@ -601,6 +634,7 @@
             socket.on('p4:leaderboard', (data) => updateLeaderboard('p4', data, 'wins'));
             socket.on('blockblast:leaderboard', (data) => updateLeaderboard('blockblast', data, 'score'));
             socket.on('snake:leaderboard', (data) => updateLeaderboard('snake', data, 'score'));
+            socket.on('motus:leaderboard', (data) => updateLeaderboard('motus', data, 'words'));
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {
@@ -662,6 +696,11 @@
                         }
                      }
                      extraTd = `<td>${timeTxt}</td>`;
+                }
+
+                if (type === 'motus') {
+                    const tries = item.tries || 0;
+                    extraTd = `<td>${tries}</td>`;
                 }
 
                 tr.innerHTML = `
@@ -1040,6 +1079,42 @@ async function removeTime() {
     } catch (e) {
         console.error(e);
         showNotification('⚠️ Erreur lors de la suppression du temps', 'error');
+    }
+}
+
+async function modifyTries() {
+    const pseudo = document.getElementById('modifyUser').value.trim();
+    const board = document.getElementById('modifyStatType').value;
+    const tries = parseInt(document.getElementById('modifyStatTries').value);
+
+    if (!pseudo || isNaN(tries) || tries < 0) {
+        showNotification('⚠️ Veuillez entrer un pseudo et un nombre d\'essais valide', 'error');
+        return;
+    }
+
+    if (board !== 'motusScores') {
+        showNotification('⚠️ Sélectionnez Motus dans Stat ?', 'error');
+        return;
+    }
+
+    if (!confirm(`Définir ${tries} essais pour ${pseudo} sur Motus ?`)) return;
+
+    try {
+        const res = await fetch('/api/admin/modify-tries', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pseudo, tries })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showNotification(`✅ ${data.message}`, 'success');
+            if (socket) socket.emit('admin:refresh');
+        } else {
+            showNotification(`❌ ${data.message}`, 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        showNotification('⚠️ Erreur lors de la modification des essais', 'error');
     }
 }
 
