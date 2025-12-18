@@ -4,8 +4,8 @@ export function initMotus(socket) {
   const grid = document.querySelector(".motus-grid");
   const keyboard = document.querySelector(".motus-keyboard");
   const message = document.querySelector(".motus-message");
-  const resetBtn = document.querySelector(".motus-reset");
-  const alreadyFoundMsg = document.querySelector(".motus-already-found");
+  const skipBtn = document.querySelector(".motus-skip");
+  const continueBtn = document.querySelector(".motus-continue");
 
   if (!grid || !keyboard) return;
 
@@ -16,10 +16,22 @@ export function initMotus(socket) {
   let maxRows = 6;
   let hyphenIndices = [];
 
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      socket.emit("motus:reset");
-      resetBtn.style.display = "none";
+  if (skipBtn) {
+    skipBtn.addEventListener("click", () => {
+      socket.emit("motus:skip");
+      skipBtn.style.display = "none";
+      // Reset local state immediately for better UX
+      gameActive = true;
+      currentGuess = "";
+      currentRow = 0;
+      // Grid will be rebuilt by init event
+    });
+  }
+
+  if (continueBtn) {
+    continueBtn.addEventListener("click", () => {
+      socket.emit("motus:continue");
+      continueBtn.style.display = "none";
       // Reset local state immediately for better UX
       gameActive = true;
       currentGuess = "";
@@ -234,8 +246,8 @@ export function initMotus(socket) {
       // gameActive is already false
       setTimeout(() => {
         showNotif("🎉 Bravo !");
-        if (resetBtn) resetBtn.style.display = "block";
-        if (alreadyFoundMsg) alreadyFoundMsg.style.display = "block";
+        if (continueBtn) continueBtn.style.display = "block";
+        if (skipBtn) skipBtn.style.display = "none";
       }, wordLength * 100 + 100);
     } else if (currentRow >= maxRows) {
       // Reset grid if full and not won
@@ -265,25 +277,29 @@ export function initMotus(socket) {
   }
 
   // Socket listeners
-  socket.on("motus:init", ({ length, hyphens, history, wonToday }) => {
+  socket.on("motus:init", ({ length, hyphens, history, won }) => {
     currentRow = 0;
+    currentGuess = ""; // Reset current guess to prevent carry-over
     gameActive = true; // Reset game state
     hyphenIndices = hyphens || [];
     createGrid(length);
-    createKeyboard();
+    createKeyboard(); // Rebuilds keyboard (resets colors)
 
     if (hyphenIndices.length > 0) {
       const key = document.querySelector('.motus-key[data-key="-"]');
       if (key) key.dataset.state = "correct";
     }
 
-    if (wonToday) {
-      if (alreadyFoundMsg) alreadyFoundMsg.style.display = "block";
+    // Button visibility logic
+    if (won) {
+      if (continueBtn) continueBtn.style.display = "block";
+      if (skipBtn) skipBtn.style.display = "none";
+      gameActive = false;
     } else {
-      if (alreadyFoundMsg) alreadyFoundMsg.style.display = "none";
+      if (continueBtn) continueBtn.style.display = "none";
+      if (skipBtn) skipBtn.style.display = "block";
+      gameActive = true;
     }
-
-    if (resetBtn) resetBtn.style.display = "none";
 
     // Restore history
     if (history && Array.isArray(history)) {
@@ -341,14 +357,20 @@ export function initMotus(socket) {
 
       if (won) {
         gameActive = false;
-        if (resetBtn) resetBtn.style.display = "block";
+        // Buttons handled in init
       }
     }
   });
 
-  socket.on("motus:result", ({ result, guess, wonToday }) => {
+  socket.on("motus:result", ({ result, guess, won }) => {
     revealRow(result, guess);
-    if (wonToday && alreadyFoundMsg) alreadyFoundMsg.style.display = "block";
+  });
+
+  socket.on("motus:end", ({ message: msg }) => {
+    showMessage(msg);
+    if (skipBtn) skipBtn.style.display = "none";
+    if (continueBtn) continueBtn.style.display = "none";
+    gameActive = false;
   });
 
   socket.on("motus:error", ({ message }) => {
@@ -363,7 +385,12 @@ export function initMotus(socket) {
       return;
 
     if (e.key === "Enter") handleEnter();
-    else if (e.key === "Backspace") handleBackspace();
-    else if (/^[a-zA-Z-]$/.test(e.key)) handleKey(e.key.toUpperCase());
+    else if (e.key === "Backspace") {
+      e.preventDefault(); // Empecher le retour en arriere de la page sur Firefox
+      handleBackspace();
+    } else if (/^[a-zA-Z-]$/.test(e.key)) {
+      e.preventDefault(); // Empecher le retour en arriere de la page sur Firefox
+      handleKey(e.key.toUpperCase());
+    }
   });
 }

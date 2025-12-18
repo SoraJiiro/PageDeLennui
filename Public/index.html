@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Page de l'ennui</title>
+        <title>PDE</title>
 
         <link rel="preload"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
@@ -181,9 +181,8 @@
             </div>
 
             <center>
-                <p class="info-leaderboard">Le premier du Leaderboard Dino
-                    et
-                    Flappy Bird à
+                <p class="info-leaderboard">Le premier du Leaderboard Dino,
+                    Flappy Bird, Snake et Motus à
                     la fin de chaque session obtiendra <mark
                         style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block; text-decoration: underline; text-decoration-color: #000; text-decoration-thickness: 1.5px; text-underline-offset: 3px;">7500</mark>
                     Clicks
@@ -511,15 +510,17 @@
 
         <section id="stage11">
             <div class="motus-container">
-                <div class="motus-header">Devinez la commune</div>
+                <div class="motus-header">Motus</div>
                 <div class="motus-grid"></div>
                 <div class="motus-keyboard"></div>
                 <div class="motus-message"></div>
-                <button class="motus-reset"
-                    style="display: none;">Rejouer</button>
-                <div class="motus-already-found"
-                    style="display: none;">Commune
-                    déjà trouvé aujourd'hui !</div>
+                <div class="motus-controls"
+                    style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+                    <button class="motus-skip"
+                        style="padding: 10px 20px; background: #ff4444; color: white; border: none; cursor: pointer;">Passer</button>
+                    <button class="motus-continue"
+                        style="display: none; padding: 10px 20px; background: var(--primary-color); color: black; border: none; cursor: pointer;">Continuer</button>
+                </div>
             </div>
         </section>
 

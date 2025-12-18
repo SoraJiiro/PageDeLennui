@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const bcrypt = require("bcryptjs");
 const { FileService } = require("./util");
 const dbUsers = require("./dbUsers");
 const { exec } = require("child_process");
@@ -61,7 +62,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     for (let idx = 8; idx <= 21; idx++) {
       let pallierTemp = precedente.pallier * 2;
-      let pallier = Math.ceil(pallierTemp * 0.85 - 6500);
+      let pallier = Math.ceil(pallierTemp * 0.78 - 6500);
       prestige.push({
         nom: `Médaille Prestige - ${idx}`,
         pallier: pallier,
@@ -73,6 +74,27 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
   }
 
   const allMedals = [...medalsList, ...generatePrestigeMedals()];
+
+  // Helper pour envoyer des messages système (copié de handlers.js pour éviter les dépendances circulaires)
+  function broadcastSystemMessage(text, persist = false) {
+    if (!io) return;
+    const payload = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      name: "System",
+      text: text,
+      at: new Date().toISOString(),
+      tag: { text: "System", color: "#ff0000" },
+    };
+    io.emit("chat:message", payload);
+    if (persist) {
+      FileService.data.historique.push(payload);
+      if (FileService.data.historique.length > 200) {
+        FileService.data.historique = FileService.data.historique.slice(-200);
+      }
+      FileService.save("historique", FileService.data.historique);
+      FileService.appendLog(payload);
+    }
+  }
 
   // Fonction pour recalculer les médailles d'un utilisateur en fonction de ses clicks
   function recalculateMedals(pseudo, clicks) {
@@ -90,14 +112,21 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     // Récupérer les médailles existantes pour préserver les couleurs générées
     const existingMedals = FileService.data.medals[pseudo] || [];
     const existingColors = {};
+    const existingNames = new Set();
 
     existingMedals.forEach((medal) => {
-      if (medal.colors && medal.colors.length > 0) {
-        existingColors[medal.name] = medal.colors;
+      if (typeof medal === "string") {
+        existingNames.add(medal);
+      } else {
+        existingNames.add(medal.name);
+        if (medal.colors && medal.colors.length > 0) {
+          existingColors[medal.name] = medal.colors;
+        }
       }
     });
 
     const userMedals = [];
+    const newUnlocked = [];
 
     // Déterminer quelles médailles l'utilisateur devrait avoir
     for (const medal of allMedals) {
@@ -106,12 +135,25 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
           name: medal.nom,
           colors: existingColors[medal.nom] || [],
         });
+
+        if (!existingNames.has(medal.nom)) {
+          newUnlocked.push(medal.nom);
+        }
       }
     }
 
     // Mettre à jour les médailles de l'utilisateur
     FileService.data.medals[pseudo] = userMedals;
     FileService.save("medals", FileService.data.medals);
+
+    // Log des nouvelles médailles
+    if (newUnlocked.length > 0) {
+      const msg = `${pseudo} a débloqué : ${newUnlocked.join(", ")} !`;
+      console.log(
+        `🏅 [${pseudo}] a débloqué ${newUnlocked.join(", ")} (Admin/Recalc)`
+      );
+      broadcastSystemMessage(msg, true);
+    }
 
     // Si l'utilisateur est connecté, lui envoyer ses nouvelles médailles
     if (io) {
@@ -185,6 +227,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       pictionaryPoints: FileService.data.pictionaryWins[pseudo] || 0,
       p4Wins: FileService.data.p4Wins[pseudo] || 0,
       blockblastScore: FileService.data.blockblastScores[pseudo] || 0,
+      motusScores: FileService.data.motusScores
+        ? FileService.data.motusScores[pseudo]
+        : null,
       medals: FileService.data.medals[pseudo] || [],
       tag: FileService.data.tags ? FileService.data.tags[pseudo] || "" : "",
     };
@@ -860,6 +905,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     delete FileService.data.blockblastScores[pseudo];
     delete FileService.data.medals[pseudo];
     delete FileService.data.blockblastSaves[pseudo];
+    if (FileService.data.motusScores)
+      delete FileService.data.motusScores[pseudo];
+    if (FileService.data.motusState) delete FileService.data.motusState[pseudo];
 
     // Supprimer aussi des nouveaux leaderboards
     if (FileService.data.blockblastBestTimes) {
@@ -887,6 +935,10 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     FileService.save("pictionaryWins", FileService.data.pictionaryWins);
     FileService.save("p4Wins", FileService.data.p4Wins);
     FileService.save("blockblastScores", FileService.data.blockblastScores);
+    if (FileService.data.motusScores)
+      FileService.save("motusScores", FileService.data.motusScores);
+    if (FileService.data.motusState)
+      FileService.save("motusState", FileService.data.motusState);
     FileService.save("medals", FileService.data.medals);
     FileService.save("blockblastSaves", FileService.data.blockblastSaves);
     if (FileService.data.blockblastBestTimes) {
@@ -990,6 +1042,11 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       }
     };
 
+    const clearMotus = () => {
+      clearSimple("motusScores", "motus");
+      // On pourrait aussi reset le state, mais c'est pas un leaderboard
+    };
+
     try {
       switch (type) {
         case "clicker":
@@ -1016,6 +1073,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         case "snake":
           clearSnake();
           break;
+        case "motus":
+          clearMotus();
+          break;
         case "all":
         default:
           clearClicker();
@@ -1026,6 +1086,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
           clearSimple("p4Wins", "p4");
           clearBlockblast();
           clearSnake();
+          clearMotus();
           break;
       }
 
@@ -1054,6 +1115,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
   // Route pour éteindre le serveur
   router.post("/shutdown", requireAdmin, (req, res) => {
+    io.emit("system:redirect", "/ferme.html");
     console.log({
       level: "warn",
       message: "Arrêt du serveur demandé par l'admin...",
@@ -1203,35 +1265,58 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     res.json({ success: true });
   });
 
-  router.post("/motus/reroll", (req, res) => {
-    if (!motusGame)
-      return res.status(500).json({ message: "Motus game not initialized" });
+  // --- Admin Panel Lock/Unlock ---
+  router.get("/panel/state", (req, res) => {
+    // Default to false (visible) if not set
+    const hidden = !!req.session.adminPanelHidden;
+    res.json({ hidden });
+  });
 
-    const newWord = motusGame.reroll();
+  router.post("/panel/lock", (req, res) => {
+    req.session.adminPanelHidden = true;
+    req.session.save();
+    res.json({ success: true });
+  });
 
-    // Reset history for everyone
-    FileService.data.motusState = {};
-    FileService.save("motusState", {});
+  router.post("/panel/unlock", async (req, res) => {
+    const { password } = req.body;
+    if (!password)
+      return res
+        .status(400)
+        .json({ success: false, message: "Mot de passe requis" });
 
-    // Broadcast new game state
-    const hyphens = [];
-    for (let i = 0; i < newWord.length; i++) {
-      if (newWord[i] === "-") hyphens.push(i);
+    if (!req.session.user || !req.session.user.pseudo) {
+      return res.status(401).json({ success: false, message: "Non connecté" });
     }
 
-    io.emit("motus:init", {
-      length: newWord.length,
-      hyphens: hyphens,
-      history: [],
-      wonToday: false,
-    });
+    try {
+      const user = dbUsers.findBypseudo(req.session.user.pseudo);
+      if (!user)
+        return res
+          .status(404)
+          .json({ success: false, message: "Utilisateur introuvable" });
 
-    io.emit(
-      "system:info",
-      "Le mot du jour a été changé par l'administrateur !"
-    );
+      // Check password
+      // Note: dbUsers stores 'passwordHashé' or 'passHash' depending on version/creation
+      const hash = user.passwordHashé || user.passHash;
+      if (!hash)
+        return res
+          .status(500)
+          .json({ success: false, message: "Erreur données utilisateur" });
 
-    res.json({ message: "Motus rerolled", word: newWord });
+      const match = await bcrypt.compare(password, hash);
+      if (!match)
+        return res
+          .status(401)
+          .json({ success: false, message: "Mot de passe incorrect" });
+
+      req.session.adminPanelHidden = false;
+      req.session.save();
+      res.json({ success: true });
+    } catch (e) {
+      console.error("Unlock error:", e);
+      res.status(500).json({ success: false, message: "Erreur serveur" });
+    }
   });
 
   return router;

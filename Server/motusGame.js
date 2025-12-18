@@ -3,38 +3,22 @@ const words = require("./words");
 class MotusGame {
   constructor() {
     this.words = words;
-    this.currentWord = this.getDailyWord();
   }
 
-  getDailyWord() {
-    const now = new Date();
-    // Seed based on date (YYYY-MM-DD)
-    const seed =
-      now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  getRandomWord(excludeList = []) {
+    // Filter out words that are in the excludeList
+    const availableWords = this.words.filter((w) => !excludeList.includes(w));
 
-    // Simple LCG to avoid alphabetical sequence
-    const a = 1664525;
-    const c = 1013904223;
-    const m = 4294967296;
-
-    let random = seed;
-    // Run a few iterations to mix it up
-    for (let i = 0; i < 5; i++) {
-      random = (a * random + c) % m;
+    if (availableWords.length === 0) {
+      return null; // No more words available
     }
 
-    const index = Math.floor((random / m) * this.words.length);
-    return this.words[index];
+    const index = Math.floor(Math.random() * availableWords.length);
+    return availableWords[index];
   }
 
-  reroll() {
-    const index = Math.floor(Math.random() * this.words.length);
-    this.currentWord = this.words[index];
-    return this.currentWord;
-  }
-
-  checkGuess(guess) {
-    const target = this.currentWord.toUpperCase();
+  checkGuess(target, guess) {
+    target = target.toUpperCase();
     const result = [];
     const targetArr = target.split("");
     const guessArr = guess.toUpperCase().split("");

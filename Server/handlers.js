@@ -233,8 +233,10 @@ function initSocketHandlers(io, socket, gameState) {
     if (!msg) return;
 
     // Censure du mot du jour (Motus)
-    if (motusGame && motusGame.currentWord) {
-      const word = motusGame.currentWord.toUpperCase();
+    // On doit vérifier le mot actuel de l'utilisateur car chacun a son propre mot
+    const userMotusState = getMotusState(pseudo);
+    if (userMotusState && userMotusState.currentWord) {
+      const word = userMotusState.currentWord.toUpperCase();
       const leetMap = {
         A: "[A4@àâä]",
         B: "[B8&]",
@@ -250,9 +252,19 @@ function initSocketHandlers(io, socket, gameState) {
         C: "[Cç]",
       };
 
+      // Construction du pattern regex pour le mot
+      // On autorise la répétition des caractères (ex: R+E+I+M+S+) pour attraper RREEIIMMSS
       let regexPattern = "";
       for (const char of word) {
-        regexPattern += leetMap[char] || char;
+        const mapped = leetMap[char] || char;
+        // On ajoute + pour dire "1 ou plusieurs fois ce caractère"
+        // On ajoute aussi des séparateurs optionnels (espaces, tirets, points) entre les lettres
+        regexPattern += mapped + "+[\\s\\-_.]*";
+      }
+
+      // On retire le dernier séparateur optionnel inutile
+      if (regexPattern.endsWith("[\\s\\-_.]*")) {
+        regexPattern = regexPattern.slice(0, -10);
       }
 
       const regex = new RegExp(regexPattern, "gi");
@@ -1910,133 +1922,161 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   // ------- Motus -------
+  function getMotusState(pseudo) {
+    if (!FileService.data.motusState) FileService.data.motusState = {};
+    if (!FileService.data.motusState[pseudo]) {
+      FileService.data.motusState[pseudo] = {
+        currentWord: null,
+        history: [],
+        foundWords: [],
+      };
+    }
+    // Migration
+    if (!FileService.data.motusState[pseudo].foundWords) {
+      FileService.data.motusState[pseudo].foundWords = [];
+      FileService.data.motusState[pseudo].currentWord = null;
+      FileService.data.motusState[pseudo].history = [];
+    }
+    return FileService.data.motusState[pseudo];
+  }
+
+  function assignNewWord(pseudo) {
+    const state = getMotusState(pseudo);
+    const newWord = motusGame.getRandomWord(state.foundWords);
+    if (newWord) {
+      state.currentWord = newWord;
+      state.history = [];
+      FileService.save("motusState", FileService.data.motusState);
+    }
+    return newWord;
+  }
+
   socket.on("motus:guess", ({ guess }) => {
     if (!guess || typeof guess !== "string") return;
 
-    const dailyWord = motusGame.getDailyWord();
-    const today = new Date().toISOString().split("T")[0];
-
-    // Init state if needed
-    if (!FileService.data.motusState) FileService.data.motusState = {};
-    if (
-      !FileService.data.motusState[pseudo] ||
-      FileService.data.motusState[pseudo].date !== today
-    ) {
-      FileService.data.motusState[pseudo] = {
-        date: today,
-        history: [],
-        wonToday: false,
-      };
+    const state = getMotusState(pseudo);
+    if (!state.currentWord) {
+      assignNewWord(pseudo);
+      if (!state.currentWord) return;
     }
 
-    const userState = FileService.data.motusState[pseudo];
-
-    // Check if already won (and not reset for fun)
-    // Actually, if they reset, we clear history but keep wonToday=true.
-    // If wonToday is true, they can play but don't get points.
-
-    // If history shows a win, stop.
-    const last = userState.history[userState.history.length - 1];
+    // Check if already won
+    const last = state.history[state.history.length - 1];
     if (last && last.result.every((s) => s === 2)) return;
 
-    // If history full (lost), stop (unless reset handled elsewhere)
-    // But we allow unlimited tries now, so we don't stop on length >= 6.
-    // The client handles the visual reset, but server keeps history?
-    // Wait, if client resets grid, server history grows indefinitely?
-    // The previous prompt said "reset grid if full".
-    // If I keep appending to history, the client will reload all of it.
-    // Maybe I should clear history on server if it gets too long?
-    // Or just let it grow. The client handles pagination.
-
-    const { result, error } = motusGame.checkGuess(guess);
+    const { result, error } = motusGame.checkGuess(state.currentWord, guess);
 
     if (error) {
       socket.emit("motus:error", { message: error });
       return;
     }
 
-    userState.history.push({ guess: guess.toUpperCase(), result });
+    state.history.push({ guess: guess.toUpperCase(), result });
+
+    // Update tries immediately (increment by 1 for every guess)
+    if (!FileService.data.motusScores) FileService.data.motusScores = {};
+    if (!FileService.data.motusScores[pseudo]) {
+      FileService.data.motusScores[pseudo] = { words: 0, tries: 0 };
+    }
+    FileService.data.motusScores[pseudo].tries++;
 
     // Check win
+    let won = false;
     if (result.every((s) => s === 2)) {
-      if (!userState.wonToday) {
-        userState.wonToday = true;
-
-        // Update scores
-        if (!FileService.data.motusScores) FileService.data.motusScores = {};
-        if (!FileService.data.motusScores[pseudo]) {
-          FileService.data.motusScores[pseudo] = { words: 0, tries: 0 };
-        }
-
-        FileService.data.motusScores[pseudo].words++;
-        FileService.data.motusScores[pseudo].tries += userState.history.length;
-
-        FileService.save("motusScores", FileService.data.motusScores);
-        leaderboardManager.broadcastMotusLB(io);
-      }
+      won = true;
+      state.foundWords.push(state.currentWord);
+      FileService.data.motusScores[pseudo].words++;
     }
+
+    FileService.save("motusScores", FileService.data.motusScores);
+    leaderboardManager.broadcastMotusLB(io);
 
     FileService.save("motusState", FileService.data.motusState);
 
     socket.emit("motus:result", {
       result,
       guess: guess.toUpperCase(),
-      wonToday: userState.wonToday,
+      won: won,
     });
   });
 
-  socket.on("motus:reset", () => {
-    const today = new Date().toISOString().split("T")[0];
-    const word = motusGame.currentWord;
+  socket.on("motus:skip", () => {
+    assignNewWord(pseudo);
+    const state = getMotusState(pseudo);
+    const word = state.currentWord;
+
+    if (!word) {
+      socket.emit("motus:end", {
+        message: "Toutes les communes ont été trouvées !",
+      });
+      return;
+    }
+
     const hyphens = [];
     for (let i = 0; i < word.length; i++) {
       if (word[i] === "-") hyphens.push(i);
     }
 
-    if (FileService.data.motusState && FileService.data.motusState[pseudo]) {
-      // Only allow reset if it's the same day (should be)
-      if (FileService.data.motusState[pseudo].date === today) {
-        FileService.data.motusState[pseudo].history = [];
-        // Keep wonToday as is
-        FileService.save("motusState", FileService.data.motusState);
+    socket.emit("motus:init", {
+      length: word.length,
+      hyphens: hyphens,
+      history: [],
+      won: false,
+    });
+  });
 
-        socket.emit("motus:init", {
-          length: word.length,
-          hyphens: hyphens,
-          history: [],
-          wonToday: FileService.data.motusState[pseudo].wonToday,
-        });
-      }
+  socket.on("motus:continue", () => {
+    assignNewWord(pseudo);
+    const state = getMotusState(pseudo);
+    const word = state.currentWord;
+
+    if (!word) {
+      socket.emit("motus:end", {
+        message: "Toutes les communes ont été trouvées !",
+      });
+      return;
     }
+
+    const hyphens = [];
+    for (let i = 0; i < word.length; i++) {
+      if (word[i] === "-") hyphens.push(i);
+    }
+
+    socket.emit("motus:init", {
+      length: word.length,
+      hyphens: hyphens,
+      history: [],
+      won: false,
+    });
   });
 
-  // Send initial state on connect (or request)
-  const dailyWord = motusGame.currentWord;
-  //console.log("Motus Word:", dailyWord);
-  const today = new Date().toISOString().split("T")[0];
-  const dailyHyphens = [];
-  for (let i = 0; i < dailyWord.length; i++) {
-    if (dailyWord[i] === "-") dailyHyphens.push(i);
+  // Send initial state on connect
+  const state = getMotusState(pseudo);
+  if (!state.currentWord) {
+    assignNewWord(pseudo);
   }
 
-  if (!FileService.data.motusState) FileService.data.motusState = {};
-  let userHistory = [];
-  let wonToday = false;
+  if (state.currentWord) {
+    const word = state.currentWord;
+    const hyphens = [];
+    for (let i = 0; i < word.length; i++) {
+      if (word[i] === "-") hyphens.push(i);
+    }
 
-  if (
-    FileService.data.motusState[pseudo] &&
-    FileService.data.motusState[pseudo].date === today
-  ) {
-    userHistory = FileService.data.motusState[pseudo].history;
-    wonToday = FileService.data.motusState[pseudo].wonToday || false;
+    const last = state.history[state.history.length - 1];
+    const won = last && last.result.every((s) => s === 2);
+
+    socket.emit("motus:init", {
+      length: word.length,
+      hyphens: hyphens,
+      history: state.history,
+      won: won,
+    });
+  } else {
+    socket.emit("motus:end", {
+      message: "Toutes les communes ont été trouvées !",
+    });
   }
-
-  socket.emit("motus:init", {
-    length: dailyWord.length,
-    hyphens: dailyHyphens,
-    history: userHistory,
-    wonToday: wonToday,
-  });
 
   // Send LB on connect
   const lb = Object.entries(FileService.data.motusScores || {})

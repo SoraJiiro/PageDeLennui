@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Administration - Page de l'ennui</title>
+        <title>Administration - PDE</title>
 
         <link rel="preload"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
@@ -23,532 +23,552 @@
             media="(prefers-color-scheme: light)" />
     </head>
     <body>
-        <div class="admin-container">
-            <div class="admin-header">
+        <button class="password-btn" onclick="requestUnlock()">Afficher</button>
+        <div id="panel" class="panel">
+            <div class="admin-container">
+                <div class="admin-header">
 
-                <h1><i class="fa-solid fa-wrench"></i> PANEL
-                    ADMIN</h1><div class="header-btns">
-                    <button class="deco"
-                        onclick="window.location.replace('/login');">Se
-                        déconnecter</button>
-                    <button class="del-other-admins"
-                        onclick="disconnectOtherAdmins()">Déco autres</button>
-                    <button class="logs"
-                        onclick="window.open('/admin/logs', '_blank');">Logs</button>
-                    <button class="shutdown"
-                        onclick="shutdownServer()">OFF</button>
+                    <h1><i class="fa-solid fa-wrench"></i> PANEL
+                        ADMIN</h1><div class="header-btns">
+                        <button class="deco"
+                            onclick="window.location.replace('/login');">Se
+                            déconnecter</button>
+                        <button class="del-other-admins"
+                            onclick="disconnectOtherAdmins()">Déco
+                            autres</button>
+                        <button class="logs"
+                            onclick="window.open('/admin/logs', '_blank');">Logs</button>
+                        <button class="shutdown"
+                            onclick="shutdownServer()">OFF</button>
+                        <button class="hide"
+                            onclick="toggleAdminPanel()">Cacher</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="admin-sections">
-                <!-- LEADERBOARDS -->
-                <section class="admin-section">
-                    <h2><i class="fa-solid fa-trophy"></i> /Leaderboards</h2>
-                    <center>
-                        <div class="leaderboard-tabs">
-                            <button class="lb-tab active"
-                                data-board="clicker">Clicker</button>
-                            <button class="lb-tab"
-                                data-board="dino">Dino</button>
-                            <button class="lb-tab" data-board="flappy">Flappy
-                            </button>
-                            <button class="lb-tab" data-board="uno">UNO</button>
-                            <button class="lb-tab"
-                                data-board="pictionary">Pictionary</button>
-                            <button class="lb-tab" data-board="p4">P4</button>
-                            <button class="lb-tab" data-board="blockblast">Block
-                                Blast</button>
-                            <button class="lb-tab"
-                                data-board="snake">Snake</button>
-                            <button class="lb-tab"
-                                data-board="motus">Motus</button>
+                <div class="admin-sections">
+                    <!-- LEADERBOARDS -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-trophy"></i>
+                            /Leaderboards</h2>
+                        <center>
+                            <div class="leaderboard-tabs">
+                                <button class="lb-tab active"
+                                    data-board="clicker">Clicker</button>
+                                <button class="lb-tab"
+                                    data-board="dino">Dino</button>
+                                <button class="lb-tab"
+                                    data-board="flappy">Flappy
+                                </button>
+                                <button class="lb-tab"
+                                    data-board="uno">UNO</button>
+                                <button class="lb-tab"
+                                    data-board="pictionary">Pictionary</button>
+                                <button class="lb-tab"
+                                    data-board="p4">P4</button>
+                                <button class="lb-tab"
+                                    data-board="blockblast">Block
+                                    Blast</button>
+                                <button class="lb-tab"
+                                    data-board="snake">Snake</button>
+                                <button class="lb-tab"
+                                    data-board="motus">Motus</button>
+                            </div>
+                        </center>
+
+                        <div class="leaderboard-content active"
+                            data-board="clicker">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Clicks</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-clicker"></tbody>
+                            </table>
                         </div>
-                    </center>
 
-                    <div class="leaderboard-content active"
-                        data-board="clicker">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Clicks</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-clicker"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content" data-board="dino">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-dino"></tbody>
+                            </table>
+                        </div>
 
-                    <div class="leaderboard-content" data-board="dino">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Score</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-dino"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content" data-board="flappy">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-flappy"></tbody>
+                            </table>
+                        </div>
 
-                    <div class="leaderboard-content" data-board="flappy">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Score</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-flappy"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content" data-board="uno">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Victoires</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-uno"></tbody>
+                            </table>
+                        </div>
 
-                    <div class="leaderboard-content" data-board="uno">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Victoires</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-uno"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content"
+                            data-board="pictionary">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-pictionary"></tbody>
+                            </table>
+                        </div>
 
-                    <div class="leaderboard-content" data-board="pictionary">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Points</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-pictionary"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content" data-board="p4">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Victoires</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-p4"></tbody>
+                            </table>
+                        </div>
 
-                    <div class="leaderboard-content" data-board="p4">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Victoires</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-p4"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content"
+                            data-board="blockblast">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Score</th>
+                                        <th>Temps</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-blockblast"></tbody>
+                            </table>
+                        </div>
 
-                    <div class="leaderboard-content" data-board="blockblast">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Score</th>
-                                    <th>Temps</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-blockblast"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content" data-board="snake">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Score</th>
+                                        <th>Temps</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-snake"></tbody>
+                            </table>
+                        </div>
 
-                    <div class="leaderboard-content" data-board="snake">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Score</th>
-                                    <th>Temps</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-snake"></tbody>
-                        </table>
-                    </div>
+                        <div class="leaderboard-content" data-board="motus">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Mots trouvés</th>
+                                        <th>Essais</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-motus"></tbody>
+                            </table>
+                        </div>
+                    </section>
 
-                    <div class="leaderboard-content" data-board="motus">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Pseudo</th>
-                                    <th>Mots trouvés</th>
-                                    <th>Essais</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lb-motus"></tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- GESTION TRICHEURS -->
-                <section class="admin-section">
-                    <h2><i class="fa-solid fa-ban"></i> /Gestion Tricheurs</h2>
-                    <div class="admin-card">
-                        <div class="input-group">
-                            <label>Pseudo</label>
-                            <input type="text"
-                                id="cheater-pseudo"
-                                style="width: 100%;
+                    <!-- GESTION TRICHEURS -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-ban"></i> /Gestion
+                            Tricheurs</h2>
+                        <div class="admin-card">
+                            <div class="input-group">
+                                <label>Pseudo</label>
+                                <input type="text"
+                                    id="cheater-pseudo"
+                                    style="width: 100%;
   padding: 12px;
   background: var(--bg-color);
   border: 2px solid var(--primary-color);
   color: var(--primary-color);
   font-size: 1rem;margin-top:10px;"
-                                placeholder="Pseudo">
-                        </div>
-                        <div class="btn-group"
-                            style="margin-top: 10px; display: flex; gap: 10px;">
-                            <button class="btn btn-red"
-                                onclick="addCheater()">Ajouter
-                                Tricheur</button>
-                            <button class="btn"
-                                onclick="removeCheater()">Retirer
-                                Tricheur</button>
-                        </div>
-                        <div style="margin-top: 20px;">
-                            <ul id="cheaters-list"
-                                style="list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #333; padding: 10px;">
-                            </ul>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- MOTUS ADMIN -->
-                <section class="admin-section">
-                    <h2><i class="fa-solid fa-question"></i>/Motus</h2>
-                    <div class="admin-card">
-                        <h3>Gestion du Mot du Jour</h3>
-                        <br>
-                        <p>Permet de changer le mot du jour aléatoirement et de
-                            réinitialiser la partie pour tout le monde.</p>
-                        <br>
-                        <button class="btn btn-red" onclick="rerollMotus()">
-                            <i class="fa-solid fa-dice"></i> Reroll Motus
-                        </button>
-                    </div>
-                </section>
-
-                <!-- CHAT LAN -->
-                <section class="admin-section" id="chat">
-                    <h2><i class="fa-solid fa-comments"
-                            style="margin-right:10px"></i>/Chat LAN</h2>
-                    <div class="chat-card" role="region" aria-label="Chat LAN">
-                        <div class="chat-header">
-                            <h3>Chat.exe</h3>
-                            <div class="chat-status">
-                                <span id="me"></span>
-                                <span id="usersCount"></span>
+                                    placeholder="Pseudo">
+                            </div>
+                            <div class="btn-group"
+                                style="margin-top: 10px; display: flex; gap: 10px;">
+                                <button class="btn btn-red"
+                                    onclick="addCheater()">Ajouter
+                                    Tricheur</button>
+                                <button class="btn"
+                                    onclick="removeCheater()">Retirer
+                                    Tricheur</button>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <ul id="cheaters-list"
+                                    style="list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #333; padding: 10px;">
+                                </ul>
                             </div>
                         </div>
-                        <div id="chat-messages" class="chat-messages"
-                            aria-live="polite"></div>
-                        <form id="chat-form" autocomplete="off"
-                            autocorrect="off" class="chat-form">
-                            <textarea id="chat-input" rows="1"
-                                placeholder="Écris ton message..."></textarea>
-                            <button type="submit" title="Envoyer message"
-                                class="submit"><i
-                                    class="fa-solid fa-circle-arrow-right"></i></button>
-                        </form>
-                    </div>
-                </section>
+                    </section>
 
-                <!-- USER INFO -->
-                <section class="admin-section">
-                    <h2><i class="fa-solid fa-user"
-                            style="margin-right: 10px;"></i>/Infos
-                        Utilisateur</h2>
-
-                    <div class="user-search">
-                        <input type="text" id="userSearchInput"
-                            placeholder="Rechercher un utilisateur par pseudo (sensible à la casse)..." />
-                        <div
-                            style="font-size:12px;color:#9a9a9a;margin-top:6px;">Case
-                            Sensitive</div>
-                    </div>
-
-                    <div class="user-info-display" id="userInfoDisplay">
-                        <h3 id="userInfoPseudo"
-                            style="margin-bottom: 15px;"></h3>
-                        <div id="userInfoStats"></div>
-                    </div>
-                </section>
-
-                <!-- ADMINISTRATION -->
-                <section class="admin-section">
-                    <h2><i class="fa-solid fa-gear"></i> /Commandes</h2>
-
-                    <div class="admin-controls">
-                        <!-- Modifier Stats -->
-                        <div class="control-group">
-                            <h3><i class="fa-solid fa-chart-simple"></i>
-                                /Modifier Stats</h3>
-                            <div class="control-form">
-                                <div class="form-row">
-                                    <div class="form-field">
-                                        <label>Pseudo</label>
-                                        <input type="text" id="modifyUser"
-                                            placeholder="Pseudo (ou ALL pour cibler tout le monde)" />
-                                    </div>
-                                    <div class="form-field">
-                                        <label>Stat ?</label>
-                                        <select id="modifyStatType">
-                                            <option
-                                                value="clicks">Clicker</option>
-                                            <option
-                                                value="dinoScores">Dino</option>
-                                            <option
-                                                value="flappyScores">Flappy</option>
-                                            <option value="unoWins">UNO</option>
-                                            <option
-                                                value="pictionaryWins">Pictionary</option>
-                                            <option value="p4Wins">P4</option>
-                                            <option
-                                                value="blockblastScores">Block
-                                                Blast</option>
-                                            <option
-                                                value="snakeScores">Snake</option>
-                                            <option
-                                                value="motusScores">Motus</option>
-                                            <option value="all">Toutes les
-                                                stats</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-field">
-                                        <label>Nouvelle Valeur</label>
-                                        <input type="number"
-                                            id="modifyStatValue"
-                                            placeholder="Nouvelle valeur" />
-                                    </div>
-                                    <div class="form-field">
-                                        <label>Nouvelle durée (ms)</label>
-                                        <input type="number" id="modifyStatTime"
-                                            placeholder="Durée en ms" />
-                                    </div>
-                                    <div class="form-field">
-                                        <label>Nouveaux essais</label>
-                                        <input type="number"
-                                            id="modifyStatTries"
-                                            placeholder="Nb essais" />
-                                    </div>
-                                    <div class="action-buttons">
-                                        <button class="btn"
-                                            onclick="modifyStat()">
-                                            <i class="fa-solid fa-pen"></i>
-                                            Modifier
-                                        </button>
-                                        <button class="btn" onclick="addStat()">
-                                            <i class="fa-solid fa-plus"></i>
-                                            Ajouter
-                                        </button>
-                                        <button class="btn btn-red"
-                                            onclick="removeStat()">
-                                            <i class="fa-solid fa-minus"></i>
-                                            Retirer
-                                        </button>
-                                        <button class="btn"
-                                            onclick="modifyTime()"
-                                            title="Modifier le meilleur temps">
-                                            <i class="fa-solid fa-clock"></i>
-                                            Modifier Temps
-                                        </button>
-                                        <button class="btn btn-red"
-                                            onclick="removeTime()"
-                                            title="Supprimer le meilleur temps">
-                                            <i
-                                                class="fa-solid fa-trash-can"></i>
-                                            Supprimer Temps
-                                        </button>
-                                        <button class="btn"
-                                            onclick="modifyTries()"
-                                            title="Modifier le nombre d'essais">
-                                            <i class="fa-solid fa-list-ol"></i>
-                                            Modifier Essais
-                                        </button>
-                                    </div>
+                    <!-- CHAT LAN -->
+                    <section class="admin-section" id="chat">
+                        <h2><i class="fa-solid fa-comments"
+                                style="margin-right:10px"></i>/Chat LAN</h2>
+                        <div class="chat-card" role="region"
+                            aria-label="Chat LAN">
+                            <div class="chat-header">
+                                <h3>Chat.exe</h3>
+                                <div class="chat-status">
+                                    <span id="me"></span>
+                                    <span id="usersCount"></span>
                                 </div>
                             </div>
+                            <div id="chat-messages" class="chat-messages"
+                                aria-live="polite"></div>
+                            <form id="chat-form" autocomplete="off"
+                                autocorrect="off" class="chat-form">
+                                <textarea id="chat-input" rows="1"
+                                    placeholder="Écris ton message..."></textarea>
+                                <button type="submit" title="Envoyer message"
+                                    class="submit"><i
+                                        class="fa-solid fa-circle-arrow-right"></i></button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- USER INFO -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-user"
+                                style="margin-right: 10px;"></i>/Infos
+                            Utilisateur</h2>
+
+                        <div class="user-search">
+                            <input type="text" id="userSearchInput"
+                                placeholder="Rechercher un utilisateur par pseudo (sensible à la casse)..." />
+                            <div
+                                style="font-size:12px;color:#9a9a9a;margin-top:6px;">Case
+                                Sensitive</div>
                         </div>
 
-                        <!-- Gestion des Tags -->
-                        <div class="control-group">
-                            <h3><i class="fa-solid fa-tag"></i> /Tags</h3>
-                            <div class="control-form">
-                                <div class="form-row">
-                                    <div class="form-field">
-                                        <label>Pseudo</label>
-                                        <input type="text" id="tagUser"
-                                            placeholder="Pseudo" />
-                                    </div>
-                                    <div class="form-field">
-                                        <label>Tag</label>
-                                        <div style="display:flex; gap:5px;">
-                                            <input type="text" id="tagValue"
-                                                placeholder="Tag..."
-                                                style="flex:1" />
-                                            <input type="color" id="tagColor"
-                                                value="#ff0000"
-                                                style="width:50px;padding:0;border:none;height:38px;cursor:pointer;"
-                                                title="Couleur du tag" />
+                        <div class="user-info-display" id="userInfoDisplay">
+                            <h3 id="userInfoPseudo"
+                                style="margin-bottom: 15px;"></h3>
+                            <div id="userInfoStats"></div>
+                        </div>
+                    </section>
+
+                    <!-- ADMINISTRATION -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-gear"></i> /Commandes</h2>
+
+                        <div class="admin-controls">
+                            <!-- Modifier Stats -->
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-chart-simple"></i>
+                                    /Modifier Stats</h3>
+                                <div class="control-form">
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label>Pseudo</label>
+                                            <input type="text" id="modifyUser"
+                                                placeholder="Pseudo (ou ALL pour cibler tout le monde)" />
+                                        </div>
+                                        <div class="form-field">
+                                            <label>Stat ?</label>
+                                            <select id="modifyStatType">
+                                                <option
+                                                    value="clicks">Clicker</option>
+                                                <option
+                                                    value="dinoScores">Dino</option>
+                                                <option
+                                                    value="flappyScores">Flappy</option>
+                                                <option
+                                                    value="unoWins">UNO</option>
+                                                <option
+                                                    value="pictionaryWins">Pictionary</option>
+                                                <option
+                                                    value="p4Wins">P4</option>
+                                                <option
+                                                    value="blockblastScores">Block
+                                                    Blast</option>
+                                                <option
+                                                    value="snakeScores">Snake</option>
+                                                <option
+                                                    value="motusScores">Motus</option>
+                                                <option value="all">Toutes les
+                                                    stats</option>
+                                            </select>
                                         </div>
                                     </div>
-                                    <div class="action-buttons">
-                                        <button class="btn" onclick="setTag()">
-                                            <i class="fa-solid fa-check"></i>
-                                            Définir
-                                        </button>
-                                        <button class="btn btn-red"
-                                            onclick="removeTag()">
-                                            <i class="fa-solid fa-trash"></i>
-                                            Supprimer
-                                        </button>
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label>Nouvelle Valeur</label>
+                                            <input type="number"
+                                                id="modifyStatValue"
+                                                placeholder="Nouvelle valeur" />
+                                        </div>
+                                        <div class="form-field">
+                                            <label>Nouvelle durée (ms)</label>
+                                            <input type="number"
+                                                id="modifyStatTime"
+                                                placeholder="Durée en ms" />
+                                        </div>
+                                        <div class="form-field">
+                                            <label>Nouveaux essais</label>
+                                            <input type="number"
+                                                id="modifyStatTries"
+                                                placeholder="Nb essais" />
+                                        </div>
+                                        <div class="action-buttons">
+                                            <button class="btn"
+                                                onclick="modifyStat()">
+                                                <i class="fa-solid fa-pen"></i>
+                                                Modifier
+                                            </button>
+                                            <button class="btn"
+                                                onclick="addStat()">
+                                                <i class="fa-solid fa-plus"></i>
+                                                Ajouter
+                                            </button>
+                                            <button class="btn btn-red"
+                                                onclick="removeStat()">
+                                                <i
+                                                    class="fa-solid fa-minus"></i>
+                                                Retirer
+                                            </button>
+                                            <button class="btn"
+                                                onclick="modifyTime()"
+                                                title="Modifier le meilleur temps">
+                                                <i
+                                                    class="fa-solid fa-clock"></i>
+                                                Modifier Temps
+                                            </button>
+                                            <button class="btn btn-red"
+                                                onclick="removeTime()"
+                                                title="Supprimer le meilleur temps">
+                                                <i
+                                                    class="fa-solid fa-trash-can"></i>
+                                                Supprimer Temps
+                                            </button>
+                                            <button class="btn"
+                                                onclick="modifyTries()"
+                                                title="Modifier le nombre d'essais">
+                                                <i
+                                                    class="fa-solid fa-list-ol"></i>
+                                                Modifier Essais
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Demandes de Tag -->
-                        <div class="control-group">
-                            <h3><i class="fa-solid fa-envelope"></i> /Demandes
-                                de Tag</h3>
-                            <div class="control-form">
-                                <div id="tagRequestsList"
-                                    style="max-height: 200px; overflow-y: auto;">
-                                    <p>Chargement...</p>
+                            <!-- Gestion des Tags -->
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-tag"></i> /Tags</h3>
+                                <div class="control-form">
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label>Pseudo</label>
+                                            <input type="text" id="tagUser"
+                                                placeholder="Pseudo" />
+                                        </div>
+                                        <div class="form-field">
+                                            <label>Tag</label>
+                                            <div style="display:flex; gap:5px;">
+                                                <input type="text" id="tagValue"
+                                                    placeholder="Tag..."
+                                                    style="flex:1" />
+                                                <input type="color"
+                                                    id="tagColor"
+                                                    value="#ff0000"
+                                                    style="width:50px;padding:0;border:none;height:38px;cursor:pointer;"
+                                                    title="Couleur du tag" />
+                                            </div>
+                                        </div>
+                                        <div class="action-buttons">
+                                            <button class="btn"
+                                                onclick="setTag()">
+                                                <i
+                                                    class="fa-solid fa-check"></i>
+                                                Définir
+                                            </button>
+                                            <button class="btn btn-red"
+                                                onclick="removeTag()">
+                                                <i
+                                                    class="fa-solid fa-trash"></i>
+                                                Supprimer
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button class="btn" onclick="loadTagRequests()"
-                                    style="margin-top:10px">Rafraîchir</button>
                             </div>
-                        </div>
 
-                        <!-- Supprimer Utilisateur -->
-                        <div class="control-group">
-                            <h3><i class="fa-solid fa-trash"></i> /Supprimer
-                                Utilisateur</h3>
-                            <div class="control-form">
-                                <div class="form-row">
+                            <!-- Demandes de Tag -->
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-envelope"></i>
+                                    /Demandes
+                                    de Tag</h3>
+                                <div class="control-form">
+                                    <div id="tagRequestsList"
+                                        style="max-height: 200px; overflow-y: auto;">
+                                        <p>Chargement...</p>
+                                    </div>
+                                    <button class="btn"
+                                        onclick="loadTagRequests()"
+                                        style="margin-top:10px">Rafraîchir</button>
+                                </div>
+                            </div>
+
+                            <!-- Supprimer Utilisateur -->
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-trash"></i> /Supprimer
+                                    Utilisateur</h3>
+                                <div class="control-form">
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label>Pseudo</label>
+                                            <input type="text" id="deleteUser"
+                                                placeholder="Pseudo à supprimer" />
+                                        </div>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-red"
+                                                onclick="deleteUser()">
+                                                <i
+                                                    class="fa-solid fa-trash"></i>
+                                                Supprimer
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label>Leaderboard ?</label>
+                                            <select id="clearLbType">
+                                                <option
+                                                    value="all">Tous</option>
+                                                <option
+                                                    value="clicker">Clicker</option>
+                                                <option
+                                                    value="dino">Dino</option>
+                                                <option
+                                                    value="flappy">Flappy</option>
+                                                <option value="uno">UNO</option>
+                                                <option
+                                                    value="pictionary">Pictionary</option>
+                                                <option value="p4">P4</option>
+                                                <option value="blockblast">Block
+                                                    Blast</option>
+                                                <option
+                                                    value="snake">Snake</option>
+                                                <option
+                                                    value="motus">Motus</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="action-buttons">
+                                            <button class="btn btn-red"
+                                                onclick="clearFromLeaderboard()">
+                                                <i
+                                                    class="fa-solid fa-eraser"></i>
+                                                Supprimer des Leaderboards
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notification Globale -->
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-bullhorn"></i>
+                                    /Notif</h3>
+                                <div class="control-form">
                                     <div class="form-field">
-                                        <label>Pseudo</label>
-                                        <input type="text" id="deleteUser"
-                                            placeholder="Pseudo à supprimer" />
+                                        <label>Message</label>
+                                        <textarea id="notificationMessage"
+                                            placeholder="Message à envoyer à tlm"></textarea>
                                     </div>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-red"
-                                            onclick="deleteUser()">
-                                            <i class="fa-solid fa-trash"></i>
-                                            Supprimer
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="form-row">
                                     <div class="form-field">
-                                        <label>Leaderboard ?</label>
-                                        <select id="clearLbType">
-                                            <option value="all">Tous</option>
-                                            <option
-                                                value="clicker">Clicker</option>
-                                            <option value="dino">Dino</option>
-                                            <option
-                                                value="flappy">Flappy</option>
-                                            <option value="uno">UNO</option>
-                                            <option
-                                                value="pictionary">Pictionary</option>
-                                            <option value="p4">P4</option>
-                                            <option value="blockblast">Block
-                                                Blast</option>
-                                            <option value="snake">Snake</option>
-                                            <option value="motus">Motus</option>
-                                        </select>
+                                        <label id="cntdwnlbl">
+                                            <input type="checkbox"
+                                                id="countdownCheckbox">
+                                            <span>Countdown ?</span>
+                                        </label>
                                     </div>
-
                                     <div class="action-buttons">
-                                        <button class="btn btn-red"
-                                            onclick="clearFromLeaderboard()">
-                                            <i class="fa-solid fa-eraser"></i>
-                                            Supprimer des Leaderboards
+                                        <button class="btn"
+                                            onclick="sendGlobalNotification()">
+                                            <i class="fa-solid fa-bell"></i>
+                                            Envoyer
+                                            à Tous
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </section>
+                    <!-- BLACKLIST -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-ban"></i> /Blacklist</h2>
+                        <div class="control-form">
+                            <div style="margin-bottom:8px">IP(s) blacklistées:
+                                <strong id="blacklistCount">0</strong></div>
 
-                        <!-- Notification Globale -->
-                        <div class="control-group">
-                            <h3><i class="fa-solid fa-bullhorn"></i>
-                                /Notif</h3>
-                            <div class="control-form">
+                            <div class="form-row">
                                 <div class="form-field">
-                                    <label>Message</label>
-                                    <textarea id="notificationMessage"
-                                        placeholder="Message à envoyer à tlm"></textarea>
-                                </div>
-                                <div class="form-field">
-                                    <label id="cntdwnlbl">
-                                        <input type="checkbox"
-                                            id="countdownCheckbox">
-                                        <span>Countdown ?</span>
-                                    </label>
+                                    <label>IP à bannir</label>
+                                    <input type="text" id="blacklistInput"
+                                        placeholder="127.0.0.1" />
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="btn"
-                                        onclick="sendGlobalNotification()">
-                                        <i class="fa-solid fa-bell"></i> Envoyer
-                                        à Tous
-                                    </button>
+                                    <button class="btn btn-red"
+                                        onclick="addBanFromInput()">Bannir</button>
+                                    <!--<button class="btn"
+                                    onclick="loadBlacklist()">Rafraîchir</button>-->
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </section>
-                <!-- BLACKLIST -->
-                <section class="admin-section">
-                    <h2><i class="fa-solid fa-ban"></i> /Blacklist</h2>
-                    <div class="control-form">
-                        <div style="margin-bottom:8px">IP(s) blacklistées:
-                            <strong id="blacklistCount">0</strong></div>
 
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label>IP à bannir</label>
-                                <input type="text" id="blacklistInput"
-                                    placeholder="127.0.0.1" />
-                            </div>
-                            <div class="action-buttons">
-                                <button class="btn btn-red"
-                                    onclick="addBanFromInput()">Bannir</button>
-                                <!--<button class="btn"
-                                    onclick="loadBlacklist()">Rafraîchir</button>-->
+                            <!-- textarea removed: blacklist managed via add/remove buttons -->
+
+                            <div style="margin-top:12px">
+                                <label>Liste actuelle</label>
+                                <table
+                                    style="width:100%;border-collapse:collapse;margin-top:6px"><tbody
+                                        id="blacklistList"></tbody></table>
                             </div>
                         </div>
+                    </section>
 
-                        <!-- textarea removed: blacklist managed via add/remove buttons -->
-
-                        <div style="margin-top:12px">
-                            <label>Liste actuelle</label>
-                            <table
-                                style="width:100%;border-collapse:collapse;margin-top:6px"><tbody
-                                    id="blacklistList"></tbody></table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- LOGS -->
-                <section class="admin-section">
-                    <h2><i class="fa-solid fa-database"></i> /Logs</h2>
-                    <center>
-                        <iframe src="logs.html"
-                            class="logs-frame"></iframe>
-                    </center>
-                </section>
+                    <!-- LOGS -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-database"></i> /Logs</h2>
+                        <center>
+                            <iframe src="logs.html"
+                                class="logs-frame"></iframe>
+                        </center>
+                    </section>
+                </div>
             </div>
         </div>
 
@@ -801,6 +821,14 @@
                 <div class="user-stat">
                     <span class="label">Score Block Blast:</span>
                     <span class="value">${data.blockblastScore || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Motus (Mots/Essais):</span>
+                    <span class="value">${
+                        data.motusScores 
+                        ? (typeof data.motusScores === 'object' ? `${data.motusScores.words} / ${data.motusScores.tries}` : `${data.motusScores} / ?`)
+                        : '0 / 0'
+                    }</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">Médailles:</span>
@@ -1585,26 +1613,70 @@ async function modifyTries() {
             }
         }
 
-        async function rerollMotus() {
-            if (!confirm("⚠️ Êtes-vous sûr de vouloir changer le mot du jour ?\nCela réinitialisera la partie pour TOUS les joueurs connectés.")) return;
+        async function toggleAdminPanel(forceShow = false) {
+            const panel = document.getElementById("panel");
+            const passwordBtn = document.querySelector(".password-btn");
+
+            if (forceShow) {
+                panel.classList.remove("admin-hidden");
+                passwordBtn.style.display = "none";
+                return;
+            }
+
+            if (panel.classList.contains("admin-hidden")) {
+                // Should use requestUnlock to show
+                requestUnlock();
+            } else {
+                // Lock on server
+                try {
+                    await fetch('/api/admin/panel/lock', { method: 'POST' });
+                    panel.classList.add("admin-hidden");
+                    passwordBtn.style.display = "block";
+                } catch (e) {
+                    console.error("Lock error", e);
+                }
+            }
+        }
+
+        async function requestUnlock() {
+            const password = prompt("Entrez le mot de passe administrateur pour afficher le panneau :");
+            if (password === null) return;
 
             try {
-                const res = await fetch('/api/admin/motus/reroll', {
+                const res = await fetch('/api/admin/panel/unlock', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
                 });
                 const data = await res.json();
-                
-                if (res.ok) {
-                    showNotification('✅ Mot changé : ' + data.word, 'success');
+                if (data.success) {
+                    toggleAdminPanel(true);
                 } else {
-                    showNotification('❌ Erreur : ' + data.message, 'error');
+                    showNotification('❌ Mot de passe incorrect', 'error');
                 }
-            } catch (e) {
-                console.error(e);
+            } catch (err) {
+                console.error(err);
                 showNotification('❌ Erreur serveur', 'error');
             }
         }
+
+    // Restore panel state on load from server
+    (async function initPanelState() {
+        try {
+            const res = await fetch('/api/admin/panel/state');
+            const data = await res.json();
+            if (data.hidden) {
+                const panel = document.getElementById("panel");
+                const passwordBtn = document.querySelector(".password-btn");
+                if (panel && passwordBtn) {
+                    panel.classList.add("admin-hidden");
+                    passwordBtn.style.display = "block";
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch panel state", e);
+        }
+    })();
 
     // Initialiser
     checkSes();
