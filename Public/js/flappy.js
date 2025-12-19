@@ -1,4 +1,4 @@
-import { showNotif, keys } from "./util.js";
+import { showNotif, keys, toggleScrollLock } from "./util.js";
 
 export function initFlappy(socket) {
   // ---------- Cache UI ----------
@@ -9,6 +9,11 @@ export function initFlappy(socket) {
     stopBtn: document.getElementsByClassName("flappyStopBtn")[0],
     resetBtn: document.querySelector(".flappyResetBtn"),
     scoreEl: document.getElementById("flappyScore"),
+    reviveOverlay: document.querySelector(".flappy-revive-overlay"),
+    revivePrice: document.querySelector(".flappy-cost"),
+    reviveBtn: document.querySelector(".flappy-revive-btn"),
+    reviveCount: document.querySelector(".flappy-revive-count"),
+    cancelBtn: document.querySelector(".flappy-cancel-btn"),
   };
   if (!ui.canvas) return;
   ui.ctx = ui.canvas.getContext("2d");
@@ -16,6 +21,7 @@ export function initFlappy(socket) {
   // ---------- Variables de jeu (échelle dynamique) (déclarées tôt pour éviter TDZ) ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
   let birdY, birdVel, pipes, score, gameRunning;
+  let revivesUsed = 0;
   let paused = false;
   let countdown = 0;
   let frameCount = 0;
@@ -82,10 +88,14 @@ export function initFlappy(socket) {
   } catch {}
   let myName = null;
   let myBest = 0;
+  let globalBestScore = 0;
   let scoreAttente = null;
   socket.on("you:name", (name) => (myName = name));
   socket.on("flappy:leaderboard", (arr) => {
     if (!Array.isArray(arr) || !myName) return;
+    if (arr.length > 0) {
+      globalBestScore = Number(arr[0].score) || 0;
+    }
     const me = arr.find((e) => e.pseudo === myName);
     const prev = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
@@ -143,6 +153,11 @@ export function initFlappy(socket) {
     pipes = [];
     score = 0;
     gameRunning = true;
+    revivesUsed = 0;
+    if (ui.reviveOverlay) {
+      ui.reviveOverlay.style.display = "none";
+      toggleScrollLock(false);
+    }
     paused = false;
     countdown = 0;
     frameCount = 0;
@@ -326,10 +341,77 @@ export function initFlappy(socket) {
 
     ui.ctx.font = "18px monospace";
     ui.ctx.fillText("Appuie sur ESPACE pour rejouer", cssW / 2, cssH / 2 + 60);
+
+    // --- Revive Logic ---
+    if (revivesUsed < 3) {
+      if (ui.reviveOverlay) {
+        ui.reviveOverlay.style.display = "block";
+        toggleScrollLock(true);
+        if (ui.reviveCount) ui.reviveCount.textContent = 3 - revivesUsed;
+
+        let price = score;
+        if (globalBestScore > 0 && score > globalBestScore) {
+          price = 500000;
+        }
+
+        if (ui.revivePrice)
+          ui.revivePrice.textContent = price.toLocaleString("fr-FR");
+
+        if (ui.reviveBtn) {
+          ui.reviveBtn.onclick = () => {
+            socket.emit("flappy:payToContinue", { price });
+            toggleScrollLock(false);
+          };
+        }
+        if (ui.cancelBtn) {
+          ui.cancelBtn.onclick = () => {
+            ui.reviveOverlay.style.display = "none";
+            toggleScrollLock(false);
+          };
+        }
+      }
+    } else {
+      if (ui.reviveOverlay) {
+        ui.reviveOverlay.style.display = "none";
+        toggleScrollLock(false);
+      }
+    }
   }
+
+  socket.on("flappy:reviveSuccess", () => {
+    gameRunning = true;
+    revivesUsed++;
+    if (ui.reviveOverlay) {
+      ui.reviveOverlay.style.display = "none";
+      toggleScrollLock(false);
+    }
+
+    // Reset bird position
+    birdY = ui.canvas.height / 2;
+    birdVel = 0;
+
+    // Clear pipes to give a safe start
+    pipes = [];
+
+    // Resume loop
+    update();
+    showNotif("Partie continuée !");
+  });
+
+  socket.on("flappy:reviveError", (msg) => {
+    showNotif(msg || "Erreur lors du paiement");
+  });
 
   // ---------- Eventlisteners ----------
   document.addEventListener("keydown", (e) => {
+    // Close revive overlay with Escape
+    if (e.key === "Escape") {
+      if (ui.reviveOverlay && ui.reviveOverlay.style.display === "block") {
+        ui.reviveOverlay.style.display = "none";
+        toggleScrollLock(false);
+      }
+    }
+
     const active = document.activeElement;
     const tag = active && active.tagName;
     const isTyping =

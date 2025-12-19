@@ -58,6 +58,20 @@ body {
   overflow-x: hidden;
 }
 
+pre u {
+  text-underline-offset: 3px;
+}
+
+pre i {
+  font-size: 1.2rem;
+  display: inline-flex;
+  margin-right: 7.5px;
+}
+
+pre p {
+  width: 100%;
+}
+
 /* Layout helpers */
 .container {
   width: 100%;
@@ -333,8 +347,8 @@ p.pause-info {
 }
 
 .palette-btn {
-  width: 20px; 
-  height: 20px; 
+  width: 20px;
+  height: 20px;
   /* Assuming size based on context, but inline style didn't specify size, just bg. 
      Wait, the inline styles were just background colors. 
      I should probably make a class for the button shape if needed, 
@@ -371,3 +385,6 @@ p.pause-info {
   background: #f0f;
 }
 
+body ::-webkit-scrollbar {
+  display: none;
+}

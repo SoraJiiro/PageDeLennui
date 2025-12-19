@@ -5,6 +5,7 @@ window.initNavSocket = (socket) => {
   socket.on("ui:color", ({ color }) => {
     if (color) {
       document.documentElement.style.setProperty("--primary-color", color);
+      localStorage.setItem("uiColor", color);
       if (colorPicker) colorPicker.value = color;
       window.dispatchEvent(
         new CustomEvent("uiColor:changed", { detail: { color } })
@@ -15,6 +16,7 @@ window.initNavSocket = (socket) => {
   if (colorPicker) {
     colorPicker.addEventListener("change", (e) => {
       const color = e.target.value;
+      localStorage.setItem("uiColor", color);
       socket.emit("ui:saveColor", { color });
     });
   }
@@ -58,6 +60,16 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("navVisible", "false");
   });
 
+  // Close nav with Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (nav.style.display !== "none") {
+        nav.style.display = "none";
+        localStorage.setItem("navVisible", "false");
+      }
+    }
+  });
+
   function goTo(section) {
     const el = document.querySelector("#" + section);
     if (el) el.scrollIntoView();
@@ -76,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const sec10 = document.querySelector(".sec10");
   const sec11 = document.querySelector(".sec11");
 
-  if (sec1) sec1.addEventListener("click", () => goTo("stage1"));
+  if (sec1) sec1.addEventListener("click", () => goTo("stage1p0"));
   if (sec2) sec2.addEventListener("click", () => goTo("stage2"));
   if (sec3) sec3.addEventListener("click", () => goTo("stage3"));
   if (sec4) sec4.addEventListener("click", () => goTo("stage4"));
@@ -89,6 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sec7) sec7.addEventListener("click", () => goTo("stage7"));
   if (sec8) sec8.addEventListener("click", () => goTo("stage8"));
   if (sec9) sec9.addEventListener("click", () => goTo("stage9"));
-  if (sec10) sec10.addEventListener("click", () => goTo("stage10"));
-  if (sec11) sec11.addEventListener("click", () => goTo("stage11"));
+  if (sec10) sec10.addEventListener("click", () => goTo("stage1p00"));
+  if (sec11) sec11.addEventListener("click", () => goTo("stage1p01"));
 });

@@ -1,4 +1,4 @@
-import { showNotif } from "./util.js";
+import { showNotif, toggleScrollLock } from "./util.js";
 
 export function initBlockBlast(socket) {
   const GRID_SIZE = 8; // Le jeu original utilise 8x8
@@ -15,6 +15,10 @@ export function initBlockBlast(socket) {
     gameoverScore: document.querySelector(".blockblast-gameover-score"),
     gameoverTime: document.querySelector(".blockblast-gameover-time"),
     restartBtn: document.querySelector(".blockblast-restart"),
+    reviveSection: document.querySelector(".blockblast-revive-section"),
+    revivePrice: document.querySelector(".revive-cost"),
+    reviveBtn: document.querySelector(".blockblast-revive-btn"),
+    reviveCount: document.querySelector(".revive-count"),
   };
 
   if (!ui.grid) return;
@@ -27,6 +31,7 @@ export function initBlockBlast(socket) {
     score: 0,
     currentPieces: [],
     gameOver: false,
+    revivesUsed: 0,
     selectedPiece: null,
     draggedPiece: null,
     dragPreview: null,
@@ -152,6 +157,7 @@ export function initBlockBlast(socket) {
   // ---------- Pseudo + meilleur score ----------
   let myName = null;
   let myBest = 0;
+  let globalBestScore = 0;
   let scoreAttente = null;
   let lastBestReported = 0;
 
@@ -161,6 +167,9 @@ export function initBlockBlast(socket) {
 
   socket.on("blockblast:leaderboard", (arr) => {
     if (!Array.isArray(arr) || !myName) return;
+    if (arr.length > 0) {
+      globalBestScore = Number(arr[0].score) || 0;
+    }
     const me = arr.find((e) => e.pseudo === myName);
     const prevBest = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
@@ -1204,8 +1213,35 @@ export function initBlockBlast(socket) {
       .toLocaleString("fr-FR")
       .replace(/\s/g, "\u00a0");
     ui.gameoverEl.classList.add("active");
+    toggleScrollLock(true);
     if (ui.gameoverTime)
       ui.gameoverTime.textContent = ` ${formatTime(state.elapsedMs)}`;
+
+    // --- Revive Logic ---
+    if (state.revivesUsed < 3) {
+      if (ui.reviveSection) {
+        ui.reviveSection.style.display = "block";
+        if (ui.reviveCount) ui.reviveCount.textContent = 3 - state.revivesUsed;
+
+        let price = Math.floor((state.score * 4) / 0.9);
+        if (globalBestScore > 0 && state.score > globalBestScore) {
+          price = 500000;
+        }
+
+        if (ui.revivePrice)
+          ui.revivePrice.textContent = price.toLocaleString("fr-FR");
+
+        if (ui.reviveBtn) {
+          ui.reviveBtn.onclick = () => {
+            socket.emit("blockblast:payToContinue", { price });
+            toggleScrollLock(false);
+          };
+        }
+      }
+    } else {
+      if (ui.reviveSection) ui.reviveSection.style.display = "none";
+    }
+    // --------------------
 
     reportBestIfImproved();
     // Émettre le score final avec la durée de la partie pour enregistrer le temps du meilleur run
@@ -1258,6 +1294,7 @@ export function initBlockBlast(socket) {
       .map(() => Array(GRID_SIZE).fill(false));
     state.score = 0;
     state.gameOver = false;
+    state.revivesUsed = 0;
     state.selectedPiece = null;
     state.draggedPiece = null;
     state.moveHistory = [];
@@ -1271,6 +1308,7 @@ export function initBlockBlast(socket) {
     }
 
     ui.gameoverEl.classList.remove("active");
+    toggleScrollLock(false);
     updateScore();
     renderGrid();
     generateNewPieces();
@@ -1580,6 +1618,38 @@ export function initBlockBlast(socket) {
       obs.observe(wrap);
     }
   } catch (e) {}
+
+  socket.on("blockblast:reviveSuccess", () => {
+    state.gameOver = false;
+    state.revivesUsed++;
+    ui.gameoverEl.classList.remove("active");
+    toggleScrollLock(false);
+
+    // Nettoyer la grille
+    state.grid = Array(GRID_SIZE)
+      .fill(null)
+      .map(() => Array(GRID_SIZE).fill(false));
+    renderGrid();
+
+    // Reprendre le timer
+    startTimer();
+
+    showNotif("Partie continuée !");
+  });
+
+  socket.on("blockblast:reviveError", (msg) => {
+    showNotif(msg || "Erreur lors du paiement");
+  });
+
+  // Close gameover modal with Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (ui.gameoverEl && ui.gameoverEl.classList.contains("active")) {
+        ui.gameoverEl.classList.remove("active");
+        toggleScrollLock(false);
+      }
+    }
+  });
 
   // Avant déchargement, sauvegarder l'état courant
   window.addEventListener("beforeunload", () => {

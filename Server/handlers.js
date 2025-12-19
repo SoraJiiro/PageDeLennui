@@ -1555,6 +1555,128 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  socket.on("blockblast:payToContinue", ({ price }) => {
+    const userClicks = FileService.data.clicks[pseudo] || 0;
+    const cost = Number(price);
+
+    if (isNaN(cost) || cost < 0) {
+      socket.emit("blockblast:reviveError", "Prix invalide.");
+      return;
+    }
+
+    if (userClicks >= cost) {
+      FileService.data.clicks[pseudo] = userClicks - cost;
+      FileService.save("clicks", FileService.data.clicks);
+
+      // Notifier le nouveau solde de clicks
+      socket.emit("clicker:update", {
+        clicks: FileService.data.clicks[pseudo],
+      });
+      leaderboardManager.broadcastClickerLB(io);
+
+      socket.emit("blockblast:reviveSuccess");
+
+      console.log(
+        withGame(
+          `[BlockBlast] ${pseudo} a payé ${cost} clicks pour continuer.`,
+          green
+        )
+      );
+    } else {
+      socket.emit("blockblast:reviveError", "Pas assez de clicks !");
+    }
+  });
+
+  // ------- Dino Revive -------
+  socket.on("dino:payToContinue", ({ price }) => {
+    const userClicks = FileService.data.clicks[pseudo] || 0;
+    const cost = Number(price);
+
+    if (isNaN(cost) || cost < 0) {
+      socket.emit("dino:reviveError", "Prix invalide.");
+      return;
+    }
+
+    if (userClicks >= cost) {
+      FileService.data.clicks[pseudo] = userClicks - cost;
+      FileService.save("clicks", FileService.data.clicks);
+
+      socket.emit("clicker:update", {
+        clicks: FileService.data.clicks[pseudo],
+      });
+      leaderboardManager.broadcastClickerLB(io);
+
+      socket.emit("dino:reviveSuccess");
+      console.log(
+        withGame(`[Dino] ${pseudo} a payé ${cost} clicks pour continuer.`, blue)
+      );
+    } else {
+      socket.emit("dino:reviveError", "Pas assez de clicks !");
+    }
+  });
+
+  // ------- Flappy Revive -------
+  socket.on("flappy:payToContinue", ({ price }) => {
+    const userClicks = FileService.data.clicks[pseudo] || 0;
+    const cost = Number(price);
+
+    if (isNaN(cost) || cost < 0) {
+      socket.emit("flappy:reviveError", "Prix invalide.");
+      return;
+    }
+
+    if (userClicks >= cost) {
+      FileService.data.clicks[pseudo] = userClicks - cost;
+      FileService.save("clicks", FileService.data.clicks);
+
+      socket.emit("clicker:update", {
+        clicks: FileService.data.clicks[pseudo],
+      });
+      leaderboardManager.broadcastClickerLB(io);
+
+      socket.emit("flappy:reviveSuccess");
+      console.log(
+        withGame(
+          `[Flappy] ${pseudo} a payé ${cost} clicks pour continuer.`,
+          pink
+        )
+      );
+    } else {
+      socket.emit("flappy:reviveError", "Pas assez de clicks !");
+    }
+  });
+
+  // ------- Snake Revive -------
+  socket.on("snake:payToContinue", ({ price }) => {
+    const userClicks = FileService.data.clicks[pseudo] || 0;
+    const cost = Number(price);
+
+    if (isNaN(cost) || cost < 0) {
+      socket.emit("snake:reviveError", "Prix invalide.");
+      return;
+    }
+
+    if (userClicks >= cost) {
+      FileService.data.clicks[pseudo] = userClicks - cost;
+      FileService.save("clicks", FileService.data.clicks);
+
+      socket.emit("clicker:update", {
+        clicks: FileService.data.clicks[pseudo],
+      });
+      leaderboardManager.broadcastClickerLB(io);
+
+      socket.emit("snake:reviveSuccess");
+      console.log(
+        withGame(
+          `[Snake] ${pseudo} a payé ${cost} clicks pour continuer.`,
+          green
+        )
+      );
+    } else {
+      socket.emit("snake:reviveError", "Pas assez de clicks !");
+    }
+  });
+
   socket.on("blockblast:reset", () => {
     // Réinitialiser le meilleur score à 0
     FileService.data.blockblastScores[pseudo] = 0;

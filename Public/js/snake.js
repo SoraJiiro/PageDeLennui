@@ -1,4 +1,4 @@
-import { showNotif, keys, darken } from "./util.js";
+import { showNotif, keys, darken, toggleScrollLock } from "./util.js";
 
 const CONSTANTS = {
   GRID_SIZE: 23,
@@ -38,6 +38,8 @@ class SnakeGame {
     this.uiColor = "#00ff00";
     this.pauseKeyText = "P";
     this.myBest = 0;
+    this.globalBestScore = 0;
+    this.revivesUsed = 0;
     this.scoreAttente = null;
 
     this.initSettings();
@@ -69,10 +71,49 @@ class SnakeGame {
     this.socket.on("you:name", (name) => {
       this.myName = name;
     });
+
+    this.socket.on("snake:reviveSuccess", () => {
+      this.state.gameActive = true;
+      this.revivesUsed++;
+      if (this.ui.reviveOverlay) {
+        this.ui.reviveOverlay.style.display = "none";
+        toggleScrollLock(false);
+      }
+      this.removeDOMGameOverOverlay();
+
+      // Reset snake position to center but keep length
+      const centerX = Math.floor(CONSTANTS.GRID_SIZE / 2);
+      const centerY = Math.floor(CONSTANTS.GRID_SIZE / 2);
+
+      // Rebuild snake body in a straight line to the left
+      const newSnake = [];
+      for (let i = 0; i < this.state.snake.length; i++) {
+        newSnake.push({ x: centerX - i, y: centerY });
+      }
+      this.state.snake = newSnake;
+      this.state.direction = { x: 1, y: 0 };
+      this.state.nextDirection = { x: 1, y: 0 };
+
+      // Reset timing to prevent catch-up ticks
+      this.state.lastFrameTime = 0;
+      this.state.tickAccumulator = 0;
+
+      // Resume loop
+      this.state.rafId = requestAnimationFrame((t) => this.loop(t));
+      this.startTimer();
+      showNotif("Partie continuée !");
+    });
+
+    this.socket.on("snake:reviveError", (msg) => {
+      showNotif(msg || "Erreur lors du paiement");
+    });
   }
 
   handleLeaderboard(arr) {
     if (!Array.isArray(arr) || !this.myName) return;
+    if (arr.length > 0) {
+      this.globalBestScore = Number(arr[0].score) || 0;
+    }
     const me = arr.find((e) => e.pseudo === this.myName);
     const prevBest = this.myBest;
     this.myBest = me ? Number(me.score) || 0 : 0;
@@ -148,6 +189,19 @@ class SnakeGame {
     if (!snakeSection) return;
     const rect = snakeSection.getBoundingClientRect();
     if (rect.top >= window.innerHeight || rect.bottom <= 0) return;
+
+    // Close revive overlay with Escape
+    if (e.key === "Escape") {
+      if (
+        this.ui.reviveOverlay &&
+        this.ui.reviveOverlay.style.display === "block"
+      ) {
+        this.ui.reviveOverlay.style.display = "none";
+        toggleScrollLock(false);
+        this.showDOMGameOverOverlay();
+        return;
+      }
+    }
 
     // Pause
     if (keys.default.includes(e.key)) {
@@ -234,6 +288,8 @@ class SnakeGame {
       tickAccumulator: 0,
       lastFrameTime: 0,
     };
+    this.revivesUsed = 0;
+    if (this.ui.reviveOverlay) this.ui.reviveOverlay.style.display = "none";
 
     this.state.prevSnake = this.state.snake.map((s) => ({ ...s }));
 
@@ -282,7 +338,11 @@ class SnakeGame {
 
     this.resize(); // Ensure buffer is correct
     this.drawGameOver();
-    this.showDOMGameOverOverlay();
+
+    // Only show DOM overlay if we are NOT showing the revive overlay
+    if (this.revivesUsed >= 3) {
+      this.showDOMGameOverOverlay();
+    }
   }
 
   loop(ts) {
@@ -514,10 +574,51 @@ class SnakeGame {
       cssSize / 2,
       cssSize / 2 + 90
     );
+
+    // --- Revive Logic ---
+    if (this.revivesUsed < 3) {
+      if (this.ui.reviveOverlay) {
+        this.ui.reviveOverlay.style.display = "block";
+        toggleScrollLock(true);
+        if (this.ui.reviveCount)
+          this.ui.reviveCount.textContent = 3 - this.revivesUsed;
+
+        let price = this.state.score;
+        if (
+          this.globalBestScore > 0 &&
+          this.state.score > this.globalBestScore
+        ) {
+          price = 500000;
+        }
+
+        if (this.ui.revivePrice)
+          this.ui.revivePrice.textContent = price.toLocaleString("fr-FR");
+
+        if (this.ui.reviveBtn) {
+          this.ui.reviveBtn.onclick = () => {
+            this.socket.emit("snake:payToContinue", { price });
+            toggleScrollLock(false);
+          };
+        }
+        if (this.ui.cancelBtn) {
+          this.ui.cancelBtn.onclick = () => {
+            this.ui.reviveOverlay.style.display = "none";
+            toggleScrollLock(false);
+            this.showDOMGameOverOverlay();
+          };
+        }
+      }
+    } else {
+      if (this.ui.reviveOverlay) {
+        this.ui.reviveOverlay.style.display = "none";
+        toggleScrollLock(false);
+      }
+    }
   }
 
   showDOMGameOverOverlay() {
     this.removeDOMGameOverOverlay();
+    // toggleScrollLock(true); // Removed to allow scrolling after game over
     const parent = this.canvas.parentElement || document.body;
     if (getComputedStyle(parent).position === "static")
       parent.style.position = "relative";
@@ -557,6 +658,7 @@ class SnakeGame {
     const parent = this.canvas.parentElement || document.body;
     const existing = parent.querySelector(".snake-dom-gameover-overlay");
     if (existing) existing.remove();
+    toggleScrollLock(false);
   }
 
   clearToBlack() {
@@ -626,6 +728,11 @@ export function initSnake(socket) {
     startBtn: document.querySelector(".snake-start"),
     stopBtn: document.querySelector(".snake-stop"),
     resetBtn: document.querySelector(".snake-reset"),
+    reviveOverlay: document.querySelector(".snake-revive-overlay"),
+    revivePrice: document.querySelector(".snake-cost"),
+    reviveBtn: document.querySelector(".snake-revive-btn"),
+    reviveCount: document.querySelector(".snake-revive-count"),
+    cancelBtn: document.querySelector(".snake-cancel-btn"),
   };
 
   if (!ui.canvas) return;

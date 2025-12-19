@@ -1,3 +1,7 @@
+export function toggleScrollLock(isLocked) {
+  document.body.style.overflow = isLocked ? "hidden" : "";
+}
+
 export function showNotif(text, duration = 4000, withCountdown = false) {
   try {
     const notif = document.createElement("div");
@@ -57,7 +61,7 @@ export function keyBind() {
   const input = document.querySelector(".keybind");
   const btn = document.querySelector(".keybind-submit");
   const marks = document.querySelectorAll("#keybind-mark");
-  const s1 = document.querySelector(".stage1");
+  const s1 = document.querySelector(".stage1p0");
 
   try {
     const saved = localStorage.getItem("pauseKey");

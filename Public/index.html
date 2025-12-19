@@ -16,7 +16,8 @@
         </noscript>
 
         <link rel="stylesheet" type="text/css" href="css/common.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage1.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage1.css">
+        <link rel="stylesheet" type="text/css" href="css/stage1p0.css" />
         <link rel="stylesheet" type="text/css" href="css/stage2.css" />
         <link rel="stylesheet" type="text/css" href="css/stage3.css" />
         <link rel="stylesheet" type="text/css" href="css/stage4.css" />
@@ -43,14 +44,15 @@
     </head>
 
     <body>
-
         <section id="stage1">
+            <center><pre
+                    style="margin-top: 25vh; border: 2px solid var(--primary-color); padding: 2px 5px; text-align: left; padding: 12.5px; line-height: 1.75; white-space: pre-wrap;"><p><i class="fa fa-info-circle"></i> Vous pouvez changer la couleur de l'<u>UI</u> et de votre <u>TAG</u> depuis la Navigation!</p><p><i class="fa fa-info-circle"></i> Vous pouvez aussi demander un <u>TAG</u> depuis la Navigation!</p><p><i class="fa fa-warning"></i> Si vous trouvez un <u>BUG</u> de n'importe quelle nature (exploit, bug de programmation, orthographe, affichage ...), parlez-en à l'Admin et il s'emperchera de dormir pour le regler!</p><p><i class="fa fa-warning"></i> Si vous êtes pris à tricher, vous serez <u>BANNIS</u> pour une durée indéterminée et votre compte sera flag comme <u>TRICHEUR</u>.</p></pre></center>
+        </section>
+        <section id="stage1p0">
             <button class="log-off"
                 onclick="window.location.replace('/login');">Se
                 déconnecter</button>
             <h1 class="display"></h1>
-            <center><pre
-                    style="margin-top: 10vh; border: 2px solid var(--primary-color); padding: 2px 5px;width: fit-content;">Vous pouvez changer la couleur de l'<u>UI</u> et de votre <u>TAG</u> depuis la Navigation!</pre></center>
             <div class="keybind-wrap">
                 <label for="keybind">Changer la touche de Pause</label>
                 <input type="text" class="keybind" id="keybind"
@@ -123,7 +125,7 @@
         </section>
 
         <section id="stage2">
-            <div class="dino-wrap">
+            <div class="dino-wrap" style="position: relative;">
                 <canvas class="game"></canvas>
                 <div class="dino-btns-wrap">
                     <button class="dino-start">Jouer</button>
@@ -135,6 +137,26 @@
                         id="keybind-mark"
                         style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;"></mark>
                     pour mettre en pause</p>
+
+                <!-- Dino Revive Overlay -->
+                <div class="dino-revive-overlay"
+                    style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid var(--primary-color); text-align: center; z-index: 100;">
+                    <h3
+                        style="color: var(--primary-color); margin-bottom: 10px;">GAME
+                        OVER</h3>
+                    <p style="color: #fff; margin-bottom: 15px;">Continuer la
+                        partie ?</p>
+                    <p class="dino-revive-price"
+                        style="color: #fff; margin-bottom: 15px; font-weight: bold;">Coût:
+                        <span class="dino-cost">0</span> clicks</p>
+                    <button class="dino-revive-btn"
+                        style="padding: 8px 16px; cursor: pointer; background: var(--primary-color); border: none; font-weight: bold;">Payer
+                        & Continuer (<span class="dino-revive-count">3</span>
+                        restants)</button>
+                    <button class="dino-cancel-btn"
+                        style="display: block; margin: 10px auto 0; background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px; cursor: pointer;">Non
+                        merci</button>
+                </div>
             </div>
         </section>
 
@@ -323,7 +345,7 @@
         </section>
 
         <section id="stage6">
-            <div class="flappy-wrap">
+            <div class="flappy-wrap" style="position: relative;">
                 <canvas id="flappyCanvas" class="game"></canvas>
                 <div class="flappy-btns-wrap">
                     <button class="flappyStartBtn">Jouer</button>
@@ -335,6 +357,26 @@
                         id="keybind-mark"
                         style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;"></mark>
                     pour mettre en pause</p>
+
+                <!-- Flappy Revive Overlay -->
+                <div class="flappy-revive-overlay"
+                    style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid var(--primary-color); text-align: center; z-index: 100;">
+                    <h3
+                        style="color: var(--primary-color); margin-bottom: 10px;">GAME
+                        OVER</h3>
+                    <p style="color: #fff; margin-bottom: 15px;">Continuer la
+                        partie ?</p>
+                    <p class="flappy-revive-price"
+                        style="color: #fff; margin-bottom: 15px; font-weight: bold;">Coût:
+                        <span class="flappy-cost">0</span> clicks</p>
+                    <button class="flappy-revive-btn"
+                        style="padding: 8px 16px; cursor: pointer; background: var(--primary-color); border: none; font-weight: bold;">Payer
+                        & Continuer (<span class="flappy-revive-count">3</span>
+                        restants)</button>
+                    <button class="flappy-cancel-btn"
+                        style="display: block; margin: 10px auto 0; background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px; cursor: pointer;">Non
+                        merci</button>
+                </div>
             </div>
         </section>
 
@@ -488,12 +530,24 @@
                         class="blockblast-gameover-score">0</span></p>
                 <p>Durée de la partie:<span
                         class="blockblast-gameover-time"></span></p>
+
+                <div class="blockblast-revive-section"
+                    style="display: none; margin: 15px 0; padding: 10px; border: 1px solid var(--primary-color); border-radius: 5px;">
+                    <p style="margin: 5px 0;">Continuer la partie ?</p>
+                    <p class="blockblast-revive-price"
+                        style="margin: 5px 0; font-weight: bold;">Coût: <span
+                            class="revive-cost">0</span> clicks</p>
+                    <button class="blockblast-revive-btn"
+                        style="margin-top: 5px;">Payer & Continuer (<span
+                            class="revive-count">3</span> restants)</button>
+                </div>
+
                 <button class="blockblast-restart">Rejouer</button>
             </div>
         </section>
 
         <section id="stage10">
-            <div class="snake-wrap">
+            <div class="snake-wrap" style="position: relative;">
                 <canvas id="snake-canvas"></canvas>
                 <div class="snake-btns-wrap">
                     <button class="snake-start">Jouer</button>
@@ -505,6 +559,26 @@
                         id="keybind-mark"
                         style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;"></mark>
                     pour mettre en pause</p>
+
+                <!-- Snake Revive Overlay -->
+                <div class="snake-revive-overlay"
+                    style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border: 2px solid var(--primary-color); text-align: center; z-index: 100;">
+                    <h3
+                        style="color: var(--primary-color); margin-bottom: 10px;">GAME
+                        OVER</h3>
+                    <p style="color: #fff; margin-bottom: 15px;">Continuer la
+                        partie ?</p>
+                    <p class="snake-revive-price"
+                        style="color: #fff; margin-bottom: 15px; font-weight: bold;">Coût:
+                        <span class="snake-cost">0</span> clicks</p>
+                    <button class="snake-revive-btn"
+                        style="padding: 8px 16px; cursor: pointer; background: var(--primary-color); border: none; font-weight: bold;">Payer
+                        & Continuer (<span class="snake-revive-count">3</span>
+                        restants)</button>
+                    <button class="snake-cancel-btn"
+                        style="display: block; margin: 10px auto 0; background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px; cursor: pointer;">Non
+                        merci</button>
+                </div>
             </div>
         </section>
 

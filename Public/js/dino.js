@@ -1,4 +1,4 @@
-import { showNotif, keys } from "./util.js";
+import { showNotif, keys, toggleScrollLock } from "./util.js";
 
 export function initDino(socket) {
   // ---------- Cache UI ----------
@@ -8,6 +8,11 @@ export function initDino(socket) {
     stopBtn: document.querySelector(".dino-stop"),
     resetBtn: document.querySelector(".dino-reset"),
     yourScoreEl: document.getElementById("your-score"),
+    reviveOverlay: document.querySelector(".dino-revive-overlay"),
+    revivePrice: document.querySelector(".dino-cost"),
+    reviveBtn: document.querySelector(".dino-revive-btn"),
+    reviveCount: document.querySelector(".dino-revive-count"),
+    cancelBtn: document.querySelector(".dino-cancel-btn"),
   };
   if (!ui.canvas) return;
   const c = ui.canvas.getContext("2d");
@@ -30,6 +35,7 @@ export function initDino(socket) {
     gameSpeed: INITIAL_SPEED,
     score: 0,
     gameOver: false,
+    revivesUsed: 0,
     isFirstStart: true,
     obstaclesPassed: 0,
     frameCount: 0,
@@ -65,12 +71,16 @@ export function initDino(socket) {
   // ---------- Pseudo + meilleur score ----------
   let myName = null;
   let myBest = 0;
+  let globalBestScore = 0;
   let scoreAttente = null;
   socket.on("you:name", (name) => {
     myName = name;
   });
   socket.on("dino:leaderboard", (arr) => {
     if (!Array.isArray(arr) || !myName) return;
+    if (arr.length > 0) {
+      globalBestScore = Number(arr[0].score) || 0;
+    }
     const me = arr.find((e) => e.pseudo === myName);
     const prevBest = myBest;
     myBest = me ? Number(me.score) || 0 : 0;
@@ -455,12 +465,72 @@ export function initDino(socket) {
       CLIENT_W / 2,
       CLIENT_H / 2 + 60
     );
+
+    // --- Revive Logic ---
+    if (state.revivesUsed < 3) {
+      if (ui.reviveOverlay) {
+        ui.reviveOverlay.style.display = "block";
+        toggleScrollLock(true);
+        if (ui.reviveCount) ui.reviveCount.textContent = 3 - state.revivesUsed;
+
+        let price = Math.floor(state.score);
+        if (globalBestScore > 0 && price > globalBestScore) {
+          price = 500000;
+        }
+
+        if (ui.revivePrice)
+          ui.revivePrice.textContent = price.toLocaleString("fr-FR");
+
+        if (ui.reviveBtn) {
+          ui.reviveBtn.onclick = () => {
+            socket.emit("dino:payToContinue", { price });
+            toggleScrollLock(false);
+          };
+        }
+        if (ui.cancelBtn) {
+          ui.cancelBtn.onclick = () => {
+            ui.reviveOverlay.style.display = "none";
+            toggleScrollLock(false);
+          };
+        }
+      }
+    } else {
+      if (ui.reviveOverlay) {
+        ui.reviveOverlay.style.display = "none";
+        toggleScrollLock(false);
+      }
+    }
   }
+
+  socket.on("dino:reviveSuccess", () => {
+    state.gameOver = false;
+    state.revivesUsed++;
+    if (ui.reviveOverlay) {
+      ui.reviveOverlay.style.display = "none";
+      toggleScrollLock(false);
+    }
+
+    // Nettoyer les obstacles immédiats pour éviter de remourir instantanément
+    state.cactusGroups = [];
+
+    // Reprendre la boucle
+    loop();
+    showNotif("Partie continuée !");
+  });
+
+  socket.on("dino:reviveError", (msg) => {
+    showNotif(msg || "Erreur lors du paiement");
+  });
 
   function startGame() {
     resizeCanvas();
 
     state.gameOver = false;
+    state.revivesUsed = 0;
+    if (ui.reviveOverlay) {
+      ui.reviveOverlay.style.display = "none";
+      toggleScrollLock(false);
+    }
     state.isFirstStart = false;
     state.score = 0;
     state.obstaclesPassed = 0;
@@ -562,6 +632,13 @@ export function initDino(socket) {
   });
 
   document.addEventListener("keyup", (e) => {
+    // Close revive overlay with Escape
+    if (e.key === "Escape") {
+      if (ui.reviveOverlay && ui.reviveOverlay.style.display === "block") {
+        ui.reviveOverlay.style.display = "none";
+        toggleScrollLock(false);
+      }
+    }
     // Vérifier que la section Dino (stage2) est visible
     const dinoSection = document.getElementById("stage2");
     if (!dinoSection) return;
