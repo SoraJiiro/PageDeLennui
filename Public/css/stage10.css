@@ -30,7 +30,7 @@
   font-weight: bold;
   background: var(--primary-color);
   color: var(--bg-color);
-  border-radius: 25px;
+  border-radius: 0;
   padding: 1px 8.5px;
   width: fit-content;
   font-weight: normal;
@@ -53,12 +53,7 @@
 
 .snake-wrap .snake-btns-wrap button {
   width: 35%;
-  height: 45px;
-  font-size: 1rem;
-  font-weight: bold;
-  letter-spacing: 1.25px;
-  cursor: pointer;
-  transition: all 325ms ease-out;
+  /* Styles inherited from common.css */
 }
 
 #snake-canvas {

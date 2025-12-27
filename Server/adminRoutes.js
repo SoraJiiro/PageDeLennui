@@ -1232,17 +1232,23 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       // Update user tag
       const db = dbUsers.readAll();
       const userIndex = db.users.findIndex((u) => u.pseudo === request.pseudo);
+
+      const tagObject = {
+        text: request.tag,
+        colors:
+          request.colors ||
+          Array(request.tag.split(/\s+/).length).fill("#ffffff"),
+        color: request.colors ? request.colors[0] : "#ffffff", // Fallback/Primary color
+      };
+
       if (userIndex !== -1) {
-        db.users[userIndex].tag = { text: request.tag, color: "#ffffff" }; // White by default
+        db.users[userIndex].tag = tagObject;
         dbUsers.writeAll(db);
       }
 
       // Update user tag in FileService (for chat)
       if (!FileService.data.tags) FileService.data.tags = {};
-      FileService.data.tags[request.pseudo] = {
-        text: request.tag,
-        color: "#ffffff",
-      };
+      FileService.data.tags[request.pseudo] = tagObject;
       FileService.save("tags", FileService.data.tags);
     }
 

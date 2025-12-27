@@ -47,7 +47,7 @@ router.get("/status", (req, res) => {
 
 router.post("/request", (req, res) => {
   const user = req.session.user;
-  const { tag } = req.body;
+  const { tag, colors } = req.body;
 
   if (
     !tag ||
@@ -58,6 +58,16 @@ router.post("/request", (req, res) => {
     return res
       .status(400)
       .json({ message: "Tag invalide (max 32 caractères)" });
+  }
+
+  // Validate colors
+  if (!colors || !Array.isArray(colors)) {
+    return res.status(400).json({ message: "Couleurs invalides" });
+  }
+
+  const wordCount = tag.trim().split(/\s+/).length;
+  if (colors.length !== wordCount) {
+    return res.status(400).json({ message: "Nombre de couleurs incorrect" });
   }
 
   // Check cheater
@@ -95,6 +105,7 @@ router.post("/request", (req, res) => {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     pseudo: user.pseudo,
     tag: tag.trim(),
+    colors: colors,
     time: Date.now(),
     fulfilled: false,
   };

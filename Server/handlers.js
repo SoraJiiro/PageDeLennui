@@ -3,6 +3,7 @@ const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
 const MotusGame = require("./motusGame");
+const CodenamesGame = require("./codenamesGame");
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
@@ -32,6 +33,7 @@ let pictionaryGame = new PictionaryGame();
 let pictionaryTimer = null;
 let p4Game = new Puissance4Game();
 let motusGame = new MotusGame();
+let codenamesGame = new CodenamesGame();
 
 // ------- Colors -------
 const orange = "\x1b[38;5;208m"; // pseudos
@@ -341,6 +343,10 @@ function initSocketHandlers(io, socket, gameState) {
       currentTag = { text: currentTag, color: color };
     } else if (typeof currentTag === "object") {
       currentTag.color = color;
+      // If multi-colored, update all colors to the new single color
+      if (currentTag.colors && Array.isArray(currentTag.colors)) {
+        currentTag.colors = currentTag.colors.map(() => color);
+      }
     }
 
     FileService.data.tags[pseudo] = currentTag;
@@ -595,6 +601,59 @@ function initSocketHandlers(io, socket, gameState) {
         : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
     );
     socket.emit("clicker:medals", normalized);
+  });
+
+  socket.on("clicker:buyColorRegen", ({ newColors }) => {
+    if (!newColors || typeof newColors !== "object") return;
+
+    const currentScore = FileService.data.clicks[pseudo] || 0;
+    const COST = 375000;
+
+    if (currentScore < COST) return;
+
+    // Deduct cost
+    FileService.data.clicks[pseudo] = currentScore - COST;
+    FileService.save("clicks", FileService.data.clicks);
+
+    // Update medals
+    const userMedals = FileService.data.medals[pseudo] || [];
+    let updated = false;
+
+    for (let i = 0; i < userMedals.length; i++) {
+      let m = userMedals[i];
+      // Normalize to object if string
+      if (typeof m === "string") {
+        m = { name: m, colors: [] };
+        userMedals[i] = m;
+      }
+
+      if (newColors[m.name] && Array.isArray(newColors[m.name])) {
+        m.colors = newColors[m.name].slice(0, 24);
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      FileService.save("medals", FileService.data.medals);
+    }
+
+    // Emit updates
+    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+    leaderboardManager.broadcastClickerLB(io);
+
+    const normalized = userMedals.map((m) =>
+      typeof m === "string"
+        ? { name: m, colors: [] }
+        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
+    );
+    socket.emit("clicker:medals", normalized);
+
+    broadcastSystemMessage(
+      io,
+      `${pseudo} a régénéré ses Médailles ! (pigeon)`,
+      true
+    );
+    socket.emit("system:info", "✅ Couleurs régénérées avec succès !");
   });
 
   // ------- Dino -------
@@ -1979,6 +2038,19 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  socket.on("admin:chat:clear", () => {
+    if (pseudo === "Admin") {
+      FileService.data.historique = [];
+      FileService.save("historique", FileService.data.historique);
+      io.emit("chat:history", []);
+      broadcastSystemMessage(
+        io,
+        "🔙 L'historique du chat a été effacé par l'Admin.",
+        true
+      );
+    }
+  });
+
   const { exec } = require("child_process");
 
   socket.on("admin:global-notification", ({ message, withCountdown }) => {
@@ -2216,6 +2288,39 @@ function initSocketHandlers(io, socket, gameState) {
   socket.emit("motus:leaderboard", lb);
 
   // ------- Log off -------
+  // --- CODENAMES ---
+  socket.on('codenames:getState', () => {
+    codenamesGame.join(socket, pseudo);
+  });
+
+  socket.on('codenames:team', (team) => {
+    codenamesGame.setTeam(socket, team);
+  });
+
+  socket.on('codenames:role', (role) => {
+    codenamesGame.setRole(socket, role);
+  });
+
+  socket.on('codenames:start', () => {
+    codenamesGame.startGame(io);
+  });
+
+  socket.on('codenames:clue', ({ word, number }) => {
+    codenamesGame.giveClue(socket, word, number);
+  });
+
+  socket.on('codenames:click', (index) => {
+    codenamesGame.clickCard(socket, index);
+  });
+
+  socket.on('codenames:pass', () => {
+    codenamesGame.passTurn(socket);
+  });
+
+  socket.on('codenames:leave', () => {
+    codenamesGame.leave(socket);
+  });
+
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
 
@@ -2308,6 +2413,11 @@ function initSocketHandlers(io, socket, gameState) {
       } else {
         p4Game.removeSpectator(pseudo);
       }
+    }
+
+    // CODENAMES
+    if (codenamesGame) {
+        codenamesGame.leave(socket);
     }
   });
 }

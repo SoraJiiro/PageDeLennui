@@ -43,6 +43,7 @@ io.use(sharedSession(expressSession, { autoSave: true }));
 app.use("/api", authRoutes);
 app.use("/api/admin", createAdminRouter(io, motusGame, leaderboardManager));
 app.use("/api/tag", require("./tagRoutes"));
+app.use("/api/surveys", require("./surveyRoutes")(io));
 app.get("/login", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "login.html"))
 );

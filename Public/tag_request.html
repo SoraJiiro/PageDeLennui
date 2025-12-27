@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Demande de Tag</title>
         <link rel="stylesheet" href="css/common.css">
-        <script src="js/nav.js" type="text/javascript"></script>
+        <script src="/js/uiColor.js" type="text/javascript"></script>
         <style>
         body {
             display: flex;
@@ -85,8 +85,22 @@
                     <label for="tagInput">Tag souhaité (max 32
                         caractères)</label>
                     <input type="text" id="tagInput" maxlength="32"
-                        placeholder="Tag...">
+                        placeholder="Tag..." oninput="updateColorPickers()">
                 </div>
+
+                <div id="colorPickersContainer"
+                    style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                    <!-- Color pickers will be generated here -->
+                </div>
+
+                <div class="input-group">
+                    <label>Aperçu :</label>
+                    <div id="tagPreview"
+                        style="font-size: 1.2rem; font-weight: bold; background: #222; padding: 10px; border-radius: 5px; display: inline-block;">
+                        <span style="color: #888;">(Entrez un tag)</span>
+                    </div>
+                </div>
+
                 <button class="btn" onclick="submitRequest()">Envoyer la
                     demande</button>
             </div>
@@ -116,6 +130,10 @@
                 socket = io({
                     query: { username: currentUser }
                 });
+
+                if (window.initUiColor) {
+                    window.initUiColor(socket);
+                }
 
                 // Listen for response
                 socket.on('tag:response', (data) => {
@@ -169,9 +187,16 @@
                     form.style.display = 'none';
                     statusDisplay.style.display = 'block';
                     statusDisplay.className = 'status-message status-pending';
+                    
+                    let tagDisplay = `<strong>${data.request.tag}</strong>`;
+                    if (data.request.colors && Array.isArray(data.request.colors)) {
+                        const words = data.request.tag.split(/\s+/);
+                        tagDisplay = words.map((w, i) => `<span style="color:${data.request.colors[i]}">${w}</span>`).join(' ');
+                    }
+
                     statusDisplay.innerHTML = `
                         <h3>Demande en attente</h3>
-                        <p>Tag demandé : <strong>${data.request.tag}</strong></p>
+                        <p>Tag demandé : ${tagDisplay}</p>
                         <p>Envoyé le : ${new Date(data.request.time).toLocaleString()}</p>
                         <p><em>En attente de validation par l'admin...</em></p>
                     `;
@@ -189,11 +214,19 @@
             if (!tag) return alert('Veuillez entrer un tag');
             if (tag.length > 32) return alert('Tag trop long');
 
+            // Collect colors
+            const words = tag.split(/\s+/);
+            const colors = [];
+            for (let i = 0; i < words.length; i++) {
+                const picker = document.getElementById(`color-picker-${i}`);
+                colors.push(picker ? picker.value : '#ffffff');
+            }
+
             try {
                 const res = await fetch('/api/tag/request', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tag })
+                    body: JSON.stringify({ tag, colors })
                 });
                 
                 const data = await res.json();
@@ -207,6 +240,86 @@
                 console.error(err);
                 alert('Erreur lors de l\'envoi');
             }
+        }
+
+        function updateColorPickers() {
+            const tagInput = document.getElementById('tagInput');
+            const container = document.getElementById('colorPickersContainer');
+            const preview = document.getElementById('tagPreview');
+            
+            const text = tagInput.value.trim();
+            if (!text) {
+                container.innerHTML = '';
+                preview.innerHTML = '<span style="color: #888;">(Entrez un tag)</span>';
+                return;
+            }
+
+            const words = text.split(/\s+/);
+            
+            // Preserve existing colors if possible
+            const existingColors = [];
+            const existingPickers = container.querySelectorAll('input[type="color"]');
+            existingPickers.forEach(p => existingColors.push(p.value));
+
+            container.innerHTML = '';
+            preview.innerHTML = '';
+
+            words.forEach((word, index) => {
+                // Create picker wrapper
+                const wrapper = document.createElement('div');
+                wrapper.style.display = 'flex';
+                wrapper.style.flexDirection = 'column';
+                wrapper.style.alignItems = 'center';
+                
+                // Label (word)
+                const label = document.createElement('span');
+                label.textContent = word;
+                label.style.fontSize = '0.8rem';
+                label.style.marginBottom = '5px';
+                label.style.maxWidth = '100px';
+                label.style.overflow = 'hidden';
+                label.style.textOverflow = 'ellipsis';
+                wrapper.appendChild(label);
+
+                // Picker
+                const picker = document.createElement('input');
+                picker.type = 'color';
+                picker.id = `color-picker-${index}`;
+                picker.value = existingColors[index] || '#ffffff';
+                picker.style.width = '40px';
+                picker.style.height = '30px';
+                picker.style.border = 'none';
+                picker.style.cursor = 'pointer';
+                
+                picker.addEventListener('input', updatePreview);
+                wrapper.appendChild(picker);
+
+                container.appendChild(wrapper);
+            });
+
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const tagInput = document.getElementById('tagInput');
+            const preview = document.getElementById('tagPreview');
+            const text = tagInput.value.trim();
+            
+            if (!text) return;
+
+            const words = text.split(/\s+/);
+            preview.innerHTML = '';
+
+            words.forEach((word, index) => {
+                const picker = document.getElementById(`color-picker-${index}`);
+                const color = picker ? picker.value : '#ffffff';
+                
+                const span = document.createElement('span');
+                span.textContent = word;
+                span.style.color = color;
+                span.style.marginRight = '4px'; // Space between words
+                preview.appendChild(span);
+            });
         }
 
         init();

@@ -28,7 +28,7 @@
   background: var(--primary-color);
   color: var(--bg-color);
   padding: 2.5px 7.5px;
-  border-radius: 25px;
+  border-radius: 0;
 }
 
 .pictionary-status {
@@ -61,22 +61,6 @@
   gap: 1rem;
   justify-content: center;
   margin-top: 1rem;
-}
-
-.pictionary-lobby button {
-  padding: 0.8rem 1.5rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.pictionary-lobby button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pictionary-lobby button:disabled:hover {
-  background: var(--bg-color);
-  color: var(--primary-color);
 }
 
 .pictionary-game {
@@ -113,13 +97,7 @@
 }
 .pictionary-actions button {
   margin-right: 8px;
-  padding: 0.8rem 1.5rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-.pictionary-actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  /* Styles inherited from common.css */
 }
 .pictionary-info {
   min-height: 24px;
@@ -207,15 +185,7 @@
   background: #111;
   color: #fff;
   border: 1px solid #333;
-  border-radius: 4px;
-}
-.pictionary-controls button {
-  padding: 8px 12px;
-  background: #2b6;
-  color: #000;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  border-radius: 0;
 }
 
 .pictionary-players {
@@ -228,7 +198,7 @@
 .pictionary-players > div {
   background: rgba(255, 255, 255, 0.05);
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 .pictionary-players > div.drawer {
@@ -253,7 +223,7 @@
 .pictionary-palette > button {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 0;
   border: 2px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
 }
@@ -280,7 +250,7 @@
   padding: 6px 8px;
   background: #666;
   color: #fff;
-  border-radius: 6px;
+  border-radius: 0;
   border: none;
   cursor: pointer;
 }
@@ -300,7 +270,7 @@
   padding: 6px 8px;
   background: #333;
   color: #fff;
-  border-radius: 4px;
+  border-radius: 0;
   cursor: pointer;
 }
 
@@ -320,21 +290,7 @@
   background: #111;
   color: #fff;
   border: 1px solid #333;
-  border-radius: 4px;
-}
-.pictionary-toolbar button,
-.pictionary-guess button {
-  padding: 8px 10px;
-  border-radius: 6px;
-}
-
-.pictionary-toolbar button {
-  background: transparent;
-  color: var(--primary-color);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-.pictionary-toolbar button:hover {
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0;
 }
 .pictionary-timer {
   font-size: 1.05rem;
@@ -345,7 +301,7 @@
   margin-top: 10px;
   background: rgba(0, 0, 0, 0.25);
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 0;
   max-height: 220px;
   display: flex;
   flex-direction: column;
@@ -373,5 +329,5 @@
   background: #111;
   color: #fff;
   border: 1px solid #333;
-  border-radius: 4px;
+  border-radius: 0;
 }

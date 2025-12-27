@@ -121,7 +121,7 @@ table tr:hover {
   background: var(--primary-color);
   color: var(--bg-color);
   padding: 2.5px 7.5px;
-  border-radius: 25px;
+  border-radius: 0;
 }
 
 /* User Info */
@@ -217,11 +217,7 @@ table tr:hover {
 /* Make buttons match inputs height and vertical alignment */
 .form-field input,
 .form-field select,
-.form-field textarea,
-.action-buttons .btn,
-.action-buttons button,
-.leaderboard-tabs button,
-.btn {
+.form-field textarea {
   box-sizing: border-box;
   padding: 10px 14px;
   font-size: 1rem;
@@ -365,21 +361,8 @@ iframe.logs-frame {
 }
 
 .admin-header .header-btns button {
-  background-color: var(--bg-color);
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
-  padding: clamp(8px, 1vh, 14px) clamp(14px, 2vw, 28px);
-  cursor: pointer;
-  font-size: clamp(0.9rem, 1.1vw + 0.6rem, 1.2rem);
+  /* Styles inherited from common.css */
   z-index: 1000;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.22rem;
-  min-height: clamp(40px, 5.5vh, 56px);
-}
-.admin-header .header-btns button:hover {
-  background: var(--primary-color);
-  color: var(--bg-color);
 }
 
 .admin-header .header-btns button.shutdown {
@@ -427,3 +410,83 @@ button.password-btn {
   text-transform: uppercase;
   display: none;
 }
+
+/* Survey Section Styles */
+.admin-card {
+  background: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  padding: 20px;
+  border-radius: 0;
+  margin-bottom: 20px;
+}
+
+.admin-card h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  border-bottom: 1px solid var(--primary-color);
+  padding-bottom: 10px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  font-weight: bold;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.input-group input,
+.input-group textarea {
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 12px;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+.admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 15px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 0;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.admin-item:hover {
+  transform: translateX(2px);
+  border-color: var(--primary-color);
+}
+
+.admin-item .status-active {
+  color: #0f0;
+  font-weight: bold;
+}
+
+.admin-item .status-closed {
+  color: #f44;
+  font-weight: bold;
+}
+/* End Survey Section Styles */

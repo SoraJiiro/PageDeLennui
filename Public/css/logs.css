@@ -49,7 +49,7 @@ body {
 
 .pill {
   padding: 7.5px 35px;
-  border-radius: 999px;
+  border-radius: 0;
   background: #444444;
   border: 2px solid #f1f1f1;
   cursor: pointer;
@@ -71,7 +71,7 @@ button.pill {
   background: #444444;
   color: inherit;
   border: 2px solid #f1f1f1;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 7.5px 35px;
 }
 
@@ -124,13 +124,4 @@ button.pill {
   margin-left: auto;
   display: flex;
   gap: 8px;
-}
-
-button {
-  background: var(--btn-bg);
-  color: var(--btn-fg);
-  border: 1px solid #f1f1f1;
-  border-radius: 6px;
-  padding: 6px 10px;
-  cursor: pointer;
 }

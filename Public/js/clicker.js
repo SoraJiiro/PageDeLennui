@@ -9,6 +9,7 @@ export function initClicker(socket) {
     medalsWrap: document.querySelector(".medals-wrap"),
     yourScoreEl: document.getElementById("your-score"),
     cpsHumainEl: document.querySelector(".cps-humain"),
+    regenBtn: document.querySelector(".regen-colors-btn"),
   };
 
   // ---------- Etat local ----------
@@ -89,7 +90,17 @@ export function initClicker(socket) {
   buildPrestigeListIfNeeded();
 
   function createMedalElement(m, index, savedColors = null) {
-    if (ui.medalsWrap.querySelector(`[data-name="${m.nom}"]`)) return;
+    const existingEl = ui.medalsWrap.querySelector(`[data-name="${m.nom}"]`);
+    if (existingEl) {
+      if (savedColors && Array.isArray(savedColors)) {
+        savedColors.forEach((c, idx) => {
+          existingEl.style.setProperty(`--grad${idx + 1}`, c);
+        });
+        m.couleurs = savedColors.slice();
+      }
+      return;
+    }
+
     const el = document.createElement("div");
     const indexSpan = document.createElement("span");
     indexSpan.className = "medal-index";
@@ -347,6 +358,67 @@ export function initClicker(socket) {
       state.timerHumain = setTimeout(() => (state.cpsHumain = 0), 1100);
     });
   }
+
+  // ---------- Regen Colors ----------
+  ui.regenBtn?.addEventListener("click", () => {
+    if (state.scoreActuel < 375000) {
+      showNotif("❌ Pas assez de clicks ! (375 000 requis)");
+      return;
+    }
+
+    if (
+      !confirm(
+        "🎨 Veux-tu dépenser 375 000 clicks pour régénérer les couleurs de tes médailles Prestige ?"
+      )
+    )
+      return;
+
+    const newColorsMap = {};
+    // Only regenerate for unlocked prestige medals
+    state.medalsDebloquees.forEach((name) => {
+      if (name.startsWith("Médaille Préstige")) {
+        const colors = [];
+        // 8.5% chance for Monochrome (Black/White/Gray)
+        const isMonochrome = Math.random() < 0.085;
+        // 4.5% chance for Pure Black or Pure White (Ultra Rare)
+        const isUltraRare = Math.random() < 0.045;
+
+        const theme = isUltraRare
+          ? Math.random() < 0.5
+            ? "black"
+            : "white"
+          : isMonochrome
+          ? "mono"
+          : "random";
+
+        while (colors.length < 12) {
+          let c;
+          if (theme === "black") {
+            c = `hsl(0, 0%, ${Math.floor(Math.random() * 10)}%)`;
+          } else if (theme === "white") {
+            c = `hsl(0, 0%, ${90 + Math.floor(Math.random() * 10)}%)`;
+          } else if (theme === "mono") {
+            c = `hsl(0, 0%, ${Math.floor(Math.random() * 100)}%)`;
+          } else {
+            const h = Math.floor(Math.random() * 360);
+            const s = 70 + Math.floor(Math.random() * 25);
+            const l = 35 + Math.floor(Math.random() * 20);
+            c = `hsl(${h}, ${s}%, ${l}%)`;
+          }
+          colors.push(c);
+        }
+        newColorsMap[name] = colors;
+      }
+    });
+
+    // Si aucune médaille prestige débloquée, on prévient
+    if (Object.keys(newColorsMap).length === 0) {
+      showNotif("⚠️ Tu n'as aucune médaille Prestige à régénérer !");
+      return;
+    }
+
+    socket.emit("clicker:buyColorRegen", { newColors: newColorsMap });
+  });
 
   // ---------- Events socket ----------
   socket.on("you:name", (pseudo) => {

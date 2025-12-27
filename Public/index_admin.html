@@ -21,6 +21,7 @@
             media="(prefers-color-scheme: dark)" />
         <link rel="icon" type="img/png" href="imgs/icon_l.png"
             media="(prefers-color-scheme: light)" />
+        <script src="/js/uiColor.js" type="text/javascript"></script>
     </head>
     <body>
         <button class="password-btn" onclick="requestUnlock()">Afficher</button>
@@ -31,7 +32,7 @@
                     <h1><i class="fa-solid fa-wrench"></i> PANEL
                         ADMIN</h1><div class="header-btns">
                         <button class="deco"
-                            onclick="window.location.replace('/login');">Se
+                            onclick="localStorage.removeItem('uiColor'); window.location.replace('/login');">Se
                             déconnecter</button>
                         <button class="del-other-admins"
                             onclick="disconnectOtherAdmins()">Déco
@@ -242,6 +243,10 @@
                             <div class="chat-header">
                                 <h3>Chat.exe</h3>
                                 <div class="chat-status">
+                                    <button class="btn btn-red"
+                                        style="padding: 2px 8px; font-size: 0.8rem; margin-right: 10px;"
+                                        onclick="clearChat()">Clear
+                                        Chat</button>
                                     <span id="me"></span>
                                     <span id="usersCount"></span>
                                 </div>
@@ -560,6 +565,31 @@
                         </div>
                     </section>
 
+                    <!-- SONDAGES -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-poll"></i> /Sondages</h2>
+                        <div class="admin-card">
+                            <h3>Créer un sondage</h3>
+                            <div class="input-group">
+                                <label>Question</label>
+                                <input type="text" id="surveyQuestion"
+                                    placeholder="Question du sondage...">
+                            </div>
+                            <div class="input-group">
+                                <label>Choix (un par ligne)</label>
+                                <textarea id="surveyChoices" rows="4"
+                                    placeholder="Choix 1&#10;Choix 2&#10;..."></textarea>
+                            </div>
+                            <button class="btn" onclick="createSurvey()">Lancer
+                                le sondage</button>
+                        </div>
+
+                        <div class="admin-card" style="margin-top: 20px;">
+                            <h3>Gestion des sondages</h3>
+                            <div id="adminSurveyList"></div>
+                        </div>
+                    </section>
+
                     <!-- LOGS -->
                     <section class="admin-section">
                         <h2><i class="fa-solid fa-database"></i> /Logs</h2>
@@ -603,6 +633,7 @@
                 initSocket();
             }
             loadTagRequests();
+            loadAdminSurveys();
         }
 
         // Initialiser Socket.IO
@@ -613,6 +644,10 @@
                 query: { username: currentUser },
                 autoConnect: false,
             });
+
+            if (window.initUiColor) {
+                window.initUiColor(socket);
+            }
 
             // initialiser le module chat (s'il a été préchargé)
             try {
@@ -1460,6 +1495,11 @@ async function modifyTries() {
         }
 
         // Gestion Tricheurs
+        function clearChat() {
+            if (!confirm("⚠️ Effacer tout l'historique du chat ?\nCette action est irréversible.")) return;
+            socket.emit('admin:chat:clear');
+        }
+
         async function loadCheaters() {
             try {
                 const res = await fetch('/api/admin/cheater/list');
@@ -1613,6 +1653,98 @@ async function modifyTries() {
             }
         }
 
+        // --- SURVEYS ---
+        async function createSurvey() {
+            const question = document.getElementById('surveyQuestion').value.trim();
+            const choicesText = document.getElementById('surveyChoices').value.trim();
+            
+            if (!question) return alert('Question requise');
+            if (!choicesText) return alert('Choix requis');
+            
+            const choices = choicesText.split('\n').map(c => c.trim()).filter(c => c);
+            if (choices.length < 2) return alert('Il faut au moins 2 choix');
+
+            try {
+                const res = await fetch('/api/surveys/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, choices })
+                });
+                
+                if (res.ok) {
+                    showNotification('✅ Sondage créé', 'success');
+                    document.getElementById('surveyQuestion').value = '';
+                    document.getElementById('surveyChoices').value = '';
+                    loadAdminSurveys();
+                } else {
+                    const data = await res.json();
+                    alert('Erreur: ' + data.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Erreur serveur');
+            }
+        }
+
+        async function loadAdminSurveys() {
+            try {
+                const res = await fetch('/api/surveys/list');
+                const surveys = await res.json();
+                const list = document.getElementById('adminSurveyList');
+                list.innerHTML = '';
+
+                surveys.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'admin-item';
+                    
+                    const statusClass = s.status === 'active' ? 'status-active' : 'status-closed';
+                    
+                    div.innerHTML = `
+                        <div>
+                            <div style="font-weight:bold; color:#fff; margin-bottom: 4px;">${s.question}</div>
+                            <div style="font-size:0.8rem; color:#aaa">
+                                Status: <span class="${statusClass}">${s.status}</span> • 
+                                Votes: ${s.results.total}
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:5px">
+                            ${s.status === 'active' ? 
+                                `<button class="btn btn-red" onclick="closeSurvey('${s.id}')" title="Clore"><i class="fa-solid fa-stop"></i></button>` : 
+                                ''}
+                            <button class="btn btn-red" onclick="deleteSurvey('${s.id}')" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function closeSurvey(surveyId) {
+            if (!confirm('Clore ce sondage ?')) return;
+            try {
+                const res = await fetch('/api/surveys/close', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ surveyId })
+                });
+                if (res.ok) loadAdminSurveys();
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteSurvey(surveyId) {
+            if (!confirm('Supprimer ce sondage ?')) return;
+            try {
+                const res = await fetch('/api/surveys/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ surveyId })
+                });
+                if (res.ok) loadAdminSurveys();
+            } catch (e) { console.error(e); }
+        }
+
         async function toggleAdminPanel(forceShow = false) {
             const panel = document.getElementById("panel");
             const passwordBtn = document.querySelector(".password-btn");
@@ -1677,6 +1809,16 @@ async function modifyTries() {
             console.error("Failed to fetch panel state", e);
         }
     })();
+
+    // Scroll Saver
+    document.addEventListener("DOMContentLoaded", () => {
+        const scrollPos = localStorage.getItem("adminScrollPos");
+        if (scrollPos) window.scrollTo(0, parseInt(scrollPos));
+    });
+
+    window.addEventListener("beforeunload", () => {
+        localStorage.setItem("adminScrollPos", window.scrollY);
+    });
 
     // Initialiser
     checkSes();

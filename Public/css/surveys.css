@@ -1,0 +1,115 @@
+body {
+  background-color: var(--bg-color, #000);
+  color: #eee;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  padding-top: 80px;
+}
+
+.survey-card {
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid var(--primary-color);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.survey-question {
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+  font-weight: bold;
+}
+
+.survey-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.result-row {
+  margin-bottom: 10px;
+}
+
+.result-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.result-bar-bg {
+  background: #333;
+  height: 10px;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.result-bar-fill {
+  height: 100%;
+  background: var(--primary-color);
+  width: 0%;
+  transition: width 0.5s ease-out;
+}
+
+.survey-meta {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.status-active {
+  background: rgba(0, 255, 0, 0.2);
+  color: #0f0;
+  border: 1px solid #0f0;
+}
+
+.status-closed {
+  background: rgba(255, 0, 0, 0.2);
+  color: #f44;
+  border: 1px solid #f44;
+}
+
+.voted-badge {
+  color: #aaa;
+  font-style: italic;
+}
+
+h2 {
+  color: var(--primary-color);
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.empty-msg {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.btn-back {
+  /* Styles inherited from common.css */
+  margin-bottom: 20px;
+}
+
+.page-title {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 2rem;
+}

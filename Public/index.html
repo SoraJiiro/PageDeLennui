@@ -28,6 +28,8 @@
         <link rel="stylesheet" type="text/css" href="css/stage9.css" />
         <link rel="stylesheet" type="text/css" href="css/stage10.css" />
         <link rel="stylesheet" type="text/css" href="css/stage11.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage12.css" />
+        <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
             media="(prefers-color-scheme: dark)" />
@@ -35,6 +37,7 @@
             media="(prefers-color-scheme: light)" />
 
         <script defer type="text/javascript" src="js/nav.js"></script>
+        <script defer type="text/javascript" src="/js/uiColor.js"></script>
         <script defer type="text/javascript" src="js/display_lb.js"></script>
         <script defer type="text/javascript" src="js/horloge.js"></script>
 
@@ -43,15 +46,83 @@
         <script defer type="text/javascript" src="js/keys.js"></script>
     </head>
 
-    <body>
+    <body> <!-- Sidebar Structure -->
+        <button id="sidebar-toggle" class="sidebar-toggle"
+            title="Ouvrir le menu">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h2>Menu</h2>
+                <button id="sidebar-close"
+                    class="sidebar-close">&times;</button>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <h3><i class="fa-solid fa-gamepad"></i> Jeux</h3>
+                    <ul>
+                        <li><button class="nav-btn sec1">Clicker</button></li>
+                        <li><button class="nav-btn sec2">Dino</button></li>
+                        <li><button class="nav-btn sec5">UNO</button></li>
+                        <li><button class="nav-btn mario">Mario</button></li>
+                        <li><button class="nav-btn sec6">Flappy
+                                Bird</button></li>
+                        <li><button
+                                class="nav-btn sec7">Pictionary</button></li>
+                        <li><button class="nav-btn sec8">Puissance
+                                4</button></li>
+                        <li><button class="nav-btn sec9">Block
+                                Blast</button></li>
+                        <li><button class="nav-btn sec10">Snake</button></li>
+                        <li><button class="nav-btn sec11">Motus</button></li>
+                        <li><button class="nav-btn sec12">Codenames</button></li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fa-solid fa-users"></i> Communauté</h3>
+                    <ul>
+                        <li><button class="nav-btn sec3">Chat</button></li>
+                        <li><button
+                                class="nav-btn sec4">Classements</button></li>
+                        <li><a href="surveys.html"
+                                class="nav-link">Sondages</a></li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fa-solid fa-sliders"></i> Paramètres</h3>
+                    <div class="sidebar-controls">
+                        <div class="control-item">
+                            <label for="mainColorPicker">Couleur UI</label>
+                            <input type="color" id="mainColorPicker"
+                                class="ui-color-picker">
+                        </div>
+                        <div class="control-item">
+                            <label for="tagColorPicker">Couleur Tag</label>
+                            <input type="color" id="tagColorPicker"
+                                class="tag-color-picker">
+                        </div>
+                        <a href="tag_request.html" class="nav-link"
+                            style="text-align:center; margin-top:10px; font-size:0.9rem;">Demander
+                            un Tag</a>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <button class="log-off-btn"
+                    onclick="localStorage.removeItem('uiColor'); window.location.replace('/login');">
+                    <i class="fa-solid fa-power-off"></i> Déconnexion
+                </button>
+            </div>
+        </nav>
+        <div id="sidebar-overlay" class="sidebar-overlay"></div>
         <section id="stage1">
             <center><pre
                     style="margin-top: 25vh; border: 2px solid var(--primary-color); padding: 2px 5px; text-align: left; padding: 12.5px; line-height: 1.75; white-space: pre-wrap;"><p><i class="fa fa-info-circle"></i> Vous pouvez changer la couleur de l'<u>UI</u> et de votre <u>TAG</u> depuis la Navigation!</p><p><i class="fa fa-info-circle"></i> Vous pouvez aussi demander un <u>TAG</u> depuis la Navigation!</p><p><i class="fa fa-warning"></i> Si vous trouvez un <u>BUG</u> de n'importe quelle nature (exploit, bug de programmation, orthographe, affichage ...), parlez-en à l'Admin et il s'emperchera de dormir pour le regler!</p><p><i class="fa fa-warning"></i> Si vous êtes pris à tricher, vous serez <u>BANNIS</u> pour une durée indéterminée et votre compte sera flag comme <u>TRICHEUR</u>.</p></pre></center>
         </section>
         <section id="stage1p0">
-            <button class="log-off"
-                onclick="window.location.replace('/login');">Se
-                déconnecter</button>
             <h1 class="display"></h1>
             <div class="keybind-wrap">
                 <label for="keybind">Changer la touche de Pause</label>
@@ -61,35 +132,6 @@
 
                 <button class="keybind-submit">Appliquer</button>
             </div>
-            <div class="show-nav">Afficher
-                Navigation</div>
-            <div class="btns-wrap">
-                <button class="sec1">Clicker</button>
-                <button class="sec2">Dino</button>
-                <button class="sec3">Chat</button>
-                <button class="sec4">Leaderboards</button>
-                <button class="sec5">UNO</button>
-                <button class="mario">Mario</button>
-                <button class="sec6">Flappy bird</button>
-                <button class="sec7">Pictionary</button>
-                <button class="sec8">Puissance 4</button>
-                <button class="sec9">Block Blast</button>
-                <button class="sec10">Snake</button>
-                <button class="sec11">Motus</button>
-                <p class="hide-nav" role="button">Cacher</p>
-                <label for="mainColorPicker" id="ui">UI</label>
-                <input type="color" id="mainColorPicker"
-                    class="ui-color-picker"
-                    title="Changer la couleur de l'UI">
-                <label for="tagColorPicker" id="tag">TAG</label>
-                <input type="color" id="tagColorPicker"
-                    class="tag-color-picker"
-                    title="Changer la couleur du Tag"
-                    style="margin-left: 5px;">
-                <a href="tag_request.html" target="_blank"
-                    class="tag-req-link">Demander un Tag</a>
-            </div>
-
             <div class="zone-wrap">
                 <div class="zone"></div>
                 <p class="cps-humain"></p>
@@ -121,6 +163,13 @@
                     role="img"
                     aria-label="Médaille Légendaire - Rang 7 - 160 000 clics requis"><span
                         class="medal-index" aria-hidden="true">7</span></div>
+            </div>
+
+            <div class="regen-wrap"
+                style="margin-top: 20px; text-align: center;">
+                <button class="regen-colors-btn">
+                    Régénérer les couleurs <br> (375K Clicks)
+                </button>
             </div>
         </section>
 
@@ -591,9 +640,98 @@
                 <div class="motus-controls"
                     style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
                     <button class="motus-skip"
-                        style="padding: 10px 20px; background: #ff4444; color: white; border: none; cursor: pointer;">Passer</button>
+                        style="padding: 10px 20px; background: #ff4444; color: black; border: none; cursor: pointer;">Passer</button>
                     <button class="motus-continue"
                         style="display: none; padding: 10px 20px; background: var(--primary-color); color: black; border: none; cursor: pointer;">Continuer</button>
+                </div>
+            </div>
+        </section>
+
+            </div>
+        </section>
+
+        <section id="stage12">
+            <div class="codenames-card">
+                <div class="codenames-header">
+                    <h2>Codenames.exe</h2>
+                    <div class="codenames-status">
+                        <span id="cn-turn-indicator" class="turn-indicator">En attente...</span>
+                    </div>
+                </div>
+
+                <!-- LOBBY -->
+                <div class="codenames-lobby">
+                    <div class="team-column team-red">
+                        <div class="team-header">Équipe Rouge</div>
+                        <div class="role-section">
+                            <div class="role-title">Espion (1 max)</div>
+                            <div id="cn-slot-spy-red" class="player-slot">Libre</div>
+                            <button id="cn-btn-role-spy-red" class="btn-join">Devenir Espion</button>
+                        </div>
+                        <div class="role-section">
+                            <div class="role-title">Agents</div>
+                            <div id="cn-list-op-red"></div>
+                            <button id="cn-btn-role-op-red" class="btn-join">Devenir Agent</button>
+                        </div>
+                        <button id="cn-btn-join-red" class="btn-action" style="width:100%; margin-top:10px; background:#ff4444; color:#fff">Rejoindre Rouge</button>
+                    </div>
+
+                    <div class="team-column team-blue">
+                        <div class="team-header">Équipe Bleue</div>
+                        <div class="role-section">
+                            <div class="role-title">Espion (1 max)</div>
+                            <div id="cn-slot-spy-blue" class="player-slot">Libre</div>
+                            <button id="cn-btn-role-spy-blue" class="btn-join">Devenir Espion</button>
+                        </div>
+                        <div class="role-section">
+                            <div class="role-title">Agents</div>
+                            <div id="cn-list-op-blue"></div>
+                            <button id="cn-btn-role-op-blue" class="btn-join">Devenir Agent</button>
+                        </div>
+                        <button id="cn-btn-join-blue" class="btn-action" style="width:100%; margin-top:10px; background:#4444ff; color:#fff">Rejoindre Bleu</button>
+                    </div>
+
+                    <div class="lobby-controls">
+                        <button id="cn-btn-start" class="btn-action">Démarrer la partie</button>
+                    </div>
+                </div>
+
+                <!-- GAME -->
+                <div class="codenames-game" style="display:none;">
+                    <div class="game-info-bar">
+                        <div class="score-display score-red">Rouge: <span id="cn-score-red">0</span></div>
+                        <div id="cn-current-clue" style="font-weight:bold; color:#fff"></div>
+                        <div class="score-display score-blue">Bleu: <span id="cn-score-blue">0</span></div>
+                    </div>
+
+                    <div id="cn-board" class="board-grid"></div>
+
+                    <div id="cn-controls" class="game-controls">
+                        <div id="cn-clue-input" class="clue-input-area" style="display:none;">
+                            <input type="text" id="cn-clue-word" placeholder="Indice (1 mot)" maxlength="20">
+                            <select id="cn-clue-num">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="0">0 (Illimité)</option>
+                            </select>
+                            <button id="cn-btn-give-clue" class="btn-action">Donner l'indice</button>
+                        </div>
+
+                        <div id="cn-guess-controls" style="display:none;">
+                            <button id="cn-btn-pass" class="btn-action" style="background:#888; color:#fff">Passer le tour</button>
+                        </div>
+                        
+                        <button id="cn-btn-leave" class="btn-action" style="background:transparent; border:1px solid #555; color:#aaa; margin-left:auto">Quitter</button>
+                    </div>
+
+                    <div id="cn-log" class="log-area"></div>
                 </div>
             </div>
         </section>

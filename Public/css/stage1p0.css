@@ -23,15 +23,15 @@
 @keyframes rainbowMove {
   0% {
     background-position: 0% 50%;
-    rotate: 0deg;
+    transform: rotate(0deg);
   }
   50% {
     background-position: 100% 50%;
-    rotate: 180deg;
+    transform: rotate(180deg);
   }
   100% {
     background-position: 0% 50%;
-    rotate: 360deg;
+    transform: rotate(360deg);
   }
 }
 
@@ -66,7 +66,7 @@
   padding: 1px 8.5px;
   font-size: 1.15rem;
   font-weight: normal;
-  border-radius: 25px;
+  border-radius: 0;
   background: var(--primary-color);
   color: var(--bg-color);
 }
@@ -145,7 +145,7 @@
   transform: translateX(-50%);
   padding: 1px 8.5px;
   font-size: 1.15rem;
-  border-radius: 25px;
+  border-radius: 0;
   background: var(--primary-color);
   color: var(--bg-color);
   font-weight: normal;
@@ -200,10 +200,7 @@ p.cps-humain {
   width: 40%;
   height: 65px;
   font-size: x-large;
-  font-weight: bold;
-  letter-spacing: 1.25px;
-  cursor: pointer;
-  transition: all 325ms ease-out;
+  /* Styles inherited from common.css */
 }
 
 .btns-wrap {
@@ -231,7 +228,7 @@ p.cps-humain {
   transform: translateX(-50%);
   padding: 1px 8.5px;
   font-size: 1.15rem;
-  border-radius: 25px;
+  border-radius: 0;
   background: var(--primary-color);
   color: var(--bg-color);
 }
@@ -239,10 +236,7 @@ p.cps-humain {
 .btns-wrap button {
   width: 200px;
   height: 8dvh;
-  padding: 7.5px;
-  font-weight: 600;
-  letter-spacing: 2.2px;
-  transition: all 0.25s ease;
+  /* Styles inherited from common.css */
   flex-wrap: wrap;
 }
 
@@ -355,8 +349,8 @@ p.cps-humain {
   position: absolute;
   right: 25px;
   top: 25px;
-  height: 90dvh;
-  width: 22.5dvw;
+  height: 81dvh;
+  width: 21dvw;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -368,6 +362,16 @@ p.cps-humain {
   background: var(--bg-color);
 }
 
+.regen-colors-btn {
+  position: absolute;
+  right: 25px;
+  top: calc(25px + 80dvh + 15px);
+  width: 21dvw;
+  height: 70px;
+  font-size: large;
+  font-weight: bold;
+}
+
 .medals-wrap .medal {
   width: 45%;
   height: 22.5%;
@@ -376,7 +380,6 @@ p.cps-humain {
   transition: all 0.3s ease;
 }
 
-/* Masquer tout index par défaut (évite le '7' visible sur Légendaire quand hidden) */
 .medals-wrap .medal .medal-index {
   display: none;
 }
@@ -522,6 +525,7 @@ p.cps-humain {
   animation-delay: var(--rainbow-delay, 0s);
   opacity: 0.85;
   z-index: 0;
+  will-change: transform;
 }
 
 .medal[data-name="Légendaire"].shown .medal-index::after {
@@ -579,6 +583,7 @@ p.cps-humain {
   animation-delay: var(--rainbow-delay, 0s);
   z-index: -1;
   filter: brightness(1.05);
+  will-change: transform;
 }
 
 .medal[data-name^="Médaille"].shown,
@@ -611,6 +616,7 @@ p.cps-humain {
   animation-delay: var(--rainbow-delay, 0s);
   opacity: 0.87;
   z-index: 0;
+  will-change: transform;
 }
 
 .medal[data-name^="Médaille"].shown::after,

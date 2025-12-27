@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sondages - PDE</title>
+        <link rel="stylesheet" href="css/common.css">
+        <link rel="stylesheet" href="css/surveys.css">
+        <script src="/js/uiColor.js" type="text/javascript"></script>
+    </head>
+    <body>
+        <div class="container">
+            <button onclick="window.location.href='/'" class="btn-back">&larr;
+                Retour</button>
+            <h1 class="page-title">Sondages</h1>
+
+            <div id="activeSurveys">
+                <h2>En cours</h2>
+                <div id="activeList"></div>
+            </div>
+
+            <div id="pastSurveys" style="margin-top: 3rem;">
+                <h2>Terminés</h2>
+                <div id="pastList"></div>
+            </div>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+        let socket;
+        let currentUser = null;
+
+        async function init() {
+            try {
+                // Auth check
+                const res = await fetch('/api/session');
+                if (res.status === 401 || !res.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const sessionData = await res.json();
+                currentUser = sessionData.pseudo;
+
+                socket = io({
+                    query: { username: currentUser }
+                });
+
+                // Initialize nav socket for color updates
+                if (window.initUiColor) {
+                    window.initUiColor(socket);
+                }
+
+                // Listen for updates
+                socket.on('survey:new', (survey) => {
+                    addSurveyToList(survey);
+                });
+
+                socket.on('survey:update', ({ id, results }) => {
+                    updateSurveyResults(id, results);
+                });
+
+                socket.on('survey:closed', ({ id }) => {
+                    moveSurveyToPast(id);
+                });
+                
+                socket.on('survey:deleted', ({ id }) => {
+                    removeSurvey(id);
+                });
+
+                loadSurveys();
+            } catch (e) {
+                console.error("Init error", e);
+            }
+        }
+
+        async function loadSurveys() {
+            try {
+                const res = await fetch('/api/surveys/list');
+                const surveys = await res.json();
+                
+                document.getElementById('activeList').innerHTML = '';
+                document.getElementById('pastList').innerHTML = '';
+
+                if (surveys.length === 0) {
+                    document.getElementById('activeList').innerHTML = '<div class="empty-msg">Aucun sondage en cours</div>';
+                    document.getElementById('pastList').innerHTML = '<div class="empty-msg">Aucun sondage terminé</div>';
+                    return;
+                }
+
+                surveys.forEach(addSurveyToList);
+                checkEmptyLists();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function checkEmptyLists() {
+            const activeList = document.getElementById('activeList');
+            const pastList = document.getElementById('pastList');
+            
+            if (!activeList.children.length) activeList.innerHTML = '<div class="empty-msg">Aucun sondage en cours</div>';
+            if (!pastList.children.length) pastList.innerHTML = '<div class="empty-msg">Aucun sondage terminé</div>';
+        }
+
+        function addSurveyToList(survey) {
+            // Remove empty msg if exists
+            const listId = survey.status === 'active' ? 'activeList' : 'pastList';
+            const list = document.getElementById(listId);
+            if (list.querySelector('.empty-msg')) list.innerHTML = '';
+
+            // Check if already exists
+            if (document.getElementById(`survey-${survey.id}`)) return;
+
+            const card = document.createElement('div');
+            card.className = 'survey-card';
+            card.id = `survey-${survey.id}`;
+            
+            renderSurveyContent(card, survey);
+            
+            // Prepend to show newest first
+            list.insertBefore(card, list.firstChild);
+        }
+
+        function renderSurveyContent(card, survey) {
+            const isClosed = survey.status === 'closed';
+            const hasVoted = survey.hasVoted || (survey.userVote !== null && survey.userVote !== undefined);
+            
+            let content = `
+                <div class="survey-question">${survey.question}</div>
+                <div class="survey-content">
+            `;
+
+            if (isClosed || hasVoted) {
+                // Show results
+                content += renderResults(survey);
+            } else {
+                // Show choices
+                content += `<div class="survey-choices">`;
+                survey.choices.forEach((choice, index) => {
+                    content += `
+                        <button class="survey-choice-btn" onclick="vote('${survey.id}', ${index})">
+                            ${choice}
+                        </button>
+                    `;
+                });
+                content += `</div>`;
+            }
+
+            content += `
+                </div>
+                <div class="survey-meta">
+                    <span>Par ${survey.createdBy} • ${new Date(survey.createdAt).toLocaleDateString()}</span>
+                    <div>
+                        ${hasVoted ? '<span class="voted-badge">A voté</span>' : ''}
+                        <span class="status-badge status-${survey.status}">${isClosed ? 'Terminé' : 'En cours'}</span>
+                    </div>
+                </div>
+            `;
+
+            card.innerHTML = content;
+        }
+
+        function renderResults(survey) {
+            let html = '<div class="survey-results">';
+            const total = survey.results.total || 0;
+            
+            survey.choices.forEach((choice, index) => {
+                const count = survey.results.counts[index] || 0;
+                const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+                const isUserChoice = survey.userVote === index;
+                
+                html += `
+                    <div class="result-row">
+                        <div class="result-label">
+                            <span>${choice} ${isUserChoice ? ' (Votre choix)' : ''}</span>
+                            <span>${percent}% (${count})</span>
+                        </div>
+                        <div class="result-bar-bg">
+                            <div class="result-bar-fill" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        async function vote(surveyId, choiceIndex) {
+            try {
+                const res = await fetch('/api/surveys/vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ surveyId, choiceIndex })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    // Update local UI immediately
+                    const card = document.getElementById(`survey-${surveyId}`);
+                    // We need to fetch the survey again or update local state to render results
+                    // For simplicity, let's just reload the list or update this specific card
+                    // But we need the full survey object to re-render.
+                    // Let's just reload for now or wait for socket update?
+                    // Socket update sends results, but we need to know we voted.
+                    
+                    // Ideally we update the card to show results
+                    // We can construct a temporary survey object
+                    // But simpler to just reload or fetch this survey.
+                    // Let's just reload the list for now to be safe
+                    loadSurveys(); 
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Erreur lors du vote");
+            }
+        }
+
+        function updateSurveyResults(id, results) {
+            const card = document.getElementById(`survey-${id}`);
+            if (!card) return;
+            
+            // If we are currently viewing choices (haven't voted), we don't want to switch to results view automatically
+            // unless we just voted (handled by vote function) or if we want to show live results even before voting?
+            // Usually surveys hide results until you vote.
+            // So if I haven't voted, I shouldn't see results.
+            // But the socket event comes to everyone.
+            
+            // We need to know if WE voted to decide whether to show results.
+            // The socket event doesn't tell us if WE voted.
+            // But if we are in "choices" mode, we ignore the results update visually, 
+            // unless we want to show a "total votes" counter?
+            
+            // If we are already showing results (because we voted or it's closed), update the bars.
+            const resultsContainer = card.querySelector('.survey-results');
+            if (resultsContainer) {
+                // Update bars
+                const total = results.total || 0;
+                const bars = resultsContainer.querySelectorAll('.result-bar-fill');
+                const labels = resultsContainer.querySelectorAll('.result-label span:last-child');
+                
+                bars.forEach((bar, index) => {
+                    const count = results.counts[index] || 0;
+                    const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+                    bar.style.width = `${percent}%`;
+                    if (labels[index]) labels[index].textContent = `${percent}% (${count})`;
+                });
+            }
+        }
+
+        function moveSurveyToPast(id) {
+            const card = document.getElementById(`survey-${id}`);
+            if (!card) return;
+            
+            const pastList = document.getElementById('pastList');
+            const activeList = document.getElementById('activeList');
+            
+            // Update status badge
+            const badge = card.querySelector('.status-badge');
+            if (badge) {
+                badge.className = 'status-badge status-closed';
+                badge.textContent = 'Terminé';
+            }
+            
+            // Force render results if not already (because closed surveys show results to everyone)
+            // We need the survey data for this. 
+            // Simplest is to reload list.
+            loadSurveys();
+        }
+        
+        function removeSurvey(id) {
+            const card = document.getElementById(`survey-${id}`);
+            if (card) card.remove();
+            checkEmptyLists();
+        }
+
+        init();
+    </script>
+    </body>
+</html>

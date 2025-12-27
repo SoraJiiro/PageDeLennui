@@ -49,6 +49,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./system.js"),
       import("./motus.js"),
       import("./motus_leaderboard.js"),
+      import("./codenames.js"),
     ]);
 
     const [
@@ -73,6 +74,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
       system,
       motus,
       motusLeaderboard,
+      codenames,
     ] = modules;
 
     const socket = io({
@@ -88,8 +90,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
 
     window.username = username;
 
-    if (window.initNavSocket) {
-      window.initNavSocket(socket);
+    if (window.initUiColor) {
+      window.initUiColor(socket);
     }
 
     socket.on("reload", (data) => {
@@ -140,6 +142,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (motus?.initMotus) motus.initMotus(socket);
     if (motusLeaderboard?.initMotusLeaderboard)
       motusLeaderboard.initMotusLeaderboard(socket);
+    if (codenames?.initCodenames) codenames.initCodenames(socket);
 
     socket.connect();
 
@@ -147,6 +150,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
       socket.emit("uno:getState");
       socket.emit("pictionary:getState");
       socket.emit("p4:getState");
+      socket.emit("codenames:getState");
     });
   } catch (err) {
     console.error("Erreur chargement modules : ", err);

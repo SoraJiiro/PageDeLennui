@@ -8,12 +8,7 @@
       media="(prefers-color-scheme: dark)" />
     <link rel='icon' type="img/png" href="imgs/icon_l.png"
       media="(prefers-color-scheme: light)" />
-    <script>
-      const savedColor = localStorage.getItem("uiColor");
-      if (savedColor) {
-        document.documentElement.style.setProperty("--primary-color", savedColor);
-      }
-    </script>
+    <script src="/js/uiColor.js" type="text/javascript"></script>
     <style>
 
       @import url("https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");

@@ -200,7 +200,20 @@ button.log-off:hover {
 .pictionary-guess button,
 .pic-clear-btn,
 .keybind-submit,
-.log-off {
+.log-off,
+.survey-choice-btn,
+.btn-back,
+.action-buttons button,
+.admin-header .header-btns button,
+.pictionary-controls button,
+.pictionary-toolbar button,
+.sidebar-toggle,
+.log-off-btn,
+.pictionary-lobby button,
+.motus-reset,
+.motus-skip,
+.motus-continue,
+.regen-colors-btn {
   background: var(--bg-color);
   color: var(--primary-color);
   border: 2px solid var(--primary-color);
@@ -227,7 +240,20 @@ button.log-off:hover {
 .pictionary-guess button:not(:disabled):hover,
 .pic-clear-btn:not(:disabled):hover,
 .keybind-submit:not(:disabled):hover,
-button.log-off:not(:disabled):hover {
+button.log-off:not(:disabled):hover,
+.survey-choice-btn:not(:disabled):hover,
+.btn-back:not(:disabled):hover,
+.action-buttons button:not(:disabled):hover,
+.admin-header .header-btns button:not(:disabled):hover,
+.pictionary-controls button:not(:disabled):hover,
+.pictionary-toolbar button:not(:disabled):hover,
+.sidebar-toggle:not(:disabled):hover,
+.log-off-btn:not(:disabled):hover,
+.pictionary-lobby button:not(:disabled):hover,
+.motus-reset:not(:disabled):hover,
+.motus-skip:not(:disabled):hover,
+.motus-continue:not(:disabled):hover,
+.regen-colors-btn:not(:disabled):hover {
   color: var(--bg-color);
   background: var(--primary-color);
   border: 2px solid var(--bg-color);
@@ -245,7 +271,19 @@ button.log-off:not(:disabled):hover {
 .p4-btn-wrapper button:disabled,
 .chat-form button:disabled,
 .keybind-submit:disabled,
-.pictionary-guess button:disabled {
+.pictionary-guess button:disabled,
+.survey-choice-btn:disabled,
+.btn-back:disabled,
+.action-buttons button:disabled,
+.admin-header .header-btns button:disabled,
+.pictionary-controls button:disabled,
+.pictionary-toolbar button:disabled,
+.sidebar-toggle:disabled,
+.log-off-btn:disabled,
+.pictionary-lobby button:disabled,
+.motus-reset:disabled,
+.motus-skip:disabled,
+.motus-continue:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   outline: none;
@@ -257,31 +295,22 @@ button.reset,
 .flappyResetBtn,
 .pic-clear-btn,
 .blockblast-reset,
-.snake-reset {
+.snake-reset,
+.log-off-btn {
   background: var(--bg-color) !important;
   color: var(--red-color) !important;
   border-color: var(--red-color) !important;
   border: 2px solid var(--red-color) !important;
 }
 
-.btn-reset,
-button.reset,
-.dino-reset,
-.flappyResetBtn,
-.pic-clear-btn,
-.blockblast-reset,
-.snake-reset {
-  background: var(--bg-color) !important;
-  color: var(--red-color) !important;
-  border-color: var(--red-color) !important;
-}
 .btn-reset:not(:disabled):hover,
 button.reset:not(:disabled):hover,
 .dino-reset:not(:disabled):hover,
 .flappyResetBtn:not(:disabled):hover,
 .pic-clear-btn:not(:disabled):hover,
 .blockblast-reset:not(:disabled):hover,
-.snake-reset:not(:disabled):hover {
+.snake-reset:not(:disabled):hover,
+.log-off-btn:not(:disabled):hover {
   background: var(--red-color) !important;
   color: var(--bg-color) !important;
   border: 2px solid var(--bg-color) !important;
@@ -349,11 +378,6 @@ p.pause-info {
 .palette-btn {
   width: 20px;
   height: 20px;
-  /* Assuming size based on context, but inline style didn't specify size, just bg. 
-     Wait, the inline styles were just background colors. 
-     I should probably make a class for the button shape if needed, 
-     but the inline style was ONLY background (and border for the black one).
-  */
 }
 
 .palette-btn-black {
