@@ -158,3 +158,48 @@ export function darken(hex, percent) {
   const toHex = (c) => c.toString(16).padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
+
+export function requestPassword() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('password-modal');
+    const input = document.getElementById('password-input');
+    const confirmBtn = document.getElementById('password-confirm');
+    const cancelBtn = document.getElementById('password-cancel');
+
+    if (!modal || !input || !confirmBtn || !cancelBtn) {
+      console.error('Password modal elements missing');
+      resolve(null);
+      return;
+    }
+
+    const cleanup = () => {
+      modal.style.display = 'none';
+      input.value = '';
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+      input.onkeydown = null;
+    };
+
+    const confirm = () => {
+      const password = input.value;
+      cleanup();
+      resolve(password);
+    };
+
+    const cancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    confirmBtn.onclick = confirm;
+    cancelBtn.onclick = cancel;
+    
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') confirm();
+      if (e.key === 'Escape') cancel();
+    };
+
+    modal.style.display = 'flex';
+    input.focus();
+  });
+}

@@ -1,4 +1,4 @@
-import { showNotif } from "./util.js";
+import { showNotif, requestPassword } from "./util.js";
 
 export function initClicker(socket) {
   // ---------- Cache UI ----------
@@ -303,7 +303,7 @@ export function initClicker(socket) {
     );
     if (!confirmReset) return;
 
-    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    const password = await requestPassword();
     if (!password) {
       showNotif("❌ Réinitialisation annulée");
       return;

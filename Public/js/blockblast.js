@@ -1,4 +1,4 @@
-import { showNotif, toggleScrollLock } from "./util.js";
+import { showNotif, toggleScrollLock, requestPassword } from "./util.js";
 
 export function initBlockBlast(socket) {
   const GRID_SIZE = 8; // Le jeu original utilise 8x8
@@ -1495,7 +1495,7 @@ export function initBlockBlast(socket) {
     );
     if (!confirmReset) return;
 
-    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    const password = await requestPassword();
     if (!password) {
       showNotif("❌ Réinitialisation annulée");
       return;

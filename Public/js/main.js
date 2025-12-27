@@ -12,7 +12,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
     return;
   }
 
-  const { username } = await sessionRes.json();
+  const { username, rulesAccepted } = await sessionRes.json();
 
   try {
     keyBind(username);
@@ -136,7 +136,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (snakeLeaderboard?.initSnakeLeaderboard)
       snakeLeaderboard.initSnakeLeaderboard(socket);
     if (tagColor?.initTagColor) tagColor.initTagColor(socket);
-    if (system?.initSystem) system.initSystem(socket);
+    if (system?.initSystem) system.initSystem(socket, rulesAccepted);
     if (motus?.initMotus) motus.initMotus(socket);
     if (motusLeaderboard?.initMotusLeaderboard)
       motusLeaderboard.initMotusLeaderboard(socket);

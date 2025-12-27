@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Règlement - PDE</title>
+
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        <link rel="stylesheet" type="text/css" href="css/common.css">
+        <link rel="stylesheet" type="text/css" href="css/ruleStage.css">
+
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)" />
+
+        <script defer type="text/javascript" src="/js/uiColor.js"></script>
+        <script defer src="/socket.io/socket.io.js"></script>
+
+        <style>
+        body {
+            padding: 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .btn-back {
+            align-self: flex-start;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        .btn-back:hover {
+            text-decoration: underline;
+        }
+
+        /* Override ruleStage.css for static display */
+        .rules-content {
+            animation: none;
+            box-shadow: none;
+            margin: 0 auto;
+        }
+
+        .btn-accept {
+            display: none; /* Hide accept button on this page */
+        }
+    </style>
+    </head>
+    <body>
+        <div class="container">
+            <button onclick="window.location.href='/'" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+
+            <div class="rules-content">
+                <h2><i class="fa-solid fa-scale-balanced"></i> Règlement &
+                    Informations</h2>
+
+                <div class="rules-body">
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Vous pouvez changer la couleur de l'<u>UI</u> et de
+                            votre <u>TAG</u> depuis la Navigation (Menu en haut
+                            à gauche).</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Vous pouvez aussi demander un <u>TAG</u> personnalisé
+                            depuis la Navigation.</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Les stats seront <u>RESET</u> à chaque départ en
+                            vacances à partir du <u>5 Janvier 2026</u>.</p>
+                    </div>
+
+                    <div class="rule-item danger">
+                        <i class="fa fa-ban"></i>
+                        <p>Toute tentative de <u>TRICHE</u> entraînera un
+                            bannissement indéterminé et votre compte sera marqué
+                            comme <u>TRICHEUR</u>.</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-bug"></i>
+                        <p>Si vous trouvez un <u>BUG</u> (exploit, erreur,
+                            affichage...), signalez-le à l'Admin. Il sera
+                            corrigé au plus vite. (contre quelque heures de
+                            sommeil...)</p>
+                    </div>
+                </div>
+                <center>
+                    <hr
+                        style="border-color: var(--primary-color); margin-top: -20px; margin-bottom: 20px; width: 33%;" />
+                </center>
+
+                <p
+                    style="font-size: 1rem; text-align: center; margin-top: 10px;">
+                    Dernière mise à jour du règlement : <mark
+                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">27
+                        Décembre 2025</mark></p>
+            </div>
+        </div>
+
+        <script>
+        // Initialize UI Color
+        const socket = io({ autoConnect: false });
+        if (window.initUiColor) {
+            window.initUiColor(socket);
+        }
+        socket.connect();
+    </script>
+    </body>
+</html>

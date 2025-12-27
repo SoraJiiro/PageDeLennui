@@ -128,7 +128,14 @@ router.post("/login", async (req, res) => {
 
 router.get("/session", (req, res) => {
   if (req.session && req.session.user && req.session.user.pseudo) {
-    res.json({ pseudo: req.session.user.pseudo });
+    const users = readUsers();
+    const user = users.find(
+      (u) => u.pseudo.toLowerCase() === req.session.user.pseudo.toLowerCase()
+    );
+    res.json({
+      pseudo: req.session.user.pseudo,
+      rulesAccepted: user ? !!user.rulesAccepted : false,
+    });
   } else {
     res.status(401).json({ error: "Non connecté" });
   }

@@ -1,4 +1,4 @@
-import { showNotif, keys, toggleScrollLock } from "./util.js";
+import { showNotif, keys, toggleScrollLock, requestPassword } from "./util.js";
 
 export function initFlappy(socket) {
   // ---------- Cache UI ----------
@@ -496,7 +496,7 @@ export function initFlappy(socket) {
     );
     if (!confirmReset) return;
 
-    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    const password = await requestPassword();
     if (!password) {
       showNotif("❌ Réinitialisation annulée");
       return;

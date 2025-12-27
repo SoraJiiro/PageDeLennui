@@ -1,4 +1,5 @@
 const { FileService, getIpFromSocket, persistBanIp } = require("./util");
+const dbUsers = require("./dbUsers");
 const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
@@ -184,6 +185,16 @@ function initSocketHandlers(io, socket, gameState) {
   if (savedUiColor) {
     socket.emit("ui:color", { color: savedUiColor });
   }
+
+  socket.on("system:acceptRules", () => {
+    const db = dbUsers.readAll();
+    const u = db.users.find((u) => u.pseudo === pseudo);
+    if (u) {
+      u.rulesAccepted = true;
+      dbUsers.writeAll(db);
+      socket.emit("system:rulesAccepted");
+    }
+  });
 
   const rawUserMedalsInit = FileService.data.medals[pseudo] || [];
   const normalizedInit = rawUserMedalsInit.map((m) =>

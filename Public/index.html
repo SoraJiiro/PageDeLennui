@@ -16,8 +16,8 @@
         </noscript>
 
         <link rel="stylesheet" type="text/css" href="css/common.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage1.css">
-        <link rel="stylesheet" type="text/css" href="css/stage1p0.css" />
+        <link rel="stylesheet" type="text/css" href="css/ruleStage.css">
+        <link rel="stylesheet" type="text/css" href="css/stage1.css" />
         <link rel="stylesheet" type="text/css" href="css/stage2.css" />
         <link rel="stylesheet" type="text/css" href="css/stage3.css" />
         <link rel="stylesheet" type="text/css" href="css/stage4.css" />
@@ -86,6 +86,8 @@
                                 class="nav-btn sec4">Classements</button></li>
                         <li><a href="surveys.html"
                                 class="nav-link">Sondages</a></li>
+                        <li><a href="reglement.html"
+                                class="nav-link">Règlement</a></li>
                     </ul>
                 </div>
 
@@ -116,11 +118,77 @@
             </div>
         </nav>
         <div id="sidebar-overlay" class="sidebar-overlay"></div>
-        <section id="stage1">
-            <center><pre
-                    style="margin-top: 25vh; border: 2px solid var(--primary-color); padding: 2px 5px; text-align: left; padding: 12.5px; line-height: 1.75; white-space: pre-wrap;"><p><i class="fa fa-info-circle"></i> Vous pouvez changer la couleur de l'<u>UI</u> et de votre <u>TAG</u> depuis la Navigation!</p><p><i class="fa fa-info-circle"></i> Vous pouvez aussi demander un <u>TAG</u> depuis la Navigation!</p><p><i class="fa fa-warning"></i> Si vous trouvez un <u>BUG</u> de n'importe quelle nature (exploit, bug de programmation, orthographe, affichage ...), parlez-en à l'Admin et il s'emperchera de dormir pour le regler!</p><p><i class="fa fa-warning"></i> Si vous êtes pris à tricher, vous serez <u>BANNIS</u> pour une durée indéterminée et votre compte sera flag comme <u>TRICHEUR</u>.</p></pre></center>
+        <section id="ruleStage" class="rules-overlay">
+            <div class="rules-content">
+                <h2><i class="fa-solid fa-scale-balanced"></i> Règlement &
+                    Informations</h2>
+
+                <div class="rules-body">
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Vous pouvez changer la couleur de l'<u>UI</u> et de
+                            votre <u>TAG</u> depuis la Navigation (Menu en haut
+                            à gauche).</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Vous pouvez aussi demander un <u>TAG</u> personnalisé
+                            depuis la Navigation.</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Les stats seront <u>RESET</u> à chaque départ en
+                            vacances à partir du <u>5 Janvier 2026</u>.</p>
+                    </div>
+
+                    <div class="rule-item danger">
+                        <i class="fa fa-ban"></i>
+                        <p>Toute tentative de <u>TRICHE</u> entraînera un
+                            bannissement indéterminé et votre compte sera marqué
+                            comme <u>TRICHEUR</u>.</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-bug"></i>
+                        <p>Si vous trouvez un <u>BUG</u> (exploit, erreur,
+                            affichage...), signalez-le à l'Admin. Il sera
+                            corrigé au plus vite. (contre quelque heures de
+                            sommeil...)</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-warning"></i>
+                        <p>En appuyant sur le bouton ci-dessous, vous
+                            acceptez le règlement. Vous ne pourrez plus le
+                            contester par
+                            la suite, mais vous pourrez le consulter à nouveau
+                            depuis la Navigation. Soyez bien sûr
+                            de bien
+                            avoir prit en compte toutes les règles et les
+                            informations
+                            mises à disposition.</p>
+                    </div>
+                </div>
+                <center>
+                    <hr
+                        style="border-color: var(--primary-color); margin-top: -20px; margin-bottom: 10px; width: 33%;" />
+                </center>
+
+                <button id="acceptRulesBtn" class="btn-accept">
+                    <i class="fa-solid fa-check"></i> J'ai lu et j'accepte le
+                    règlement
+                </button>
+            </div>
         </section>
-        <section id="stage1p0">
+        <script>
+            if (localStorage.getItem("rulesAccepted") === "true") {
+                document.getElementById("ruleStage").style.display = "none";
+            }
+        </script>
+
+        <section id="stage1">
             <h1 class="display"></h1>
             <div class="keybind-wrap">
                 <label for="keybind">Changer la touche de Pause</label>
@@ -645,6 +713,21 @@
             </div>
         </section>
 
+        <!-- Password Modal -->
+        <div id="password-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <h3>🔒 Confirmation requise</h3>
+                <p>Entre ton mot de passe pour confirmer cette action :</p>
+                <input type="password" id="password-input"
+                    placeholder="Mot de passe" autocomplete="current-password">
+                <div class="modal-buttons">
+                    <button id="password-cancel"
+                        class="btn-cancel">Annuler</button>
+                    <button id="password-confirm"
+                        class="btn-confirm">Confirmer</button>
+                </div>
+            </div>
+        </div>
     </body>
 
     <script defer type="text/javascript">

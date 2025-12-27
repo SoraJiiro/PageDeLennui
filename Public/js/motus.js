@@ -384,6 +384,9 @@ export function initMotus(socket) {
     if (!stage || stage.getBoundingClientRect().top > window.innerHeight)
       return;
 
+    // Allow browser shortcuts (Ctrl+R, Ctrl+Shift+I, etc.)
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
     if (e.key === "Enter") handleEnter();
     else if (e.key === "Backspace") {
       e.preventDefault(); // Empecher le retour en arriere de la page sur Firefox

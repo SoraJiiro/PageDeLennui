@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Attach event listeners to buttons
   const navButtons = {
-    ".sec1": "stage1p0",
+    ".sec1": "stage1",
     ".sec2": "stage2",
     ".sec3": "stage3",
     ".sec4": "stage4",
@@ -55,8 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ".sec7": "stage7",
     ".sec8": "stage8",
     ".sec9": "stage9",
-    ".sec10": "stage1p00", // Snake
-    ".sec11": "stage1p01", // Motus
+    ".sec10": "stage10",
+    ".sec11": "stage11",
   };
 
   for (const [selector, target] of Object.entries(navButtons)) {

@@ -1,4 +1,10 @@
-import { showNotif, keys, darken, toggleScrollLock } from "./util.js";
+import {
+  showNotif,
+  keys,
+  darken,
+  toggleScrollLock,
+  requestPassword,
+} from "./util.js";
 
 const CONSTANTS = {
   GRID_SIZE: 23,
@@ -694,7 +700,7 @@ class SnakeGame {
     );
     if (!confirmReset) return;
 
-    const password = prompt("🔒 Entre ton mot de passe pour confirmer :");
+    const password = await requestPassword();
     if (!password) {
       showNotif("❌ Réinitialisation annulée");
       return;

@@ -1771,7 +1771,10 @@ async function modifyTries() {
         }
 
         async function requestUnlock() {
-            const password = prompt("Entrez le mot de passe administrateur pour afficher le panneau :");
+            // Dynamic import to use the modal utility
+            const { requestPassword } = await import('/js/util.js');
+            const password = await requestPassword();
+            
             if (password === null) return;
 
             try {
@@ -1823,5 +1826,20 @@ async function modifyTries() {
     // Initialiser
     checkSes();
     </script>
+        <!-- Password Modal -->
+        <div id="password-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <h3>🔒 Confirmation requise</h3>
+                <p>Entre ton mot de passe pour confirmer cette action :</p>
+                <input type="password" id="password-input"
+                    placeholder="Mot de passe" autocomplete="current-password">
+                <div class="modal-buttons">
+                    <button id="password-cancel"
+                        class="btn-cancel">Annuler</button>
+                    <button id="password-confirm"
+                        class="btn-confirm">Confirmer</button>
+                </div>
+            </div>
+        </div>
     </body>
 </html>
