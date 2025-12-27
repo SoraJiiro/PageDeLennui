@@ -3,7 +3,6 @@ const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
 const MotusGame = require("./motusGame");
-const CodenamesGame = require("./codenamesGame");
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
@@ -33,7 +32,6 @@ let pictionaryGame = new PictionaryGame();
 let pictionaryTimer = null;
 let p4Game = new Puissance4Game();
 let motusGame = new MotusGame();
-let codenamesGame = new CodenamesGame();
 
 // ------- Colors -------
 const orange = "\x1b[38;5;208m"; // pseudos
@@ -2288,39 +2286,6 @@ function initSocketHandlers(io, socket, gameState) {
   socket.emit("motus:leaderboard", lb);
 
   // ------- Log off -------
-  // --- CODENAMES ---
-  socket.on('codenames:getState', () => {
-    codenamesGame.join(socket, pseudo);
-  });
-
-  socket.on('codenames:team', (team) => {
-    codenamesGame.setTeam(socket, team);
-  });
-
-  socket.on('codenames:role', (role) => {
-    codenamesGame.setRole(socket, role);
-  });
-
-  socket.on('codenames:start', () => {
-    codenamesGame.startGame(io);
-  });
-
-  socket.on('codenames:clue', ({ word, number }) => {
-    codenamesGame.giveClue(socket, word, number);
-  });
-
-  socket.on('codenames:click', (index) => {
-    codenamesGame.clickCard(socket, index);
-  });
-
-  socket.on('codenames:pass', () => {
-    codenamesGame.passTurn(socket);
-  });
-
-  socket.on('codenames:leave', () => {
-    codenamesGame.leave(socket);
-  });
-
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
 
@@ -2413,11 +2378,6 @@ function initSocketHandlers(io, socket, gameState) {
       } else {
         p4Game.removeSpectator(pseudo);
       }
-    }
-
-    // CODENAMES
-    if (codenamesGame) {
-        codenamesGame.leave(socket);
     }
   });
 }

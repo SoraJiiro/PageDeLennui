@@ -28,7 +28,6 @@
         <link rel="stylesheet" type="text/css" href="css/stage9.css" />
         <link rel="stylesheet" type="text/css" href="css/stage10.css" />
         <link rel="stylesheet" type="text/css" href="css/stage11.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage12.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -76,7 +75,6 @@
                                 Blast</button></li>
                         <li><button class="nav-btn sec10">Snake</button></li>
                         <li><button class="nav-btn sec11">Motus</button></li>
-                        <li><button class="nav-btn sec12">Codenames</button></li>
                     </ul>
                 </div>
 
@@ -643,95 +641,6 @@
                         style="padding: 10px 20px; background: #ff4444; color: black; border: none; cursor: pointer;">Passer</button>
                     <button class="motus-continue"
                         style="display: none; padding: 10px 20px; background: var(--primary-color); color: black; border: none; cursor: pointer;">Continuer</button>
-                </div>
-            </div>
-        </section>
-
-            </div>
-        </section>
-
-        <section id="stage12">
-            <div class="codenames-card">
-                <div class="codenames-header">
-                    <h2>Codenames.exe</h2>
-                    <div class="codenames-status">
-                        <span id="cn-turn-indicator" class="turn-indicator">En attente...</span>
-                    </div>
-                </div>
-
-                <!-- LOBBY -->
-                <div class="codenames-lobby">
-                    <div class="team-column team-red">
-                        <div class="team-header">Équipe Rouge</div>
-                        <div class="role-section">
-                            <div class="role-title">Espion (1 max)</div>
-                            <div id="cn-slot-spy-red" class="player-slot">Libre</div>
-                            <button id="cn-btn-role-spy-red" class="btn-join">Devenir Espion</button>
-                        </div>
-                        <div class="role-section">
-                            <div class="role-title">Agents</div>
-                            <div id="cn-list-op-red"></div>
-                            <button id="cn-btn-role-op-red" class="btn-join">Devenir Agent</button>
-                        </div>
-                        <button id="cn-btn-join-red" class="btn-action" style="width:100%; margin-top:10px; background:#ff4444; color:#fff">Rejoindre Rouge</button>
-                    </div>
-
-                    <div class="team-column team-blue">
-                        <div class="team-header">Équipe Bleue</div>
-                        <div class="role-section">
-                            <div class="role-title">Espion (1 max)</div>
-                            <div id="cn-slot-spy-blue" class="player-slot">Libre</div>
-                            <button id="cn-btn-role-spy-blue" class="btn-join">Devenir Espion</button>
-                        </div>
-                        <div class="role-section">
-                            <div class="role-title">Agents</div>
-                            <div id="cn-list-op-blue"></div>
-                            <button id="cn-btn-role-op-blue" class="btn-join">Devenir Agent</button>
-                        </div>
-                        <button id="cn-btn-join-blue" class="btn-action" style="width:100%; margin-top:10px; background:#4444ff; color:#fff">Rejoindre Bleu</button>
-                    </div>
-
-                    <div class="lobby-controls">
-                        <button id="cn-btn-start" class="btn-action">Démarrer la partie</button>
-                    </div>
-                </div>
-
-                <!-- GAME -->
-                <div class="codenames-game" style="display:none;">
-                    <div class="game-info-bar">
-                        <div class="score-display score-red">Rouge: <span id="cn-score-red">0</span></div>
-                        <div id="cn-current-clue" style="font-weight:bold; color:#fff"></div>
-                        <div class="score-display score-blue">Bleu: <span id="cn-score-blue">0</span></div>
-                    </div>
-
-                    <div id="cn-board" class="board-grid"></div>
-
-                    <div id="cn-controls" class="game-controls">
-                        <div id="cn-clue-input" class="clue-input-area" style="display:none;">
-                            <input type="text" id="cn-clue-word" placeholder="Indice (1 mot)" maxlength="20">
-                            <select id="cn-clue-num">
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="0">0 (Illimité)</option>
-                            </select>
-                            <button id="cn-btn-give-clue" class="btn-action">Donner l'indice</button>
-                        </div>
-
-                        <div id="cn-guess-controls" style="display:none;">
-                            <button id="cn-btn-pass" class="btn-action" style="background:#888; color:#fff">Passer le tour</button>
-                        </div>
-                        
-                        <button id="cn-btn-leave" class="btn-action" style="background:transparent; border:1px solid #555; color:#aaa; margin-left:auto">Quitter</button>
-                    </div>
-
-                    <div id="cn-log" class="log-area"></div>
                 </div>
             </div>
         </section>

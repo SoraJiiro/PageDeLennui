@@ -55,9 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ".sec7": "stage7",
     ".sec8": "stage8",
     ".sec9": "stage9",
-    ".sec10": "stage10",
-    ".sec11": "stage11",
-    ".sec12": "stage12",
+    ".sec10": "stage1p00", // Snake
+    ".sec11": "stage1p01", // Motus
   };
 
   for (const [selector, target] of Object.entries(navButtons)) {
