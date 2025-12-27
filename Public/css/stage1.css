@@ -36,7 +36,7 @@
 }
 
 #stage1 {
-  width: 100vw;
+  width: 100%;
   min-height: 100dvh;
   display: block;
   justify-content: center;

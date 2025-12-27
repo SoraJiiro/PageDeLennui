@@ -4,7 +4,7 @@ body {
 }
 
 .admin-container {
-  max-width: clamp(320px, 95%, 1400px);
+  max-width: 1600px;
   min-width: 80px;
   margin: 20px auto;
   padding: 12px;

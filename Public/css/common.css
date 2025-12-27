@@ -494,3 +494,12 @@ body ::-webkit-scrollbar {
     background: #fff;
     color: #000;
 }
+
+/* Global Stage Layout for Large Screens */
+section[id^='stage'], section[id^='ruleStage'] {
+    width: 100%;
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
