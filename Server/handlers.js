@@ -107,6 +107,12 @@ const leaderboardManager = {
       );
     io.emit("motus:leaderboard", arr);
   },
+  broadcast2048LB(io) {
+    const arr = Object.entries(FileService.data.scores2048 || {})
+      .map(([u, s]) => ({ pseudo: u, score: s }))
+      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    io.emit("2048:leaderboard", arr);
+  },
   broadcastBlockBlastLB(io) {
     const arr = Object.entries(FileService.data.blockblastScores)
       .map(([u, s]) => ({
@@ -224,6 +230,8 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastP4LB(io);
   leaderboardManager.broadcastBlockBlastLB(io);
   leaderboardManager.broadcastSnakeLB(io);
+  leaderboardManager.broadcastMotusLB(io);
+  leaderboardManager.broadcast2048LB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
   if (pseudo !== "Admin") {
@@ -1745,6 +1753,37 @@ function initSocketHandlers(io, socket, gameState) {
     }
   });
 
+  // ------- 2048 Revive -------
+  socket.on("2048:payToContinue", ({ price }) => {
+    const userClicks = FileService.data.clicks[pseudo] || 0;
+    const cost = Number(price);
+
+    if (isNaN(cost) || cost < 0) {
+      socket.emit("2048:reviveError", "Prix invalide.");
+      return;
+    }
+
+    if (userClicks >= cost) {
+      FileService.data.clicks[pseudo] = userClicks - cost;
+      FileService.save("clicks", FileService.data.clicks);
+
+      socket.emit("clicker:update", {
+        clicks: FileService.data.clicks[pseudo],
+      });
+      leaderboardManager.broadcastClickerLB(io);
+
+      socket.emit("2048:reviveSuccess");
+      console.log(
+        withGame(
+          `[2048] ${pseudo} a payé ${cost} clicks pour continuer.`,
+          green
+        )
+      );
+    } else {
+      socket.emit("2048:reviveError", "Pas assez de clicks !");
+    }
+  });
+
   socket.on("blockblast:reset", () => {
     // Réinitialiser le meilleur score à 0
     FileService.data.blockblastScores[pseudo] = 0;
@@ -2295,6 +2334,41 @@ function initSocketHandlers(io, socket, gameState) {
         a.pseudo.localeCompare(b.pseudo)
     );
   socket.emit("motus:leaderboard", lb);
+
+  // ------- 2048 -------
+  socket.on("2048:submit_score", (score) => {
+    const s = Number(score);
+    if (isNaN(s)) return;
+
+    if (!FileService.data.scores2048) FileService.data.scores2048 = {};
+    const currentBest = FileService.data.scores2048[pseudo] || 0;
+
+    if (s > currentBest) {
+      FileService.data.scores2048[pseudo] = s;
+      FileService.save("scores2048", FileService.data.scores2048);
+
+      console.log(
+        withGame(`[2048] Nouveau record pour ${pseudo} : ${s}`, green)
+      );
+
+      socket.emit("2048:best_score", s);
+    }
+
+    leaderboardManager.broadcast2048LB(io);
+  });
+
+  socket.on("2048:get_best_score", () => {
+    const best =
+      (FileService.data.scores2048 && FileService.data.scores2048[pseudo]) || 0;
+    socket.emit("2048:best_score", best);
+  });
+
+  socket.on("2048:get_leaderboard", () => {
+    leaderboardManager.broadcast2048LB(io);
+  });
+
+  // Send LB on connect
+  leaderboardManager.broadcast2048LB(io);
 
   // ------- Log off -------
   socket.on("disconnect", () => {

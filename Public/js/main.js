@@ -49,6 +49,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./system.js"),
       import("./motus.js"),
       import("./motus_leaderboard.js"),
+      import("./2048.js"),
+      import("./2048_leaderboard.js"),
     ]);
 
     const [
@@ -73,6 +75,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       system,
       motus,
       motusLeaderboard,
+      game2048,
+      game2048Leaderboard,
     ] = modules;
 
     const socket = io({
@@ -140,6 +144,9 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (motus?.initMotus) motus.initMotus(socket);
     if (motusLeaderboard?.initMotusLeaderboard)
       motusLeaderboard.initMotusLeaderboard(socket);
+    if (game2048?.init2048) game2048.init2048(socket);
+    if (game2048Leaderboard?.init2048Leaderboard)
+      game2048Leaderboard.init2048Leaderboard(socket);
 
     socket.connect();
 

@@ -28,6 +28,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage9.css" />
         <link rel="stylesheet" type="text/css" href="css/stage10.css" />
         <link rel="stylesheet" type="text/css" href="css/stage11.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage12.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -45,7 +46,7 @@
         <script defer type="text/javascript" src="js/keys.js"></script>
     </head>
 
-    <body> <!-- Sidebar Structure -->
+    <body>
         <button id="sidebar-toggle" class="sidebar-toggle"
             title="Ouvrir le menu">
             <i class="fa-solid fa-bars"></i>
@@ -75,6 +76,7 @@
                                 Blast</button></li>
                         <li><button class="nav-btn sec10">Snake</button></li>
                         <li><button class="nav-btn sec11">Motus</button></li>
+                        <li><button class="nav-btn sec12">2048</button></li>
                     </ul>
                 </div>
 
@@ -315,6 +317,7 @@
                 <button data-board="blockblast">Block Blast</button>
                 <button data-board="snake">Snake</button>
                 <button data-board="motus">Motus</button>
+                <button data-board="2048">2048</button>
             </div>
 
             <center>
@@ -410,6 +413,16 @@
                 </div>
                 <table class="board" id="motus-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Devinés</th><th>Essais</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD 2048 -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>2048 Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="leaderboard-2048">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -647,7 +660,7 @@
                         class="blockblast-gameover-time"></span></p>
 
                 <div class="blockblast-revive-section"
-                    style="display: none; margin: 15px 0; padding: 10px; border: 1px solid var(--primary-color); border-radius: 5px;">
+                    style="display: none; margin: 15px 0; padding: 10px; border: 1px solid var(--primary-color);">
                     <p style="margin: 5px 0;">Continuer la partie ?</p>
                     <p class="blockblast-revive-price"
                         style="margin: 5px 0; font-weight: bold;">Coût: <span
@@ -699,7 +712,7 @@
 
         <section id="stage11">
             <div class="motus-container">
-                <div class="motus-header">Motus</div>
+                <div class="motus-header"><h2>Motus.exe</h2></div>
                 <div class="motus-grid"></div>
                 <div class="motus-keyboard"></div>
                 <div class="motus-message"></div>
@@ -709,6 +722,33 @@
                         style="padding: 10px 20px; background: #ff4444; color: black; border: none; cursor: pointer;">Passer</button>
                     <button class="motus-continue"
                         style="display: none; padding: 10px 20px; background: var(--primary-color); color: black; border: none; cursor: pointer;">Continuer</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="stage12">
+            <div class="game-2048-container">
+                <div class="game-2048-header">
+                    <div class="game-2048-title"><h2>2048.exe</h2></div>
+                    <div class="game-2048-scores">
+                        <div class="score-box">
+                            <div class="score-label">Score : </div>
+                            <div class="score-value" id="score-2048">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-2048-board">
+                </div>
+
+                <div class="game-2048-controls">
+                    <button class="btn-2048" id="restart-2048">Rejouer</button>
+                </div>
+
+                <div class="game-over-overlay">
+                    <div class="game-over-text">Game Over!</div>
+                    <button class="btn-2048"
+                        id="try-again-2048">Rejouer</button>
                 </div>
             </div>
         </section>

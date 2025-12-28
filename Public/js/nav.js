@@ -57,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ".sec9": "stage9",
     ".sec10": "stage10",
     ".sec11": "stage11",
+    ".sec12": "stage12",
   };
 
   for (const [selector, target] of Object.entries(navButtons)) {

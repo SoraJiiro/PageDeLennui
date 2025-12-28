@@ -13,6 +13,7 @@ function showLeaderboard(name) {
     blockblast: "#blockblast-leaderboard",
     snake: "#snake-leaderboard",
     motus: "#motus-leaderboard",
+    2048: "#leaderboard-2048",
   };
 
   const table = document.querySelector(idMap[name]);

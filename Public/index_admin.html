@@ -73,6 +73,8 @@
                                     data-board="snake">Snake</button>
                                 <button class="lb-tab"
                                     data-board="motus">Motus</button>
+                                <button class="lb-tab"
+                                    data-board="2048">2048</button>
                             </div>
                         </center>
 
@@ -196,6 +198,19 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lb-motus"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="2048">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-2048"></tbody>
                             </table>
                         </div>
                     </section>
@@ -323,6 +338,8 @@
                                                     value="snakeScores">Snake</option>
                                                 <option
                                                     value="motusScores">Motus</option>
+                                                <option
+                                                    value="scores2048">2048</option>
                                                 <option value="all">Toutes les
                                                     stats</option>
                                             </select>
@@ -500,6 +517,52 @@
                                                 Supprimer des Leaderboards
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Reset Leaderboards (Global) -->
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-bomb"></i> /Reset
+                                    Leaderboards (Global)</h3>
+                                <div class="control-form">
+                                    <p
+                                        style="color: #ff4444; margin-bottom: 10px; font-size: 0.9em;">
+                                        ⚠️ Attention : Cette action va créer un
+                                        backup puis effacer TOUTES les stats
+                                        (sauf Clicks).
+                                    </p>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-red"
+                                            onclick="resetLeaderboard('all')"
+                                            style="width: 100%; padding: 15px; font-size: 1.2em;">
+                                            <i class="fa-solid fa-skull"></i>
+                                            RESET TOUT (Sauf Clicks)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Backups -->
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-history"></i>
+                                    /Backups</h3>
+                                <div class="control-form">
+                                    <div id="backupsList"
+                                        style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #333; padding: 5px;">
+                                        <p>Chargement...</p>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn"
+                                            onclick="createBackup()">
+                                            <i class="fa-solid fa-save"></i>
+                                            Créer Backup
+                                        </button>
+                                        <button class="btn"
+                                            onclick="loadBackups()">
+                                            <i class="fa-solid fa-sync"></i>
+                                            Rafraîchir
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -690,6 +753,7 @@
             socket.on('blockblast:leaderboard', (data) => updateLeaderboard('blockblast', data, 'score'));
             socket.on('snake:leaderboard', (data) => updateLeaderboard('snake', data, 'score'));
             socket.on('motus:leaderboard', (data) => updateLeaderboard('motus', data, 'words'));
+            socket.on('2048:leaderboard', (data) => updateLeaderboard('2048', data, 'score'));
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {
@@ -856,6 +920,10 @@
                 <div class="user-stat">
                     <span class="label">Score Block Blast:</span>
                     <span class="value">${data.blockblastScore || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Score 2048:</span>
+                    <span class="value">${data.score2048 || 0}</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">Motus (Mots/Essais):</span>
@@ -1795,6 +1863,123 @@ async function modifyTries() {
             }
         }
 
+        async function resetLeaderboard(type) {
+            if (type !== 'all') return;
+
+            if (!confirm(`⚠️ Êtes-vous SÛR de vouloir réinitialiser TOUS les leaderboards (sauf Clicks) ?\nUn backup sera créé automatiquement.`)) {
+                return;
+            }
+
+            // Double confirmation pour éviter les accidents
+            if (!confirm(`⚠️ Confirmation finale : Supprimer TOUTES les données ?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/reset-leaderboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ boardType: 'all' })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    socket.emit('admin:refresh');
+                    loadBackups();
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur lors du reset', 'error');
+            }
+        }
+
+        async function createBackup() {
+            if (!confirm("Créer un backup manuel de toutes les stats (y compris Clicks) ?")) return;
+
+            try {
+                const res = await fetch('/api/admin/backups/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showNotification('✅ Backup créé avec succès', 'success');
+                    loadBackups();
+                } else {
+                    showNotification('❌ ' + data.message, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('❌ Erreur création backup', 'error');
+            }
+        }
+
+        async function loadBackups() {
+            const list = document.getElementById('backupsList');
+            try {
+                const res = await fetch('/api/admin/backups/list');
+                const backups = await res.json();
+                
+                if (backups.length === 0) {
+                    list.innerHTML = '<p style="color:#888">Aucun backup.</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                backups.forEach(backupId => {
+                    const div = document.createElement('div');
+                    div.style.display = 'flex';
+                    div.style.justifyContent = 'space-between';
+                    div.style.alignItems = 'center';
+                    div.style.padding = '8px';
+                    div.style.borderBottom = '1px solid #444';
+                    
+                    const displayDatePt1 = backupId.replace('T', ' ').replace(/-/g, '/').slice(0, 10);
+                    const displayDatePt2 = backupId.replace('T', ' ').replace(/-/g, ':').slice(11);
+
+                    const displayDate = `${displayDatePt1} - ${displayDatePt2}`;
+
+                    div.innerHTML = `
+                        <span style="font-family:monospace">${displayDate}</span>
+                        <button class="btn" style="padding: 4px 8px; font-size: 0.8em;" onclick="restoreBackup('${backupId}')">
+                            <i class="fa-solid fa-rotate-left"></i> Restaurer
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                list.innerHTML = '<p style="color:red">Erreur chargement backups.</p>';
+            }
+        }
+
+        async function restoreBackup(backupId) {
+            if (!confirm(`⚠️ Restaurer le backup du ${backupId} ?\nCela écrasera les données actuelles !`)) return;
+
+            try {
+                const res = await fetch('/api/admin/backups/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ backupId })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification('✅ Backup restauré avec succès', 'success');
+                    socket.emit('admin:refresh');
+                } else {
+                    showNotification('❌ ' + data.message, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('❌ Erreur restauration', 'error');
+            }
+        }
+
     // Restore panel state on load from server
     (async function initPanelState() {
         try {
@@ -1817,6 +2002,7 @@ async function modifyTries() {
     document.addEventListener("DOMContentLoaded", () => {
         const scrollPos = localStorage.getItem("adminScrollPos");
         if (scrollPos) window.scrollTo(0, parseInt(scrollPos));
+        loadBackups();
     });
 
     window.addEventListener("beforeunload", () => {

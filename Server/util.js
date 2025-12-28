@@ -108,6 +108,7 @@ class FileService {
       uis: path.join(config.DATA, "uis.json"),
       motusState: path.join(config.DATA, "motus_state.json"),
       motusScores: path.join(config.DATA, "motus_scores.json"),
+      scores2048: path.join(config.DATA, "2048_scores.json"),
     };
 
     this.data = this.loadAll();
@@ -152,6 +153,7 @@ class FileService {
       uis: this.readJSON(this.files.uis, {}),
       motusState: this.readJSON(this.files.motusState, {}),
       motusScores: this.readJSON(this.files.motusScores, {}),
+      scores2048: this.readJSON(this.files.scores2048, {}),
     };
   }
 
@@ -203,6 +205,7 @@ class FileService {
       uis: this.files.uis,
       motusState: this.files.motusState,
       motusScores: this.files.motusScores,
+      scores2048: this.files.scores2048,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

@@ -21,14 +21,18 @@
 }
 
 .motus-header {
+  color: var(--bg-color);
+  background-color: var(--primary-color);
+  position: relative;
+}
+
+.motus-header h2 {
   margin: 0;
   background: var(--primary-color);
   color: var(--bg-color);
-  padding: 6px 12px;
-  border-radius: 0;
-  font-size: 1.3rem;
-  width: fit-content;
-  position: relative;
+  padding: 2.5px 7.5px;
+  font-size: 1.1rem;
+  font-weight: bold;
 }
 
 .motus-header::after {

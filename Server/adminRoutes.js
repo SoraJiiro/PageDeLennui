@@ -41,6 +41,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       case "motusScores":
         leaderboardManager.broadcastMotusLB(io);
         break;
+      case "scores2048":
+        leaderboardManager.broadcast2048LB(io);
+        break;
     }
   }
 
@@ -227,6 +230,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       pictionaryPoints: FileService.data.pictionaryWins[pseudo] || 0,
       p4Wins: FileService.data.p4Wins[pseudo] || 0,
       blockblastScore: FileService.data.blockblastScores[pseudo] || 0,
+      score2048: FileService.data.scores2048
+        ? FileService.data.scores2048[pseudo] || 0
+        : 0,
       motusScores: FileService.data.motusScores
         ? FileService.data.motusScores[pseudo]
         : null,
@@ -271,6 +277,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "scores2048",
     ];
 
     if (!validStats.includes(statType)) {
@@ -410,6 +417,8 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "p4Wins",
         "blockblastScores",
         "snakeScores",
+        "motusScores",
+        "scores2048",
       ];
 
       if (!validStats.includes(statType)) {
@@ -454,6 +463,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "scores2048",
     ];
 
     if (!validStats.includes(statType)) {
@@ -512,6 +522,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "scores2048",
     ];
 
     if (!validStats.includes(statType)) {
@@ -574,6 +585,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "scores2048",
     ];
 
     if (!validStats.includes(statType)) {
@@ -636,6 +648,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "scores2048",
     ];
 
     if (!validStats.includes(statType)) {
@@ -822,6 +835,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "scores2048",
     ];
 
     if (!validStats.includes(statType)) {
@@ -1110,6 +1124,260 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       return res
         .status(500)
         .json({ message: "Erreur serveur lors du nettoyage" });
+    }
+  });
+
+  // Réinitialiser un leaderboard entier (SAUF CLICKS)
+  router.post("/reset-leaderboard", requireAdmin, (req, res) => {
+    const { boardType } = req.body;
+
+    if (!boardType) {
+      return res.status(400).json({ message: "Type de leaderboard manquant" });
+    }
+
+    if (boardType === "clicks") {
+      return res
+        .status(403)
+        .json({ message: "Impossible de reset les clicks globalement" });
+    }
+
+    // Helper pour backup
+    const createBackup = () => {
+      const backupDir = path.join(__dirname, "..", "data", "stat_backup");
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const currentBackupPath = path.join(backupDir, timestamp);
+      fs.mkdirSync(currentBackupPath, { recursive: true });
+
+      const filesToBackup = [
+        "dino_scores.json",
+        "flappy_scores.json",
+        "uno_wins.json",
+        "pictionary_wins.json",
+        "p4_wins.json",
+        "blockblast_scores.json",
+        "blockblast_best_times.json",
+        "blockblast_saves.json",
+        "snake_scores.json",
+        "snake_best_times.json",
+        "motus_scores.json",
+        "2048_scores.json",
+      ];
+
+      filesToBackup.forEach((file) => {
+        const src = path.join(__dirname, "..", "data", file);
+        if (fs.existsSync(src)) {
+          fs.copyFileSync(src, path.join(currentBackupPath, file));
+        }
+      });
+
+      return timestamp;
+    };
+
+    try {
+      let message = "";
+
+      if (boardType === "all") {
+        const backupId = createBackup();
+
+        // Reset ALL except clicks
+        FileService.data.dinoScores = {};
+        FileService.save("dinoScores", {});
+
+        FileService.data.flappyScores = {};
+        FileService.save("flappyScores", {});
+
+        FileService.data.unoWins = {};
+        FileService.save("unoWins", {});
+
+        FileService.data.pictionaryWins = {};
+        FileService.save("pictionaryWins", {});
+
+        FileService.data.p4Wins = {};
+        FileService.save("p4Wins", {});
+
+        FileService.data.blockblastScores = {};
+        FileService.save("blockblastScores", {});
+        FileService.data.blockblastBestTimes = {};
+        FileService.save("blockblastBestTimes", {});
+        FileService.data.blockblastSaves = {};
+        FileService.save("blockblastSaves", {});
+
+        FileService.data.snakeScores = {};
+        FileService.save("snakeScores", {});
+        FileService.data.snakeBestTimes = {};
+        FileService.save("snakeBestTimes", {});
+
+        FileService.data.motusScores = {};
+        FileService.save("motusScores", {});
+
+        FileService.data.scores2048 = {};
+        FileService.save("scores2048", {});
+
+        // Refresh all leaderboards
+        refreshLeaderboard("dinoScores");
+        refreshLeaderboard("flappyScores");
+        refreshLeaderboard("unoWins");
+        refreshLeaderboard("pictionaryWins");
+        refreshLeaderboard("p4Wins");
+        refreshLeaderboard("blockblastScores");
+        refreshLeaderboard("snakeScores");
+        refreshLeaderboard("motusScores");
+        refreshLeaderboard("scores2048");
+
+        message = `Tous les leaderboards (sauf clicks) ont été réinitialisés. Backup créé : ${backupId}`;
+      } else {
+        return res
+          .status(400)
+          .json({
+            message:
+              "Seul le reset global ('all') est supporté avec backup automatique pour le moment.",
+          });
+      }
+
+      console.log({
+        level: "action",
+        message: `[ADMIN] Reset global des leaderboards avec backup.`,
+      });
+
+      return res.json({ message });
+    } catch (e) {
+      console.error("[ADMIN] reset-leaderboard error", e);
+      return res.status(500).json({ message: "Erreur serveur lors du reset" });
+    }
+  });
+
+  // Créer un backup manuel (incluant clicks)
+  router.post("/backups/create", requireAdmin, (req, res) => {
+    try {
+      const backupDir = path.join(__dirname, "..", "data", "stat_backup");
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const currentBackupPath = path.join(backupDir, timestamp);
+      fs.mkdirSync(currentBackupPath, { recursive: true });
+
+      const filesToBackup = [
+        "clicks.json", // Inclus explicitement pour le backup manuel
+        "dino_scores.json",
+        "flappy_scores.json",
+        "uno_wins.json",
+        "pictionary_wins.json",
+        "p4_wins.json",
+        "blockblast_scores.json",
+        "blockblast_best_times.json",
+        "blockblast_saves.json",
+        "snake_scores.json",
+        "snake_best_times.json",
+        "motus_scores.json",
+        "2048_scores.json",
+      ];
+
+      filesToBackup.forEach((file) => {
+        const src = path.join(__dirname, "..", "data", file);
+        if (fs.existsSync(src)) {
+          fs.copyFileSync(src, path.join(currentBackupPath, file));
+        }
+      });
+
+      console.log({
+        level: "action",
+        message: `[ADMIN] Backup manuel créé : ${timestamp}`,
+      });
+
+      res.json({ message: "Backup créé avec succès", backupId: timestamp });
+    } catch (e) {
+      console.error("[ADMIN] create backup error", e);
+      res.status(500).json({ message: "Erreur lors de la création du backup" });
+    }
+  });
+
+  // Lister les backups
+  router.get("/backups/list", requireAdmin, (req, res) => {
+    const backupDir = path.join(__dirname, "..", "data", "stat_backup");
+    if (!fs.existsSync(backupDir)) return res.json([]);
+
+    try {
+      const backups = fs
+        .readdirSync(backupDir)
+        .filter((file) => {
+          return fs.statSync(path.join(backupDir, file)).isDirectory();
+        })
+        .sort()
+        .reverse(); // Newest first
+      res.json(backups);
+    } catch (e) {
+      res.status(500).json({ message: "Erreur lecture backups" });
+    }
+  });
+
+  // Restaurer un backup
+  router.post("/backups/restore", requireAdmin, (req, res) => {
+    const { backupId } = req.body;
+    if (!backupId)
+      return res.status(400).json({ message: "ID de backup manquant" });
+
+    const backupPath = path.join(
+      __dirname,
+      "..",
+      "data",
+      "stat_backup",
+      backupId
+    );
+    if (!fs.existsSync(backupPath))
+      return res.status(404).json({ message: "Backup introuvable" });
+
+    try {
+      const filesToRestore = [
+        "dino_scores.json",
+        "flappy_scores.json",
+        "uno_wins.json",
+        "pictionary_wins.json",
+        "p4_wins.json",
+        "blockblast_scores.json",
+        "blockblast_best_times.json",
+        "blockblast_saves.json",
+        "snake_scores.json",
+        "snake_best_times.json",
+        "motus_scores.json",
+        "2048_scores.json",
+      ];
+
+      filesToRestore.forEach((file) => {
+        const src = path.join(backupPath, file);
+        if (fs.existsSync(src)) {
+          fs.copyFileSync(src, path.join(__dirname, "..", "data", file));
+        }
+      });
+
+      // Reload data in memory
+      FileService.data = FileService.loadAll();
+
+      // Refresh all leaderboards
+      refreshLeaderboard("dinoScores");
+      refreshLeaderboard("flappyScores");
+      refreshLeaderboard("unoWins");
+      refreshLeaderboard("pictionaryWins");
+      refreshLeaderboard("p4Wins");
+      refreshLeaderboard("blockblastScores");
+      refreshLeaderboard("snakeScores");
+      refreshLeaderboard("motusScores");
+      refreshLeaderboard("scores2048");
+
+      console.log({
+        level: "action",
+        message: `[ADMIN] Restauration du backup : ${backupId}`,
+      });
+
+      res.json({ message: `Backup ${backupId} restauré avec succès` });
+    } catch (e) {
+      console.error("[ADMIN] restore error", e);
+      res.status(500).json({ message: "Erreur lors de la restauration" });
     }
   });
 
