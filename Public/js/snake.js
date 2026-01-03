@@ -9,7 +9,7 @@ import {
 const CONSTANTS = {
   GRID_SIZE: 23,
   MAX_LENGTH: 52,
-  GAME_SPEED: 100, // ms per tick
+  GAME_SPEED: 100, // ms par tick
 };
 
 class SnakeGame {
@@ -56,7 +56,7 @@ class SnakeGame {
   }
 
   initSettings() {
-    // UI Color
+    // Couleur UI
     const computedStyle = getComputedStyle(document.documentElement);
     this.uiColor =
       computedStyle.getPropertyValue("--primary-color").trim() || "#00ff00";
@@ -65,14 +65,14 @@ class SnakeGame {
       if (e.detail?.color) this.uiColor = e.detail.color;
     });
 
-    // Pause Key
+    // Touche Pause
     this.pauseKeyText = keys?.default?.[0] || "P";
     window.addEventListener("pauseKey:changed", (e) => {
       if (e.detail?.key?.length === 1)
         this.pauseKeyText = e.detail.key.toUpperCase();
     });
 
-    // Socket Events
+    // Événements Socket
     this.socket.on("snake:leaderboard", (arr) => this.handleLeaderboard(arr));
     this.socket.on("you:name", (name) => {
       this.myName = name;
@@ -87,11 +87,11 @@ class SnakeGame {
       }
       this.removeDOMGameOverOverlay();
 
-      // Reset snake position to center but keep length
+      // Réinitialiser la position du serpent au centre mais garder la longueur
       const centerX = Math.floor(CONSTANTS.GRID_SIZE / 2);
       const centerY = Math.floor(CONSTANTS.GRID_SIZE / 2);
 
-      // Rebuild snake body in a straight line to the left
+      // Reconstruire le corps du serpent en ligne droite vers la gauche
       const newSnake = [];
       for (let i = 0; i < this.state.snake.length; i++) {
         newSnake.push({ x: centerX - i, y: centerY });
@@ -100,11 +100,11 @@ class SnakeGame {
       this.state.direction = { x: 1, y: 0 };
       this.state.nextDirection = { x: 1, y: 0 };
 
-      // Reset timing to prevent catch-up ticks
+      // Réinitialiser le timing pour éviter le rattrapage de ticks
       this.state.lastFrameTime = 0;
       this.state.tickAccumulator = 0;
 
-      // Resume loop
+      // Reprendre la boucle
       this.state.rafId = requestAnimationFrame((t) => this.loop(t));
       this.startTimer();
       showNotif("Partie continuée !");
@@ -149,15 +149,15 @@ class SnakeGame {
         Math.floor(Math.min(clientW, clientH) / CONSTANTS.GRID_SIZE) || 1;
       const desiredSize = this.cellSize * CONSTANTS.GRID_SIZE;
 
-      // Set display size
+      // Définir la taille d'affichage
       this.canvas.style.width = `${desiredSize}px`;
       this.canvas.style.height = `${desiredSize}px`;
 
-      // Set actual size
+      // Définir la taille réelle
       this.canvas.width = Math.floor(desiredSize * ratio);
       this.canvas.height = Math.floor(desiredSize * ratio);
 
-      // Normalize coordinate system
+      // Normaliser le système de coordonnées
       this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     } catch (e) {
       console.warn("Snake resize failed", e);
@@ -196,7 +196,7 @@ class SnakeGame {
     const rect = snakeSection.getBoundingClientRect();
     if (rect.top >= window.innerHeight || rect.bottom <= 0) return;
 
-    // Close revive overlay with Escape
+    // Fermer l'overlay de réanimation avec Echap
     if (e.key === "Escape") {
       if (
         this.ui.reviveOverlay &&
@@ -216,7 +216,7 @@ class SnakeGame {
       return;
     }
 
-    // Restart
+    // Redémarrer
     if (e.code === "Space") {
       e.preventDefault();
       if (
@@ -264,7 +264,7 @@ class SnakeGame {
       this.state.frameCount = 0;
     } else if (!this.state.paused && this.state.countdown === 0) {
       this.state.paused = true;
-      // Anti-cheat / Boss key feature
+      // Fonctionnalité Anti-triche / Boss key
       try {
         window.open("../search.html", "_blank");
       } catch {
@@ -301,7 +301,7 @@ class SnakeGame {
 
     this.spawnFood();
     this.startTimer();
-    this.resize(); // Ensure correct size
+    this.resize(); // Assurer la taille correcte
 
     if (this.state.rafId) cancelAnimationFrame(this.state.rafId);
     this.state.rafId = requestAnimationFrame((ts) => this.loop(ts));
@@ -342,10 +342,10 @@ class SnakeGame {
     });
     this.scoreAttente = this.state.score;
 
-    this.resize(); // Ensure buffer is correct
+    this.resize(); // Assurer que le buffer est correct
     this.drawGameOver();
 
-    // Only show DOM overlay if we are NOT showing the revive overlay
+    // Afficher l'overlay DOM uniquement si nous n'affichons PAS l'overlay de réanimation
     if (this.revivesUsed >= 3) {
       this.showDOMGameOverOverlay();
     }
@@ -450,16 +450,16 @@ class SnakeGame {
   }
 
   draw(progress = 1) {
-    // Ensure size is correct
+    // Assurer que la taille est correcte
     this.resize();
 
     const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
 
-    // Background
+    // Arrière-plan
     this.ctx.fillStyle = "#000";
     this.ctx.fillRect(0, 0, cssSize, cssSize);
 
-    // Grid
+    // Grille
     this.ctx.strokeStyle = "#4e3e5e";
     this.ctx.lineWidth = 1;
     for (let i = 0; i <= CONSTANTS.GRID_SIZE; i++) {
@@ -475,7 +475,7 @@ class SnakeGame {
       this.ctx.stroke();
     }
 
-    // Snake
+    // Serpent
     for (let i = 0; i < this.state.snake.length; i++) {
       const curr = this.state.snake[i];
       const prev = this.state.prevSnake[i] || curr;
@@ -495,7 +495,7 @@ class SnakeGame {
       this.ctx.globalAlpha = 1.0;
     }
 
-    // Food
+    // Nourriture
     if (this.state.food) {
       this.ctx.fillStyle = "#ff0000";
       this.ctx.fillRect(
@@ -516,7 +516,7 @@ class SnakeGame {
       30
     );
 
-    // Pause/Countdown Overlay
+    // Overlay Pause/Compte à rebours
     if (this.state.paused || this.state.countdown > 0) {
       this.drawPauseOverlay(cssSize);
     }
@@ -581,7 +581,7 @@ class SnakeGame {
       cssSize / 2 + 90
     );
 
-    // --- Revive Logic ---
+    // --- Logique de réanimation ---
     if (this.revivesUsed < 3) {
       if (this.ui.reviveOverlay) {
         this.ui.reviveOverlay.style.display = "block";
@@ -624,7 +624,7 @@ class SnakeGame {
 
   showDOMGameOverOverlay() {
     this.removeDOMGameOverOverlay();
-    // toggleScrollLock(true); // Removed to allow scrolling after game over
+    // toggleScrollLock(true); // Supprimé pour permettre le défilement après la fin du jeu
     const parent = this.canvas.parentElement || document.body;
     if (getComputedStyle(parent).position === "static")
       parent.style.position = "relative";

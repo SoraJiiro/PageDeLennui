@@ -139,7 +139,7 @@ export function initPictionary(socket) {
     return [r, g, b, 255];
   }
 
-  // Remplissage tool
+  // Outil de remplissage
   function fillAt(x, y, fillColor) {
     if (!ui.canvas || !ctx) return;
     const dpr = window.devicePixelRatio || 1;
@@ -625,7 +625,7 @@ export function initPictionary(socket) {
         .join("");
     }
 
-    // Display des tools selon role
+    // Affichage des outils selon le rôle
     try {
       const controls = document.querySelector(".pictionary-controls");
       if (controls) {

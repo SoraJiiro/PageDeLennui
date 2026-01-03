@@ -12,7 +12,7 @@ export function initTagColor(socket) {
     }
   });
 
-  // Disable picker if cheater
+  // Désactiver le sélecteur si tricheur
   socket.on("clicker:medals", (medals) => {
     if (!Array.isArray(medals)) return;
     const isCheater = medals.some((m) => m.name === "Tricheur");

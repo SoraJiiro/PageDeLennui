@@ -267,7 +267,7 @@ export function initFlappy(socket) {
     }
 
     pipes.forEach((p) => {
-      // Pipe passé
+      // Tuyau passé
       p.x -= pipeSpeed;
       if (!p.passed && p.x + pipeWidth < bird.x - bird.radius) {
         score++;
@@ -342,7 +342,7 @@ export function initFlappy(socket) {
     ui.ctx.font = "18px monospace";
     ui.ctx.fillText("Appuie sur ESPACE pour rejouer", cssW / 2, cssH / 2 + 60);
 
-    // --- Revive Logic ---
+    // --- Logique de réanimation ---
     if (revivesUsed < 3) {
       if (ui.reviveOverlay) {
         ui.reviveOverlay.style.display = "block";
@@ -386,14 +386,14 @@ export function initFlappy(socket) {
       toggleScrollLock(false);
     }
 
-    // Reset bird position
+    // Réinitialiser la position de l'oiseau
     birdY = ui.canvas.height / 2;
     birdVel = 0;
 
-    // Clear pipes to give a safe start
+    // Vider les tuyaux pour un départ sûr
     pipes = [];
 
-    // Resume loop
+    // Reprendre la boucle
     update();
     showNotif("Partie continuée !");
   });
@@ -404,7 +404,7 @@ export function initFlappy(socket) {
 
   // ---------- Eventlisteners ----------
   document.addEventListener("keydown", (e) => {
-    // Close revive overlay with Escape
+    // Fermer l'overlay de réanimation avec Echap
     if (e.key === "Escape") {
       if (ui.reviveOverlay && ui.reviveOverlay.style.display === "block") {
         ui.reviveOverlay.style.display = "none";

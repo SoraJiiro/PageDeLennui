@@ -1926,7 +1926,7 @@ async function modifyTries() {
                 const backups = await res.json();
                 
                 if (backups.length === 0) {
-                    list.innerHTML = '<p style="color:#888">Aucun backup.</p>';
+                    list.innerHTML = '<p style="color:#888">0 backup.</p>';
                     return;
                 }
 

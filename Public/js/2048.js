@@ -20,14 +20,14 @@ export function init2048(socket) {
   let revivesUsed = 0;
   let uiColor = "#00ff00";
 
-  // Init
+  // Initialisation
   function init() {
-    // Get initial UI color
+    // Obtenir la couleur UI initiale
     const computedStyle = getComputedStyle(document.documentElement);
     uiColor =
       computedStyle.getPropertyValue("--primary-color").trim() || "#00ff00";
 
-    // Listen for changes
+    // Écouter les changements
     window.addEventListener("uiColor:changed", (e) => {
       if (e.detail?.color) {
         uiColor = e.detail.color;
@@ -53,7 +53,7 @@ export function init2048(socket) {
     if (reviveOverlay) reviveOverlay.style.display = "none";
     toggleScrollLock(false);
 
-    // Revive logic: Keep highest tile, clear rest
+    // Logique de réanimation : Garder la tuile la plus haute, effacer le reste
     let maxTile = null;
     let maxVal = -1;
 
@@ -66,21 +66,21 @@ export function init2048(socket) {
       }
     }
 
-    // Reset grid
+    // Réinitialiser la grille
     grid = Array(size)
       .fill()
       .map(() => Array(size).fill(null));
 
-    // Place max tile at random pos
+    // Placer la tuile max à une position aléatoire
     if (maxTile) {
       const r = Math.floor(Math.random() * size);
       const c = Math.floor(Math.random() * size);
       grid[r][c] = maxTile;
-      // Reset mergedFrom to avoid animation glitches
+      // Réinitialiser mergedFrom pour éviter les bugs d'animation
       maxTile.mergedFrom = null;
     }
 
-    // Add one random tile
+    // Ajouter une tuile aléatoire
     addRandomTile();
 
     renderBoard();
@@ -136,7 +136,7 @@ export function init2048(socket) {
     cancelBtn.onclick = () => {
       div.style.display = "none";
       toggleScrollLock(false);
-      overlay.classList.add("show"); // Show standard game over
+      overlay.classList.add("show"); // Afficher le game over standard
     };
   }
 
@@ -153,9 +153,9 @@ export function init2048(socket) {
     const reviveOverlay = document.querySelector(".game-2048-revive-overlay");
     if (reviveOverlay) reviveOverlay.style.display = "none";
 
-    // Clear board DOM
+    // Effacer le DOM du plateau
     board.innerHTML = "";
-    // Create background cells
+    // Créer les cellules d'arrière-plan
     for (let i = 0; i < size * size; i++) {
       const cell = document.createElement("div");
       cell.classList.add("grid-cell");
@@ -187,14 +187,14 @@ export function init2048(socket) {
   }
 
   function getTilePos(r, c) {
-    // 10px gap, 85px size
+    // Espace de 10px, taille de 85px
     const top = 10 + r * (85 + 10);
     const left = 10 + c * (85 + 10);
     return { top, left };
   }
 
   function getTileColor(value) {
-    // Convert hex to rgb
+    // Convertir hex en rgb
     let r = 0,
       g = 255,
       b = 0;
@@ -205,24 +205,24 @@ export function init2048(socket) {
       b = parseInt(result[3], 16);
     }
 
-    // Calculate opacity based on log2 of value
+    // Calculer l'opacité basée sur le log2 de la valeur
     // log2(2) = 1, log2(2048) = 11
     const step = Math.log2(value);
-    // Min opacity 0.25, Max 1.0
+    // Opacité min 0.25, Max 1.0
     const alpha = Math.min(1, 0.25 + (step - 1) * (0.75 / 10));
 
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   function renderBoard() {
-    // Helper to update or create a tile DOM
+    // Aide pour mettre à jour ou créer une tuile DOM
     const updateTileDOM = (tileObj, r, c, isMerged = false) => {
       let tileEl = document.querySelector(`.tile[data-id="${tileObj.id}"]`);
       const pos = getTilePos(r, c);
       const bgColor = getTileColor(tileObj.value);
 
       if (!tileEl) {
-        // New tile
+        // Nouvelle tuile
         tileEl = document.createElement("div");
         tileEl.classList.add("tile");
         tileEl.classList.add(
@@ -233,7 +233,7 @@ export function init2048(socket) {
         tileEl.style.top = `${pos.top}px`;
         tileEl.style.left = `${pos.left}px`;
         tileEl.style.backgroundColor = bgColor;
-        // Ensure text is readable
+        // Assurer que le texte est lisible
         tileEl.style.color = "#fff";
         tileEl.style.textShadow = "0 0 2px #000";
         tileEl.style.boxShadow = `0 0 5px ${bgColor}`;
@@ -248,25 +248,25 @@ export function init2048(socket) {
 
         board.appendChild(tileEl);
       } else {
-        // Existing tile, update position
+        // Tuile existante, mettre à jour la position
         tileEl.style.top = `${pos.top}px`;
         tileEl.style.left = `${pos.left}px`;
 
-        // Update value and class
+        // Mettre à jour la valeur et la classe
         tileEl.className = `tile tile-${
           tileObj.value <= 2048 ? tileObj.value : "super"
         }`;
         if (tileObj.mergedFrom) tileEl.classList.add("tile-merged");
         tileEl.textContent = tileObj.value;
 
-        // Update color
+        // Mettre à jour la couleur
         tileEl.style.backgroundColor = bgColor;
         tileEl.style.boxShadow = `0 0 5px ${bgColor}`;
       }
       return tileEl;
     };
 
-    // Track IDs present in the new frame
+    // Suivre les IDs présents dans la nouvelle frame
     const activeIds = new Set();
 
     for (let r = 0; r < size; r++) {
@@ -276,17 +276,17 @@ export function init2048(socket) {
           activeIds.add(tile.id);
 
           if (tile.mergedFrom) {
-            // Render the two source tiles moving to this position
+            // Rendre les deux tuiles sources se déplaçant vers cette position
             tile.mergedFrom.forEach((sourceTile) => {
               activeIds.add(sourceTile.id);
               const el = updateTileDOM(sourceTile, r, c, true);
-              // Schedule removal
+              // Planifier la suppression
               setTimeout(() => {
                 el.remove();
-              }, 100); // Match CSS transition time
+              }, 100); // Correspond au temps de transition CSS
             });
 
-            // Render the new merged tile
+            // Rendre la nouvelle tuile fusionnée
             const el = updateTileDOM(tile, r, c);
             el.style.zIndex = 20;
           } else {
@@ -296,7 +296,7 @@ export function init2048(socket) {
       }
     }
 
-    // Remove tiles that are no longer active
+    // Supprimer les tuiles qui ne sont plus actives
     const allTiles = document.querySelectorAll(".tile");
     allTiles.forEach((el) => {
       const id = parseInt(el.dataset.id);
@@ -321,7 +321,7 @@ export function init2048(socket) {
 
     let moved = false;
 
-    // Reset mergedFrom flags
+    // Réinitialiser les drapeaux mergedFrom
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
         if (grid[r][c]) grid[r][c].mergedFrom = null;
@@ -330,13 +330,13 @@ export function init2048(socket) {
 
     let scoreAdd = 0;
 
-    // Helper to process a line (array of tiles)
+    // Aide pour traiter une ligne (tableau de tuiles)
     const processLine = (line) => {
       let newLine = line.filter((t) => t !== null);
 
       for (let i = 0; i < newLine.length - 1; i++) {
         if (newLine[i].value === newLine[i + 1].value) {
-          // Merge
+          // Fusionner
           const mergedValue = newLine[i].value * 2;
           scoreAdd += mergedValue;
 
@@ -348,7 +348,7 @@ export function init2048(socket) {
 
           newLine[i] = newTile;
           newLine[i + 1] = null;
-          // Skip next check to avoid double merge in one move
+          // Sauter la prochaine vérification pour éviter une double fusion en un seul mouvement
           i++;
         }
       }
@@ -386,7 +386,7 @@ export function init2048(socket) {
       }
     }
 
-    // Check if changed
+    // Vérifier si changé
     const newGridState = grid.map((row) => row.map((t) => (t ? t.id : null)));
     if (JSON.stringify(oldGridState) !== JSON.stringify(newGridState)) {
       moved = true;
@@ -402,16 +402,16 @@ export function init2048(socket) {
   }
 
   function checkGameOver() {
-    // Check if moves possible
+    // Vérifier si des mouvements sont possibles
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
-        if (grid[r][c] === null) return; // Empty cell
-        if (c < size - 1 && grid[r][c].value === grid[r][c + 1].value) return; // Horizontal merge
-        if (r < size - 1 && grid[r][c].value === grid[r + 1][c].value) return; // Vertical merge
+        if (grid[r][c] === null) return; // Cellule vide
+        if (c < size - 1 && grid[r][c].value === grid[r][c + 1].value) return; // Fusion horizontale
+        if (r < size - 1 && grid[r][c].value === grid[r + 1][c].value) return; // Fusion verticale
       }
     }
 
-    // No moves possible
+    // Aucun mouvement possible
     gameOver = true;
     socket.emit("2048:submit_score", score);
 
@@ -437,7 +437,7 @@ export function init2048(socket) {
 
   function setupInput() {
     window.addEventListener("keydown", (e) => {
-      // Only move if stage12 is visible
+      // Déplacer uniquement si stage12 est visible
       const stage12 = document.getElementById("stage12");
       if (stage12 && getComputedStyle(stage12).display !== "none") {
         if (

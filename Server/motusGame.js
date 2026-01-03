@@ -6,11 +6,11 @@ class MotusGame {
   }
 
   getRandomWord(excludeList = []) {
-    // Filter out words that are in the excludeList
+    // Filtrer les mots qui sont dans la liste d'exclusion
     const availableWords = this.words.filter((w) => !excludeList.includes(w));
 
     if (availableWords.length === 0) {
-      return null; // No more words available
+      return null; // Plus de mots disponibles
     }
 
     const index = Math.floor(Math.random() * availableWords.length);
@@ -27,24 +27,24 @@ class MotusGame {
       return { error: "Longueur incorrecte" };
     }
 
-    // First pass: find correct letters (Green / 2)
+    // Première passe : trouver les lettres correctes (Vert / 2)
     for (let i = 0; i < guessArr.length; i++) {
       if (guessArr[i] === targetArr[i]) {
         result[i] = 2;
-        targetArr[i] = null; // Mark as used
+        targetArr[i] = null; // Marquer comme utilisé
         guessArr[i] = null;
       } else {
-        result[i] = 0; // Default to missing
+        result[i] = 0; // Par défaut manquant
       }
     }
 
-    // Second pass: find present letters (Yellow / 1)
+    // Deuxième passe : trouver les lettres présentes (Jaune / 1)
     for (let i = 0; i < guessArr.length; i++) {
       if (guessArr[i] !== null) {
         const foundIndex = targetArr.indexOf(guessArr[i]);
         if (foundIndex !== -1) {
           result[i] = 1;
-          targetArr[foundIndex] = null; // Mark as used
+          targetArr[foundIndex] = null; // Marquer comme utilisé
         }
       }
     }

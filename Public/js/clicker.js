@@ -108,8 +108,8 @@ export function initClicker(socket) {
     indexSpan.textContent = "";
     indexSpan.setAttribute("aria-hidden", "true");
     el.appendChild(indexSpan);
-    // Default: hidden for normal medals. For 'Tricheur' we hide via display:none
-    // so it doesn't get the "non débloquée" styling.
+    // Par défaut : caché pour les médailles normales. Pour 'Tricheur', on cache via display:none
+    // pour qu'elle n'ait pas le style "non débloquée".
     if (m.nom === "Tricheur") {
       el.classList.add("medal");
       el.style.display = "none";
@@ -374,13 +374,13 @@ export function initClicker(socket) {
       return;
 
     const newColorsMap = {};
-    // Only regenerate for unlocked prestige medals
+    // Régénérer uniquement pour les médailles prestige débloquées
     state.medalsDebloquees.forEach((name) => {
       if (name.startsWith("Médaille Préstige")) {
         const colors = [];
-        // 8.5% chance for Monochrome (Black/White/Gray)
+        // 8.5% de chance pour Monochrome (Noir/Blanc/Gris)
         const isMonochrome = Math.random() < 0.085;
-        // 4.5% chance for Pure Black or Pure White (Ultra Rare)
+        // 4.5% de chance pour Noir Pur ou Blanc Pur (Ultra Rare)
         const isUltraRare = Math.random() < 0.045;
 
         const theme = isUltraRare

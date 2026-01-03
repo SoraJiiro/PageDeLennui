@@ -39,7 +39,7 @@ function persistBanIp(ip) {
       data.alwaysBlocked.push(ip);
       fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
     }
-    // Update runtime config blacklist too
+    // Mettre à jour la blacklist de la configuration d'exécution aussi
     if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
     return true;
   } catch (e) {

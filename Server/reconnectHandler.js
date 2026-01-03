@@ -1,8 +1,8 @@
 const { getIpFromSocket, persistBanIp } = require("./util");
 
-const connectionHistory = new Map(); // IP -> [timestamp, timestamp, ...]
-const TIME_WINDOW = 1250; // 1.25 seconds
-const MAX_CONNECTIONS = 5; // Max 5 connections in the time window
+const connectionHistory = new Map(); // IP -> [horodatage, horodatage, ...]
+const TIME_WINDOW = 1250; // 1.25 secondes
+const MAX_CONNECTIONS = 5; // Max 5 connexions dans la fenêtre de temps
 
 function checkReconnect(io, socket) {
   const ip = getIpFromSocket(socket);
@@ -11,10 +11,10 @@ function checkReconnect(io, socket) {
   const now = Date.now();
   let timestamps = connectionHistory.get(ip) || [];
 
-  // Filter out timestamps older than the time window
+  // Filtrer les horodatages plus anciens que la fenêtre de temps
   timestamps = timestamps.filter((t) => now - t < TIME_WINDOW);
 
-  // Add current timestamp
+  // Ajouter l'horodatage actuel
   timestamps.push(now);
   connectionHistory.set(ip, timestamps);
 

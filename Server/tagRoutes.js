@@ -20,7 +20,7 @@ function saveRequests(reqs) {
   fs.writeFileSync(REQUESTS_FILE, JSON.stringify(reqs, null, 2));
 }
 
-// Middleware to check if user is logged in
+// Middleware pour vérifier si l'utilisateur est connecté
 function requireLogin(req, res, next) {
   if (req.session && req.session.user) {
     next();
@@ -60,7 +60,7 @@ router.post("/request", (req, res) => {
       .json({ message: "Tag invalide (max 32 caractères)" });
   }
 
-  // Validate colors
+  // Valider les couleurs
   if (!colors || !Array.isArray(colors)) {
     return res.status(400).json({ message: "Couleurs invalides" });
   }
@@ -70,14 +70,14 @@ router.post("/request", (req, res) => {
     return res.status(400).json({ message: "Nombre de couleurs incorrect" });
   }
 
-  // Check cheater
+  // Vérifier les tricheurs
   let cheaters = [];
   try {
     const cheatersPath = path.join(DATA_DIR, "cheaters.json");
     if (fs.existsSync(cheatersPath)) {
       const raw = fs.readFileSync(cheatersPath, "utf8");
       const data = JSON.parse(raw);
-      // Handle both array and object format just in case
+      // Gérer les formats tableau et objet au cas où
       if (Array.isArray(data)) {
         cheaters = data;
       } else if (data && Array.isArray(data.cheaters)) {

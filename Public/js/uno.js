@@ -1,5 +1,5 @@
 export function initUno(socket) {
-  // ========== UI Cache ==========
+  // ========== Cache UI ==========
   const ui = {
     lobby: document.querySelector(".uno-lobby"),
     game: document.querySelector(".uno-game"),
@@ -19,7 +19,7 @@ export function initUno(socket) {
     modeSpec: document.querySelector(".uno-mode-spec"),
   };
 
-  // ========== State ==========
+  // ========== État ==========
   const state = {
     stateActuel: null,
     myUsername: null,
@@ -217,7 +217,7 @@ export function initUno(socket) {
        `;
     }
 
-    // Countdown (visible par tous) basé sur turnDeadlineAt côté serveur
+    // Compte à rebours (visible par tous) basé sur turnDeadlineAt côté serveur
     syncCountdown(gameState.turnDeadlineAt || null);
   }
 
@@ -262,7 +262,7 @@ export function initUno(socket) {
     state.countdownId = setInterval(tick, 200);
   }
 
-  // ========== Event Listeners UI ==========
+  // ========== Écouteurs d'événements UI ==========
   ui.joinBtn?.addEventListener("click", () => {
     socket.emit("uno:join");
   });
@@ -279,7 +279,7 @@ export function initUno(socket) {
     }
   });
 
-  // ========== Socket Handlers ==========
+  // ========== Gestionnaires de Socket ==========
   socket.on("uno:lobby", (data) => {
     try {
       state.myUsername = data.myUsername;

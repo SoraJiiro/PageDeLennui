@@ -126,7 +126,7 @@ export function initDino(socket) {
         c.setTransform(ratio, 0, 0, ratio, 0, 0);
       }
 
-      // update dynamic sizes used by the game (based on CSS pixels)
+      // mettre à jour les tailles dynamiques utilisées par le jeu (basé sur les pixels CSS)
       dino.x = Math.floor(CLIENT_W * 0.1);
       dino.width = Math.max(8, Math.floor(CLIENT_W * 0.05));
       dino.height = Math.max(8, Math.floor(CLIENT_H * 0.09));
@@ -226,7 +226,7 @@ export function initDino(socket) {
       const count = Math.floor(Math.random() * 3) + 1;
       this.cacti = [];
 
-      // sizes relative to canvas
+      // tailles relatives au canvas
       for (let i = 0; i < count; i++) {
         const type = Math.floor(Math.random() * 3);
         let width, height;
@@ -392,7 +392,7 @@ export function initDino(socket) {
     dino.update();
     spawnCactusGroup();
 
-    // Update + collision des groupes
+    // Mise à jour + collision des groupes
     state.cactusGroups = state.cactusGroups.filter((group) => {
       group.update();
 
@@ -466,7 +466,7 @@ export function initDino(socket) {
       CLIENT_H / 2 + 60
     );
 
-    // --- Revive Logic ---
+    // --- Logique de réanimation ---
     if (state.revivesUsed < 3) {
       if (ui.reviveOverlay) {
         ui.reviveOverlay.style.display = "block";
@@ -632,7 +632,7 @@ export function initDino(socket) {
   });
 
   document.addEventListener("keyup", (e) => {
-    // Close revive overlay with Escape
+    // Fermer l'overlay de réanimation avec Echap
     if (e.key === "Escape") {
       if (ui.reviveOverlay && ui.reviveOverlay.style.display === "block") {
         ui.reviveOverlay.style.display = "none";

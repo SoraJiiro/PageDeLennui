@@ -1,4 +1,4 @@
-// Apply saved color immediately to prevent FOUC
+// Appliquer la couleur sauvegardée immédiatement pour éviter le FOUC
 (function () {
   const savedColor = localStorage.getItem("uiColor");
   if (savedColor) {
@@ -6,11 +6,11 @@
   }
 })();
 
-// Expose init function for main.js and other pages
+// Exposer la fonction init pour main.js et les autres pages
 window.initUiColor = (socket) => {
   const colorPicker = document.getElementById("mainColorPicker");
 
-  // Listen for color updates from server if socket is provided
+  // Écouter les mises à jour de couleur du serveur si le socket est fourni
   if (socket) {
     socket.on("ui:color", ({ color }) => {
       if (color) {
@@ -24,7 +24,7 @@ window.initUiColor = (socket) => {
     });
   }
 
-  // Handle color saving when picker changes
+  // Gérer la sauvegarde de la couleur lorsque le sélecteur change
   if (colorPicker) {
     colorPicker.addEventListener("change", (e) => {
       const color = e.target.value;
@@ -36,7 +36,7 @@ window.initUiColor = (socket) => {
   }
 };
 
-// Rainbow mode logic
+// Logique du mode arc-en-ciel
 let rainbowInterval = null;
 let rainbowHue = 0;
 
@@ -44,7 +44,7 @@ window.toggleRainbowMode = () => {
   if (rainbowInterval) {
     clearInterval(rainbowInterval);
     rainbowInterval = null;
-    // Restore saved color
+    // Restaurer la couleur sauvegardée
     const savedColor = localStorage.getItem("uiColor") || "#00ff00";
     document.documentElement.style.setProperty("--primary-color", savedColor);
     const colorPicker = document.getElementById("mainColorPicker");
@@ -54,19 +54,19 @@ window.toggleRainbowMode = () => {
       rainbowHue = (rainbowHue + 5) % 360;
       const color = `hsl(${rainbowHue}, 100%, 50%)`;
       document.documentElement.style.setProperty("--primary-color", color);
-    }, 13); // Very fast animation
+    }, 13); // Animation très rapide
   }
 };
 
-// Initialize local UI logic (preview)
+// Initialiser la logique UI locale (aperçu)
 document.addEventListener("DOMContentLoaded", () => {
   const colorPicker = document.getElementById("mainColorPicker");
 
-  // Default color if not loaded yet
+  // Couleur par défaut si pas encore chargée
   if (colorPicker && !colorPicker.value) colorPicker.value = "#00ff00";
 
   if (colorPicker) {
-    // Fluid visual update during selection (preview)
+    // Mise à jour visuelle fluide pendant la sélection (aperçu)
     colorPicker.addEventListener("input", (e) => {
       const color = e.target.value;
       document.documentElement.style.setProperty("--primary-color", color);

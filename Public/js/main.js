@@ -12,12 +12,14 @@ import { initCanvasResizer } from "./canvas_resize.js";
     return;
   }
 
-  const { username, rulesAccepted } = await sessionRes.json();
+  const sessionData = await sessionRes.json();
+  const username = sessionData.pseudo || sessionData.username;
+  const rulesAccepted = sessionData.rulesAccepted;
 
   try {
     keyBind(username);
     try {
-      // initialize canvas resizer early so games get correct backing buffer sizes
+      // initialiser le redimensionneur de canvas tôt pour que les jeux obtiennent les tailles de buffer correctes
       initCanvasResizer();
     } catch (e) {
       console.warn("canvas resizer init failed", e);
@@ -48,6 +50,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./tagColor.js"),
       import("./system.js"),
       import("./motus.js"),
+      import("./coinflip.js"),
+      import("./blackjack.js"),
       import("./motus_leaderboard.js"),
       import("./2048.js"),
       import("./2048_leaderboard.js"),
@@ -74,6 +78,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       tagColor,
       system,
       motus,
+      coinflip,
+      blackjack,
       motusLeaderboard,
       game2048,
       game2048Leaderboard,
@@ -142,6 +148,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (tagColor?.initTagColor) tagColor.initTagColor(socket);
     if (system?.initSystem) system.initSystem(socket, rulesAccepted);
     if (motus?.initMotus) motus.initMotus(socket);
+    if (blackjack?.initBlackjack) blackjack.initBlackjack(socket, username);
+    if (coinflip?.initCoinFlip) coinflip.initCoinFlip(socket);
     if (motusLeaderboard?.initMotusLeaderboard)
       motusLeaderboard.initMotusLeaderboard(socket);
     if (game2048?.init2048) game2048.init2048(socket);

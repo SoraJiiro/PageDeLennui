@@ -244,7 +244,7 @@ export function initPuissance4(socket) {
       }
     }
 
-    // -------- Display info --------
+    // -------- Affichage des infos --------
     if (ui.infoEl) {
       const player1 = gameStateData.joueurs[0];
       const player2 = gameStateData.joueurs[1];

@@ -22,7 +22,7 @@ function saveSurveys(surveys) {
 module.exports = function (io) {
   const router = express.Router();
 
-  // Middleware to check if user is logged in
+  // Middleware pour vérifier si l'utilisateur est connecté
   router.use((req, res, next) => {
     if (req.session && req.session.user) {
       next();
@@ -31,22 +31,22 @@ module.exports = function (io) {
     }
   });
 
-  // Get all surveys
+  // Récupérer tous les sondages
   router.get("/list", (req, res) => {
     const surveys = getSurveys();
-    // Filter out sensitive data if needed, but for now sending everything is fine
-    // Maybe hide who voted what?
+    // Filtrer les données sensibles si nécessaire, mais pour l'instant tout envoyer est correct
+    // Peut-être cacher qui a voté quoi ?
     const safeSurveys = surveys.map((s) => ({
       ...s,
       hasVoted: s.answers && s.answers[req.session.user.pseudo] !== undefined,
       userVote: s.answers ? s.answers[req.session.user.pseudo] : null,
-      answers: undefined, // Don't send raw answers map
-      results: calculateResults(s), // Send aggregated results
+      answers: undefined, // Ne pas envoyer la map brute des réponses
+      results: calculateResults(s), // Envoyer les résultats agrégés
     }));
     res.json(safeSurveys);
   });
 
-  // Vote on a survey
+  // Voter pour un sondage
   router.post("/vote", (req, res) => {
     const { surveyId, choiceIndex } = req.body;
     const user = req.session.user;
@@ -75,7 +75,7 @@ module.exports = function (io) {
     survey.answers[user.pseudo] = choiceIndex;
     saveSurveys(surveys);
 
-    // Broadcast update to all clients so they see the new vote count
+    // Diffuser la mise à jour à tous les clients pour qu'ils voient le nouveau décompte des votes
     io.emit("survey:update", {
       id: survey.id,
       results: calculateResults(survey),
@@ -84,7 +84,7 @@ module.exports = function (io) {
     res.json({ success: true, results: calculateResults(survey) });
   });
 
-  // Create a survey (Admin only)
+  // Créer un sondage (Admin seulement)
   router.post("/create", (req, res) => {
     if (req.session.user.pseudo !== "Admin") {
       return res.status(403).json({ message: "Interdit" });
@@ -125,7 +125,7 @@ module.exports = function (io) {
     res.json({ success: true, survey: newSurvey });
   });
 
-  // Close a survey (Admin only)
+  // Fermer un sondage (Admin seulement)
   router.post("/close", (req, res) => {
     if (req.session.user.pseudo !== "Admin") {
       return res.status(403).json({ message: "Interdit" });
@@ -147,7 +147,7 @@ module.exports = function (io) {
     res.json({ success: true });
   });
 
-  // Delete a survey (Admin only)
+  // Supprimer un sondage (Admin seulement)
   router.post("/delete", (req, res) => {
     if (req.session.user.pseudo !== "Admin") {
       return res.status(403).json({ message: "Interdit" });

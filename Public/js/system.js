@@ -19,7 +19,7 @@ function initRules(socket, rulesAccepted) {
 
   if (!rulesOverlay || !acceptBtn) return;
 
-  // Sync localStorage with server state
+  // Synchroniser localStorage avec l'état du serveur
   if (rulesAccepted) {
     localStorage.setItem("rulesAccepted", "true");
   } else {
@@ -30,9 +30,9 @@ function initRules(socket, rulesAccepted) {
     rulesOverlay.style.display = "none";
   } else {
     rulesOverlay.style.display = "flex";
-    // Disable sidebar toggle while rules are shown
+    // Désactiver le basculement de la barre latérale pendant que les règles sont affichées
     if (sidebarToggle) sidebarToggle.style.pointerEvents = "none";
-    document.body.style.overflow = "hidden"; // Prevent scrolling
+    document.body.style.overflow = "hidden"; // Empêcher le défilement
   }
 
   acceptBtn.addEventListener("click", () => {
@@ -40,7 +40,7 @@ function initRules(socket, rulesAccepted) {
     localStorage.setItem("rulesAccepted", "true");
     rulesOverlay.style.display = "none";
     if (sidebarToggle) sidebarToggle.style.pointerEvents = "auto";
-    document.body.style.overflow = ""; // Restore scrolling
+    document.body.style.overflow = ""; // Restaurer le défilement
     showNotif("Règlement accepté. Bon jeu !", 3000);
   });
 }

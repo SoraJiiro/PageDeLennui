@@ -187,14 +187,14 @@ export function initChat(socket) {
           u.toLowerCase().startsWith(mention)
         );
 
-        // Append un suggestion box à la suite de l'input
+        // Ajouter une boîte de suggestion à la suite de l'input
         let suggestionBox = document.getElementById("mention-suggestions");
         if (!suggestionBox) {
           suggestionBox = document.createElement("div");
           suggestionBox.id = "mention-suggestions";
           suggestionBox.style.position = "absolute";
           suggestionBox.style.bottom = "100%";
-          suggestionBox.style.left = "15px"; // Align with padding
+          suggestionBox.style.left = "15px"; // Aligner avec le padding
           suggestionBox.style.background = "var(--bg-color)";
           suggestionBox.style.border = "1px solid var(--primary-color)";
           suggestionBox.style.zIndex = "1000";
@@ -204,7 +204,7 @@ export function initChat(socket) {
           suggestionBox.style.borderRadius = "5px";
           suggestionBox.style.minWidth = "150px";
 
-          // Ensure parent is relative for positioning
+          // S'assurer que le parent est relatif pour le positionnement
           if (getComputedStyle(input.parentNode).position === "static") {
             input.parentNode.style.position = "relative";
           }

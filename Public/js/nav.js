@@ -28,23 +28,23 @@ document.addEventListener("DOMContentLoaded", () => {
     sidebarOverlay.addEventListener("click", closeSidebar);
   }
 
-  // Close sidebar with Escape
+  // Fermer la barre latérale avec Échap
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeSidebar();
     }
   });
 
-  // Navigation Logic
+  // Logique de navigation
   function goTo(section) {
     const el = document.querySelector("#" + section);
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
-      closeSidebar(); // Close sidebar after navigation on mobile
+      closeSidebar(); // Fermer la barre latérale après la navigation sur mobile
     }
   }
 
-  // Attach event listeners to buttons
+  // Attacher les écouteurs d'événements aux boutons
   const navButtons = {
     ".sec1": "stage1",
     ".sec2": "stage2",
@@ -58,6 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ".sec10": "stage10",
     ".sec11": "stage11",
     ".sec12": "stage12",
+    ".sec13": "stage13",
+    ".sec14": "stage14",
   };
 
   for (const [selector, target] of Object.entries(navButtons)) {
@@ -67,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Mario link
+  // Lien Mario
   const mario = document.querySelector(".mario");
   if (mario) {
     mario.addEventListener("click", () => {

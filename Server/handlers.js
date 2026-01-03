@@ -4,6 +4,7 @@ const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
 const MotusGame = require("./motusGame");
+const BlackjackGame = require("./blackjackGame");
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
@@ -33,6 +34,7 @@ let pictionaryGame = new PictionaryGame();
 let pictionaryTimer = null;
 let p4Game = new Puissance4Game();
 let motusGame = new MotusGame();
+let blackjackGame = new BlackjackGame();
 
 // ------- Colors -------
 const orange = "\x1b[38;5;208m"; // pseudos
@@ -141,6 +143,11 @@ const leaderboardManager = {
 
 // ------- Handler Socket -------
 function initSocketHandlers(io, socket, gameState) {
+  // Init émetteur blackjack si non défini
+  if (blackjackGame && !blackjackGame.emitState) {
+    blackjackGame.setEmitter((state) => io.emit("blackjack:state", state));
+  }
+
   const user = socket.handshake.session?.user;
   if (!user || !user.pseudo) {
     io.emit("reload");
@@ -149,6 +156,7 @@ function initSocketHandlers(io, socket, gameState) {
   }
 
   const pseudo = user.pseudo;
+  socket.join("user:" + pseudo);
   // Joindre la room admin si Admin
   if (pseudo === "Admin") {
     try {
@@ -169,7 +177,7 @@ function initSocketHandlers(io, socket, gameState) {
   socket.emit("chat:history", FileService.data.historique);
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
 
-  // Send current tag color
+  // Envoyer couleur tag actuelle
   const currentTagData = FileService.data.tags
     ? FileService.data.tags[pseudo]
     : null;
@@ -183,7 +191,7 @@ function initSocketHandlers(io, socket, gameState) {
   }
   socket.emit("user:tagColor", { color: currentTagColor });
 
-  // Send saved UI color
+  // Envoyer couleur UI sauvegardée
   const savedUiColor =
     FileService.data.uis && FileService.data.uis[pseudo]
       ? FileService.data.uis[pseudo]
@@ -191,6 +199,57 @@ function initSocketHandlers(io, socket, gameState) {
   if (savedUiColor) {
     socket.emit("ui:color", { color: savedUiColor });
   }
+
+  // --- Coin Flip ---
+  socket.on("coinflip:bet", (data) => {
+    const { amount, side } = data;
+    const bet = parseInt(amount);
+
+    if (isNaN(bet) || bet <= 0) {
+      socket.emit("coinflip:error", "Mise invalide");
+      return;
+    }
+
+    if (side !== "heads" && side !== "tails") {
+      socket.emit("coinflip:error", "Choix invalide");
+      return;
+    }
+
+    const currentClicks = FileService.data.clicks[pseudo] || 0;
+    if (currentClicks < bet) {
+      socket.emit("coinflip:error", "Pas assez de clicks !");
+      return;
+    }
+
+    // Déduire mise immédiatement
+    FileService.data.clicks[pseudo] = currentClicks - bet;
+
+    // Logique pile ou face (50/50)
+    const isHeads = Math.random() < 0.5;
+    const resultSide = isHeads ? "heads" : "tails";
+    const won = side === resultSide;
+
+    if (won) {
+      // Ajouter gains (mise * 2)
+      FileService.data.clicks[pseudo] += bet * 2;
+    }
+
+    FileService.save("clicks", FileService.data.clicks);
+
+    // Emettre résultat
+    socket.emit("coinflip:result", {
+      won: won,
+      side: resultSide,
+      newScore: FileService.data.clicks[pseudo],
+      amount: bet,
+    });
+
+    // Mettre à jour affichage score client
+    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+
+    // Diffuser mise à jour classement
+    leaderboardManager.broadcastClickerLB(io);
+  });
 
   socket.on("system:acceptRules", () => {
     const db = dbUsers.readAll();
@@ -403,7 +462,9 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] =
         (FileService.data.clicks[pseudo] || 0) + 1;
       FileService.save("clicks", FileService.data.clicks);
-      socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+      io.to("user:" + pseudo).emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
+      });
       leaderboardManager.broadcastClickerLB(io);
 
       // If already banned earlier in this runtime, ignore
@@ -430,9 +491,9 @@ function initSocketHandlers(io, socket, gameState) {
             }
           }
 
-          // Recalculate medals (local simplified version)
+          // Recalculer médailles (version locale simplifiée)
           try {
-            // Recompute medals similarly to adminRoutes
+            // Recalculer médailles comme dans adminRoutes
             const medalsList = [
               { nom: "Bronze", pallier: 2500 },
               { nom: "Argent", pallier: 5000 },
@@ -476,7 +537,7 @@ function initSocketHandlers(io, socket, gameState) {
             console.warn("Erreur recalcul médailles après pénalité", e);
           }
 
-          // Persist ban in blacklist.json (alwaysBlocked)
+          // Persister ban dans blacklist.json
           persistBanIp(ip);
 
           console.log({
@@ -489,7 +550,7 @@ function initSocketHandlers(io, socket, gameState) {
             `${pseudo} a été banni pour triche (CPS trop élevé) !`
           );
 
-          // Notify and disconnect sockets from that IP
+          // Notifier et déconnecter sockets de cette IP
           io.sockets.sockets.forEach((s) => {
             const sIp = getIpFromSocket(s);
             if (sIp === ip) {
@@ -505,11 +566,11 @@ function initSocketHandlers(io, socket, gameState) {
             }
           });
 
-          // Broadcast updated leaderboard
+          // Diffuser mise à jour classement
           leaderboardManager.broadcastClickerLB(io);
         }
       } else {
-        // reset violationStart when under threshold
+        // reset violationStart si sous seuil
         track.violationStart = null;
       }
     } catch (e) {
@@ -1645,8 +1706,8 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.save("clicks", FileService.data.clicks);
 
       // Notifier le nouveau solde de clicks
-      socket.emit("clicker:update", {
-        clicks: FileService.data.clicks[pseudo],
+      socket.emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
       });
       leaderboardManager.broadcastClickerLB(io);
 
@@ -1677,8 +1738,8 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
 
-      socket.emit("clicker:update", {
-        clicks: FileService.data.clicks[pseudo],
+      socket.emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
       });
       leaderboardManager.broadcastClickerLB(io);
 
@@ -1705,8 +1766,8 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
 
-      socket.emit("clicker:update", {
-        clicks: FileService.data.clicks[pseudo],
+      socket.emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
       });
       leaderboardManager.broadcastClickerLB(io);
 
@@ -1736,8 +1797,8 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
 
-      socket.emit("clicker:update", {
-        clicks: FileService.data.clicks[pseudo],
+      socket.emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
       });
       leaderboardManager.broadcastClickerLB(io);
 
@@ -1767,8 +1828,8 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
 
-      socket.emit("clicker:update", {
-        clicks: FileService.data.clicks[pseudo],
+      socket.emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
       });
       leaderboardManager.broadcastClickerLB(io);
 
@@ -2335,6 +2396,118 @@ function initSocketHandlers(io, socket, gameState) {
     );
   socket.emit("motus:leaderboard", lb);
 
+  // ------- Blackjack -------
+  socket.on("blackjack:join", () => {
+    const res = blackjackGame.addPlayer(pseudo, socket.id);
+    if (!res.success) {
+      if (res.reason === "full") {
+        blackjackGame.addSpectator(pseudo, socket.id);
+        socket.emit("blackjack:error", "Table pleine, mode spectateur");
+      } else if (res.reason === "gameStarted") {
+        blackjackGame.addSpectator(pseudo, socket.id);
+        socket.emit("blackjack:error", "Partie en cours, mode spectateur");
+      }
+    }
+    io.emit("blackjack:state", blackjackGame.getState());
+  });
+
+  socket.on("blackjack:leave", () => {
+    blackjackGame.removePlayer(pseudo);
+    blackjackGame.removeSpectator(pseudo);
+    io.emit("blackjack:state", blackjackGame.getState());
+  });
+
+  socket.on("blackjack:start", () => {
+    if (blackjackGame.startBetting()) {
+      io.emit("blackjack:state", blackjackGame.getState());
+    }
+  });
+
+  socket.on("blackjack:bet", (amount) => {
+    const bet = parseInt(amount);
+    if (isNaN(bet) || bet <= 0) return;
+
+    const currentClicks = FileService.data.clicks[pseudo] || 0;
+
+    if (currentClicks < bet) {
+      socket.emit("blackjack:error", "Pas assez de clicks !");
+      return;
+    }
+
+    if (blackjackGame.placeBet(pseudo, bet)) {
+      // Deduct bet immediately
+      FileService.data.clicks[pseudo] = currentClicks - bet;
+      FileService.save("clicks", FileService.data.clicks);
+      io.to("user:" + pseudo).emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
+      });
+
+      io.emit("blackjack:state", blackjackGame.getState());
+    }
+  });
+
+  socket.on("blackjack:hit", () => {
+    if (blackjackGame.hit(pseudo)) {
+      io.emit("blackjack:state", blackjackGame.getState());
+
+      // Check if game ended (all players busted/stood)
+      if (blackjackGame.phase === "payout") {
+        handleBlackjackPayout();
+      }
+    }
+  });
+
+  socket.on("blackjack:stand", () => {
+    if (blackjackGame.stand(pseudo)) {
+      io.emit("blackjack:state", blackjackGame.getState());
+
+      // Check if game ended
+      if (blackjackGame.phase === "payout") {
+        handleBlackjackPayout();
+      }
+    }
+  });
+
+  function handleBlackjackPayout() {
+    blackjackGame.joueurs.forEach((p) => {
+      // Calculate amount to add (refund + winnings)
+      // winnings = -bet (Loss) -> amountToAdd = 0
+      // winnings = 0 (Push) -> amountToAdd = bet
+      // winnings = bet (Win) -> amountToAdd = 2*bet
+      // winnings = 1.5*bet (Blackjack) -> amountToAdd = 2.5*bet
+
+      const amountToAdd = p.bet + p.winnings;
+
+      if (amountToAdd > 0) {
+        if (!FileService.data.clicks[p.pseudo])
+          FileService.data.clicks[p.pseudo] = 0;
+
+        FileService.data.clicks[p.pseudo] += amountToAdd;
+      }
+    });
+
+    FileService.save("clicks", FileService.data.clicks);
+
+    // Update all players with new scores
+    blackjackGame.joueurs.forEach((p) => {
+      const socketId = p.socketId;
+      if (io.sockets.sockets.get(socketId)) {
+        io.sockets.sockets
+          .get(socketId)
+          .emit("clicker:you", { score: FileService.data.clicks[p.pseudo] });
+      }
+    });
+
+    leaderboardManager.broadcastClickerLB(io);
+    io.emit("blackjack:state", blackjackGame.getState());
+
+    // Reset game after delay
+    setTimeout(() => {
+      blackjackGame.resetGame();
+      io.emit("blackjack:state", blackjackGame.getState());
+    }, 5000);
+  }
+
   // ------- 2048 -------
   socket.on("2048:submit_score", (score) => {
     const s = Number(score);
@@ -2462,6 +2635,15 @@ function initSocketHandlers(io, socket, gameState) {
         p4_broadcastLobby();
       } else {
         p4Game.removeSpectator(pseudo);
+      }
+    }
+    // BLACKJACK
+    if (blackjackGame) {
+      const wasPlayer = blackjackGame.removePlayer(pseudo);
+      const wasSpectator = blackjackGame.removeSpectator(pseudo);
+
+      if (wasPlayer || wasSpectator) {
+        io.emit("blackjack:state", blackjackGame.getState());
       }
     }
   });

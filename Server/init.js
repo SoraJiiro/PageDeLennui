@@ -68,7 +68,7 @@ app.get("/admin/logs", requireAuth, (req, res) => {
 // Ancienne route -> redirection vers /admin/logs
 app.get("/logs.html", (req, res) => res.redirect("/admin/logs"));
 
-// Allow static assets for login/register pages
+// Autoriser les ressources statiques pour les pages de connexion/inscription
 app.use("/css", express.static(path.join(config.PUBLIC, "css")));
 app.use("/js", express.static(path.join(config.PUBLIC, "js")));
 app.use("/imgs", express.static(path.join(config.PUBLIC, "imgs")));

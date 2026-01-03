@@ -11,7 +11,7 @@ export function initMotus(socket) {
 
   let currentGuess = "";
   let currentRow = 0;
-  let wordLength = 5; // Default, will be updated
+  let wordLength = 5; // Par défaut, sera mis à jour
   let gameActive = true;
   let maxRows = 6;
   let hyphenIndices = [];
@@ -20,11 +20,11 @@ export function initMotus(socket) {
     skipBtn.addEventListener("click", () => {
       socket.emit("motus:skip");
       skipBtn.style.display = "none";
-      // Reset local state immediately for better UX
+      // Réinitialiser l'état local immédiatement pour une meilleure UX
       gameActive = true;
       currentGuess = "";
       currentRow = 0;
-      // Grid will be rebuilt by init event
+      // La grille sera reconstruite par l'événement init
     });
   }
 
@@ -32,32 +32,32 @@ export function initMotus(socket) {
     continueBtn.addEventListener("click", () => {
       socket.emit("motus:continue");
       continueBtn.style.display = "none";
-      // Reset local state immediately for better UX
+      // Réinitialiser l'état local immédiatement pour une meilleure UX
       gameActive = true;
       currentGuess = "";
       currentRow = 0;
-      // Grid will be rebuilt by init event
+      // La grille sera reconstruite par l'événement init
     });
   }
 
-  // Initialize grid
+  // Initialiser la grille
   function createGrid(length) {
     grid.innerHTML = "";
     wordLength = length;
 
-    // Calculate optimal tile size to fit in 350x300px container
+    // Calculer la taille optimale des tuiles pour tenir dans le conteneur 350x300px
     const maxWidth = 350;
     const maxHeight = 300;
     const gap = 5;
     const rows = 6;
 
-    // Calculate max possible size based on width and height constraints
+    // Calculer la taille maximale possible en fonction des contraintes de largeur et de hauteur
     const sizeFromWidth = (maxWidth - (length - 1) * gap) / length;
     const sizeFromHeight = (maxHeight - (rows - 1) * gap) / rows;
 
     const tileSize = Math.floor(Math.min(sizeFromWidth, sizeFromHeight));
 
-    // Update grid styles
+    // Mettre à jour les styles de la grille
     grid.style.width = "fit-content";
     grid.style.height = "fit-content";
     grid.style.gridTemplateRows = `repeat(${rows}, ${tileSize}px)`;
@@ -72,7 +72,7 @@ export function initMotus(socket) {
       for (let j = 0; j < length; j++) {
         const tile = document.createElement("div");
         tile.className = "motus-tile";
-        tile.style.fontSize = `${tileSize * 0.6}px`; // Dynamic font size
+        tile.style.fontSize = `${tileSize * 0.6}px`; // Taille de police dynamique
         tile.style.lineHeight = `${tileSize}px`;
 
         if (hyphenIndices.includes(j)) {
@@ -85,7 +85,7 @@ export function initMotus(socket) {
     }
   }
 
-  // Initialize keyboard
+  // Initialiser le clavier
   const keys = ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"];
 
   function createKeyboard() {
@@ -104,7 +104,7 @@ export function initMotus(socket) {
       });
 
       if (i === 2) {
-        // Backspace key
+        // Touche Retour arrière
         const back = document.createElement("button");
         back.className = "motus-key big";
         back.innerHTML = '<i class="fa-solid fa-delete-left"></i>';
@@ -138,7 +138,7 @@ export function initMotus(socket) {
   function handleKey(key) {
     if (!gameActive) return;
 
-    // Auto-skip hyphens if we are currently on one
+    // Sauter automatiquement les traits d'union si nous sommes actuellement sur l'un d'eux
     while (
       hyphenIndices.includes(currentGuess.length) &&
       currentGuess.length < wordLength
@@ -146,7 +146,7 @@ export function initMotus(socket) {
       currentGuess += "-";
     }
 
-    // If user types "-" but we just auto-filled it (or are on a fixed hyphen), ignore it
+    // Si l'utilisateur tape "-" mais que nous venons de le remplir automatiquement (ou sommes sur un trait d'union fixe), l'ignorer
     if (
       key === "-" &&
       currentGuess.length > 0 &&
@@ -159,7 +159,7 @@ export function initMotus(socket) {
     if (currentGuess.length < wordLength) {
       currentGuess += key;
 
-      // Check if NEXT is hyphen
+      // Vérifier si le SUIVANT est un trait d'union
       while (
         hyphenIndices.includes(currentGuess.length) &&
         currentGuess.length < wordLength
@@ -181,7 +181,7 @@ export function initMotus(socket) {
 
     currentGuess = currentGuess.slice(0, -1);
 
-    // If we landed on a hyphen (going backwards), remove it too
+    // Si nous atterrissons sur un trait d'union (en reculant), le supprimer aussi
     while (
       currentGuess.length > 0 &&
       hyphenIndices.includes(currentGuess.length - 1)
@@ -243,15 +243,15 @@ export function initMotus(socket) {
     currentGuess = "";
 
     if (result.every((s) => s === 2)) {
-      // gameActive is already false
+      // gameActive est déjà faux
       setTimeout(() => {
         showNotif("🎉 Bravo !");
         if (continueBtn) continueBtn.style.display = "block";
         if (skipBtn) skipBtn.style.display = "none";
       }, wordLength * 100 + 100);
     } else if (currentRow >= maxRows) {
-      // Reset grid if full and not won
-      // gameActive is already false
+      // Réinitialiser la grille si pleine et non gagnée
+      // gameActive est déjà faux
       setTimeout(() => {
         Array.from(grid.children).forEach((row) => {
           Array.from(row.children).forEach((tile, index) => {
@@ -276,21 +276,21 @@ export function initMotus(socket) {
     }
   }
 
-  // Socket listeners
+  // Écouteurs Socket
   socket.on("motus:init", ({ length, hyphens, history, won }) => {
     currentRow = 0;
-    currentGuess = ""; // Reset current guess to prevent carry-over
-    gameActive = true; // Reset game state
+    currentGuess = ""; // Réinitialiser la supposition actuelle pour éviter le report
+    gameActive = true; // Réinitialiser l'état du jeu
     hyphenIndices = hyphens || [];
     createGrid(length);
-    createKeyboard(); // Rebuilds keyboard (resets colors)
+    createKeyboard(); // Reconstruit le clavier (réinitialise les couleurs)
 
     if (hyphenIndices.length > 0) {
       const key = document.querySelector('.motus-key[data-key="-"]');
       if (key) key.dataset.state = "correct";
     }
 
-    // Button visibility logic
+    // Logique de visibilité des boutons
     if (won) {
       if (continueBtn) continueBtn.style.display = "block";
       if (skipBtn) skipBtn.style.display = "none";
@@ -301,9 +301,9 @@ export function initMotus(socket) {
       gameActive = true;
     }
 
-    // Restore history
+    // Restaurer l'historique
     if (history && Array.isArray(history)) {
-      // Update keyboard based on FULL history
+      // Mettre à jour le clavier basé sur l'historique COMPLET
       history.forEach((entry) => {
         entry.result.forEach((status, i) => {
           const letter = entry.guess[i];
@@ -326,7 +326,7 @@ export function initMotus(socket) {
         });
       });
 
-      // Determine visible history for the grid
+      // Déterminer l'historique visible pour la grille
       const last = history[history.length - 1];
       const won = last && last.result.every((s) => s === 2);
       let visibleHistory = [];
@@ -340,12 +340,12 @@ export function initMotus(socket) {
       }
 
       visibleHistory.forEach((entry) => {
-        // Fill grid visually
+        // Remplir la grille visuellement
         const row = grid.children[currentRow];
         for (let i = 0; i < length; i++) {
           row.children[i].textContent = entry.guess[i];
         }
-        // Reveal colors immediately (no animation)
+        // Révéler les couleurs immédiatement (pas d'animation)
         entry.result.forEach((status, i) => {
           const tile = row.children[i];
           if (status === 2) tile.dataset.state = "correct";
@@ -357,7 +357,7 @@ export function initMotus(socket) {
 
       if (won) {
         gameActive = false;
-        // Buttons handled in init
+        // Boutons gérés dans init
       }
     }
   });
@@ -377,14 +377,14 @@ export function initMotus(socket) {
     showMessage(message);
   });
 
-  // Physical keyboard support
+  // Support du clavier physique
   document.addEventListener("keydown", (e) => {
-    // Check if stage11 is visible
+    // Vérifier si stage11 est visible
     const stage = document.getElementById("stage11");
     if (!stage || stage.getBoundingClientRect().top > window.innerHeight)
       return;
 
-    // Allow browser shortcuts (Ctrl+R, Ctrl+Shift+I, etc.)
+    // Autoriser les raccourcis navigateur (Ctrl+R, Ctrl+Shift+I, etc.)
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
     if (e.key === "Enter") handleEnter();

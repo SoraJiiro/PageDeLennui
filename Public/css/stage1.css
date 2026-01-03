@@ -71,6 +71,29 @@
   color: var(--bg-color);
 }
 
+#periodic-msg span {
+  display: inline-block;
+  animation: letterLight 2.5s infinite;
+  opacity: 0.4;
+  color: #fff;
+}
+
+@keyframes letterLight {
+  0%,
+  100% {
+    opacity: 0.4;
+    text-shadow: none;
+    transform: scale(1);
+    color: #fff;
+  }
+  25% {
+    opacity: 1;
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color);
+    transform: scale(1.2);
+  }
+}
+
 .keybind-wrap {
   position: absolute;
   left: 50%;

@@ -22,13 +22,13 @@ module.exports = {
     "192.168.193.1",
   ],
 
-  // Save blockblast move history to disk (set env SAVE_BLOCKBLAST_HISTORY=true to enable)
+  // Sauvegarder l'historique des mouvements blockblast sur le disque (définir env SAVE_BLOCKBLAST_HISTORY=true pour activer)
   SAVE_BLOCKBLAST_HISTORY:
     (process.env.SAVE_BLOCKBLAST_HISTORY || "false") === "true",
 
   // Charger la blacklist selon la config (R, K ou S)
   loadBlacklist(config) {
-    // Simplified: only keep the alwaysBlocked list (merged with forced IPs).
+    // Simplifié : ne garder que la liste alwaysBlocked (fusionnée avec les IP forcées).
     const blacklistPath = path.join(__dirname, "..", "blacklist.json");
     try {
       if (!fs.existsSync(blacklistPath)) {
@@ -51,7 +51,7 @@ module.exports = {
         : [];
       const alwaysBlocked = [...new Set([...forced, ...fileAlways])];
 
-      // Persist forced IPs to file if missing (only forced IPs are written)
+      // Persister les IP forcées dans le fichier si manquantes (seules les IP forcées sont écrites)
       try {
         const missing = forced.filter((ip) => !fileAlways.includes(ip));
         if (missing.length > 0) {
@@ -63,10 +63,10 @@ module.exports = {
           );
         }
       } catch (e) {
-        // ignore persistence errors silently
+        // ignorer silencieusement les erreurs de persistance
       }
 
-      // Set runtime blacklist to the merged alwaysBlocked (forced + file)
+      // Définir la blacklist d'exécution sur alwaysBlocked fusionné (forcé + fichier)
       this.BLACKLIST = [...new Set(alwaysBlocked)];
     } catch (err) {
       this.BLACKLIST = [];

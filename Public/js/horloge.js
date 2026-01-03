@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const display = document.querySelector("h1");
+  const display =
+    document.getElementById("main-clock") || document.querySelector("h1");
 
   function horloge() {
     let mtn = new Date();

@@ -21,6 +21,8 @@
   width: 100%;
   box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
   animation: slideIn 0.3s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .rules-content h2 {
@@ -103,5 +105,43 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .rules-content {
+    padding: 15px;
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .rules-content h2 {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+  }
+
+  .rules-body {
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .rule-item {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .rule-item i {
+    font-size: 1rem;
+    margin-top: 2px;
+  }
+
+  .rule-item p {
+    font-size: 0.9rem;
+  }
+
+  .btn-accept {
+    padding: 12px;
+    font-size: 1rem;
   }
 }

@@ -144,9 +144,9 @@ export function initBlockBlast(socket) {
   }
 
   function activityDetected(evt) {
-    // evt can be undefined for programmatic calls
+    // evt peut être indéfini pour les appels programmatiques
     if (state.gameOver) return;
-    // If blockblast area isn't visible or tab hidden, don't start
+    // Si la zone blockblast n'est pas visible ou l'onglet caché, ne pas démarrer
     if (!document || document.visibilityState === "hidden") return;
     if (!isInViewport) return;
 
@@ -293,7 +293,7 @@ export function initBlockBlast(socket) {
     [[1, 1, 1]], // Horizontal
     [[1], [1], [1]], // Vertical
 
-    // 3 blocs - L shapes
+    // 3 blocs - Formes en L
     [
       [1, 0],
       [1, 1],
@@ -321,7 +321,7 @@ export function initBlockBlast(socket) {
       [1, 1],
     ], // 2x2
 
-    // 4 blocs - L shapes
+    // 4 blocs - Formes en L
     [
       [1, 0],
       [1, 0],
@@ -341,7 +341,7 @@ export function initBlockBlast(socket) {
       [0, 0, 1],
     ], // L couché inversé
 
-    // 4 blocs - T shapes
+    // 4 blocs - Formes en T
     [
       [1, 1, 1],
       [0, 1, 0],
@@ -352,7 +352,7 @@ export function initBlockBlast(socket) {
       [0, 1],
     ], // T vertical
 
-    // 4 blocs - Z/S shapes
+    // 4 blocs - Formes en Z/S
     [
       [1, 1, 0],
       [0, 1, 1],
@@ -794,8 +794,8 @@ export function initBlockBlast(socket) {
 
   // Démarrer le timer aussi quand le joueur sélectionne une pièce (click)
   const origSelectPiece = selectPiece;
-  // note: we override by reassigning the function name used by event listeners above
-  // but since selectPiece is used internally we keep same identifier
+  // note : nous surchargeons en réassignant le nom de la fonction utilisée par les écouteurs d'événements ci-dessus
+  // mais comme selectPiece est utilisé en interne, nous gardons le même identifiant
   selectPiece = function (index) {
     origSelectPiece(index);
     startTimer();
@@ -1217,7 +1217,7 @@ export function initBlockBlast(socket) {
     if (ui.gameoverTime)
       ui.gameoverTime.textContent = ` ${formatTime(state.elapsedMs)}`;
 
-    // --- Revive Logic ---
+    // --- Logique de réanimation ---
     if (state.revivesUsed < 3) {
       if (ui.reviveSection) {
         ui.reviveSection.style.display = "block";
@@ -1257,7 +1257,7 @@ export function initBlockBlast(socket) {
       localStorage.removeItem(LOCAL_SAVE_KEY);
     } catch (e) {}
     scoreAttente = state.score;
-    // Stop timer on game over
+    // Arrêter le timer à la fin du jeu
     stopTimer();
   }
 
@@ -1301,7 +1301,7 @@ export function initBlockBlast(socket) {
     state.combo = 0;
     state.totalLinesCleared = 0;
     state.consecutivePlacements = 0;
-    // Reset timer only if called from game over (rejouer)
+    // Réinitialiser le timer seulement si appelé depuis game over (rejouer)
     if (fromGameOver) {
       state.elapsedMs = 0;
       updateTimerDisplay();
@@ -1488,7 +1488,7 @@ export function initBlockBlast(socket) {
   });
 
   // ---------- Boutons ----------
-  // Reset button: réinitialise la partie actuelle + le meilleur score (avec mot de passe)
+  // Bouton Reset : réinitialise la partie actuelle + le meilleur score (avec mot de passe)
   ui.resetBtn?.addEventListener("click", async () => {
     const confirmReset = confirm(
       "⚠️ Es-tu sûr de vouloir réinitialiser ton score Block Blast ?\nTon meilleur score et ton temps seront définitivement perdus !"
@@ -1641,7 +1641,7 @@ export function initBlockBlast(socket) {
     showNotif(msg || "Erreur lors du paiement");
   });
 
-  // Close gameover modal with Escape
+  // Fermer la modale gameover avec Echap
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       if (ui.gameoverEl && ui.gameoverEl.classList.contains("active")) {

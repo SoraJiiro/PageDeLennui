@@ -29,6 +29,8 @@
         <link rel="stylesheet" type="text/css" href="css/stage10.css" />
         <link rel="stylesheet" type="text/css" href="css/stage11.css" />
         <link rel="stylesheet" type="text/css" href="css/stage12.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage13.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage14.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -40,6 +42,7 @@
         <script defer type="text/javascript" src="/js/uiColor.js"></script>
         <script defer type="text/javascript" src="js/display_lb.js"></script>
         <script defer type="text/javascript" src="js/horloge.js"></script>
+        <script defer type="text/javascript" src="js/periodic_msg.js"></script>
 
         <script defer src="/socket.io/socket.io.js"></script>
         <script defer type="module" src="js/main.js"></script>
@@ -77,6 +80,10 @@
                         <li><button class="nav-btn sec10">Snake</button></li>
                         <li><button class="nav-btn sec11">Motus</button></li>
                         <li><button class="nav-btn sec12">2048</button></li>
+                        <li><button class="nav-btn sec13">Coin
+                                Flip</button></li>
+                        <li><button
+                                class="nav-btn sec14">Blackjack</button></li>
                     </ul>
                 </div>
 
@@ -191,7 +198,10 @@
         </script>
 
         <section id="stage1">
-            <h1 class="display"></h1>
+            <center><pre
+                    id="periodic-msg">Bonne année et bonne rentrée à tous !</pre></center>
+            <h1 class="display" id="main-clock"></h1>
+            <h2 id="your-score" style="visibility: hidden;"></h2>
             <div class="keybind-wrap">
                 <label for="keybind">Changer la touche de Pause</label>
                 <input type="text" class="keybind" id="keybind"
@@ -732,7 +742,7 @@
                     <div class="game-2048-title"><h2>2048.exe</h2></div>
                     <div class="game-2048-scores">
                         <div class="score-box">
-                            <div class="score-label">Score : </div>
+                            <div class="score-label">Score :</div>
                             <div class="score-value" id="score-2048">0</div>
                         </div>
                     </div>
@@ -749,6 +759,100 @@
                     <div class="game-over-text">Game Over!</div>
                     <button class="btn-2048"
                         id="try-again-2048">Rejouer</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="stage13">
+            <div class="coinflip-card">
+                <div class="coinflip-header">
+                    <h2>CoinFlip.exe</h2>
+                </div>
+
+                <div class="coin-container">
+                    <div id="coin" class="coin">
+                        <div class="side side-heads">F</div>
+                        <div class="side side-tails">P</div>
+                    </div>
+                </div>
+
+                <div class="bet-controls">
+                    <div class="quick-bets">
+                        <button class="quick-bet-btn"
+                            data-percent="10">10%</button>
+                        <button class="quick-bet-btn"
+                            data-percent="25">25%</button>
+                        <button class="quick-bet-btn"
+                            data-percent="50">50%</button>
+                        <button class="quick-bet-btn"
+                            data-percent="100">Max</button>
+                    </div>
+                    <div class="bet-input-group">
+                        <input type="number" id="cf-bet-amount"
+                            class="bet-input" placeholder="Mise"
+                            min="1">
+                    </div>
+                    <div class="bet-buttons">
+                        <button id="cf-btn-heads"
+                            class="bet-btn btn-heads">FACE</button>
+                        <button id="cf-btn-tails"
+                            class="bet-btn btn-tails">PILE</button>
+                    </div>
+                    <div id="cf-result" class="result-message"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stage14">
+            <div class="blackjack-card">
+                <div class="blackjack-header">
+                    <h2>Blackjack.exe</h2>
+                </div>
+
+                <div class="blackjack-table">
+                    <div class="dealer-area">
+                        <div class="dealer-hand"></div>
+                        <div style="color:white; margin-top:5px">DEALER</div>
+                        <div class="dealer-score player-score"
+                            style="margin-top: 5px;">0</div>
+                    </div>
+
+                    <div id="bj-message" class="bj-message">En attente...</div>
+
+                    <div class="players-area">
+
+                    </div>
+                </div>
+
+                <div class="blackjack-controls">
+                    <div id="bj-bet-controls"
+                        style="display:none; gap:10px; flex-wrap: wrap; justify-content: center;">
+                        <button class="bj-bet-btn" data-percent="5">5%</button>
+                        <button class="bj-bet-btn"
+                            data-percent="10">10%</button>
+                        <button class="bj-bet-btn"
+                            data-percent="25">25%</button>
+                        <button class="bj-bet-btn"
+                            data-percent="30">30%</button>
+                        <button class="bj-bet-btn"
+                            data-percent="45">45%</button>
+                        <button class="bj-bet-btn"
+                            data-percent="50">50%</button>
+                    </div>
+
+                    <div id="bj-play-controls" style="display:none; gap:10px;">
+                        <button id="bj-hit" class="bj-btn">Tirer</button>
+                        <button id="bj-stand" class="bj-btn">Rester
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lobby-controls">
+                    <button id="bj-join" class="bj-btn">Rejoindre</button>
+                    <button id="bj-leave" class="bj-btn"
+                        style="display:none">Quitter</button>
+                    <button id="bj-start" class="bj-btn"
+                        style="display:none">Démarrer</button>
                 </div>
             </div>
         </section>
