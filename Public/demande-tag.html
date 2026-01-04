@@ -8,8 +8,8 @@
         <link rel="stylesheet" href="css/tag_request.css">
         <script src="js/uiColor.js" type="text/javascript"></script>
         <script type="text/javascript" src="js/nav.js"></script>
-        <script src="/socket.io/socket.io.js"></script>
-        <script defer src="/js/auto_reload.js"></script>
+        <script defer type="module" src="js/main.js"></script>
+        <script defer src="js/auto_reload.js"></script>
     </head>
     <body>
 
@@ -47,6 +47,7 @@
                 onclick="window.location.href='/'">Retour à l'accueil</button>
         </div>
 
+        <script src="/socket.io/socket.io.js"></script>
         <script>
         let socket;
 

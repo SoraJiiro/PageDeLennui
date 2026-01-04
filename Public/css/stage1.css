@@ -436,7 +436,6 @@ p.cps-humain {
 
 .medals-wrap .medal.shown:hover {
   cursor: pointer;
-  animation: spin 0.45s ease;
   transition: transform 0.4s ease;
 }
 

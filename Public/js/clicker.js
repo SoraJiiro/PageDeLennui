@@ -10,6 +10,7 @@ export function initClicker(socket) {
     yourScoreEl: document.getElementById("your-score"),
     cpsHumainEl: document.querySelector(".cps-humain"),
     regenBtn: document.querySelector(".regen-colors-btn"),
+    sidebarMoneyEl: document.querySelector("h3.money"),
   };
 
   // ---------- Etat local ----------
@@ -22,6 +23,7 @@ export function initClicker(socket) {
     cpsHumain: 0,
     timerHumain: null,
     myPseudo: null,
+    medalsInitialized: false,
   };
 
   // ---------- Storage manager (Désactivé / Nettoyage) ----------
@@ -74,13 +76,13 @@ export function initClicker(socket) {
         // Calcul pallier/cps identique à l'ancienne logique
         let pallierTemp = precedente.pallier * 2;
         let pallier = Math.ceil(pallierTemp * 0.78 - 6500);
-        let cps = precedente.cps + 5;
+        let cps = precedente.cps + 2;
         const entry = {
           nom: `Médaille Préstige - ${idx}`,
           icon: "[⭐]",
           pallier,
           cps,
-          couleurs: [], // vide, attend couleurs sauvegardées ou génération si jamais
+          couleurs: [],
         };
         medalsList.push(entry);
         precedente = entry;
@@ -219,6 +221,8 @@ export function initClicker(socket) {
 
   // ---------- Vérif + déblocage de médailles ----------
   function verifMedals(score) {
+    if (!state.medalsInitialized) return;
+
     let medalCible = null;
     // Si score négatif, cibler la médaille spéciale Tricheur
     if (typeof score === "number" && score < 0) {
@@ -442,6 +446,10 @@ export function initClicker(socket) {
       ui.zone.innerHTML = `<i>${Number(score)
         .toLocaleString("fr-FR")
         .replace(/\s/g, "\u00a0")}</i>`;
+    ui.sidebarMoneyEl.innerHTML = `<i
+                            class="fa-solid fa-money-bill"></i> ${Number(score)
+                              .toLocaleString("fr-FR")
+                              .replace(/\s/g, "\u00a0")} C`;
     if (ui.yourScoreEl)
       ui.yourScoreEl.textContent = Number(score)
         .toLocaleString("fr-FR")
@@ -463,6 +471,7 @@ export function initClicker(socket) {
         colorMap[m.name] = m.colors;
       }
     });
+    state.medalsInitialized = true;
 
     state.medalsDebloquees = new Set(names);
 
@@ -504,6 +513,8 @@ export function initClicker(socket) {
     // Cela permet de corriger le CPS si l'admin a retiré des médailles/clicks
     const highestCps = medaillePlusHaute ? medaillePlusHaute.cps : 0;
 
+    // Vérifier si le score actuel mérite d'autres médailles (sync)
+    verifMedals(state.scoreActuel);
     setAutoClick(highestCps);
   });
 

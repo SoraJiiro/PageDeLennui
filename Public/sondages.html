@@ -10,8 +10,8 @@
     </head>
     <body>
         <div class="container">
-            <button onclick="window.location.href='/'" class="btn-back">&larr;
-                Retour</button>
+            <button onclick="window.location.href='/'" class="btn-back"><i
+                    class="fa-solid fa-arrow-left"></i> Retour</button>
             <h1 class="page-title">Sondages</h1>
 
             <div id="activeSurveys">
@@ -26,6 +26,7 @@
         </div>
 
         <script src="/socket.io/socket.io.js"></script>
+        <script defer src="js/auto_reload.js"></script>
         <script>
         let socket;
         let currentUser = null;

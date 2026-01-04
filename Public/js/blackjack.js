@@ -182,7 +182,7 @@ export function initBlackjack(socket, username) {
       } else if (player.status === "bust") {
         const status = document.createElement("div");
         status.className = "bj-status-overlay status-lose";
-        status.textContent = "BUST";
+        status.textContent = "AU DESSUS";
         seat.appendChild(status);
       } else if (player.status === "stand") {
         const status = document.createElement("div");

@@ -16,7 +16,8 @@
             media="(prefers-color-scheme: light)" />
 
         <script defer type="text/javascript" src="/js/uiColor.js"></script>
-        <script defer src="/socket.io/socket.io.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script defer src="/js/auto_reload.js"></script>
 
         <style>
         body {
@@ -33,25 +34,6 @@
             align-items: center;
         }
 
-        .btn-back {
-            align-self: flex-start;
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            font-size: 1.2rem;
-            cursor: pointer;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-family: inherit;
-            font-weight: bold;
-        }
-
-        .btn-back:hover {
-            text-decoration: underline;
-        }
-
         /* Override ruleStage.css for static display */
         .rules-content {
             animation: none;
@@ -66,9 +48,8 @@
     </head>
     <body>
         <div class="container">
-            <button onclick="window.location.href='/'" class="btn-back">
-                <i class="fa-solid fa-arrow-left"></i> Retour
-            </button>
+            <button onclick="window.location.href='/'" class="btn-back"><i
+                    class="fa-solid fa-arrow-left"></i> Retour</button>
 
             <div class="rules-content">
                 <h2><i class="fa-solid fa-scale-balanced"></i> Règlement &
@@ -94,6 +75,14 @@
                             vacances à partir du <u>5 Janvier 2026</u>.</p>
                     </div>
 
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Vous pourrez assister à l'évolution du projet
+                            (ajouts, modifications, retraits...) depuis les
+                            <u>Patch Notes</u> disponible depuis la
+                            Navigation.</p>
+                    </div>
+
                     <div class="rule-item danger">
                         <i class="fa fa-ban"></i>
                         <p>Toute tentative de <u>TRICHE</u> entraînera un
@@ -117,8 +106,8 @@
                 <p
                     style="font-size: 1rem; text-align: center; margin-top: 10px;">
                     Dernière mise à jour du règlement : <mark
-                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">27
-                        Décembre 2025</mark></p>
+                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">4
+                        Janvier 2026 - 5h14 matin</mark></p>
             </div>
         </div>
 

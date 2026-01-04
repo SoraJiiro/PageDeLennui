@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Patch Notes - PDE</title>
+
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        <link rel="stylesheet" type="text/css" href="css/common.css">
+        <link rel="stylesheet" type="text/css" href="css/patchNotes.css">
+
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)" />
+
+        <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer src="/socket.io/socket.io.js"></script>
+        <script defer src="js/auto_reload.js"></script>
+    </head>
+    <body>
+        <div class="patch-container">
+            <button onclick="window.location.href='/'" class="btn-back"><i
+                    class="fa-solid fa-arrow-left"></i> Retour</button>
+
+            <div class="patch-header">
+                <h1><i class="fa-solid fa-pen-to-square"></i> Patch Notes</h1>
+                <p>Historique des mises à jour et changements</p>
+            </div>
+
+            <div class="patch-entry">
+                <div class="patch-title">
+                    <span class="version">v2.0.1</span>
+                    <span class="date">Vacances de Noël 2025/2026 ( ≈ 53H de
+                        code )</span>
+                </div>
+                <div class="patch-content">
+                    <h3><i class="fa-solid fa-star"></i> Nouveautés</h3>
+                    <ul>
+                        <li><span class="tag-new">[NEW]</span> <strong>2048
+                                :</strong> Révisez vos puissances de 2 bande de
+                            flemmards.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Blackjack
+                                :</strong> J'ai besoin d'en dire plus?</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Coin Flip
+                                :</strong> Pour mes adictes préférés.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong> Regen de
+                                Médailles :</strong> Après avoir débloqué une ou
+                            plusieurs médailles, vous pouvez maintenant
+                            régénérer leurs couleurs.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Sondages
+                                :</strong> Donnez votre avis bancal sur des
+                            sujets d'autant plus bancals.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Demande
+                                de Tags :</strong> Maintenant avec un choix de
+                            couleur pour chaque mot! (Dites merci à Tom)</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Pay to
+                                Revive :</strong> Vous pouvez desormais dépenser
+                            quelques uns de vos Clicks durement gagnés pour
+                            continuer une partie en cas de game over. Feature
+                            seulement active sur les jeux solos et 3 fois
+                            maximum par partie.</li>
+                        <li><span class="tag-new">[NEW]</span><strong>Patch
+                                Notes : </strong> Bah... La page que vous lisez
+                            en ce moment.</li>
+                        <li><span class="tag-ee">[EASTER EGG]</span><strong>Good
+                                luck :</strong> Un Easter Egg a été caché dans
+                            la page, bonne chance pour le trouver... (Indice :
+                            S-3 /?)</li>
+                    </ul>
+
+                    <h3><i class="fa-solid fa-wrench"></i> Améliorations</h3>
+                    <ul>
+                        <li><span class="tag-change">[CHANGE]</span> Nouvelle
+                            Navigation : Sidebar.</li>
+                        <li><span class="tag-change">[CHANGE]</span> Refonte de
+                            l'UI du Chat.</li>
+                        <li><span class="tag-change">[CHANGE]</span> Palliers
+                            des Médailles réduit de <u>35%</u> et augmentation
+                            des CPS auto associé aux Médaille augmentés de
+                            <u>2</u>.</li>
+                        <li><span class="tag-fix">[FIX]</span> Optimisations
+                            des Media Queries du CSS global.</li>
+                        <li><span class="tag-fix">[FIX]</span> Bug de la
+                            notification "Médaille ... débloquée" à chaque
+                            connexion / refresh fixé.</li>
+                    </ul>
+                    <h3><i class="fa-solid fa-arrow-right-arrow-left"></i>
+                        Retraits / Resets</h3>
+                    <ul>
+                        <li><span class="tag-removed">[REMOVED]</span> Animation
+                            au hover de la souris sur les Médailles du
+                            Clicker.</li>
+                    </ul>
+
+                </div>
+            </div>
+
+            <!--
+        <div class="patch-entry">
+            <div class="patch-title">
+                <span class="version">vX.X.X</span>
+                <span class="date">Date</span>
+            </div>
+            <div class="patch-content">
+                <h3>Nouveautés</h3>
+                <ul>
+                    <li><span class="tag-new">[NEW]</span> ...</li>
+                </ul>
+            </div>
+        </div>
+        -->
+
+        </div>
+    </body>
+</html>

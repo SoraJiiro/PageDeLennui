@@ -63,6 +63,7 @@
             </div>
             <div class="sidebar-content">
                 <div class="sidebar-section">
+                    <h3 class="money"></h3>
                     <h3><i class="fa-solid fa-gamepad"></i> Jeux</h3>
                     <ul>
                         <li><button class="nav-btn sec1">Clicker</button></li>
@@ -93,10 +94,12 @@
                         <li><button class="nav-btn sec3">Chat</button></li>
                         <li><button
                                 class="nav-btn sec4">Classements</button></li>
-                        <li><a href="surveys.html"
+                        <li><a href="sondages.html"
                                 class="nav-link">Sondages</a></li>
                         <li><a href="reglement.html"
                                 class="nav-link">Règlement</a></li>
+                        <li><a href="patch_notes.html"
+                                class="nav-link">Patch Notes</a></li>
                     </ul>
                 </div>
 
@@ -113,7 +116,7 @@
                             <input type="color" id="tagColorPicker"
                                 class="tag-color-picker">
                         </div>
-                        <a href="tag_request.html" class="nav-link"
+                        <a href="demande-tag.html" class="nav-link"
                             style="text-align:center; margin-top:10px; font-size:0.9rem;">Demander
                             un Tag</a>
                     </div>
@@ -150,6 +153,14 @@
                         <i class="fa fa-info-circle"></i>
                         <p>Les stats seront <u>RESET</u> à chaque départ en
                             vacances à partir du <u>5 Janvier 2026</u>.</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Vous pourrez assister à l'évolution du projet
+                            (ajouts, modifications, retraits...) depuis les
+                            <u>Patch Notes</u> disponible depuis la
+                            Navigation.</p>
                     </div>
 
                     <div class="rule-item danger">
@@ -199,8 +210,10 @@
 
         <section id="stage1">
             <center><pre
-                    id="periodic-msg">Bonne année et bonne rentrée à tous !</pre></center>
-            <h1 class="display" id="main-clock"></h1>
+                    id="periodic-msg">Bonne année et bonne rentrée à tous !</pre>
+                <br><a href="patch_notes.html"><button class="temp-btn"> > PATCH
+                        NOTES < </button></a></center>
+            <h1 class="display" id="main-clock" style="cursor: default;"></h1>
             <h2 id="your-score" style="visibility: hidden;"></h2>
             <div class="keybind-wrap">
                 <label for="keybind">Changer la touche de Pause</label>
@@ -332,7 +345,7 @@
 
             <center>
                 <p class="info-leaderboard">Le premier du Leaderboard Dino,
-                    Flappy Bird, Snake et Motus à
+                    Flappy Bird, Snake, Motus et 2048 à
                     la fin de chaque session obtiendra <mark
                         style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block; text-decoration: underline; text-decoration-color: #000; text-decoration-thickness: 1.5px; text-underline-offset: 3px;">7500</mark>
                     Clicks
