@@ -150,8 +150,7 @@ function initSocketHandlers(io, socket, gameState) {
 
   const user = socket.handshake.session?.user;
   if (!user || !user.pseudo) {
-    io.emit("reload");
-    socket.disconnect(true);
+    // Allow connection for auto-reload (public pages), but do not init game handlers
     return;
   }
 
