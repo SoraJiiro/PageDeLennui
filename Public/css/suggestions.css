@@ -1,0 +1,97 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+.suggestion-card {
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--primary-color);
+  padding: 2rem;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+}
+
+.suggestion-card h2 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.input-group textarea {
+  width: 100%;
+  padding: 10px;
+  background: #000;
+  border: 1px solid var(--primary-color);
+  color: #fff;
+  font-size: 1.1rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.input-group textarea:focus {
+  outline: none;
+  box-shadow: 0 0 5px var(--primary-color);
+}
+
+.status-message {
+  margin-top: 1rem;
+  padding: 10px;
+  border: 1px solid;
+  display: none;
+}
+
+.status-success {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.status-error {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.btn {
+  background: var(--primary-color);
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px var(--primary-color);
+}
+
+.btn-back {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  margin-top: 10px;
+}
+
+.btn-back:hover {
+  background: var(--primary-color);
+  color: #000;
+}

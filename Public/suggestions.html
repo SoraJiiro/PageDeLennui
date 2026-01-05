@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Suggestions</title>
+        <link rel="stylesheet" href="css/common.css">
+        <link rel="stylesheet" href="css/suggestions.css">
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        <script src="js/uiColor.js" type="text/javascript"></script>
+        <script type="text/javascript" src="js/nav.js"></script>
+        <script defer type="module" src="js/main.js"></script>
+        <script defer src="js/auto_reload.js"></script>
+    </head>
+    <body>
+
+        <div class="suggestion-card">
+            <h2><i class="fa-solid fa-lightbulb"></i> Boîte à Suggestions</h2>
+            <p style="color: #ccc; margin-bottom: 20px;">Une idée ? Un bug ?
+                Dis-nous tout !</p>
+
+            <div id="suggestionForm">
+                <div class="input-group">
+                    <label for="suggestionInput">Votre suggestion</label>
+                    <textarea id="suggestionInput" rows="6"
+                        placeholder="Écrivez votre suggestion ici..."></textarea>
+                </div>
+
+                <button class="btn" onclick="submitSuggestion()">Envoyer la
+                    suggestion</button>
+            </div>
+
+            <div id="statusDisplay" class="status-message"></div>
+
+            <button class="btn btn-back"
+                onclick="window.location.href='/'">Retour à l'accueil</button>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="js/suggestions.js"></script>
+    </body>
+</html>

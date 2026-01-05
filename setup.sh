@@ -19,6 +19,7 @@ fi
 cat > Server/.env <<EOF
 PORT=7750
 CLE_SID=${CLE_SID}
+APP_PSWD=zumvyewmcbpaiadd
 EOF
 
 echo "> Dossier data/ créé"

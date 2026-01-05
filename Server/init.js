@@ -1,10 +1,10 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const sharedSession = require("express-socket.io-session");
 const chokidar = require("chokidar");
-const path = require("path");
 const exec = require("child_process").execSync;
 
 // ------- Imports -------
@@ -44,6 +44,7 @@ app.use("/api", authRoutes);
 app.use("/api/admin", createAdminRouter(io, motusGame, leaderboardManager));
 app.use("/api/tag", require("./tagRoutes"));
 app.use("/api/surveys", require("./surveyRoutes")(io));
+app.use("/api/suggestions", require("./suggestionRoutes"));
 app.get("/login", (_, res) =>
   res.sendFile(path.join(config.PUBLIC, "login.html"))
 );
