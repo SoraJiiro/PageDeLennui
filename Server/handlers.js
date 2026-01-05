@@ -1,4 +1,5 @@
 const { FileService, getIpFromSocket, persistBanIp } = require("./util");
+const { recalculateMedals } = require("./medals");
 const dbUsers = require("./dbUsers");
 const UnoGame = require("./unoGame");
 const PictionaryGame = require("./pictionaryGame");
@@ -234,6 +235,7 @@ function initSocketHandlers(io, socket, gameState) {
     }
 
     FileService.save("clicks", FileService.data.clicks);
+    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
 
     // Emettre résultat
     socket.emit("coinflip:result", {
@@ -432,6 +434,92 @@ function initSocketHandlers(io, socket, gameState) {
       message: "✅ Couleur du tag mise à jour",
       duration: 3000,
     });
+  });
+
+  // ------- Donation System -------
+  socket.on("user:donate", ({ recipient, amount }) => {
+    const val = parseInt(amount);
+    if (isNaN(val) || val <= 0) {
+      socket.emit("system:info", "Montant invalide.");
+      return;
+    }
+
+    if (recipient === pseudo) {
+      socket.emit("system:info", "Vous ne pouvez pas vous donner des clicks.");
+      return;
+    }
+
+    const senderClicks = FileService.data.clicks[pseudo] || 0;
+    if (senderClicks < val) {
+      socket.emit("system:info", "Fonds insuffisants.");
+      return;
+    }
+
+    // Vérifier si le destinataire existe
+    const recipientExists = dbUsers.findByPseudoExact
+      ? dbUsers.findByPseudoExact(recipient)
+      : dbUsers.findBypseudo(recipient);
+
+    if (!recipientExists) {
+      socket.emit("system:info", "Utilisateur introuvable.");
+      return;
+    }
+
+    // Déduire immédiatement du sender
+    FileService.data.clicks[pseudo] -= val;
+    FileService.save("clicks", FileService.data.clicks);
+    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
+    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+
+    if (val > 250000) {
+      // Transaction en attente
+      if (!FileService.data.transactions) FileService.data.transactions = [];
+      const transaction = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        from: pseudo,
+        to: recipient,
+        amount: val,
+        date: new Date().toISOString(),
+        status: "pending",
+      };
+      FileService.data.transactions.push(transaction);
+      FileService.save("transactions", FileService.data.transactions);
+
+      socket.emit(
+        "system:info",
+        `Don de ${val} clicks à ${recipient} en attente de validation (montant > 250k).`
+      );
+
+      // Notifier les admins connectés
+      io.to("admins").emit("admin:new_transaction", transaction);
+    } else {
+      // Transfert direct
+      if (!FileService.data.clicks[recipient])
+        FileService.data.clicks[recipient] = 0;
+      FileService.data.clicks[recipient] += val;
+      FileService.save("clicks", FileService.data.clicks);
+      recalculateMedals(recipient, FileService.data.clicks[recipient], io);
+
+      socket.emit(
+        "system:info",
+        `Vous avez donné ${val} clicks à ${recipient}.`
+      );
+
+      // Notifier le destinataire s'il est en ligne
+      const recipientSocketId = gameState.userSockets.get(recipient); // Set of socketIds
+      if (recipientSocketId) {
+        recipientSocketId.forEach((sid) => {
+          io.to(sid).emit(
+            "system:info",
+            `${pseudo} vous a donné ${val} clicks !`
+          );
+          io.to(sid).emit("clicker:you", {
+            score: FileService.data.clicks[recipient],
+          });
+        });
+      }
+    }
+    leaderboardManager.broadcastClickerLB(io);
   });
 
   // ------- Clicker -------
@@ -2437,6 +2525,7 @@ function initSocketHandlers(io, socket, gameState) {
       // Deduct bet immediately
       FileService.data.clicks[pseudo] = currentClicks - bet;
       FileService.save("clicks", FileService.data.clicks);
+      recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
       io.to("user:" + pseudo).emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
       });
@@ -2482,6 +2571,7 @@ function initSocketHandlers(io, socket, gameState) {
           FileService.data.clicks[p.pseudo] = 0;
 
         FileService.data.clicks[p.pseudo] += amountToAdd;
+        recalculateMedals(p.pseudo, FileService.data.clicks[p.pseudo], io);
       }
     });
 
@@ -2547,7 +2637,7 @@ function initSocketHandlers(io, socket, gameState) {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
 
     if (fullyDisconnected && pseudo !== "Admin") {
-      io.emit("system:info", `${pseudo} a quitté le chat`);
+      // io.emit("system:info", `${pseudo} a quitté le chat`);
       console.log(`>> [${colorize(pseudo, orange)}] déconnecté`);
     }
 

@@ -25,4 +25,7 @@ export function init2048Leaderboard(socket) {
       lbTable.appendChild(row);
     });
   });
+
+  // Demander le leaderboard au chargement
+  socket.emit("2048:get_leaderboard");
 }

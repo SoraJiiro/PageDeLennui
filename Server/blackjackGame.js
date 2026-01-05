@@ -122,8 +122,8 @@ class BlackjackGame {
     ];
     this.deck = [];
 
-    // Utiliser 1 paquet pour éviter les doublons
-    for (let i = 0; i < 1; i++) {
+    // Utiliser 6 paquets
+    for (let i = 0; i < 6; i++) {
       suits.forEach((suit) => {
         values.forEach((value) => {
           this.deck.push({ suit, value });
@@ -176,6 +176,22 @@ class BlackjackGame {
     });
     this.dealerHand = [];
 
+    if (this.emitState) this.emitState(this.getState());
+
+    // Timer de mise (15s)
+    if (this.betTimer) clearTimeout(this.betTimer);
+    this.betTimer = setTimeout(() => {
+      // Kick ceux qui n'ont pas misé
+      this.joueurs = this.joueurs.filter((p) => p.bet > 0);
+
+      if (this.joueurs.length === 0) {
+        this.resetGame();
+      } else {
+        this.dealInitialCards();
+      }
+      if (this.emitState) this.emitState(this.getState());
+    }, 15000);
+
     return true;
   }
 
@@ -188,6 +204,7 @@ class BlackjackGame {
 
     // Vérifier si tous les joueurs ont misé
     if (this.joueurs.every((p) => p.bet > 0)) {
+      if (this.betTimer) clearTimeout(this.betTimer);
       this.dealInitialCards();
     }
     return true;
@@ -218,12 +235,20 @@ class BlackjackGame {
   }
 
   checkTurn() {
+    if (this.turnTimer) clearTimeout(this.turnTimer);
+
     if (this.currentPlayerIndex >= this.joueurs.length) {
       this.startDealerTurn();
       return;
     }
 
     const player = this.joueurs[this.currentPlayerIndex];
+
+    // Timer de tour (15s)
+    this.turnTimer = setTimeout(() => {
+      this.stand(player.pseudo);
+    }, 15000);
+
     if (player.status === "blackjack") {
       this.nextTurn();
     }
@@ -319,12 +344,14 @@ class BlackjackGame {
       }
     });
 
-    // Auto-kick tout le monde après 3 secondes
+    // Auto-restart après 5 secondes
     setTimeout(() => {
-      this.joueurs = [];
       this.resetGame();
+      if (this.joueurs.length > 0) {
+        this.startBetting();
+      }
       if (this.emitState) this.emitState(this.getState());
-    }, 3000);
+    }, 5000);
   }
 
   getState() {

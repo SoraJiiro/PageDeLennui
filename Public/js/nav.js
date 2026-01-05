@@ -1,4 +1,84 @@
 document.addEventListener("DOMContentLoaded", () => {
+  let showNotification = null;
+
+  function showNavNotification(text, duration = 4000) {
+    const notif = document.createElement("div");
+    notif.textContent = text;
+    Object.assign(notif.style, {
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      background: "var(--primary-color, #0f0)",
+      opacity: "0.95",
+      color: "#000",
+      padding: "12px 18px",
+      fontWeight: "700",
+      zIndex: "9999",
+      border: "2px solid var(--primary-color, #0f0)",
+      boxShadow: "0 0 0 2px #000 inset",
+      animation: "slideIn 0.25s ease-out",
+      minWidth: "200px",
+      textAlign: "center",
+    });
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), duration);
+  }
+
+  const surveysLink = document.querySelector('a[href="sondages.html"]');
+
+  let socket = window.socket; // Si défini globalement
+  if (!socket && typeof io !== "undefined") {
+    socket = io();
+    window.socket = socket; // Partager
+  }
+
+  if (socket) {
+    async function checkSurveys() {
+      if (!surveysLink) return;
+      try {
+        const res = await fetch("/api/surveys/list");
+        if (res.ok) {
+          const surveys = await res.json();
+          const seenIds = JSON.parse(
+            localStorage.getItem("seenSurveys") || "[]"
+          );
+          const count = surveys.filter(
+            (s) => s.status === "active" && !seenIds.includes(s.id)
+          ).length;
+
+          let badge = surveysLink.querySelector(".notification-badge");
+          if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "notification-badge";
+            surveysLink.appendChild(badge);
+          }
+
+          if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = "inline-block";
+          } else {
+            badge.style.display = "none";
+          }
+        }
+      } catch (e) {
+        console.error("Badge check error", e);
+      }
+    }
+
+    checkSurveys();
+
+    socket.on("survey:new", () => {
+      console.log("Event survey:new reçu !");
+      showNavNotification("Nouveau sondage disponible !");
+      checkSurveys();
+    });
+
+    socket.on("survey:closed", () => {
+      showNavNotification("Un sondage est terminé !");
+      checkSurveys();
+    });
+  }
+
   const sidebar = document.getElementById("sidebar");
   const sidebarToggle = document.getElementById("sidebar-toggle");
   const sidebarClose = document.getElementById("sidebar-close");

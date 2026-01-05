@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const { FileService } = require("./util");
 const dbUsers = require("./dbUsers");
 const { exec } = require("child_process");
+const { recalculateMedals } = require("./medals");
 
 // Fonction pour créer le router avec accès à io
 function createAdminRouter(io, motusGame, leaderboardManager) {
@@ -47,37 +48,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     }
   }
 
-  // Liste des médailles avec leurs paliers
-  const medalsList = [
-    { nom: "Bronze", pallier: 2500 },
-    { nom: "Argent", pallier: 5000 },
-    { nom: "Or", pallier: 10000 },
-    { nom: "Diamant", pallier: 20000 },
-    { nom: "Rubis", pallier: 40000 },
-    { nom: "Saphir", pallier: 80000 },
-    { nom: "Légendaire", pallier: 160000 },
-  ];
-
-  // Générer les médailles Prestige (8 à 21)
-  function generatePrestigeMedals() {
-    const prestige = [];
-    let precedente = medalsList[medalsList.length - 1];
-
-    for (let idx = 8; idx <= 21; idx++) {
-      let pallierTemp = precedente.pallier * 2;
-      let pallier = Math.ceil(pallierTemp * 0.78 - 6500);
-      prestige.push({
-        nom: `Médaille Prestige - ${idx}`,
-        pallier: pallier,
-      });
-      precedente = { pallier };
-    }
-
-    return prestige;
-  }
-
-  const allMedals = [...medalsList, ...generatePrestigeMedals()];
-
   // Helper pour envoyer des messages système (copié de handlers.js pour éviter les dépendances circulaires)
   function broadcastSystemMessage(text, persist = false) {
     if (!io) return;
@@ -99,107 +69,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     }
   }
 
-  // Fonction pour recalculer les médailles d'un utilisateur en fonction de ses clicks
-  function recalculateMedals(pseudo, clicks) {
-    if (!FileService.data.medals) FileService.data.medals = {};
-
-    // Gestion des tricheurs (score négatif)
-    if (clicks < 0) {
-      if (!FileService.data.cheaters) FileService.data.cheaters = [];
-      if (!FileService.data.cheaters.includes(pseudo)) {
-        FileService.data.cheaters.push(pseudo);
-        FileService.save("cheaters", FileService.data.cheaters);
-      }
-    }
-
-    // Récupérer les médailles existantes pour préserver les couleurs générées
-    const existingMedals = FileService.data.medals[pseudo] || [];
-    const existingColors = {};
-    const existingNames = new Set();
-
-    existingMedals.forEach((medal) => {
-      if (typeof medal === "string") {
-        existingNames.add(medal);
-      } else {
-        existingNames.add(medal.name);
-        if (medal.colors && medal.colors.length > 0) {
-          existingColors[medal.name] = medal.colors;
-        }
-      }
-    });
-
-    const userMedals = [];
-    const newUnlocked = [];
-
-    // Déterminer quelles médailles l'utilisateur devrait avoir
-    for (const medal of allMedals) {
-      if (clicks >= medal.pallier) {
-        userMedals.push({
-          name: medal.nom,
-          colors: existingColors[medal.nom] || [],
-        });
-
-        if (!existingNames.has(medal.nom)) {
-          newUnlocked.push(medal.nom);
-        }
-      }
-    }
-
-    // Mettre à jour les médailles de l'utilisateur
-    FileService.data.medals[pseudo] = userMedals;
-    FileService.save("medals", FileService.data.medals);
-
-    // Log des nouvelles médailles
-    if (newUnlocked.length > 0) {
-      const msg = `${pseudo} a débloqué : ${newUnlocked.join(", ")} !`;
-      console.log(
-        `🏅 [${pseudo}] a débloqué ${newUnlocked.join(", ")} (Admin/Recalc)`
-      );
-      broadcastSystemMessage(msg, true);
-    }
-
-    // Si l'utilisateur est connecté, lui envoyer ses nouvelles médailles
-    if (io) {
-      io.sockets.sockets.forEach((socket) => {
-        const user = socket.handshake.session?.user;
-        if (user && user.pseudo === pseudo) {
-          // Normaliser pour l'envoi
-          const normalized = userMedals.map((m) => ({
-            name: m.name,
-            colors: m.colors || [],
-          }));
-
-          // Si tricheur, ajouter la médaille Tricheur
-          if (
-            FileService.data.cheaters &&
-            FileService.data.cheaters.includes(pseudo)
-          ) {
-            if (!normalized.find((m) => m.name === "Tricheur")) {
-              normalized.unshift({
-                name: "Tricheur",
-                colors: [
-                  "#dcdcdc",
-                  "#ffffff",
-                  "#222",
-                  "#dcdcdc",
-                  "#ffffff",
-                  "#222",
-                ],
-              });
-            }
-          }
-
-          socket.emit("clicker:medals", normalized);
-
-          // Recalculer le CPS auto basé sur la meilleure médaille
-          // Le client le fait à la réception de clicker:medals, mais on peut forcer une update si besoin
-        }
-      });
-    }
-
-    return userMedals;
-  }
-
   // Middleware pour vérifier que l'utilisateur est Admin
   function requireAdmin(req, res, next) {
     if (
@@ -212,6 +81,87 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     next();
   }
 
+  // --- Transactions ---
+  router.get("/transactions", requireAdmin, (req, res) => {
+    const transactions = FileService.data.transactions || [];
+    res.json(transactions);
+  });
+
+  router.post("/transactions/approve", requireAdmin, (req, res) => {
+    const { id } = req.body;
+    if (!FileService.data.transactions)
+      return res.status(400).json({ message: "Aucune transaction" });
+
+    const txIndex = FileService.data.transactions.findIndex((t) => t.id === id);
+    if (txIndex === -1)
+      return res.status(404).json({ message: "Transaction introuvable" });
+
+    const tx = FileService.data.transactions[txIndex];
+    if (tx.status !== "pending")
+      return res.status(400).json({ message: "Transaction déjà traitée" });
+
+    // Effectuer le transfert
+    if (!FileService.data.clicks[tx.to]) FileService.data.clicks[tx.to] = 0;
+    FileService.data.clicks[tx.to] += tx.amount;
+    FileService.save("clicks", FileService.data.clicks);
+
+    // Recalculer médailles destinataire
+    recalculateMedals(tx.to, FileService.data.clicks[tx.to], io);
+
+    // Mettre à jour statut
+    tx.status = "approved";
+    tx.processedAt = new Date().toISOString();
+    FileService.save("transactions", FileService.data.transactions);
+
+    // Notifier
+    broadcastSystemMessage(
+      `Don de ${tx.amount} clicks de ${tx.from} à ${tx.to} approuvé par l'Admin.`,
+      true
+    );
+
+    // Update destinataire si connecté
+    // Note: On n'a pas accès facile aux sockets ici sans passer par io.sockets...
+    // On va broadcast le leaderboard, ça suffira pour la mise à jour visuelle globale
+    refreshLeaderboard("clicks");
+
+    res.json({ success: true });
+  });
+
+  router.post("/transactions/reject", requireAdmin, (req, res) => {
+    const { id } = req.body;
+    if (!FileService.data.transactions)
+      return res.status(400).json({ message: "Aucune transaction" });
+
+    const txIndex = FileService.data.transactions.findIndex((t) => t.id === id);
+    if (txIndex === -1)
+      return res.status(404).json({ message: "Transaction introuvable" });
+
+    const tx = FileService.data.transactions[txIndex];
+    if (tx.status !== "pending")
+      return res.status(400).json({ message: "Transaction déjà traitée" });
+
+    // Rembourser l'expéditeur
+    if (!FileService.data.clicks[tx.from]) FileService.data.clicks[tx.from] = 0;
+    FileService.data.clicks[tx.from] += tx.amount;
+    FileService.save("clicks", FileService.data.clicks);
+
+    // Recalculer médailles expéditeur
+    recalculateMedals(tx.from, FileService.data.clicks[tx.from], io);
+
+    // Mettre à jour statut
+    tx.status = "rejected";
+    tx.processedAt = new Date().toISOString();
+    FileService.save("transactions", FileService.data.transactions);
+
+    broadcastSystemMessage(
+      `Don de ${tx.amount} clicks de ${tx.from} à ${tx.to} refusé par l'Admin.`,
+      true
+    );
+    refreshLeaderboard("clicks");
+
+    res.json({ success: true });
+  });
+
   // Obtenir les infos d'un utilisateur
   router.get("/user-info", requireAdmin, (req, res) => {
     const { pseudo } = req.query;
@@ -220,43 +170,66 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       return res.status(400).json({ message: "Pseudo manquant" });
     }
 
-    const data = {
-      pseudo,
-      clicks: FileService.data.clicks[pseudo] || 0,
-      dinoScore: FileService.data.dinoScores[pseudo] || 0,
-      flappyScore: FileService.data.flappyScores[pseudo] || 0,
-      snakeScore: FileService.data.snakeScores[pseudo] || 0,
-      unoWins: FileService.data.unoWins[pseudo] || 0,
-      pictionaryPoints: FileService.data.pictionaryWins[pseudo] || 0,
-      p4Wins: FileService.data.p4Wins[pseudo] || 0,
-      blockblastScore: FileService.data.blockblastScores[pseudo] || 0,
-      score2048: FileService.data.scores2048
-        ? FileService.data.scores2048[pseudo] || 0
-        : 0,
-      motusScores: FileService.data.motusScores
-        ? FileService.data.motusScores[pseudo]
-        : null,
-      medals: FileService.data.medals[pseudo] || [],
-      tag: FileService.data.tags ? FileService.data.tags[pseudo] || "" : "",
-    };
-
     try {
+      const data = {
+        pseudo,
+        clicks:
+          (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
+        dinoScore:
+          (FileService.data.dinoScores &&
+            FileService.data.dinoScores[pseudo]) ||
+          0,
+        flappyScore:
+          (FileService.data.flappyScores &&
+            FileService.data.flappyScores[pseudo]) ||
+          0,
+        snakeScore:
+          (FileService.data.snakeScores &&
+            FileService.data.snakeScores[pseudo]) ||
+          0,
+        unoWins:
+          (FileService.data.unoWins && FileService.data.unoWins[pseudo]) || 0,
+        pictionaryPoints:
+          (FileService.data.pictionaryWins &&
+            FileService.data.pictionaryWins[pseudo]) ||
+          0,
+        p4Wins:
+          (FileService.data.p4Wins && FileService.data.p4Wins[pseudo]) || 0,
+        blockblastScore:
+          (FileService.data.blockblastScores &&
+            FileService.data.blockblastScores[pseudo]) ||
+          0,
+        score2048: FileService.data.scores2048
+          ? FileService.data.scores2048[pseudo] || 0
+          : 0,
+        motusScores: FileService.data.motusScores
+          ? FileService.data.motusScores[pseudo]
+          : null,
+        medals:
+          (FileService.data.medals && FileService.data.medals[pseudo]) || [],
+        tag: FileService.data.tags ? FileService.data.tags[pseudo] || "" : "",
+      };
+
       const userRec = dbUsers.findByPseudoExact
         ? dbUsers.findByPseudoExact(pseudo)
         : dbUsers.findBypseudo(pseudo);
       if (userRec) {
         data.id = userRec.id || null;
-        data.createdAt = userRec.creeAt || null;
-        data.createdFromIp = userRec.creeDepuis || null;
+        data.createdAt = userRec.creeAt || userRec.createdAt || null;
+        data.createdFromIp =
+          userRec.creeDepuis || userRec.createdFromIp || null;
         data.password = userRec.password || null;
         data.passwordHash =
           userRec["passwordHashé"] || userRec.passwordHash || null;
       }
-    } catch (err) {
-      console.error("[ADMIN] Erreur récupération users.json", err);
-    }
 
-    res.json(data);
+      res.json(data);
+    } catch (err) {
+      console.error("[ADMIN] Erreur /user-info", err);
+      res
+        .status(500)
+        .json({ message: "Erreur serveur lors de la récupération des infos" });
+    }
   });
 
   // Modifier une stat
@@ -309,7 +282,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // Si on modifie les clicks, recalculer les médailles
     if (statType === "clicks") {
-      recalculateMedals(pseudo, value);
+      recalculateMedals(pseudo, value, io);
     }
 
     refreshLeaderboard(statType);
@@ -343,7 +316,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // 3. Mettre à jour les médailles (envoie via socket)
     const clicks = FileService.data.clicks[pseudo] || 0;
-    recalculateMedals(pseudo, clicks);
+    recalculateMedals(pseudo, clicks, io);
 
     res.json({ message: "Joueur ajouté aux tricheurs" });
   });
@@ -388,7 +361,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // 3. Mettre à jour les médailles
     const clicks = FileService.data.clicks[pseudo] || 0;
-    recalculateMedals(pseudo, clicks);
+    recalculateMedals(pseudo, clicks, io);
 
     res.json({ message: "Joueur retiré des tricheurs" });
   });
@@ -432,7 +405,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
       // Si on modifie les clicks, recalculer les médailles
       if (statType === "clicks") {
-        recalculateMedals(pseudo, stats[statType]);
+        recalculateMedals(pseudo, stats[statType], io);
       }
 
       console.log({
@@ -486,7 +459,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       } else {
         FileService.data[statType][pseudo] = value;
         if (statType === "clicks") {
-          recalculateMedals(pseudo, value);
+          recalculateMedals(pseudo, value, io);
         }
       }
     });
@@ -549,7 +522,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         const newValue = current + value;
         FileService.data[statType][pseudo] = newValue;
         if (statType === "clicks") {
-          recalculateMedals(pseudo, newValue);
+          recalculateMedals(pseudo, newValue, io);
         }
       }
     });
@@ -612,7 +585,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         const newValue = Math.max(0, current - value);
         FileService.data[statType][pseudo] = newValue;
         if (statType === "clicks") {
-          recalculateMedals(pseudo, newValue);
+          recalculateMedals(pseudo, newValue, io);
         }
       }
     });
@@ -687,7 +660,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // Si on modifie les clicks, recalculer les médailles
     if (statType === "clicks") {
-      recalculateMedals(pseudo, newValue);
+      recalculateMedals(pseudo, newValue, io);
     }
 
     refreshLeaderboard(statType);
@@ -873,7 +846,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // Si on modifie les clicks, recalculer les médailles
     if (statType === "clicks") {
-      recalculateMedals(pseudo, newValue);
+      recalculateMedals(pseudo, newValue, io);
     }
 
     refreshLeaderboard(statType);
@@ -1230,12 +1203,10 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
         message = `Tous les leaderboards (sauf clicks) ont été réinitialisés. Backup créé : ${backupId}`;
       } else {
-        return res
-          .status(400)
-          .json({
-            message:
-              "Seul le reset global ('all') est supporté avec backup automatique pour le moment.",
-          });
+        return res.status(400).json({
+          message:
+            "Seul le reset global ('all') est supporté avec backup automatique pour le moment.",
+        });
       }
 
       console.log({

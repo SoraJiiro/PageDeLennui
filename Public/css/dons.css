@@ -1,0 +1,95 @@
+body {
+  background-color: var(--bg-color, #1a1a1a);
+  color: var(--text-color, #f0f0f0);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.donation-container {
+  background: var(--card-bg, #2a2a2a);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 450px;
+  text-align: center;
+  border: 1px solid var(--border-color, #333);
+}
+
+h1 {
+  margin-bottom: 2rem;
+  color: var(--accent-color, #e4a101);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--header-text, #ccc);
+}
+
+select,
+input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--input-bg, #333);
+  color: var(--text-color, #fff);
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+select:focus,
+input:focus {
+  outline: none;
+  border-color: var(--accent-color, #e4a101);
+}
+
+.btn-submit {
+  background: var(--accent-color, #e4a101);
+  color: var(--btn-text, #000);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.2s, opacity 0.2s;
+  font-weight: bold;
+}
+
+.btn-submit:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.btn-back {
+  background: transparent;
+  color: var(--header-text, #aaa);
+  border: 1px solid var(--border-color, #444);
+  margin-top: 1rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-back:hover {
+  color: var(--text-color, #fff);
+  border-color: var(--text-color, #fff);
+}
+
+.info-msg {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #888;
+}

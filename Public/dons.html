@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Faire un Don - PDE</title>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        <link rel="stylesheet" href="css/common.css">
+        <link rel="stylesheet" href="css/sidebar.css">
+        <link rel="stylesheet" href="css/dons.css">
+        <script defer src="/socket.io/socket.io.js"></script>
+        <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer type="text/javascript" src="js/nav.js"></script>
+        <script defer type="text/javascript" src="js/auto_reload.js"></script>
+    </head>
+    <body>
+        <div class="donation-container">
+            <h1><i class="fa-solid fa-hand-holding-dollar"></i> Faire un
+                don</h1>
+
+            <div class="form-group">
+                <label for="recipientSelect"><i class="fa-solid fa-user"></i>
+                    Destinataire</label>
+                <select id="recipientSelect">
+                    <option value>Chargement...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="amountInput"><i class="fa-solid fa-coins"></i>
+                    Montant</label>
+                <input type="number" id="amountInput"
+                    placeholder="Quantité de clicks" min="1">
+            </div>
+
+            <button class="btn-submit" id="btnSendDonation">Envoyer les
+                Clicks</button>
+            <button class="btn-back"
+                onclick="window.location.href='/'">Annuler</button>
+
+            <p class="info-msg"><i class="fa-solid fa-circle-info"></i> Les dons
+                > 250k requièrent une validation.</p>
+        </div>
+
+        <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const socket = io();
+            const recipientSelect = document.getElementById("recipientSelect");
+            const amountInput = document.getElementById("amountInput");
+            const btnSend = document.getElementById("btnSendDonation");
+
+            // Charger la liste des utilisateurs
+            fetch("/users/list")
+                .then(res => res.json())
+                .then(users => {
+                    recipientSelect.innerHTML = '<option value="">Choisir un joueur...</option>';
+                    users.forEach(user => {
+                        const opt = document.createElement("option");
+                        opt.value = user.pseudo;
+                        opt.textContent = user.pseudo;
+                        recipientSelect.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error("Erreur chargement utilisateurs:", err);
+                    recipientSelect.innerHTML = '<option value="">Erreur de chargement</option>';
+                });
+
+            btnSend.addEventListener("click", () => {
+                const recipient = recipientSelect.value;
+                const amount = parseInt(amountInput.value);
+
+                if (!recipient) {
+                    alert("Veuillez sélectionner un destinataire.");
+                    return;
+                }
+                if (!amount || amount <= 0) {
+                    alert("Montant invalide.");
+                    return;
+                }
+
+                if (confirm(`Envoyer ${amount} clicks à ${recipient} ?`)) {
+                    socket.emit("user:donate", { recipient, amount });
+                    // On ne redirige pas tout de suite pour voir les notifications toaster du système s'il y en a (via socket)
+                    // Mais on peut vider les champs
+                    amountInput.value = "";
+                    alert("Demande envoyée !");
+                    window.location.href = "/";
+                }
+            });
+        });
+    </script>
+    </body>
+</html>

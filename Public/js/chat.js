@@ -140,7 +140,10 @@ export function initChat(socket) {
       tag: payload.tag,
     });
 
-    if (payload.text.includes(`@${myPseudo}`) && payload.name !== myPseudo) {
+    if (
+      payload.text.toLowerCase().includes(`@${myPseudo.toLowerCase()}`) &&
+      payload.name !== myPseudo
+    ) {
       showNotif(`💬 Vous avez été mentionné par ${payload.name} dans le Chat`);
     }
   });
@@ -273,6 +276,16 @@ export function initChat(socket) {
 
     window.addEventListener("keydown", (event) => {
       if (document.activeElement === input) {
+        const suggestionBox = document.getElementById("mention-suggestions");
+        if (suggestionBox && event.key === "Enter" && !event.shiftKey) {
+          const firstItem = suggestionBox.querySelector("div");
+          if (firstItem && firstItem.textContent !== "Aucune suggestion") {
+            event.preventDefault();
+            firstItem.click();
+            return;
+          }
+        }
+
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
           submit.click();

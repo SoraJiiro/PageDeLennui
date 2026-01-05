@@ -26,6 +26,35 @@ export function initClicker(socket) {
     medalsInitialized: false,
   };
 
+  // ---------- Global Functions for Donation Modal ----------
+  window.openDonateModal = () => {
+    document.getElementById("donate-modal").style.display = "flex";
+    document.getElementById("donate-recipient").focus();
+  };
+
+  window.closeDonateModal = () => {
+    document.getElementById("donate-modal").style.display = "none";
+    document.getElementById("donate-recipient").value = "";
+    document.getElementById("donate-amount").value = "";
+  };
+
+  window.submitDonate = () => {
+    const recipient = document.getElementById("donate-recipient").value.trim();
+    const amount = parseInt(document.getElementById("donate-amount").value);
+
+    if (!recipient) {
+      showNotif("Veuillez entrer un pseudo.");
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      showNotif("Montant invalide.");
+      return;
+    }
+
+    socket.emit("user:donate", { recipient, amount });
+    window.closeDonateModal();
+  };
+
   // ---------- Storage manager (Désactivé / Nettoyage) ----------
   function cleanupStorage() {
     if (state.myPseudo) {

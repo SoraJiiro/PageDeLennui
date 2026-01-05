@@ -78,7 +78,17 @@
             try {
                 const res = await fetch('/api/surveys/list');
                 const surveys = await res.json();
+
+                // Mark all active surveys as seen locally
+                const seenIds = JSON.parse(localStorage.getItem("seenSurveys") || "[]");
+                const activeIds = surveys.filter(s => s.status === 'active').map(s => s.id);
+                const newSeen = [...new Set([...seenIds, ...activeIds])];
+                localStorage.setItem("seenSurveys", JSON.stringify(newSeen));
                 
+                // Hide badge immediately if visible (badge logic is in nav.js, checking surveys again would clear it)
+                const badge = document.querySelector('.notification-badge');
+                if(badge) badge.style.display = 'none';
+
                 document.getElementById('activeList').innerHTML = '';
                 document.getElementById('pastList').innerHTML = '';
 

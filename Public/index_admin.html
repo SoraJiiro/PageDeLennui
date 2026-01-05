@@ -47,6 +47,32 @@
                 </div>
 
                 <div class="admin-sections">
+                    <!-- TRANSACTIONS -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-money-bill-transfer"></i>
+                            Transactions en attente</h2>
+                        <div class="transactions-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>De</th>
+                                        <th>À</th>
+                                        <th>Montant</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-list">
+                                    <!-- Rempli par JS -->
+                                </tbody>
+                            </table>
+                            <button onclick="refreshTransactions()"
+                                class="refresh-btn"><i
+                                    class="fa-solid fa-rotate"></i>
+                                Actualiser</button>
+                        </div>
+                    </section>
+
                     <!-- LEADERBOARDS -->
                     <section class="admin-section">
                         <h2><i class="fa-solid fa-trophy"></i>
@@ -845,6 +871,82 @@
             });
         });
 
+        // --- Transactions ---
+        async function refreshTransactions() {
+            try {
+                const res = await fetch('/api/admin/transactions');
+                if (!res.ok) return;
+                const transactions = await res.json();
+                const pending = transactions.filter(t => t.status === 'pending');
+                
+                const tbody = document.getElementById('transactions-list');
+                tbody.innerHTML = '';
+                
+                if (pending.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucune transaction en attente</td></tr>';
+                    return;
+                }
+
+                pending.forEach(tx => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${tx.from}</td>
+                        <td>${tx.to}</td>
+                        <td>${tx.amount.toLocaleString()}</td>
+                        <td>${new Date(tx.date).toLocaleString()}</td>
+                        <td>
+                            <button onclick="approveTransaction('${tx.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-check"></i></button>
+                            <button onclick="rejectTransaction('${tx.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;"><i class="fa-solid fa-times"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function approveTransaction(id) {
+            if (!confirm('Valider cette transaction ?')) return;
+            try {
+                const res = await fetch('/api/admin/transactions/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) {
+                    showNotification('Transaction approuvée', 'success');
+                    refreshTransactions();
+                } else {
+                    showNotification('Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function rejectTransaction(id) {
+            if (!confirm('Refuser cette transaction ?')) return;
+            try {
+                const res = await fetch('/api/admin/transactions/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) {
+                    showNotification('Transaction refusée', 'success');
+                    refreshTransactions();
+                } else {
+                    showNotification('Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Initial load
+        refreshTransactions();
+
         // Recherche utilisateur
         document.getElementById('userSearchInput').addEventListener('input', async (e) => {
             const pseudo = e.target.value.trim();
@@ -935,7 +1037,19 @@
                 </div>
                 <div class="user-stat">
                     <span class="label">Médailles:</span>
-                    <span class="value">${data.medals ? data.medals.length : 0}</span>
+                    <span class="value" style="display:flex; flex-wrap:wrap; gap:5px;">
+                        ${data.medals && data.medals.length > 0 
+                            ? data.medals.map(m => {
+                                const bg = m.colors && m.colors.length > 0
+                                    ? (m.colors.length > 1 
+                                        ? `linear-gradient(45deg, ${m.colors.join(', ')})` 
+                                        : m.colors[0])
+                                    : '#888';
+                                return `<span style="background:${bg}; padding:2px 6px; border-radius:4px; color:#fff; text-shadow:0 0 2px #000; font-size:0.8em;">${m.name}</span>`;
+                            }).join('')
+                            : '0'
+                        }
+                    </span>
                 </div>
                 <div class="user-stat">
                     <span class="label">Tag:</span>
