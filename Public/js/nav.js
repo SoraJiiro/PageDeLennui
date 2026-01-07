@@ -36,12 +36,26 @@ document.addEventListener("DOMContentLoaded", () => {
     async function checkSurveys() {
       if (!surveysLink) return;
       try {
+        let user = window.username;
+        if (!user) {
+          try {
+            const sRes = await fetch("/api/session");
+            if (sRes.ok) {
+              const sData = await sRes.json();
+              user = sData.pseudo;
+              window.username = user;
+            }
+          } catch (e) {}
+        }
+
         const res = await fetch("/api/surveys/list");
         if (res.ok) {
           const surveys = await res.json();
-          const seenIds = JSON.parse(
-            localStorage.getItem("seenSurveys") || "[]"
-          );
+
+          let seenKey = "seenSurveys";
+          if (user) seenKey = "seenSurveys_" + user;
+
+          const seenIds = JSON.parse(localStorage.getItem(seenKey) || "[]");
           const count = surveys.filter(
             (s) => s.status === "active" && !seenIds.includes(s.id)
           ).length;

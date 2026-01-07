@@ -51,7 +51,7 @@
             const btnSend = document.getElementById("btnSendDonation");
 
             // Charger la liste des utilisateurs
-            fetch("/users/list")
+            fetch("/api/users/list")
                 .then(res => res.json())
                 .then(users => {
                     recipientSelect.innerHTML = '<option value="">Choisir un joueur...</option>';
@@ -81,12 +81,20 @@
                 }
 
                 if (confirm(`Envoyer ${amount} clicks à ${recipient} ?`)) {
-                    socket.emit("user:donate", { recipient, amount });
-                    // On ne redirige pas tout de suite pour voir les notifications toaster du système s'il y en a (via socket)
-                    // Mais on peut vider les champs
-                    amountInput.value = "";
-                    alert("Demande envoyée !");
-                    window.location.href = "/";
+                    // Utiliser le socket global s'il existe pour éviter de multiples connexions
+                    const socketToSend = window.socket || socket;
+                    socketToSend.emit("user:donate", { recipient, amount });
+                    
+                    // Petit délai pour s'assurer que le paquet part avant la redirection
+                    setTimeout(() => {
+                        if (amount > 250000) {
+                            alert("Demande de don > 250k envoyée pour validation.");
+                        } else {
+                            alert("Don envoyé avec succès !");
+                        }
+                        
+                        window.location.href = "/";
+                    }, 300);
                 }
             });
         });

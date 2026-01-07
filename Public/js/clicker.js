@@ -99,7 +99,7 @@ export function initClicker(socket) {
 
   function buildPrestigeListIfNeeded() {
     // Créer des entrées sans couleurs (elles seront appliquées depuis la sauvegarde)
-    if (!medalsList.find((m) => m.nom.startsWith("Médaille Préstige"))) {
+    if (!medalsList.find((m) => m.nom.startsWith("Médaille Prestige"))) {
       let precedente = medalsList[medalsList.length - 1];
       for (let idx = 8; idx <= TOTAL_PRESTIGE + 7; idx++) {
         // Calcul pallier/cps identique à l'ancienne logique
@@ -107,7 +107,7 @@ export function initClicker(socket) {
         let pallier = Math.ceil(pallierTemp * 0.78 - 6500);
         let cps = precedente.cps + 2;
         const entry = {
-          nom: `Médaille Préstige - ${idx}`,
+          nom: `Médaille Prestige - ${idx}`,
           icon: "[⭐]",
           pallier,
           cps,
@@ -181,7 +181,7 @@ export function initClicker(socket) {
     if (
       m.couleurs &&
       m.couleurs.length === 0 &&
-      m.nom.startsWith("Médaille Préstige")
+      m.nom.startsWith("Médaille Prestige")
     ) {
       const temp = [];
       while (temp.length < 12) {

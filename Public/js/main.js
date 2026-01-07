@@ -19,7 +19,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
   try {
     keyBind(username);
     try {
-      // initialiser le redimensionneur de canvas tôt pour que les jeux obtiennent les tailles de buffer correctes
       initCanvasResizer();
     } catch (e) {
       console.warn("canvas resizer init failed", e);
@@ -39,15 +38,13 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./flappy.js"),
       import("./flappy_leaderboard.js"),
       import("./uno_leaderboard.js"),
-      import("./pictionary.js"),
-      import("./pictionary_leaderboard.js"),
+
       import("./puissance4.js"),
       import("./p4_leaderboard.js"),
       import("./blockblast.js"),
       import("./blockblast_leaderboard.js"),
       import("./snake.js"),
       import("./snake_leaderboard.js"),
-      import("./tagColor.js"),
       import("./system.js"),
       import("./motus.js"),
       import("./coinflip.js"),
@@ -55,6 +52,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./motus_leaderboard.js"),
       import("./2048.js"),
       import("./2048_leaderboard.js"),
+      import("./password_change.js"),
     ]);
 
     const [
@@ -67,15 +65,13 @@ import { initCanvasResizer } from "./canvas_resize.js";
       flappy,
       flappyLeaderboard,
       unoLeaderboard,
-      pictionary,
-      pictionaryLeaderboard,
+
       puissance4,
       p4Leaderboard,
       blockblast,
       blockblastLeaderboard,
       snake,
       snakeLeaderboard,
-      tagColor,
       system,
       motus,
       coinflip,
@@ -83,6 +79,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
       motusLeaderboard,
       game2048,
       game2048Leaderboard,
+      passwordChange,
     ] = modules;
 
     const socket = io({
@@ -100,6 +97,9 @@ import { initCanvasResizer } from "./canvas_resize.js";
 
     if (window.initUiColor) {
       window.initUiColor(socket);
+      document.getElementsByClassName(
+        "sb-username"
+      )[0].innerHTML = `<i class="fa-solid fa-user"></i> ${username}`;
     }
 
     socket.on("reload", (data) => {
@@ -133,9 +133,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
       flappyLeaderboard.initFlappyLeaderboard(socket);
     if (unoLeaderboard?.initUnoLeaderboard)
       unoLeaderboard.initUnoLeaderboard(socket);
-    if (pictionary?.initPictionary) pictionary.initPictionary(socket);
-    if (pictionaryLeaderboard?.initPictionaryLeaderboard)
-      pictionaryLeaderboard.initPictionaryLeaderboard(socket);
     if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
     if (p4Leaderboard?.initP4Leaderboard)
       p4Leaderboard.initP4Leaderboard(socket);
@@ -145,7 +142,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (snake?.initSnake) snake.initSnake(socket);
     if (snakeLeaderboard?.initSnakeLeaderboard)
       snakeLeaderboard.initSnakeLeaderboard(socket);
-    if (tagColor?.initTagColor) tagColor.initTagColor(socket);
     if (system?.initSystem) system.initSystem(socket, rulesAccepted);
     if (motus?.initMotus) motus.initMotus(socket);
     if (blackjack?.initBlackjack) blackjack.initBlackjack(socket, username);
@@ -156,11 +152,12 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (game2048Leaderboard?.init2048Leaderboard)
       game2048Leaderboard.init2048Leaderboard(socket);
 
+    if (passwordChange?.setupPasswordChange)
+      passwordChange.setupPasswordChange(socket);
     socket.connect();
 
     socket.on("connect", () => {
       socket.emit("uno:getState");
-      socket.emit("pictionary:getState");
       socket.emit("p4:getState");
     });
   } catch (err) {

@@ -34,13 +34,15 @@ module.exports = function (io) {
   // Récupérer tous les sondages
   router.get("/list", (req, res) => {
     const surveys = getSurveys();
+    const isAdmin = req.session.user.pseudo === "Admin";
+
     // Filtrer les données sensibles si nécessaire, mais pour l'instant tout envoyer est correct
     // Peut-être cacher qui a voté quoi ?
     const safeSurveys = surveys.map((s) => ({
       ...s,
       hasVoted: s.answers && s.answers[req.session.user.pseudo] !== undefined,
       userVote: s.answers ? s.answers[req.session.user.pseudo] : null,
-      answers: undefined, // Ne pas envoyer la map brute des réponses
+      answers: isAdmin ? s.answers : undefined, // Envoyer la map brute des réponses seulement à l'Admin
       results: calculateResults(s), // Envoyer les résultats agrégés
     }));
     res.json(safeSurveys);

@@ -2,7 +2,6 @@ const { FileService, getIpFromSocket, persistBanIp } = require("./util");
 const { recalculateMedals } = require("./medals");
 const dbUsers = require("./dbUsers");
 const UnoGame = require("./unoGame");
-const PictionaryGame = require("./pictionaryGame");
 const Puissance4Game = require("./puissance4Game");
 const MotusGame = require("./motusGame");
 const BlackjackGame = require("./blackjackGame");
@@ -31,8 +30,6 @@ function broadcastSystemMessage(io, text, persist = false) {
 
 // ------- Games -------
 let gameActuelle = new UnoGame();
-let pictionaryGame = new PictionaryGame();
-let pictionaryTimer = null;
 let p4Game = new Puissance4Game();
 let motusGame = new MotusGame();
 let blackjackGame = new BlackjackGame();
@@ -45,7 +42,6 @@ const green = "\x1b[38;5;46m"; // Clicker
 const pink = "\x1b[38;5;205m"; // Flappy
 const violet = "\x1b[38;5;141m"; // UNO
 const red = "\x1b[38;5;167m"; // P4
-const grey = "\x1b[38;5;246m"; // Pictionary
 const colorize = (s, color) => `${color}${s}${reset}`;
 const withGame = (s, color) => `${color}${s}${reset}`;
 
@@ -82,12 +78,6 @@ const leaderboardManager = {
       .map(([u, w]) => ({ pseudo: u, wins: w }))
       .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
     io.emit("uno:leaderboard", arr);
-  },
-  broadcastPictionaryLB(io) {
-    const arr = Object.entries(FileService.data.pictionaryWins)
-      .map(([u, p]) => ({ pseudo: u, points: p }))
-      .sort((a, b) => b.points - a.points || a.pseudo.localeCompare(b.pseudo));
-    io.emit("pictionary:leaderboard", arr);
   },
   broadcastP4LB(io) {
     const arr = Object.entries(FileService.data.p4Wins)
@@ -147,6 +137,35 @@ function initSocketHandlers(io, socket, gameState) {
   // Init émetteur blackjack si non défini
   if (blackjackGame && !blackjackGame.emitState) {
     blackjackGame.setEmitter((state) => io.emit("blackjack:state", state));
+
+    blackjackGame.setRoundEndCallback(() => {
+      blackjackGame.joueurs.forEach((p) => {
+        const amountToAdd = p.bet + p.winnings;
+
+        if (amountToAdd > 0) {
+          if (!FileService.data.clicks[p.pseudo])
+            FileService.data.clicks[p.pseudo] = 0;
+
+          FileService.data.clicks[p.pseudo] += amountToAdd;
+          recalculateMedals(p.pseudo, FileService.data.clicks[p.pseudo], io);
+        }
+      });
+
+      FileService.save("clicks", FileService.data.clicks);
+
+      // Update all players with new scores
+      blackjackGame.joueurs.forEach((p) => {
+        const socketId = p.socketId;
+        if (io.sockets.sockets.get(socketId)) {
+          io.sockets.sockets
+            .get(socketId)
+            .emit("clicker:you", { score: FileService.data.clicks[p.pseudo] });
+        }
+      });
+
+      leaderboardManager.broadcastClickerLB(io);
+      io.emit("blackjack:state", blackjackGame.getState());
+    });
   }
 
   const user = socket.handshake.session?.user;
@@ -228,14 +247,32 @@ function initSocketHandlers(io, socket, gameState) {
     const isHeads = Math.random() < 0.5;
     const resultSide = isHeads ? "heads" : "tails";
     const won = side === resultSide;
+    const winnings = won ? bet * 2 : 0;
 
     if (won) {
       // Ajouter gains (mise * 2)
-      FileService.data.clicks[pseudo] += bet * 2;
+      FileService.data.clicks[pseudo] += winnings;
     }
 
+    // Log transaction with IP
+    const ip = getIpFromSocket(socket);
+    const logDetails = {
+      type: "BET_COINFLIP",
+      pseudo: `${pseudo} (${ip})`,
+      bet: bet,
+      result: won ? "WIN" : "LOSS",
+      netChange: won ? bet : -bet,
+      timestamp: new Date().toISOString(),
+    };
+    console.log(
+      `[PILE_OU_FACE] ${logDetails.pseudo} a parié ${bet} sur ${
+        side === "heads" ? "PILE" : "FACE"
+      } -> ${won ? "GAGNÉ" : "PERDU"} (${logDetails.netChange})`
+    );
+    FileService.appendLog(logDetails); // Ensure appendLog handles objects or stringify it
+
     FileService.save("clicks", FileService.data.clicks);
-    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
+    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io, true); // Silent recalc
 
     // Emettre résultat
     socket.emit("coinflip:result", {
@@ -286,7 +323,6 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastDinoLB(io);
   leaderboardManager.broadcastFlappyLB(io);
   leaderboardManager.broadcastUnoLB(io);
-  leaderboardManager.broadcastPictionaryLB(io);
   leaderboardManager.broadcastP4LB(io);
   leaderboardManager.broadcastBlockBlastLB(io);
   leaderboardManager.broadcastSnakeLB(io);
@@ -468,15 +504,17 @@ function initSocketHandlers(io, socket, gameState) {
     // Déduire immédiatement du sender
     FileService.data.clicks[pseudo] -= val;
     FileService.save("clicks", FileService.data.clicks);
-    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
+    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io, true); // Silent recalc
     socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+
+    const senderIp = getIpFromSocket(socket);
 
     if (val > 250000) {
       // Transaction en attente
       if (!FileService.data.transactions) FileService.data.transactions = [];
       const transaction = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        from: pseudo,
+        from: `${pseudo} (${senderIp})`,
         to: recipient,
         amount: val,
         date: new Date().toISOString(),
@@ -484,6 +522,16 @@ function initSocketHandlers(io, socket, gameState) {
       };
       FileService.data.transactions.push(transaction);
       FileService.save("transactions", FileService.data.transactions);
+
+      console.log(
+        `[DON_EN_ATTENTE] De ${pseudo} (${senderIp}) à ${recipient} : ${val}`
+      );
+      FileService.appendLog({
+        type: "DONATION_PENDING",
+        from: `${pseudo} (${senderIp})`,
+        to: recipient,
+        amount: val,
+      });
 
       socket.emit(
         "system:info",
@@ -498,7 +546,21 @@ function initSocketHandlers(io, socket, gameState) {
         FileService.data.clicks[recipient] = 0;
       FileService.data.clicks[recipient] += val;
       FileService.save("clicks", FileService.data.clicks);
-      recalculateMedals(recipient, FileService.data.clicks[recipient], io);
+
+      console.log(`[DON] De ${pseudo} (${senderIp}) à ${recipient} : ${val}`);
+      FileService.appendLog({
+        type: "DONATION",
+        from: `${pseudo} (${senderIp})`,
+        to: recipient,
+        amount: val,
+      });
+
+      recalculateMedals(
+        recipient,
+        FileService.data.clicks[recipient],
+        io,
+        true
+      ); // Silent recalc
 
       socket.emit(
         "system:info",
@@ -643,7 +705,7 @@ function initSocketHandlers(io, socket, gameState) {
             if (sIp === ip) {
               try {
                 s.emit("system:notification", {
-                  message: "🚫 Your IP has been banned for abnormal CPS",
+                  message: "🚫 Votre IP a été bannie pour CPS anormal",
                   duration: 8000,
                 });
               } catch (e) {}
@@ -1141,362 +1203,6 @@ function initSocketHandlers(io, socket, gameState) {
     if (!res.success) return socket.emit("uno:error", res.message);
     // Après une pioche volontaire, le tour passe -> resetTimer = true
     uno_broadcast(res.message, true);
-  });
-
-  // ------- Pictionary -------
-  function pictionary_majSocketIds() {
-    if (!pictionaryGame) return;
-    io.sockets.sockets.forEach((clientSocket) => {
-      const clientUser = clientSocket.handshake.session?.user;
-      if (!clientUser || !clientUser.pseudo) return;
-      const clientUsername = clientUser.pseudo;
-      pictionaryGame.updateSocketId(clientUsername, clientSocket.id);
-    });
-  }
-
-  function pictionary_broadcastLobby() {
-    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
-    pictionary_majSocketIds();
-    const lobbyState = pictionaryGame.getLobbyState();
-    io.sockets.sockets.forEach((clientSocket) => {
-      const clientUser = clientSocket.handshake.session?.user;
-      if (!clientUser || !clientUser.pseudo) return;
-      const clientUsername = clientUser.pseudo;
-      const estAuLobby = pictionaryGame.joueurs.some(
-        (p) => p.pseudo === clientUsername
-      );
-      clientSocket.emit("pictionary:lobby", {
-        ...lobbyState,
-        myUsername: clientUsername,
-        estAuLobby,
-      });
-    });
-  }
-
-  function pictionary_broadcastGame(message = "") {
-    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    pictionary_majSocketIds();
-    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
-      const pSocket = io.sockets.sockets.get(p.socketId);
-      if (pSocket) {
-        const state = pictionaryGame.getState(p.pseudo);
-        if (message) state.message = message;
-        pSocket.emit("pictionary:update", state);
-      }
-    });
-  }
-
-  function pictionary_startTimer() {
-    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    pictionary_stopTimer();
-    pictionaryTimer = setInterval(pictionary_tick, 1000);
-  }
-
-  function pictionary_stopTimer() {
-    if (pictionaryTimer) {
-      clearInterval(pictionaryTimer);
-      pictionaryTimer = null;
-    }
-  }
-
-  function pictionary_tick() {
-    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    if (typeof pictionaryGame.timeLeft !== "number") {
-      pictionaryGame.timeLeft = pictionaryGame.roundDuration;
-    }
-    pictionaryGame.timeLeft = Math.max(0, pictionaryGame.timeLeft - 1);
-
-    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
-      const s = io.sockets.sockets.get(p.socketId);
-      if (s) s.emit("pictionary:tick", { timeLeft: pictionaryGame.timeLeft });
-    });
-
-    if (pictionaryGame.timeLeft > 0 && pictionaryGame.timeLeft % 10 === 0) {
-      pictionaryGame.revealNextLetter();
-    }
-
-    if (pictionaryGame.timeLeft <= 0) {
-      pictionaryGame.revealAll();
-      io.emit("pictionary:reveal", { word: pictionaryGame.currentWord });
-
-      const res = pictionaryGame.nextRound();
-      if (res.finished) {
-        const sorted = [...pictionaryGame.joueurs].sort(
-          (a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo)
-        );
-        const winner = sorted.length > 0 ? sorted[0].pseudo : null;
-
-        if (winner) {
-          FileService.data.pictionaryWins[winner] =
-            (FileService.data.pictionaryWins[winner] || 0) + 1;
-          FileService.save("pictionaryWins", FileService.data.pictionaryWins);
-          leaderboardManager.broadcastPictionaryLB(io);
-        }
-
-        io.emit("pictionary:gameEnd", { winner });
-        pictionaryGame = new PictionaryGame();
-        pictionary_stopTimer();
-        pictionary_broadcastLobby();
-      } else {
-        pictionary_broadcastGame("Nouvelle manche : nouveau dessinateur");
-        io.emit("pictionary:clear");
-        pictionary_startTimer();
-      }
-    }
-  }
-
-  socket.on("pictionary:getState", () => {
-    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
-    pictionary_majSocketIds();
-    const lobbyState = pictionaryGame.getLobbyState();
-    const estAuLobby = pictionaryGame.joueurs.some((p) => p.pseudo === pseudo);
-    socket.emit("pictionary:lobby", {
-      ...lobbyState,
-      myUsername: pseudo,
-      estAuLobby,
-    });
-    if (pictionaryGame.gameStarted) {
-      socket.emit("pictionary:update", pictionaryGame.getState(pseudo));
-      try {
-        socket.emit("pictionary:replay", pictionaryGame.getStrokes());
-      } catch (e) {}
-    }
-  });
-
-  socket.on("pictionary:join", () => {
-    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
-    if (pictionaryGame.gameStarted) {
-      socket.emit("pictionary:error", "La partie a déjà commencé");
-      pictionaryGame.addSpectator(pseudo, socket.id);
-      pictionary_broadcastLobby();
-      return;
-    }
-    pictionaryGame.removeSpectator(pseudo);
-    const res = pictionaryGame.addPlayer(pseudo, socket.id);
-    if (!res.success) {
-      if (res.reason === "alreadyIn") {
-        console.log(
-          withGame(
-            `⚠️  [${orange}${pseudo}${grey}] est déjà dans le lobby PICTIONARY`,
-            grey
-          )
-        );
-      } else if (res.reason === "full") {
-        socket.emit(
-          "pictionary:error",
-          `Le lobby est plein (${pictionaryGame.maxPlayers}/6)`
-        );
-      }
-      pictionary_broadcastLobby();
-      return;
-    }
-    console.log(
-      withGame(
-        `\n➡️ [${orange}${pseudo}${grey}] a rejoint le lobby PICTIONARY (${pictionaryGame.joueurs.length}/6)`,
-        grey
-      )
-    );
-    pictionary_broadcastLobby();
-  });
-
-  socket.on("pictionary:leave", () => {
-    if (!pictionaryGame) return;
-    const etaitJoueur = pictionaryGame.removePlayer(pseudo);
-    if (etaitJoueur) {
-      console.log(
-        withGame(
-          `⬅️ [${orange}${pseudo}${grey}] a quitté le lobby PICTIONARY`,
-          grey
-        )
-      );
-
-      if (pictionaryGame.gameStarted) {
-        if (pictionaryGame.joueurs.length < 2) {
-          console.log(
-            withGame(
-              `⚠️  Partie PICTIONARY annulée (pas assez de joueurs)`,
-              grey
-            )
-          );
-          io.emit("pictionary:gameEnd", {
-            winner: "Partie annulée !",
-            reason: `${pseudo} est parti`,
-          });
-          pictionaryGame = new PictionaryGame();
-          pictionary_broadcastLobby();
-          return;
-        }
-        pictionary_broadcastGame(`${pseudo} a quitté la partie`);
-      }
-
-      pictionaryGame.addSpectator(pseudo, socket.id);
-      pictionary_broadcastLobby();
-    } else {
-      pictionaryGame.removeSpectator(pseudo);
-    }
-  });
-
-  socket.on("pictionary:start", () => {
-    if (!pictionaryGame) pictionaryGame = new PictionaryGame();
-    const isPlayer = pictionaryGame.joueurs.some((p) => p.pseudo === pseudo);
-    if (!isPlayer)
-      return socket.emit("pictionary:error", "Tu n'es pas dans le lobby");
-    if (!pictionaryGame.canStart())
-      return socket.emit(
-        "pictionary:error",
-        "Impossible de démarrer (3 joueurs minimum)"
-      );
-
-    pictionaryGame.startGame();
-
-    const joueursActu = gameActuelle.joueurs.map(
-      (j) => `${orange}${j.pseudo}${violet}`
-    );
-
-    console.log(
-      withGame(
-        `\n🎨 Partie PICTIONARY démarrée avec ${
-          pictionaryGame.joueurs.length
-        } joueurs (${joueursActu.join(", ")})`,
-        grey
-      )
-    );
-
-    pictionary_startTimer();
-    pictionary_majSocketIds();
-
-    pictionaryGame.joueurs.forEach((p) => {
-      const s = io.sockets.sockets.get(p.socketId);
-      if (s) s.emit("pictionary:gameStart", pictionaryGame.getState(p.pseudo));
-    });
-
-    io.sockets.sockets.forEach((clientSocket) => {
-      const clientUser = clientSocket.handshake.session?.user;
-      if (!clientUser || !clientUser.pseudo) return;
-      const clientUsername = clientUser.pseudo;
-      const isPlayer = pictionaryGame.joueurs.some(
-        (p) => p.pseudo === clientUsername
-      );
-      if (!isPlayer) {
-        pictionaryGame.addSpectator(clientUsername, clientSocket.id);
-        clientSocket.emit(
-          "pictionary:gameStart",
-          pictionaryGame.getState(clientUsername)
-        );
-        try {
-          clientSocket.emit("pictionary:replay", pictionaryGame.getStrokes());
-        } catch (e) {}
-      }
-    });
-
-    pictionary_broadcastLobby();
-  });
-
-  socket.on("pictionary:guess", ({ text }) => {
-    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    const guess = String(text || "")
-      .trim()
-      .toLowerCase();
-    if (!guess) return;
-
-    const drawer = pictionaryGame.getCurrentDrawer();
-    if (drawer && drawer.pseudo === pseudo) return;
-
-    if (guess === String(pictionaryGame.currentWord).toLowerCase()) {
-      const scored = pictionaryGame.handleCorrectGuess(pseudo);
-      if (scored) {
-        io.emit("pictionary:chat", {
-          system: true,
-          text: `${pseudo} a deviné !`,
-        });
-        pictionary_broadcastGame(`${pseudo} a deviné le mot`);
-      }
-
-      const nonDrawers = pictionaryGame.joueurs.filter(
-        (p) => p.pseudo !== drawer.pseudo
-      ).length;
-      if (pictionaryGame.guessedThisRound.size >= nonDrawers) {
-        const res = pictionaryGame.nextRound();
-        if (res.finished) {
-          const sorted = [...pictionaryGame.joueurs].sort(
-            (a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo)
-          );
-          const winner = sorted.length > 0 ? sorted[0].pseudo : null;
-
-          if (winner) {
-            const winnerData = pictionaryGame.joueurs.find(
-              (p) => p.pseudo === winner
-            );
-            const scoreToAdd = winnerData ? winnerData.score : 0;
-            FileService.data.pictionaryWins[winner] =
-              (FileService.data.pictionaryWins[winner] || 0) + scoreToAdd;
-            FileService.save("pictionaryWins", FileService.data.pictionaryWins);
-            leaderboardManager.broadcastPictionaryLB(io);
-          }
-
-          io.emit("pictionary:gameEnd", { winner });
-          pictionaryGame = new PictionaryGame();
-          pictionary_stopTimer();
-          pictionary_broadcastLobby();
-          return;
-        } else {
-          pictionary_broadcastGame("Nouvelle manche : nouveau dessinateur");
-          io.emit("pictionary:clear");
-          pictionary_startTimer();
-          return;
-        }
-      }
-    } else {
-      io.emit("pictionary:chat", {
-        name: pseudo,
-        text: guess,
-        at: new Date().toISOString(),
-      });
-    }
-  });
-
-  socket.on("pictionary:draw", (data) => {
-    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    const drawer = pictionaryGame.getCurrentDrawer();
-    if (!drawer || drawer.pseudo !== pseudo) return;
-    try {
-      pictionaryGame.addStroke(data);
-    } catch (e) {}
-    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
-      const pSocket = io.sockets.sockets.get(p.socketId);
-      if (pSocket && p.pseudo !== pseudo)
-        pSocket.emit("pictionary:stroke", data);
-    });
-  });
-
-  socket.on("pictionary:fill", (data) => {
-    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    const drawer = pictionaryGame.getCurrentDrawer();
-    if (!drawer || drawer.pseudo !== pseudo) return;
-    try {
-      pictionaryGame.addStroke({ ...data, type: "fill" });
-    } catch (e) {}
-    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
-      const pSocket = io.sockets.sockets.get(p.socketId);
-      if (pSocket && p.pseudo !== pseudo) pSocket.emit("pictionary:fill", data);
-    });
-  });
-
-  socket.on("pictionary:clear", () => {
-    if (!pictionaryGame || !pictionaryGame.gameStarted) return;
-    const drawer = pictionaryGame.getCurrentDrawer();
-    if (!drawer || drawer.pseudo !== pseudo) return;
-    [...pictionaryGame.joueurs, ...pictionaryGame.spectators].forEach((p) => {
-      const pSocket = io.sockets.sockets.get(p.socketId);
-      if (pSocket) pSocket.emit("pictionary:clear");
-    });
-  });
-
-  socket.on("pictionary:backToLobby", () => {
-    io.emit("pictionary:gameEnd", { winner: "Retour au lobby" });
-    pictionaryGame = new PictionaryGame();
-    pictionary_stopTimer();
-    pictionary_broadcastLobby();
   });
 
   // ------- Puissance 4 -------
@@ -2227,7 +1933,6 @@ function initSocketHandlers(io, socket, gameState) {
       leaderboardManager.broadcastDinoLB(io);
       leaderboardManager.broadcastFlappyLB(io);
       leaderboardManager.broadcastUnoLB(io);
-      leaderboardManager.broadcastPictionaryLB(io);
       leaderboardManager.broadcastP4LB(io);
       leaderboardManager.broadcastBlockBlastLB(io);
       leaderboardManager.broadcastSnakeLB(io);
@@ -2537,65 +2242,14 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("blackjack:hit", () => {
     if (blackjackGame.hit(pseudo)) {
       io.emit("blackjack:state", blackjackGame.getState());
-
-      // Check if game ended (all players busted/stood)
-      if (blackjackGame.phase === "payout") {
-        handleBlackjackPayout();
-      }
     }
   });
 
   socket.on("blackjack:stand", () => {
     if (blackjackGame.stand(pseudo)) {
       io.emit("blackjack:state", blackjackGame.getState());
-
-      // Check if game ended
-      if (blackjackGame.phase === "payout") {
-        handleBlackjackPayout();
-      }
     }
   });
-
-  function handleBlackjackPayout() {
-    blackjackGame.joueurs.forEach((p) => {
-      // Calculate amount to add (refund + winnings)
-      // winnings = -bet (Loss) -> amountToAdd = 0
-      // winnings = 0 (Push) -> amountToAdd = bet
-      // winnings = bet (Win) -> amountToAdd = 2*bet
-      // winnings = 1.5*bet (Blackjack) -> amountToAdd = 2.5*bet
-
-      const amountToAdd = p.bet + p.winnings;
-
-      if (amountToAdd > 0) {
-        if (!FileService.data.clicks[p.pseudo])
-          FileService.data.clicks[p.pseudo] = 0;
-
-        FileService.data.clicks[p.pseudo] += amountToAdd;
-        recalculateMedals(p.pseudo, FileService.data.clicks[p.pseudo], io);
-      }
-    });
-
-    FileService.save("clicks", FileService.data.clicks);
-
-    // Update all players with new scores
-    blackjackGame.joueurs.forEach((p) => {
-      const socketId = p.socketId;
-      if (io.sockets.sockets.get(socketId)) {
-        io.sockets.sockets
-          .get(socketId)
-          .emit("clicker:you", { score: FileService.data.clicks[p.pseudo] });
-      }
-    });
-
-    leaderboardManager.broadcastClickerLB(io);
-    io.emit("blackjack:state", blackjackGame.getState());
-
-    // Reset game after delay
-    setTimeout(() => {
-      blackjackGame.resetGame();
-      io.emit("blackjack:state", blackjackGame.getState());
-    }, 5000);
-  }
 
   // ------- 2048 -------
   socket.on("2048:submit_score", (score) => {
@@ -2671,36 +2325,6 @@ function initSocketHandlers(io, socket, gameState) {
         uno_broadcastLobby();
       } else {
         gameActuelle.removeSpectator(pseudo);
-      }
-    }
-
-    // PICTIONARY
-    if (pictionaryGame) {
-      const etaitJoueurPic = pictionaryGame.joueurs.some(
-        (p) => p.pseudo === pseudo
-      );
-      if (etaitJoueurPic) {
-        pictionaryGame.removePlayer(pseudo);
-        if (pictionaryGame.gameStarted && pictionaryGame.joueurs.length < 2) {
-          console.log(
-            withGame(
-              `⚠️  Partie PICTIONARY annulée ([${orange}${pseudo}${grey}] déconnecté)`,
-              grey
-            )
-          );
-          io.emit("pictionary:gameEnd", {
-            winner: "Partie annulée !",
-            reason: `${pseudo} s'est déconnecté`,
-          });
-          pictionary_stopTimer();
-          pictionaryGame = new PictionaryGame();
-          pictionary_broadcastLobby();
-        } else if (pictionaryGame.gameStarted) {
-          pictionary_broadcastGame(`${pseudo} s'est déconnecté`);
-        }
-        pictionary_broadcastLobby();
-      } else {
-        pictionaryGame.removeSpectator(pseudo);
       }
     }
 

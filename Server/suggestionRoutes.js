@@ -24,7 +24,7 @@ transporter.verify(function (error, success) {
       );
     }
   } else {
-    console.log("* Serveur prêt à envoyer des emails.");
+    console.log("* Serveur prêt à envoyer des emails. \n");
   }
 });
 
@@ -58,11 +58,10 @@ router.post("/", requireAuth, async (req, res) => {
   }
 
   if (userRecord.suggestionQuota.count >= 3) {
-    return res
-      .status(429)
-      .json({
-        message: "Vous avez atteint votre quota de 3 suggestions pour aujourd'hui.",
-      });
+    return res.status(429).json({
+      message:
+        "Vous avez atteint votre quota de 3 suggestions pour aujourd'hui.",
+    });
   }
 
   const mailOptions = {

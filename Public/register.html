@@ -19,7 +19,6 @@
       <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
     </noscript>
-    <script defer src="js/uiColor.js"></script>
     <script defer src="/socket.io/socket.io.js"></script>
     <script defer src="js/auto_reload.js"></script>
   </head>
@@ -27,12 +26,13 @@
     <h1>Inscription</h1>
 
     <form>
-      <i><b><span style="font-style: normal;">[⚠️]</span> Le pseudo <mark
-            style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px">doit
-            contenir ton prénom</mark> obligatoirement.
-          Sinon...
-          <mark
-            style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px">BAN</mark></b></i>
+      <p class="info-register"><span style="font-style: normal;">[⚠️]</span> Le
+        pseudo <mark
+          style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px">doit
+          contenir ton prénom</mark> obligatoirement.
+        Sinon...
+        <mark
+          style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px">BAN</mark></p>
       <input type="text" name="pseudo" placeholder="Pseudo" autofocus
         required />
       <div class="input-with-eye">

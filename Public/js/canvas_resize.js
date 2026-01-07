@@ -4,9 +4,6 @@ export function initCanvasResizer() {
 
     if (canvas.classList.contains("game")) return false;
 
-    // Exclure le canvas Pictionary du setTransform automatique
-    const isPictionaryCanvas = canvas.classList.contains("pictionary-canvas");
-
     const ratio = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     const maxH = Math.max(0, window.innerHeight - 160);
@@ -23,16 +20,6 @@ export function initCanvasResizer() {
         canvas.style.width = `${Math.round(cssWidth)}px`;
         canvas.style.height = `${Math.round(cssHeight)}px`;
       } catch (e) {}
-
-      // Appliquer setTransform SAUF pour Pictionary
-      if (!isPictionaryCanvas) {
-        try {
-          const ctx = canvas.getContext("2d");
-          if (ctx && typeof ctx.setTransform === "function") {
-            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-          }
-        } catch (e) {}
-      }
       return true;
     }
     return false;

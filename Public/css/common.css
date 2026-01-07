@@ -58,6 +58,11 @@ body {
   overflow-x: hidden;
 }
 
+hr {
+  border: 1px solid var(--primary-color);
+  margin-bottom: 15px;
+}
+
 pre u {
   text-underline-offset: 3px;
 }
@@ -194,10 +199,8 @@ button.log-off:hover {
 .uno-lobby button,
 .flappy-btns-wrap button,
 .snake-btns-wrap button,
-.pictionary-actions button,
 .p4-btn-wrapper button,
 .chat-form button,
-.pictionary-guess button,
 .pic-clear-btn,
 .keybind-submit,
 .log-off,
@@ -205,11 +208,8 @@ button.log-off:hover {
 .btn-back,
 .action-buttons button,
 .admin-header .header-btns button,
-.pictionary-controls button,
-.pictionary-toolbar button,
 .sidebar-toggle,
 .log-off-btn,
-.pictionary-lobby button,
 .motus-reset,
 .motus-skip,
 .motus-continue,
@@ -236,10 +236,8 @@ button.log-off:hover {
 .uno-lobby button:not(:disabled):hover,
 .flappy-btns-wrap button:not(:disabled):hover,
 .snake-btns-wrap button:not(:disabled):hover,
-.pictionary-actions button:not(:disabled):hover,
 .p4-btn-wrapper button:not(:disabled):hover,
 .chat-form button:not(:disabled):hover,
-.pictionary-guess button:not(:disabled):hover,
 .pic-clear-btn:not(:disabled):hover,
 .keybind-submit:not(:disabled):hover,
 button.log-off:not(:disabled):hover,
@@ -247,11 +245,8 @@ button.log-off:not(:disabled):hover,
 .btn-back:not(:disabled):hover,
 .action-buttons button:not(:disabled):hover,
 .admin-header .header-btns button:not(:disabled):hover,
-.pictionary-controls button:not(:disabled):hover,
-.pictionary-toolbar button:not(:disabled):hover,
 .sidebar-toggle:not(:disabled):hover,
 .log-off-btn:not(:disabled):hover,
-.pictionary-lobby button:not(:disabled):hover,
 .motus-reset:not(:disabled):hover,
 .motus-skip:not(:disabled):hover,
 .motus-continue:not(:disabled):hover,
@@ -271,20 +266,15 @@ button.log-off:not(:disabled):hover,
 .uno-lobby button:disabled,
 .flappy-btns-wrap button:disabled,
 .snake-btns-wrap button:disabled,
-.pictionary-actions button:disabled,
 .p4-btn-wrapper button:disabled,
 .chat-form button:disabled,
 .keybind-submit:disabled,
-.pictionary-guess button:disabled,
 .survey-choice-btn:disabled,
 .btn-back:disabled,
 .action-buttons button:disabled,
 .admin-header .header-btns button:disabled,
-.pictionary-controls button:disabled,
-.pictionary-toolbar button:disabled,
 .sidebar-toggle:disabled,
 .log-off-btn:disabled,
-.pictionary-lobby button:disabled,
 .motus-reset:disabled,
 .motus-skip:disabled,
 .motus-continue:disabled,
@@ -502,11 +492,10 @@ body ::-webkit-scrollbar {
   color: #000;
 }
 
-/* Global Stage Layout for Large Screens */
 section[id^="stage"],
 section[id^="ruleStage"] {
   width: 100%;
-  max-width: 1600px;
+  max-width: 100dvw;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;

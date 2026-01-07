@@ -93,7 +93,9 @@
   gap: 10px;
 }
 
-.sidebar-section h3.money {
+.sidebar-section h3.money,
+.sidebar-section h3.sb-username {
+  margin-top: 0;
   color: var(--primary-color);
   border-top: 1.5px solid var(--primary-color);
   border-right: 1.5px solid var(--primary-color);

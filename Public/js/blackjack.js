@@ -68,12 +68,19 @@ export function initBlackjack(socket, username) {
 
     // --- Mise à jour Message ---
     if (messageEl) {
+      const me = state.joueurs.find((p) => p.pseudo === currentPseudo);
+
       if (state.phase === "betting") {
         messageEl.textContent = "Faites vos jeux ! (Misez)";
         messageEl.style.color = "gold";
       } else if (state.phase === "playing") {
         const currentPlayer = state.joueurs[state.currentPlayerIndex];
-        if (currentPlayer) {
+
+        // Custom Logic: Si le joueur local a sauté ("bust"), on laisse le message affiché pour lui
+        if (me && me.status === "bust") {
+          messageEl.textContent = "VOUS AVEZ SAUTÉ (Au dessus) ! 💥";
+          messageEl.style.color = "#ff4444";
+        } else if (currentPlayer) {
           if (currentPlayer.pseudo === currentPseudo) {
             messageEl.textContent = "C'est à toi de jouer !";
             messageEl.style.color = "#0f0";
@@ -83,11 +90,32 @@ export function initBlackjack(socket, username) {
           }
         }
       } else if (state.phase === "dealer") {
-        messageEl.textContent = "Tour du Croupier...";
-        messageEl.style.color = "#ff4444";
+        if (me && me.status === "bust") {
+          messageEl.textContent = "VOUS AVEZ SAUTÉ... (Croupier joue)";
+          messageEl.style.color = "#ff4444";
+        } else {
+          messageEl.textContent = "Tour du Croupier...";
+          messageEl.style.color = "#ff4444";
+        }
       } else if (state.phase === "payout") {
-        messageEl.textContent = "Fin de la manche !";
-        messageEl.style.color = "gold";
+        if (me && me.winnings !== undefined) {
+          if (me.winnings > me.bet) {
+            messageEl.textContent = "BLACKJACK !!";
+            messageEl.style.color = "gold";
+          } else if (me.winnings > 0) {
+            messageEl.textContent = "VOUS AVEZ GAGNÉ !";
+            messageEl.style.color = "#0f0";
+          } else if (me.winnings < 0) {
+            messageEl.textContent = "VOUS AVEZ PERDU...";
+            messageEl.style.color = "#ff4444";
+          } else {
+            messageEl.textContent = "ÉGALITÉ";
+            messageEl.style.color = "white";
+          }
+        } else {
+          messageEl.textContent = "Fin de la manche !";
+          messageEl.style.color = "gold";
+        }
       } else {
         messageEl.textContent = "En attente de joueurs...";
         messageEl.style.color = "#aaa";
@@ -225,19 +253,18 @@ export function initBlackjack(socket, username) {
   }
 
   function updateControls(state) {
-    // Fallback to window.username if myPseudo is not set correctly
     const currentPseudo = myPseudo || window.username;
     const me = state.joueurs.find((p) => p.pseudo === currentPseudo);
     const isMyTurn =
       state.phase === "playing" &&
       state.joueurs[state.currentPlayerIndex]?.pseudo === currentPseudo;
 
-    console.log("--- DEBUG BLACKJACK ---");
+    /*console.log("--- DEBUG BLACKJACK ---");
     console.log("Current Pseudo:", currentPseudo);
     console.log("Players:", state.joueurs);
     console.log("Am I in?", !!me);
     console.log("Game Started?", state.gameStarted);
-    console.log("-----------------------");
+    console.log("-----------------------");*/
 
     // Lobby controls
     if (!me) {

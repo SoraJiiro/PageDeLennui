@@ -12,10 +12,15 @@ class BlackjackGame {
     this.betTimer = null;
     this.betTimeoutMs = 10000; // 10s pour miser
     this.emitState = null;
+    this.onRoundEnd = null;
   }
 
   setEmitter(fn) {
     this.emitState = fn;
+  }
+
+  setRoundEndCallback(fn) {
+    this.onRoundEnd = fn;
   }
 
   addPlayer(pseudo, socketId) {
@@ -143,6 +148,8 @@ class BlackjackGame {
     let aces = 0;
 
     hand.forEach((card) => {
+      if (!card || !card.value) return;
+
       if (["J", "Q", "K"].includes(card.value)) {
         score += 10;
       } else if (card.value === "A") {
@@ -343,6 +350,10 @@ class BlackjackGame {
         }
       }
     });
+
+    if (this.onRoundEnd) {
+      this.onRoundEnd();
+    }
 
     // Auto-restart après 5 secondes
     setTimeout(() => {

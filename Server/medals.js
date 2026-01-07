@@ -52,7 +52,7 @@ function broadcastSystemMessage(io, text, persist = false) {
 }
 
 // Fonction pour recalculer les médailles d'un utilisateur en fonction de ses clicks
-function recalculateMedals(pseudo, clicks, io) {
+function recalculateMedals(pseudo, clicks, io, silent = false) {
   if (!FileService.data.medals) FileService.data.medals = {};
 
   // Gestion des tricheurs (score négatif)
@@ -85,7 +85,7 @@ function recalculateMedals(pseudo, clicks, io) {
 
   // Déterminer quelles médailles l'utilisateur devrait avoir
   for (const medal of allMedals) {
-    if (clicks >= medal.pallier) {
+    if (clicks >= medal.pallier || existingNames.has(medal.nom)) {
       userMedals.push({
         name: medal.nom,
         colors: existingColors[medal.nom] || [],
@@ -102,10 +102,8 @@ function recalculateMedals(pseudo, clicks, io) {
   FileService.save("medals", FileService.data.medals);
 
   // Log des nouvelles médailles
-  if (newUnlocked.length > 0) {
-    const msg = `${pseudo} a débloqué : ${newUnlocked.join(", ")} !`;
+  if (newUnlocked.length > 0 && !silent) {
     console.log(`🏅 [${pseudo}] a débloqué ${newUnlocked.join(", ")} (Recalc)`);
-    broadcastSystemMessage(io, msg, true);
   }
 
   // Si l'utilisateur est connecté, lui envoyer ses nouvelles médailles

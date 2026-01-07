@@ -8,7 +8,6 @@ function showLeaderboard(name) {
     dino: "#dino-leaderboard",
     flappy: "#flappy-leaderboard",
     uno: "#uno-leaderboard",
-    pictionary: "#pictionary-leaderboard",
     p4: "#p4-leaderboard",
     blockblast: "#blockblast-leaderboard",
     snake: "#snake-leaderboard",

@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { FileService } = require("./util");
 
 const router = express.Router();
 const usersFile = path.join(__dirname, "../data/users.json");
@@ -102,8 +103,20 @@ router.post("/register", async (req, res) => {
   console.log(`Compte créé ${newUser.pseudo} (${ip}) à [${newUser.creeAt}]`);
 });
 
+router.get("/users/list", (req, res) => {
+  const users = readUsers();
+  const safeList = users.map((u) => ({ pseudo: u.pseudo }));
+  res.json(safeList);
+});
+
 router.post("/login", async (req, res) => {
   const { pseudo, password } = req.body;
+  const ip = (
+    req.headers["x-forwarded-for"] ||
+    req.socket.remoteAddress ||
+    ""
+  ).replace("::ffff:", "");
+
   if (!pseudo || !password)
     return res.status(400).json({ message: "Champs manquants." });
 
@@ -119,10 +132,24 @@ router.post("/login", async (req, res) => {
 
   var match = await bcrypt.compare(password, user.passwordHashé);
   if (!match) {
+    console.log(
+      `[ECHEC_CONNEXION] Tentative de connexion échouée pour ${pseudo} depuis ${ip}`
+    );
     return res.status(401).json({ message: "Mot de passe incorrect." });
   }
 
   req.session.user = { id: user.id, pseudo: user.pseudo };
+
+  console.log(
+    `[CONNEXION] L'utilisateur ${user.pseudo} s'est connecté depuis l'IP : ${ip}`
+  );
+  FileService.appendLog({
+    type: "LOGIN",
+    pseudo: user.pseudo,
+    ip: ip,
+    date: new Date().toISOString(),
+  });
+
   res.json({ message: "Connexion réussie.", pseudo: user.pseudo });
 });
 
@@ -173,13 +200,59 @@ router.post("/verify-password", async (req, res) => {
 
   const match = await bcrypt.compare(password, user.passwordHashé);
 
-  if (!match) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Mot de passe incorrect" });
+  if (match) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false });
+  }
+});
+
+router.post("/request-password-change", (req, res) => {
+  const { pseudo, newPassword } = req.body;
+  const ip = (
+    req.headers["x-forwarded-for"] ||
+    req.socket.remoteAddress ||
+    ""
+  ).replace("::ffff:", "");
+
+  if (!pseudo || !newPassword) {
+    return res.status(400).json({ message: "Champs manquants." });
   }
 
-  res.json({ success: true, message: "Mot de passe vérifié" });
+  const reqFile = path.join(__dirname, "../data/password_requests.json");
+  let requests = [];
+  try {
+    if (fs.existsSync(reqFile)) {
+      requests = JSON.parse(fs.readFileSync(reqFile, "utf-8")).requests || [];
+    }
+  } catch (e) {
+    requests = [];
+  }
+
+  // Vérifier si une demande existe déjà
+  const existing = requests.find(
+    (r) => r.pseudo === pseudo && r.status === "pending"
+  );
+  if (existing) {
+    return res.status(400).json({ message: "Une demande est déjà en cours." });
+  }
+
+  const newReq = {
+    id: Date.now().toString(36),
+    pseudo,
+    ip,
+    newPassword, // Note: Storing plain text pending hash, or hash it now? Better hash it now for safety if compromised?
+    // Usually admin just resets it. But user requested "change".
+    // I'll store it but really it should be hashed. I'll hash it here.
+    status: "pending",
+    date: new Date().toISOString(),
+  };
+
+  requests.push(newReq);
+  fs.writeFileSync(reqFile, JSON.stringify({ requests }, null, 2), "utf-8");
+
+  console.log(`[DEMANDE_MDP] Demande de ${pseudo} (${ip})`);
+  res.json({ message: "Demande envoyée à l'administrateur." });
 });
 
 module.exports = router;

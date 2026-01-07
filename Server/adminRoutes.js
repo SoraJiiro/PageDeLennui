@@ -27,9 +27,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       case "unoWins":
         leaderboardManager.broadcastUnoLB(io);
         break;
-      case "pictionaryWins":
-        leaderboardManager.broadcastPictionaryLB(io);
-        break;
       case "p4Wins":
         leaderboardManager.broadcastP4LB(io);
         break;
@@ -189,10 +186,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
           0,
         unoWins:
           (FileService.data.unoWins && FileService.data.unoWins[pseudo]) || 0,
-        pictionaryPoints:
-          (FileService.data.pictionaryWins &&
-            FileService.data.pictionaryWins[pseudo]) ||
-          0,
         p4Wins:
           (FileService.data.p4Wins && FileService.data.p4Wins[pseudo]) || 0,
         blockblastScore:
@@ -245,7 +238,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "dinoScores",
       "flappyScores",
       "unoWins",
-      "pictionaryWins",
       "p4Wins",
       "blockblastScores",
       "snakeScores",
@@ -307,6 +299,13 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     if (!FileService.data.cheaters.includes(pseudo)) {
       FileService.data.cheaters.push(pseudo);
       FileService.save("cheaters", FileService.data.cheaters);
+
+      console.log(`[ACTION_ADMIN] ${pseudo} marqué comme TRICHEUR par l'Admin`);
+      FileService.appendLog({
+        type: "CHEATER_ADD",
+        pseudo: pseudo,
+        date: new Date().toISOString(),
+      });
     }
 
     // 2. Ajouter le tag Tricheur (gris)
@@ -345,10 +344,22 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // 1. Retirer de la liste des cheaters
     if (FileService.data.cheaters) {
+      const initialLength = FileService.data.cheaters.length;
       FileService.data.cheaters = FileService.data.cheaters.filter(
         (p) => p !== pseudo
       );
-      FileService.save("cheaters", FileService.data.cheaters);
+      if (FileService.data.cheaters.length < initialLength) {
+        FileService.save("cheaters", FileService.data.cheaters);
+
+        console.log(
+          `[ACTION_ADMIN] ${pseudo} retiré de la liste des TRICHEURS par l'Admin`
+        );
+        FileService.appendLog({
+          type: "CHEATER_REMOVE",
+          pseudo: pseudo,
+          date: new Date().toISOString(),
+        });
+      }
     }
 
     // 2. Retirer le tag Tricheur
@@ -386,7 +397,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "dinoScores",
         "flappyScores",
         "unoWins",
-        "pictionaryWins",
         "p4Wins",
         "blockblastScores",
         "snakeScores",
@@ -431,7 +441,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "dinoScores",
       "flappyScores",
       "unoWins",
-      "pictionaryWins",
       "p4Wins",
       "blockblastScores",
       "snakeScores",
@@ -490,7 +499,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "dinoScores",
       "flappyScores",
       "unoWins",
-      "pictionaryWins",
       "p4Wins",
       "blockblastScores",
       "snakeScores",
@@ -553,7 +561,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "dinoScores",
       "flappyScores",
       "unoWins",
-      "pictionaryWins",
       "p4Wins",
       "blockblastScores",
       "snakeScores",
@@ -616,7 +623,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "dinoScores",
       "flappyScores",
       "unoWins",
-      "pictionaryWins",
       "p4Wins",
       "blockblastScores",
       "snakeScores",
@@ -803,7 +809,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "dinoScores",
       "flappyScores",
       "unoWins",
-      "pictionaryWins",
       "p4Wins",
       "blockblastScores",
       "snakeScores",
@@ -887,7 +892,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     delete FileService.data.dinoScores[pseudo];
     delete FileService.data.flappyScores[pseudo];
     delete FileService.data.unoWins[pseudo];
-    delete FileService.data.pictionaryWins[pseudo];
     delete FileService.data.p4Wins[pseudo];
     delete FileService.data.blockblastScores[pseudo];
     delete FileService.data.medals[pseudo];
@@ -919,7 +923,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     FileService.save("dinoScores", FileService.data.dinoScores);
     FileService.save("flappyScores", FileService.data.flappyScores);
     FileService.save("unoWins", FileService.data.unoWins);
-    FileService.save("pictionaryWins", FileService.data.pictionaryWins);
     FileService.save("p4Wins", FileService.data.p4Wins);
     FileService.save("blockblastScores", FileService.data.blockblastScores);
     if (FileService.data.motusScores)
@@ -1048,8 +1051,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         case "uno":
           clearSimple("unoWins", "uno");
           break;
-        case "pictionary":
-          clearSimple("pictionaryWins", "pictionary");
           break;
         case "p4":
           clearSimple("p4Wins", "p4");
@@ -1069,7 +1070,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
           clearSimple("dinoScores", "dino");
           clearSimple("flappyScores", "flappy");
           clearSimple("unoWins", "uno");
-          clearSimple("pictionaryWins", "pictionary");
           clearSimple("p4Wins", "p4");
           clearBlockblast();
           clearSnake();
@@ -1129,7 +1129,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "dino_scores.json",
         "flappy_scores.json",
         "uno_wins.json",
-        "pictionary_wins.json",
         "p4_wins.json",
         "blockblast_scores.json",
         "blockblast_best_times.json",
@@ -1166,9 +1165,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         FileService.data.unoWins = {};
         FileService.save("unoWins", {});
 
-        FileService.data.pictionaryWins = {};
-        FileService.save("pictionaryWins", {});
-
         FileService.data.p4Wins = {};
         FileService.save("p4Wins", {});
 
@@ -1194,7 +1190,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         refreshLeaderboard("dinoScores");
         refreshLeaderboard("flappyScores");
         refreshLeaderboard("unoWins");
-        refreshLeaderboard("pictionaryWins");
         refreshLeaderboard("p4Wins");
         refreshLeaderboard("blockblastScores");
         refreshLeaderboard("snakeScores");
@@ -1238,7 +1233,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "dino_scores.json",
         "flappy_scores.json",
         "uno_wins.json",
-        "pictionary_wins.json",
         "p4_wins.json",
         "blockblast_scores.json",
         "blockblast_best_times.json",
@@ -1308,7 +1302,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "dino_scores.json",
         "flappy_scores.json",
         "uno_wins.json",
-        "pictionary_wins.json",
         "p4_wins.json",
         "blockblast_scores.json",
         "blockblast_best_times.json",
@@ -1333,7 +1326,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       refreshLeaderboard("dinoScores");
       refreshLeaderboard("flappyScores");
       refreshLeaderboard("unoWins");
-      refreshLeaderboard("pictionaryWins");
       refreshLeaderboard("p4Wins");
       refreshLeaderboard("blockblastScores");
       refreshLeaderboard("snakeScores");
@@ -1400,7 +1392,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     console.log({
       level: "action",
-      message: `Tag défini pour ${pseudo} : [${tag}] (color: ${color})`,
+      message: `Tag défini pour ${pseudo} : [${tag}] (couleur : ${color})`,
     });
 
     res.json({ message: `Tag [${tag}] défini pour ${pseudo}` });
@@ -1561,6 +1553,71 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     } catch (e) {
       console.error("Unlock error:", e);
       res.status(500).json({ success: false, message: "Erreur serveur" });
+    }
+  });
+
+  // --- Password Requests ---
+  router.get("/password-requests", requireAdmin, (req, res) => {
+    const reqFile = path.join(__dirname, "../data/password_requests.json");
+    try {
+      if (fs.existsSync(reqFile)) {
+        const data = JSON.parse(fs.readFileSync(reqFile, "utf-8"));
+        res.json(data.requests || []);
+      } else {
+        res.json([]);
+      }
+    } catch (e) {
+      res.status(500).json({ message: "Erreur lecture demandes" });
+    }
+  });
+
+  router.post("/approve-password-change", requireAdmin, async (req, res) => {
+    const { requestId, approve } = req.body;
+    const reqFile = path.join(__dirname, "../data/password_requests.json");
+
+    try {
+      if (!fs.existsSync(reqFile))
+        return res.status(404).json({ message: "Fichier non trouvé" });
+      const data = JSON.parse(fs.readFileSync(reqFile, "utf-8"));
+      const requestIndex = data.requests.findIndex((r) => r.id === requestId);
+
+      if (requestIndex === -1)
+        return res.status(404).json({ message: "Demande introuvable" });
+
+      const request = data.requests[requestIndex];
+
+      if (approve) {
+        // Mettre à jour le mot de passe
+        const users = dbUsers.readAll();
+        const user = users.users.find((u) => u.pseudo === request.pseudo);
+
+        if (user) {
+          const passHash = await bcrypt.hash(request.newPassword, 12);
+          user.password = request.newPassword;
+          user.passwordHashé = passHash;
+          dbUsers.writeAll(users);
+
+          request.status = "approved";
+          console.log(
+            `[ADMIN] Changement de mot de passe approuvé pour ${request.pseudo}`
+          );
+        } else {
+          request.status = "failed_user_not_found";
+        }
+      } else {
+        request.status = "rejected";
+        console.log(
+          `[ADMIN] Changement de mot de passe rejeté pour ${request.pseudo}`
+        );
+      }
+
+      data.requests.splice(requestIndex, 1); // remove from pending or keep log? User didn't specify. I'll remove done requests to keep it clean.
+      fs.writeFileSync(reqFile, JSON.stringify(data, null, 2));
+
+      res.json({ success: true, status: request.status });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Erreur serveur" });
     }
   });
 

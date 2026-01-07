@@ -43,6 +43,10 @@
                             onclick="shutdownServer()">OFF</button>
                         <button class="hide"
                             onclick="toggleAdminPanel()">Cacher</button>
+                        <button class="go-to-sondages"
+                            onclick="window.open('./sondages.html');">Sondages</button>
+                        <button class="tag-admin"
+                            onclick="window.open('./demande-tag.html');">Tag</button>
                     </div>
                 </div>
 
@@ -50,7 +54,7 @@
                     <!-- TRANSACTIONS -->
                     <section class="admin-section">
                         <h2><i class="fa-solid fa-money-bill-transfer"></i>
-                            Transactions en attente</h2>
+                            /Transactions en attente</h2>
                         <div class="transactions-container">
                             <table class="admin-table">
                                 <thead>
@@ -63,13 +67,42 @@
                                     </tr>
                                 </thead>
                                 <tbody id="transactions-list">
-                                    <!-- Rempli par JS -->
+
                                 </tbody>
                             </table>
-                            <button onclick="refreshTransactions()"
-                                class="refresh-btn"><i
-                                    class="fa-solid fa-rotate"></i>
-                                Actualiser</button>
+                            <center>
+                                <button onclick="refreshTransactions()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
+                        </div>
+                    </section>
+
+                    <!-- PASSWORD REQUESTS -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-key"></i> /Demandes de Mot de
+                            Passe</h2>
+                        <div class="transactions-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pseudo</th>
+                                        <th>IP</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="password-requests-list">
+
+                                </tbody>
+                            </table>
+                            <center>
+                                <button onclick="refreshPasswordRequests()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
                         </div>
                     </section>
 
@@ -88,8 +121,6 @@
                                 </button>
                                 <button class="lb-tab"
                                     data-board="uno">UNO</button>
-                                <button class="lb-tab"
-                                    data-board="pictionary">Pictionary</button>
                                 <button class="lb-tab"
                                     data-board="p4">P4</button>
                                 <button class="lb-tab"
@@ -154,20 +185,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lb-uno"></tbody>
-                            </table>
-                        </div>
-
-                        <div class="leaderboard-content"
-                            data-board="pictionary">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Rang</th>
-                                        <th>Pseudo</th>
-                                        <th>Points</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="lb-pictionary"></tbody>
                             </table>
                         </div>
 
@@ -354,8 +371,6 @@
                                                 <option
                                                     value="unoWins">UNO</option>
                                                 <option
-                                                    value="pictionaryWins">Pictionary</option>
-                                                <option
                                                     value="p4Wins">P4</option>
                                                 <option
                                                     value="blockblastScores">Block
@@ -449,11 +464,6 @@
                                                 <input type="text" id="tagValue"
                                                     placeholder="Tag..."
                                                     style="flex:1" />
-                                                <input type="color"
-                                                    id="tagColor"
-                                                    value="#ff0000"
-                                                    style="width:50px;padding:0;border:none;height:38px;cursor:pointer;"
-                                                    title="Couleur du tag" />
                                             </div>
                                         </div>
                                         <div class="action-buttons">
@@ -523,8 +533,6 @@
                                                 <option
                                                     value="flappy">Flappy</option>
                                                 <option value="uno">UNO</option>
-                                                <option
-                                                    value="pictionary">Pictionary</option>
                                                 <option value="p4">P4</option>
                                                 <option value="blockblast">Block
                                                     Blast</option>
@@ -774,7 +782,6 @@
             socket.on('dino:leaderboard', (data) => updateLeaderboard('dino', data, 'score'));
             socket.on('flappy:leaderboard', (data) => updateLeaderboard('flappy', data, 'score'));
             socket.on('uno:leaderboard', (data) => updateLeaderboard('uno', data, 'wins'));
-            socket.on('pictionary:leaderboard', (data) => updateLeaderboard('pictionary', data, 'points'));
             socket.on('p4:leaderboard', (data) => updateLeaderboard('p4', data, 'wins'));
             socket.on('blockblast:leaderboard', (data) => updateLeaderboard('blockblast', data, 'score'));
             socket.on('snake:leaderboard', (data) => updateLeaderboard('snake', data, 'score'));
@@ -944,8 +951,75 @@
             }
         }
 
+        // --- Password Requests ---
+        async function refreshPasswordRequests() {
+            try {
+                const res = await fetch('/api/admin/password-requests');
+                if (!res.ok) return;
+                const requests = await res.json();
+                const pending = requests.filter(r => r.status === 'pending');
+                
+                const tbody = document.getElementById('password-requests-list');
+                tbody.innerHTML = '';
+                
+                if (pending.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Aucune demande</td></tr>';
+                    return;
+                }
+
+                pending.forEach(req => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${req.pseudo}</td>
+                        <td>${req.ip || '?'}</td>
+                        <td>${new Date(req.date).toLocaleString()}</td>
+                        <td>
+                            <button onclick="handlePasswordRequest('${req.id}', true)" class="btn-approve" 
+                                style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;"
+                                title="Approuver et changer le mot de passe">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                            <button onclick="handlePasswordRequest('${req.id}', false)" class="btn-reject" 
+                                style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;"
+                                title="Rejeter">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error("Erreur refreshPasswordRequests", e);
+            }
+        }
+
+        async function handlePasswordRequest(requestId, approve) {
+            const action = approve ? "approuver" : "rejeter";
+            if (!confirm(`Voulez-vous vraiment ${action} cette demande de changement de mot de passe ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/approve-password-change', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId, approve })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showNotification(`Demande ${approve ? 'approuvée' : 'rejetée'} avec succès`, 'success');
+                    refreshPasswordRequests();
+                } else {
+                    showNotification(`Erreur: ${data.message || 'inconnue'}`, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification("Erreur serveur", 'error');
+            }
+        }
+
         // Initial load
         refreshTransactions();
+        refreshPasswordRequests();
 
         // Recherche utilisateur
         document.getElementById('userSearchInput').addEventListener('input', async (e) => {
@@ -1010,10 +1084,6 @@
                 <div class="user-stat">
                     <span class="label">Victoires UNO:</span>
                     <span class="value">${data.unoWins || 0}</span>
-                </div>
-                <div class="user-stat">
-                    <span class="label">Points Pictionary:</span>
-                    <span class="value">${data.pictionaryPoints || 0}</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">Victoires P4:</span>
@@ -1367,7 +1437,6 @@ async function modifyTries() {
         async function setTag() {
             const pseudo = document.getElementById('tagUser').value.trim();
             const tag = document.getElementById('tagValue').value.trim();
-            const color = document.getElementById('tagColor').value;
 
             if (!pseudo) {
                 showNotification('⚠️ Veuillez entrer un pseudo', 'error');
@@ -1378,7 +1447,7 @@ async function modifyTries() {
                 const res = await fetch('/api/admin/set-tag', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, tag, color })
+                    body: JSON.stringify({ pseudo, tag, color: "#ffffff" })
                 });
 
                 const data = await res.json();
@@ -1483,10 +1552,11 @@ async function modifyTries() {
                 dino: 'Dino',
                 flappy: 'Flappy',
                 uno: 'UNO',
-                pictionary: 'Pictionary',
                 p4: 'P4',
                 blockblast: 'Block Blast',
                 snake: 'Snake',
+                motus: 'Motus',
+                score2048: '2048'
             };
 
             const label = labelMap[boardType] || boardType;
@@ -1881,6 +1951,30 @@ async function modifyTries() {
                     
                     const statusClass = s.status === 'active' ? 'status-active' : 'status-closed';
                     
+                    let votersHtml = '';
+                    if (s.answers && Object.keys(s.answers).length > 0) {
+                        votersHtml = '<div style="margin-top:10px; font-size:0.85rem; border-top:1px solid #333; padding-top:5px;"><strong>Détails des votes:</strong><ul style="padding-left:20px; margin:5px 0;">';
+                        
+                        // Grouper par choix pour une meilleure lisibilité
+                        const votesByChoice = {};
+                        s.choices.forEach((c, i) => votesByChoice[i] = []);
+                        
+                        Object.entries(s.answers).forEach(([pseudo, choiceIdx]) => {
+                            if (votesByChoice[choiceIdx]) votesByChoice[choiceIdx].push(pseudo);
+                        });
+
+                        s.choices.forEach((choice, idx) => {
+                            const voters = votesByChoice[idx];
+                            if (voters && voters.length > 0) {
+                                votersHtml += `<li><strong>${choice}</strong> (${voters.length}): <span style="color:#aaa">${voters.join(', ')}</span></li>`;
+                            }
+                        });
+                        
+                        votersHtml += '</ul></div>';
+                    } else if (s.results && s.results.total > 0 && !s.answers) {
+                         votersHtml = '<div style="margin-top:10px; font-size:0.85rem; color:#aaa;"><i>Détails masqués ou non disponibles</i></div>';
+                    }
+
                     div.innerHTML = `
                         <div>
                             <div style="font-weight:bold; color:#fff; margin-bottom: 4px;">${s.question}</div>
@@ -1888,8 +1982,9 @@ async function modifyTries() {
                                 Status: <span class="${statusClass}">${s.status}</span> • 
                                 Votes: ${s.results.total}
                             </div>
+                            ${votersHtml}
                         </div>
-                        <div style="display:flex; gap:5px">
+                        <div style="display:flex; gap:5px; align-items: flex-start;">
                             ${s.status === 'active' ? 
                                 `<button class="btn btn-red" onclick="closeSurvey('${s.id}')" title="Clore"><i class="fa-solid fa-stop"></i></button>` : 
                                 ''}

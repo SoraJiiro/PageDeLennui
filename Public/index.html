@@ -23,7 +23,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage4.css" />
         <link rel="stylesheet" type="text/css" href="css/stage5.css" />
         <link rel="stylesheet" type="text/css" href="css/stage6.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage7.css" />
+
         <link rel="stylesheet" type="text/css" href="css/stage8.css" />
         <link rel="stylesheet" type="text/css" href="css/stage9.css" />
         <link rel="stylesheet" type="text/css" href="css/stage10.css" />
@@ -39,7 +39,7 @@
             media="(prefers-color-scheme: light)" />
 
         <script defer type="text/javascript" src="js/nav.js"></script>
-        <script defer type="text/javascript" src="/js/uiColor.js"></script>
+        <script defer type="text/javascript" src="js/uiColor.js"></script>
         <script defer type="text/javascript" src="js/display_lb.js"></script>
         <script defer type="text/javascript" src="js/horloge.js"></script>
         <script defer type="text/javascript" src="js/periodic_msg.js"></script>
@@ -63,6 +63,7 @@
             </div>
             <div class="sidebar-content">
                 <div class="sidebar-section">
+                    <h3 class="sb-username"></h3>
                     <h3 class="money"></h3>
                     <h3><i class="fa-solid fa-gamepad"></i> Jeux</h3>
                     <ul>
@@ -72,8 +73,7 @@
                         <li><button class="nav-btn mario">Mario</button></li>
                         <li><button class="nav-btn sec6">Flappy
                                 Bird</button></li>
-                        <li><button
-                                class="nav-btn sec7">Pictionary</button></li>
+
                         <li><button class="nav-btn sec8">Puissance
                                 4</button></li>
                         <li><button class="nav-btn sec9">Block
@@ -116,13 +116,28 @@
                                 class="ui-color-picker">
                         </div>
                         <div class="control-item">
-                            <label for="tagColorPicker">Couleur Tag</label>
-                            <input type="color" id="tagColorPicker"
-                                class="tag-color-picker">
+                            <label for="keybind"
+                                style="font-size: 0.9rem;height:30px;display: flex; justify-content: center; align-items: center;">Key
+                                Pause</label>
+                            <div
+                                style="display: flex; gap: 5px; align-items: center;">
+                                <input type="text" class="keybind" id="keybind"
+                                    placeholder="P" autocomplete="off"
+                                    maxlength="1" minlength="0"
+                                    style="width: 40px; height: 30px; text-align: center; background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: #fff; font-size: 1rem;" />
+                                <button class="keybind-submit"
+                                    style="min-height: 30px; padding: 0 10px; font-size: 0.8rem; height: 30px; border-width: 1px;">OK</button>
+                            </div>
                         </div>
+
+                        <hr>
+
                         <a href="demande-tag.html" class="nav-link"
-                            style="text-align:center; margin-top:10px; font-size:0.9rem;">Demander
+                            style="text-align:center; margin-top:5px; font-size:0.9rem;width:100%;  cursor:pointer;">Demander
                             un Tag</a>
+                        <button id="btnRequestPasswordChange" class="nav-link"
+                            style="text-align:center; margin-top:5px; font-size:0.9rem; width:100%;  cursor:pointer;">Changer
+                            Mot de passe</button>
                     </div>
                 </div>
             </div>
@@ -213,20 +228,35 @@
         </script>
 
         <section id="stage1">
-            <center><pre
+            <center style="transform: translateY(-30px);"><pre
                     id="periodic-msg">Bonne année et bonne rentrée à tous !</pre>
                 <br><a href="patch_notes.html"><button class="temp-btn"> > PATCH
                         NOTES < </button></a></center>
             <h1 class="display" id="main-clock" style="cursor: default;"></h1>
-            <h2 id="your-score" style="visibility: hidden;"></h2>
-            <div class="keybind-wrap">
-                <label for="keybind">Changer la touche de Pause</label>
-                <input type="text" class="keybind" id="keybind"
-                    placeholder="Touche" autocomplete="off"
-                    maxlength="1" minlength="0" />
 
-                <button class="keybind-submit">Appliquer</button>
+            <div class="clock-visuelle-wrap">
+                <div class="clock">
+                    <div class="number" data-n="1">1</div>
+                    <div class="number" data-n="2">2</div>
+                    <div class="number" data-n="3">3</div>
+                    <div class="number" data-n="4">4</div>
+                    <div class="number" data-n="5">5</div>
+                    <div class="number" data-n="6">6</div>
+                    <div class="number" data-n="7">7</div>
+                    <div class="number" data-n="8">8</div>
+                    <div class="number" data-n="9">9</div>
+                    <div class="number" data-n="10">10</div>
+                    <div class="number" data-n="11">11</div>
+                    <div class="number" data-n="12">12</div>
+
+                    <div class="hand hour" id="hour"></div>
+                    <div class="hand minute" id="minute"></div>
+                    <div class="hand second" id="second"></div>
+                    <div class="center"></div>
+                </div>
             </div>
+
+            <h2 id="your-score" style="visibility: hidden;"></h2>
             <div class="zone-wrap">
                 <div class="zone"></div>
                 <p class="cps-humain"></p>
@@ -260,12 +290,9 @@
                         class="medal-index" aria-hidden="true">7</span></div>
             </div>
 
-            <div class="regen-wrap"
-                style="margin-top: 20px; text-align: center; display: flex; gap: 10px; justify-content: center;">
-                <button class="regen-colors-btn">
-                    Régénérer les couleurs <br> (375K Clicks)
-                </button>
-            </div>
+            <button class="regen-colors-btn">
+                Régénérer les couleurs <br> (375K Clicks)
+            </button>
         </section>
 
         <section id="stage2">
@@ -339,7 +366,7 @@
                 <button data-board="dino">Dino</button>
                 <button data-board="flappy">Flappy Bird</button>
                 <button data-board="uno">UNO</button>
-                <button data-board="pictionary">Pictionary</button>
+
                 <button data-board="p4">Puissance 4</button>
                 <button data-board="blockblast">Block Blast</button>
                 <button data-board="snake">Snake</button>
@@ -394,16 +421,7 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <!-- LEADERBOARD PICTIONARY -->
-            <div class="leaderboard-card">
-                <div class="leaderboard-header">
-                    <h2>Pictionary Leaderboard.exe</h2>
-                </div>
-                <table class="board" id="pictionary-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Points</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+
             <!-- LEADERBOARD PUISSANCE 4 -->
             <div class="leaderboard-card">
                 <div class="leaderboard-header">
@@ -535,102 +553,6 @@
             </div>
         </section>
 
-        <section id="stage7">
-            <div class="pictionary-card">
-                <div class="pictionary-header">
-                    <h2>Pictionary.exe</h2>
-                    <div class="pictionary-status"></div>
-                </div>
-
-                <div class="pictionary-lobby">
-                    <h3>Lobby Pictionary</h3>
-                    <div class="pictionary-joueurs"></div>
-                    <div class="pictionary-spectators"></div>
-                    <div class="pictionary-actions">
-                        <button class="pic-join">Rejoindre le lobby</button>
-                        <button class="pic-leave"
-                            style="display:none">Quitter
-                            le lobby</button>
-                        <button class="pic-start"
-                            style="display:none">Démarrer</button>
-                    </div>
-                </div>
-
-                <div class="pictionary-game">
-                    <div class="pictionary-mode-spec"
-                        style="display:none;"></div>
-                    <div class="pictionary-info"></div>
-
-                    <div class="pictionary-current">Dessinateur : <span
-                            class="pictionary-current-player">?</span></div>
-
-                    <div class="pictionary-players"></div>
-                    <canvas class="pictionary-canvas" width="700"
-                        height="450"></canvas>
-                    <div class="pictionary-controls">
-                        <div class="pictionary-toolbar" role="toolbar"
-                            aria-label="Outils dessin">
-                            <div class="pictionary-palette" role="group"
-                                aria-label="Palette de couleurs">
-                                <button
-                                    style="background:#000;border:1.5px solid #fff"
-                                    title="#000"
-                                    aria-label="Couleur noir"></button>
-                                <button style="background:#fff" title="#fff"
-                                    aria-label="Couleur blanc"></button>
-                                <button style="background:#f00" title="#f00"
-                                    aria-label="Couleur rouge"></button>
-                                <button style="background:#0f0" title="#0f0"
-                                    aria-label="Couleur vert"></button>
-                                <button style="background:#00f" title="#00f"
-                                    aria-label="Couleur bleu"></button>
-                                <button style="background:#ff0" title="#ff0"
-                                    aria-label="Couleur jaune"></button>
-                                <button style="background:#f0f" title="#f0f"
-                                    aria-label="Couleur magenta"></button>
-                            </div>
-
-                            <label class="pictionary-color-label"
-                                title="Choisir une couleur">
-                                Couleur
-                                <input type="color"
-                                    class="pictionary-colorpicker"
-                                    value="#ffffff"
-                                    aria-label="Choisir la couleur" />
-                            </label>
-
-                            <label class="pictionary-brush-label"
-                                title="Taille du crayon">
-
-                                <input type="range"
-                                    class="pictionary-brushsize"
-                                    min="1" max="40" value="3"
-                                    aria-label="Taille du pinceau" />
-                            </label>
-
-                            <button class="pictionary-eraser" title="Gomme"
-                                aria-label="Gomme">Gomme</button>
-                            <button class="pictionary-fill"
-                                title="Remplissage"
-                                aria-label="Remplissage">Remplissage</button>
-                            <button class="pic-clear-btn"
-                                title="Effacer le canevas"
-                                aria-label="Effacer le canevas">Effacer</button>
-                        </div>
-
-                        <!-- Zone de proposition (visible seulement pour les devineurs) -->
-                        <div class="pictionary-guess" role="group"
-                            aria-label="Propositions de mot">
-                            <input class="pic-guess-input"
-                                placeholder="Devine le mot..."
-                                aria-label="Champ de proposition" />
-                            <button class="pic-guess-btn"
-                                aria-label="Proposer le mot">Proposer</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
         <section id="stage8">
             <div class="p4-card">
                 <div class="p4-header">
@@ -889,6 +811,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Change Password Modal -->
+        <div id="password-change-modal" class="modal-overlay"
+            style="display: none;">
+            <div class="modal-content">
+                <h3>🔑 Changer de Mot de Passe</h3>
+                <p>Saisissez votre nouveau mot de passe souhaité :</p>
+                <input type="password" id="new-password-input"
+                    placeholder="Nouveau mot de passe"
+                    style="margin-bottom: 10px;">
+                <input type="password" id="confirm-password-input"
+                    placeholder="Confirmer le mot de passe">
+                <div class="modal-buttons" style="margin-top: 15px;">
+                    <button id="password-change-cancel"
+                        class="btn-cancel">Annuler</button>
+                    <button id="password-change-confirm"
+                        class="btn-confirm">Envoyer</button>
+                </div>
+            </div>
+        </div>
     </body>
 
     <script defer type="text/javascript">
@@ -960,5 +902,5 @@
                     }, 400);
                 })();
                 </script>
-
+    <!-- ...:7750/js/main.js -->
 </html>

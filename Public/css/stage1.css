@@ -36,7 +36,7 @@
 }
 
 #stage1 {
-  width: 100%;
+  width: 100dvw;
   min-height: 100dvh;
   display: block;
   justify-content: center;
@@ -76,6 +76,73 @@
   animation: letterLight 2.5s infinite;
   opacity: 0.4;
   color: #fff;
+}
+
+.clock-visuelle-wrap {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  transform: translate(-50%, -50%);
+  width: fit-content;
+  height: fit-content;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.clock {
+  width: 260px;
+  height: 260px;
+  border: 4px solid var(--primary-color);
+  border-radius: 50%;
+  position: relative;
+  background: var(--bg-color);
+  margin: 20px auto;
+  color: var(--primary-color);
+}
+
+.number {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  left: 50%;
+  top: 50%;
+}
+
+.hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform-origin: bottom;
+  transform: translateX(-50%);
+}
+
+.hour {
+  width: 6px;
+  height: 65px;
+  background: var(--primary-color);
+}
+.minute {
+  width: 4px;
+  height: 95px;
+  background: var(--primary-color);
+}
+.second {
+  width: 2px;
+  height: 115px;
+  background: red;
+}
+
+.center {
+  width: 10px;
+  height: 10px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 @keyframes letterLight {
@@ -141,7 +208,7 @@
 .zone-wrap {
   position: absolute;
   left: 25px;
-  bottom: 140px;
+  bottom: 130px;
   width: 300px;
 }
 
@@ -259,7 +326,6 @@ p.cps-humain {
 .btns-wrap button {
   width: 200px;
   height: 8dvh;
-  /* Styles inherited from common.css */
   flex-wrap: wrap;
 }
 
@@ -371,7 +437,7 @@ p.cps-humain {
 .medals-wrap {
   position: absolute;
   right: 25px;
-  top: 25px;
+  bottom: 120px;
   height: 81dvh;
   width: 21dvw;
   display: flex;
@@ -388,9 +454,9 @@ p.cps-humain {
 .regen-colors-btn {
   position: absolute;
   right: 25px;
-  top: calc(25px + 80dvh + 15px);
+  bottom: 20px;
   width: 21dvw;
-  height: 70px;
+  height: 75px;
   font-size: large;
   font-weight: bold;
 }
