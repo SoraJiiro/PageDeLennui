@@ -1,0 +1,48 @@
+INSTALLATION (Windows)
+
+
+1 ) Téléchargements logiciels :
+
+1a Installez NodeJs - NodeJs v24.12 (latest)
+https://nodejs.org/dist/v24.12.0/node-v24.12.0-x64.msi
+Sélectionnez toutes les options par défaut pendant l'installation.
+
+
+1b Installez GitBash - Git v2.52 (latest)
+https://github.com/git-for-windows/git/releases/download/v2.52.0.windows.1/Git-2.52.0-64-bit.exe
+Sélectionnez toutes les options par défaut pendant l'installation.
+
+
+2 ) Clic droit dans l'explorateur de fichiers à la racine du projet (là où vous avez trouvé le fichier que vous lisez actuellement), puis choisir l'option "Afficher d'autres options" (sur Windows 11) et sélectionner "Open Git Bash here".
+
+
+3 ) Vérification
+
+	3a ) Exécutez la commande "npm -v" pour vérifier l'installation de Node.
+	Si une erreur apparaît, relancez votre PC et réessayez.
+	Si la même erreur apparaît après redémarrage, vérifiez l'installation de NodeJs.
+
+
+	3b ) Si la version de Node (v24.12) apparaît dans le terminal, passez à l'étape 4.
+
+
+4 ) Exécutez la commande "npm install".
+Les dépendances du projet devraient s'installer. Attendez que le prompt réapparaisse.
+
+
+5 ) Exécutez la commande "bash ./setup.sh".
+Les fichiers ".env" et "data/" devraient se créer.
+Si une erreur indiquant que les permissions ne sont pas assez élevées apparaît, exécutez la commande "chmod 755 setup.sh" puis relancez la commande précédente.
+
+
+6 ) Finalement, lancez la commande "npm start".
+Le serveur devrait se lancer.
+Ouvrez votre navigateur et accédez à l'URL : http://localhost:7750
+
+
+7 ) Créez un compte sur le site et voilà.
+(Vous ne pourrez pas créer de compte Admin)
+
+
+8 ) Pour arrêter le serveur : Ctrl + C dans le terminal ou simplement fermer la fenêtre du terminal.
+
