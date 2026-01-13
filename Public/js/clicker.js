@@ -409,7 +409,7 @@ export function initClicker(socket) {
     const newColorsMap = {};
     // Régénérer uniquement pour les médailles prestige débloquées
     state.medalsDebloquees.forEach((name) => {
-      if (name.startsWith("Médaille Préstige")) {
+      if (name.startsWith("Médaille Prestige")) {
         const colors = [];
         // 8.5% de chance pour Monochrome (Noir/Blanc/Gris)
         const isMonochrome = Math.random() < 0.085;

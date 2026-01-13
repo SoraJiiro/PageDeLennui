@@ -57,6 +57,19 @@ function findById(id) {
   return db.users.find((u) => u.id === id) || null;
 }
 
+function updateUserMashKey(pseudo, key) {
+  const db = readAll();
+  const index = db.users.findIndex(
+    (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase()
+  );
+  if (index !== -1) {
+    db.users[index].mashKey = key;
+    writeAll(db);
+    return true;
+  }
+  return false;
+}
+
 function deleteUser(pseudo) {
   const db = readAll();
   const index = db.users.findIndex(
@@ -79,4 +92,5 @@ module.exports = {
   countByIp,
   createUser,
   deleteUser,
+  updateUserMashKey,
 };

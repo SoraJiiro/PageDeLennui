@@ -204,6 +204,11 @@ function initSocketHandlers(io, socket, gameState) {
   socket.emit("chat:history", FileService.data.historique);
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
 
+  // Init Mash Key
+  const dbUser = dbUsers.findBypseudo(pseudo);
+  const mashKey = dbUser && dbUser.mashKey ? dbUser.mashKey : "k";
+  socket.emit("mash:init_key", mashKey);
+
   // Envoyer couleur tag actuelle
   const currentTagData = FileService.data.tags
     ? FileService.data.tags[pseudo]
@@ -338,9 +343,6 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcast2048LB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
-  if (pseudo !== "Admin") {
-    io.emit("system:info", `${pseudo} a rejoint le chat`);
-  }
 
   // ------- UI Color -------
   socket.on("ui:saveColor", ({ color }) => {
@@ -2397,6 +2399,7 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("mash:key", (key) => {
     if (typeof key === "string" && key.length === 1) {
       mashGame.setMashKey(pseudo, key);
+      dbUsers.updateUserMashKey(pseudo, key);
     }
   });
 

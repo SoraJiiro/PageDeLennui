@@ -77,12 +77,17 @@ class BlackjackGame {
     if (index !== -1) {
       // Si le joueur actuel quitte pendant son tour
       if (this.phase === "playing" && index === this.currentPlayerIndex) {
-        this.nextTurn();
+        if (this.turnTimer) clearTimeout(this.turnTimer);
       } else if (this.phase === "playing" && index < this.currentPlayerIndex) {
         this.currentPlayerIndex--;
       }
 
       this.joueurs.splice(index, 1);
+
+      // Si on est en phase de jeu, relancer le tour pour le joueur suivant (qui a pris l'index)
+      if (this.phase === "playing" && this.gameStarted) {
+        this.checkTurn();
+      }
 
       // Si le jeu n'est pas en cours, on peut remplir les places vides depuis la file d'attente
       if (!this.gameStarted) {

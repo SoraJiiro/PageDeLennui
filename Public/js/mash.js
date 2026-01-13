@@ -29,8 +29,9 @@ export function initMash(socket) {
   }
 
   // Key Config
-  if (inputKey) {
-    inputKey.addEventListener("keyup", () => {
+  const btnKeySubmit = document.getElementById("mash-key-submit");
+  if (inputKey && btnKeySubmit) {
+    btnKeySubmit.addEventListener("click", () => {
       const val = inputKey.value.trim();
       if (val && val.length === 1) {
         myKey = val.toLowerCase();
@@ -38,6 +39,8 @@ export function initMash(socket) {
         socket.emit("mash:key", myKey);
         inputKey.blur();
         showNotification(`Touche de Mash définie sur : ${myKey.toUpperCase()}`);
+      } else {
+        showNotification("⚠️ Entrez une seule touche (1 caractère)");
       }
     });
   }
@@ -73,6 +76,14 @@ export function initMash(socket) {
   });
 
   // Socket listeners
+  socket.on("mash:init_key", (key) => {
+    if (key) {
+      myKey = key;
+      if (inputKey) inputKey.value = key;
+      localStorage.setItem("mashKey", key);
+    }
+  });
+
   socket.on("mash:state", (state) => {
     console.log("[MASH] State received:", state);
     syncState(state);

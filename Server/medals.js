@@ -31,6 +31,35 @@ function generatePrestigeMedals() {
 
 const allMedals = [...medalsList, ...generatePrestigeMedals()];
 
+const baseColors = {
+  Bronze: ["#cd7f32"],
+  Argent: ["#c0c0c0"],
+  Or: ["#ffd700"],
+  Diamant: ["#b9f2ff"],
+  Rubis: ["#e0115f"],
+  Saphir: ["#0f52ba"],
+  Légendaire: [
+    "#ff0000",
+    "#ff7f00",
+    "#ffff00",
+    "#00ff00",
+    "#0000ff",
+    "#4b0082",
+    "#9400d3",
+  ],
+};
+
+function generateRandomColors() {
+  const colors = [];
+  while (colors.length < 12) {
+    const h = Math.floor(Math.random() * 360);
+    const s = 70 + Math.floor(Math.random() * 25);
+    const l = 35 + Math.floor(Math.random() * 20);
+    colors.push(`hsl(${h}, ${s}%, ${l}%)`);
+  }
+  return colors;
+}
+
 function broadcastSystemMessage(io, text, persist = false) {
   if (!io) return;
   const payload = {
@@ -86,9 +115,19 @@ function recalculateMedals(pseudo, clicks, io, silent = false) {
   // Déterminer quelles médailles l'utilisateur devrait avoir
   for (const medal of allMedals) {
     if (clicks >= medal.pallier || existingNames.has(medal.nom)) {
+      let colors = existingColors[medal.nom] || [];
+
+      if (colors.length === 0) {
+        if (baseColors[medal.nom]) {
+          colors = baseColors[medal.nom];
+        } else if (medal.nom.startsWith("Médaille Prestige")) {
+          colors = generateRandomColors();
+        }
+      }
+
       userMedals.push({
         name: medal.nom,
-        colors: existingColors[medal.nom] || [],
+        colors: colors,
       });
 
       if (!existingNames.has(medal.nom)) {
@@ -96,6 +135,46 @@ function recalculateMedals(pseudo, clicks, io, silent = false) {
       }
     }
   }
+
+  // --- Patch Paranoïaque : Restaurer toute médaille manquante qui était déjà acquise ---
+  // (Sauf 'Tricheur' si on n'est plus en score négatif)
+  existingMedals.forEach((m) => {
+    const mName = typeof m === "string" ? m : m.name;
+    // Si la médaille est "Tricheur", on laisse la logique ci-dessus décider (basée sur le score négatif)
+    if (mName === "Tricheur") return;
+
+    // Si la médaille n'est pas dans la nouvelle liste userMedals
+    if (!userMedals.find((um) => um.name === mName)) {
+      // On la rajoute de force
+      let colors = [];
+      if (
+        typeof m === "object" &&
+        Array.isArray(m.colors) &&
+        m.colors.length > 0
+      ) {
+        colors = m.colors;
+      } else if (existingColors[mName]) {
+        colors = existingColors[mName];
+      }
+
+      userMedals.push({
+        name: mName,
+        colors: colors,
+      });
+    }
+  });
+
+  // Trier les médailles par palier croissant (pour que l'affichage soit propre)
+  userMedals.sort((a, b) => {
+    const palierA =
+      allMedals.find((m) => m.nom === a.name)?.pallier ||
+      (a.name === "Tricheur" ? -1 : 0);
+    const palierB =
+      allMedals.find((m) => m.nom === b.name)?.pallier ||
+      (b.name === "Tricheur" ? -1 : 0);
+    return palierA - palierB;
+  });
+  // -----------------------------------------------------------------------------------
 
   // Mettre à jour les médailles de l'utilisateur
   FileService.data.medals[pseudo] = userMedals;
