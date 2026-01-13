@@ -132,6 +132,8 @@
                                     data-board="motus">Motus</button>
                                 <button class="lb-tab"
                                     data-board="2048">2048</button>
+                                <button class="lb-tab"
+                                    data-board="mash">Mash</button>
                             </div>
                         </center>
 
@@ -254,6 +256,19 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lb-2048"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="mash">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Victoires</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-mash"></tbody>
                             </table>
                         </div>
                     </section>
@@ -381,6 +396,8 @@
                                                     value="motusScores">Motus</option>
                                                 <option
                                                     value="scores2048">2048</option>
+                                                <option
+                                                    value="mashWins">Mash</option>
                                                 <option value="all">Toutes les
                                                     stats</option>
                                             </select>
@@ -540,6 +557,10 @@
                                                     value="snake">Snake</option>
                                                 <option
                                                     value="motus">Motus</option>
+                                                <option
+                                                    value="mash">Mash</option>
+                                                <option
+                                                    value="2048">2048</option>
                                             </select>
                                         </div>
 
@@ -787,6 +808,7 @@
             socket.on('snake:leaderboard', (data) => updateLeaderboard('snake', data, 'score'));
             socket.on('motus:leaderboard', (data) => updateLeaderboard('motus', data, 'words'));
             socket.on('2048:leaderboard', (data) => updateLeaderboard('2048', data, 'score'));
+            socket.on('mash:leaderboard', (data) => updateLeaderboard('mash', data, 'wins'));
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {
@@ -1556,7 +1578,8 @@ async function modifyTries() {
                 blockblast: 'Block Blast',
                 snake: 'Snake',
                 motus: 'Motus',
-                score2048: '2048'
+                score2048: '2048',
+                mash: 'Mash'
             };
 
             const label = labelMap[boardType] || boardType;

@@ -1061,7 +1061,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         case "uno":
           clearSimple("unoWins", "uno");
           break;
-          break;
         case "p4":
           clearSimple("p4Wins", "p4");
           break;
@@ -1077,6 +1076,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         case "mash":
           clearSimple("mashWins", "mash");
           break;
+        case "2048":
+          clearSimple("scores2048", "2048");
+          break;
         case "all":
         default:
           clearClicker();
@@ -1085,6 +1087,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
           clearSimple("unoWins", "uno");
           clearSimple("p4Wins", "p4");
           clearSimple("mashWins", "mash");
+          clearSimple("scores2048", "2048");
           clearBlockblast();
           clearSnake();
           clearMotus();
@@ -1151,6 +1154,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "snake_best_times.json",
         "motus_scores.json",
         "2048_scores.json",
+        "mash_wins.json",
       ];
 
       filesToBackup.forEach((file) => {
@@ -1259,6 +1263,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "snake_best_times.json",
         "motus_scores.json",
         "2048_scores.json",
+        "mash_wins.json",
       ];
 
       filesToBackup.forEach((file) => {
