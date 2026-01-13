@@ -31,6 +31,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage12.css" />
         <link rel="stylesheet" type="text/css" href="css/stage13.css" />
         <link rel="stylesheet" type="text/css" href="css/stage14.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage15.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -85,6 +86,8 @@
                                 Flip</button></li>
                         <li><button
                                 class="nav-btn sec14">Blackjack</button></li>
+                        <li><button class="nav-btn sec15">Mash</button></li>
+
                     </ul>
                 </div>
 
@@ -127,6 +130,20 @@
                                     style="width: 40px; height: 30px; text-align: center; background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: #fff; font-size: 1rem;" />
                                 <button class="keybind-submit"
                                     style="min-height: 30px; padding: 0 10px; font-size: 0.8rem; height: 30px; border-width: 1px;">OK</button>
+                            </div>
+                        </div>
+
+                        <div class="control-item">
+                            <label for="mash-key-input"
+                                style="font-size: 0.9rem;height:30px;display: flex; justify-content: center; align-items: center;">Key
+                                Mash</label>
+                            <div
+                                style="display: flex; gap: 5px; align-items: center;">
+                                <input type="text" class="keybind"
+                                    id="mash-key-input" placeholder="K"
+                                    autocomplete="off" maxlength="1"
+                                    minlength="0"
+                                    style="width: 40px; height: 30px; text-align: center; background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: #fff; font-size: 1rem;" />
                             </div>
                         </div>
 
@@ -371,6 +388,7 @@
                 <button data-board="blockblast">Block Blast</button>
                 <button data-board="snake">Snake</button>
                 <button data-board="motus">Motus</button>
+                <button data-board="mash">Mash</button>
                 <button data-board="2048">2048</button>
             </div>
 
@@ -468,6 +486,16 @@
                 </div>
                 <table class="board" id="leaderboard-2048">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD MASH -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Mash Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="mash-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Victoires</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -785,13 +813,70 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="lobby-controls">
                     <button id="bj-join" class="bj-btn">Rejoindre</button>
                     <button id="bj-leave" class="bj-btn"
                         style="display:none">Quitter</button>
                     <button id="bj-start" class="bj-btn"
                         style="display:none">Démarrer</button>
+                </div>
+            </div>
+        </section>
+        <section id="stage15">
+            <div class="mash-card">
+                <span id="mash-spec-count"
+                    class="spectator-count">Spectateurs: 0</span>
+                <div class="mash-header">
+                    <h2>MASH DUEL.exe</h2>
+                </div>
+
+                <h3 id="mash-info-text" class="mash-info">En attente de
+                    joueurs...</h3>
+
+                <div class="mash-lobby" style="margin-bottom: 20px;">
+                    <button id="mash-join" class="mash-btn">Rejoindre</button>
+                    <button id="mash-leave" class="mash-btn"
+                        style="display:none; background: #ff4444; border-color: #ff4444; color: black;">Quitter</button>
+                </div>
+
+                <div class="mash-game-area">
+                    <div class="mash-players">
+                        <div id="mash-p1"
+                            class="player-info player-red">
+                            <span class="player-pseudo">Joueur 1</span>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div
+                            style="font-weight:bold; font-size:2rem;">VS</div>
+
+                        <div id="mash-p2"
+                            class="player-info player-blue">
+                            <span class="player-pseudo">Joueur 2</span>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bet Overlay inside game area -->
+                    <div id="mash-bet-overlay" class="bet-overlay"
+                        style="display:none;">
+                        <h3>Faites vos jeux ! (Fin dans 10s)</h3>
+                        <input type="number" id="mash-bet-amount"
+                            class="bet-amount-input" placeholder="Mise"
+                            min="1">
+                        <div class="bet-options">
+                            <button id="mash-bet-red"
+                                class="bet-btn red">Miser ROUGE</button>
+                            <button id="mash-bet-blue"
+                                class="bet-btn blue">Miser BLEU</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

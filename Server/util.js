@@ -108,6 +108,7 @@ class FileService {
       motusState: path.join(config.DATA, "motus_state.json"),
       motusScores: path.join(config.DATA, "motus_scores.json"),
       scores2048: path.join(config.DATA, "2048_scores.json"),
+      mashWins: path.join(config.DATA, "mash_wins.json"),
       transactions: path.join(config.DATA, "transactions.json"),
     };
 
@@ -153,6 +154,7 @@ class FileService {
       motusState: this.readJSON(this.files.motusState, {}),
       motusScores: this.readJSON(this.files.motusScores, {}),
       scores2048: this.readJSON(this.files.scores2048, {}),
+      mashWins: this.readJSON(this.files.mashWins, {}),
       transactions: this.readJSON(this.files.transactions, []),
     };
   }
@@ -205,6 +207,7 @@ class FileService {
       motusState: this.files.motusState,
       motusScores: this.files.motusScores,
       scores2048: this.files.scores2048,
+      mashWins: this.files.mashWins,
       transactions: this.files.transactions,
     };
     if (fileMap[key]) {

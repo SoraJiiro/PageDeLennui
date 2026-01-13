@@ -299,6 +299,8 @@ export function initBlackjack(socket, username) {
     const el = document.createElement("div");
     el.className = "bj-card";
 
+    if (!card) return el;
+
     if (card.value === "?") {
       el.classList.add("hidden");
       return el;

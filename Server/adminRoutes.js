@@ -42,6 +42,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       case "scores2048":
         leaderboardManager.broadcast2048LB(io);
         break;
+      case "mashWins":
+        leaderboardManager.broadcastMashLB(io);
+        break;
     }
   }
 
@@ -243,6 +246,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "snakeScores",
       "motusScores",
       "scores2048",
+      "mashWins",
     ];
 
     if (!validStats.includes(statType)) {
@@ -402,6 +406,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         "snakeScores",
         "motusScores",
         "scores2048",
+        "mashWins",
       ];
 
       if (!validStats.includes(statType)) {
@@ -446,6 +451,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "snakeScores",
       "motusScores",
       "scores2048",
+      "mashWins",
     ];
 
     if (!validStats.includes(statType)) {
@@ -504,6 +510,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "snakeScores",
       "motusScores",
       "scores2048",
+      "mashWins",
     ];
 
     if (!validStats.includes(statType)) {
@@ -566,6 +573,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "snakeScores",
       "motusScores",
       "scores2048",
+      "mashWins",
     ];
 
     if (!validStats.includes(statType)) {
@@ -628,6 +636,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "snakeScores",
       "motusScores",
       "scores2048",
+      "mashWins",
     ];
 
     if (!validStats.includes(statType)) {
@@ -814,6 +823,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "snakeScores",
       "motusScores",
       "scores2048",
+      "mashWins",
     ];
 
     if (!validStats.includes(statType)) {
@@ -1064,6 +1074,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         case "motus":
           clearMotus();
           break;
+        case "mash":
+          clearSimple("mashWins", "mash");
+          break;
         case "all":
         default:
           clearClicker();
@@ -1071,6 +1084,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
           clearSimple("flappyScores", "flappy");
           clearSimple("unoWins", "uno");
           clearSimple("p4Wins", "p4");
+          clearSimple("mashWins", "mash");
           clearBlockblast();
           clearSnake();
           clearMotus();
@@ -1186,6 +1200,9 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         FileService.data.scores2048 = {};
         FileService.save("scores2048", {});
 
+        FileService.data.mashWins = {};
+        FileService.save("mashWins", {});
+
         // Refresh all leaderboards
         refreshLeaderboard("dinoScores");
         refreshLeaderboard("flappyScores");
@@ -1195,6 +1212,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         refreshLeaderboard("snakeScores");
         refreshLeaderboard("motusScores");
         refreshLeaderboard("scores2048");
+        refreshLeaderboard("mashWins");
 
         message = `Tous les leaderboards (sauf clicks) ont été réinitialisés. Backup créé : ${backupId}`;
       } else {
@@ -1615,6 +1633,39 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       fs.writeFileSync(reqFile, JSON.stringify(data, null, 2));
 
       res.json({ success: true, status: request.status });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  // Modify/Add score manually
+  router.post("/set-score", requireAdmin, (req, res) => {
+    const { pseudo, boardType, value } = req.body;
+    if (!pseudo || !boardType)
+      return res.status(400).json({ message: "Paramètres manquants" });
+
+    const type = String(boardType).toLowerCase();
+
+    try {
+      let msg = "";
+      let val = Number(value);
+
+      if (type === "mash") {
+        if (!FileService.data.mashWins) FileService.data.mashWins = {};
+        FileService.data.mashWins[pseudo] = val;
+        FileService.save("mashWins", FileService.data.mashWins);
+        refreshLeaderboard("mashWins");
+        msg = `Score Mash de ${pseudo} défini à ${val}`;
+      } else {
+        // Fallback for others if needed manually (not explicitly requested but good for "modif")
+        // For now restrict to mash as per context of "new game"
+        return res
+          .status(400)
+          .json({ message: "Type non supporté par /set-score pour l'instant" });
+      }
+
+      res.json({ message: msg });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Erreur serveur" });

@@ -13,6 +13,7 @@ function showLeaderboard(name) {
     snake: "#snake-leaderboard",
     motus: "#motus-leaderboard",
     2048: "#leaderboard-2048",
+    mash: "#mash-leaderboard",
   };
 
   const table = document.querySelector(idMap[name]);

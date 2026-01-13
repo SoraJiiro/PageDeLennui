@@ -1,0 +1,178 @@
+#stage15 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  font-family: "Ubuntu", sans-serif;
+}
+
+.mash-card {
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--primary-color);
+  padding: 20px;
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+  position: relative;
+}
+
+.mash-header h2 {
+  margin: 0;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  padding: 5px 15px;
+  font-size: 1.5rem;
+  position: relative;
+  width: fit-content;
+}
+
+.mash-lobby {
+  margin-bottom: 20px;
+}
+
+.mash-btn:hover {
+  background: var(--primary-color);
+  color: #000;
+}
+
+.mash-game-area {
+  display: flex !important;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mash-players {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 45%;
+}
+
+.player-pseudo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+}
+
+.player-red .player-pseudo {
+  border-bottom: 3px solid #ff4444;
+  color: #ff4444;
+}
+
+.player-blue .player-pseudo {
+  border-bottom: 3px solid #4444ff;
+  color: #4444ff;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 30px;
+  background: #333;
+  overflow: hidden;
+  position: relative;
+  border: 2px solid #f3f3f3;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.player-red .progress-bar {
+  background-color: #ff4444;
+}
+
+.player-blue .progress-bar {
+  background-color: #4444ff;
+}
+
+.mash-info {
+  font-size: 1.2rem;
+  margin: 15px 0;
+  min-height: 1.5em;
+}
+
+.mash-key-config {
+  margin-top: 20px;
+  font-size: 0.9rem;
+}
+
+.mash-key-input {
+  width: 40px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--primary-color);
+  color: #fff;
+  font-size: 1rem;
+  padding: 5px;
+}
+
+.bet-overlay {
+  background: rgba(0, 0, 0, 0.9);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  border-radius: 8px;
+}
+
+.bet-options {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.bet-btn {
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: 2px solid;
+  background: transparent;
+  color: white;
+}
+
+.bet-btn.red {
+  border-color: #ff4444;
+}
+.bet-btn.red:hover {
+  background: #ff4444;
+}
+
+.bet-btn.blue {
+  border-color: #4444ff;
+}
+.bet-btn.blue:hover {
+  background: #4444ff;
+}
+
+.bet-amount-input {
+  margin-top: 15px;
+  padding: 5px;
+  width: 100px;
+  text-align: center;
+}
+
+.spectator-count {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 0.8rem;
+  color: #ccc;
+}

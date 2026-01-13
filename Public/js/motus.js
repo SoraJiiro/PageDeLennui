@@ -381,8 +381,9 @@ export function initMotus(socket) {
   document.addEventListener("keydown", (e) => {
     // Vérifier si stage11 est visible
     const stage = document.getElementById("stage11");
-    if (!stage || stage.getBoundingClientRect().top > window.innerHeight)
-      return;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    if (rect.top > window.innerHeight || rect.bottom < 0) return;
 
     // Autoriser les raccourcis navigateur (Ctrl+R, Ctrl+Shift+I, etc.)
     if (e.ctrlKey || e.altKey || e.metaKey) return;

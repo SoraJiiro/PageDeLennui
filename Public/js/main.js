@@ -53,6 +53,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./2048.js"),
       import("./2048_leaderboard.js"),
       import("./password_change.js"),
+      import("./mash.js"),
+      import("./mash_leaderboard.js"),
     ]);
 
     const [
@@ -65,7 +67,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
       flappy,
       flappyLeaderboard,
       unoLeaderboard,
-
       puissance4,
       p4Leaderboard,
       blockblast,
@@ -80,6 +81,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       game2048,
       game2048Leaderboard,
       passwordChange,
+      mash,
+      mashLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -151,7 +154,9 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (game2048?.init2048) game2048.init2048(socket);
     if (game2048Leaderboard?.init2048Leaderboard)
       game2048Leaderboard.init2048Leaderboard(socket);
-
+    if (mash?.initMash) mash.initMash(socket);
+    if (mashLeaderboard?.initMashLeaderboard)
+      mashLeaderboard.initMashLeaderboard(socket);
     if (passwordChange?.setupPasswordChange)
       passwordChange.setupPasswordChange(socket);
     socket.connect();

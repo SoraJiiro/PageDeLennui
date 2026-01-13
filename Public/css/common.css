@@ -215,7 +215,9 @@ button.log-off:hover {
 .motus-continue,
 .regen-colors-btn,
 .btn-2048,
-.temp-btn {
+.temp-btn,
+.mash-btn,
+.bet-btn {
   background: var(--bg-color);
   color: var(--primary-color);
   border: 2px solid var(--primary-color);
@@ -252,7 +254,9 @@ button.log-off:not(:disabled):hover,
 .motus-continue:not(:disabled):hover,
 .regen-colors-btn:not(:disabled):hover,
 .btn-2048:not(:disabled):hover,
-.temp-btn:not(:disabled):hover {
+.temp-btn:not(:disabled):hover,
+.mash-btn:not(:disabled):hover,
+.bet-btn:not(:disabled):hover {
   color: var(--bg-color);
   background: var(--primary-color);
   border: 2px solid var(--bg-color);

@@ -22,7 +22,7 @@
 .coinflip-header {
   width: 100%;
   display: flex;
-  justify-content: center;
+  justify-content: start;
   margin-bottom: 10px;
 }
 
@@ -33,14 +33,15 @@
   padding: 5px 15px;
   font-size: 1.5rem;
   position: relative;
+  width: fit-content;
 }
 
 .coinflip-header h2::after {
-  content: "(Vous savez quoi faire, bande d'adictes)";
+  content: "(Vous savez quoi faire, bande d'addictes)";
   position: absolute;
-  bottom: -20px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 50%;
+  left: 107.5%;
+  transform: translateY(50%);
   font-size: 0.8rem;
   color: var(--primary-color);
   width: max-content;
@@ -197,26 +198,6 @@
 .bet-btn {
   flex: 1;
   max-width: 150px;
-  padding: 15px;
-  border: 2px solid var(--primary-color);
-  background: transparent;
-  color: var(--primary-color);
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1.2rem;
-  text-transform: uppercase;
-}
-
-.bet-btn:hover:not(:disabled) {
-  background: var(--primary-color);
-  color: var(--bg-color);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 255, 0, 0.2);
-}
-
-.bet-btn:active:not(:disabled) {
-  transform: translateY(0);
 }
 
 .bet-btn:disabled {

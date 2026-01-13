@@ -5,6 +5,7 @@ const UnoGame = require("./unoGame");
 const Puissance4Game = require("./puissance4Game");
 const MotusGame = require("./motusGame");
 const BlackjackGame = require("./blackjackGame");
+const MashGame = require("./mashGame");
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
@@ -33,6 +34,7 @@ let gameActuelle = new UnoGame();
 let p4Game = new Puissance4Game();
 let motusGame = new MotusGame();
 let blackjackGame = new BlackjackGame();
+let mashGame = null; // Will be initialized with broadcastSystemMessage wrapper
 
 // ------- Colors -------
 const orange = "\x1b[38;5;208m"; // pseudos
@@ -99,6 +101,12 @@ const leaderboardManager = {
           a.pseudo.localeCompare(b.pseudo)
       );
     io.emit("motus:leaderboard", arr);
+  },
+  broadcastMashLB(io) {
+    const arr = Object.entries(FileService.data.mashWins || {})
+      .map(([u, w]) => ({ pseudo: u, wins: w }))
+      .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
+    io.emit("mash:leaderboard", arr);
   },
   broadcast2048LB(io) {
     const arr = Object.entries(FileService.data.scores2048 || {})
@@ -2287,6 +2295,49 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcast2048LB(io);
 
   // ------- Log off -------
+  // ------- Mash Game -------
+  if (!mashGame) {
+    mashGame = new MashGame((msg) => broadcastSystemMessage(io, msg));
+  }
+  if (mashGame && !mashGame.emitState) {
+    mashGame.setEmitter((state) => io.emit("mash:state", state));
+    mashGame.setPayoutCallback((pseudo, score) => {
+      io.to("user:" + pseudo).emit("clicker:you", { score });
+    });
+  }
+
+  socket.on("mash:join", () => {
+    mashGame.join(socket, pseudo);
+  });
+
+  socket.on("mash:leave", () => {
+    mashGame.leave(socket, pseudo);
+  });
+
+  socket.on("mash:bet", (data) => {
+    mashGame.placeBet(pseudo, data.betOn, Number(data.amount));
+    const clicks = FileService.data.clicks[pseudo] || 0;
+    socket.emit("clicker:you", { score: clicks });
+  });
+
+  socket.on("mash:key", (key) => {
+    if (typeof key === "string" && key.length === 1) {
+      mashGame.setMashKey(pseudo, key);
+    }
+  });
+
+  socket.on("mash:mash", (key) => {
+    mashGame.handleMash(pseudo, key);
+  });
+
+  // State & LB
+  if (mashGame) socket.emit("mash:state", mashGame.getState());
+
+  const mashLB = Object.entries(FileService.data.mashWins || {})
+    .map(([u, w]) => ({ pseudo: u, wins: w }))
+    .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
+  socket.emit("mash:leaderboard", mashLB);
+
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
 
@@ -2358,6 +2409,11 @@ function initSocketHandlers(io, socket, gameState) {
       if (wasPlayer || wasSpectator) {
         io.emit("blackjack:state", blackjackGame.getState());
       }
+    }
+
+    // MASH
+    if (mashGame) {
+      mashGame.leave(socket, pseudo);
     }
   });
 }

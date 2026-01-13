@@ -371,11 +371,13 @@ class BlackjackGame {
 
     if (this.dealerHand.length > 0) {
       if (this.phase === "dealer" || this.phase === "payout") {
-        visibleDealerHand = this.dealerHand;
-        dealerScore = this.calculateScore(this.dealerHand);
+        visibleDealerHand = this.dealerHand.filter((c) => c);
+        dealerScore = this.calculateScore(visibleDealerHand);
       } else {
-        visibleDealerHand = [this.dealerHand[0], { value: "?", suit: "?" }];
-        dealerScore = this.calculateScore([this.dealerHand[0]]);
+        if (this.dealerHand[0]) {
+          visibleDealerHand = [this.dealerHand[0], { value: "?", suit: "?" }];
+          dealerScore = this.calculateScore([this.dealerHand[0]]);
+        }
       }
     }
 
