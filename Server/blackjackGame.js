@@ -1,6 +1,7 @@
 class BlackjackGame {
   constructor() {
     this.joueurs = []; // Structure joueur
+    this.waitingList = []; // Liste d'attente
     this.spectators = [];
     this.deck = [];
     this.dealerHand = [];
@@ -9,8 +10,9 @@ class BlackjackGame {
     this.currentPlayerIndex = 0;
     this.turnTimer = null;
     this.turnTimeoutMs = 15000; // 15s par tour
+    this.turnDeadline = 0; // Timestamp deadline
     this.betTimer = null;
-    this.betTimeoutMs = 10000; // 10s pour miser
+    this.betTimeoutMs = 15000; // 15s pour miser
     this.emitState = null;
     this.onRoundEnd = null;
   }
@@ -24,26 +26,53 @@ class BlackjackGame {
   }
 
   addPlayer(pseudo, socketId) {
-    if (this.gameStarted) return { success: false, reason: "gameStarted" };
-    if (this.joueurs.length >= 4) return { success: false, reason: "full" };
-
     const existingPlayer = this.joueurs.find((p) => p.pseudo === pseudo);
     if (existingPlayer) {
+      existingPlayer.socketId = socketId; // Reconnect ?
       return { success: false, reason: "alreadyIn" };
     }
 
+    const existingQueue = this.waitingList.find((p) => p.pseudo === pseudo);
+    if (existingQueue) {
+      existingQueue.socketId = socketId;
+      return {
+        success: true,
+        status: "queued",
+        position: this.waitingList.indexOf(existingQueue) + 1,
+      };
+    }
+
+    // Si le jeu est commencé OU la table est pleine -> liste d'attente
+    if (this.gameStarted || this.joueurs.length >= 4) {
+      this.waitingList.push({ pseudo, socketId });
+      return {
+        success: true,
+        status: "queued",
+        position: this.waitingList.length,
+      };
+    }
+
+    // Sinon rejoint direct
     this.joueurs.push({
       pseudo,
       socketId,
-      hand: [],
+      hands: [],
+      activeHandIndex: 0,
       bet: 0,
       status: "waiting",
-      score: 0,
+      winnings: 0,
     });
-    return { success: true };
+    return { success: true, status: "joined" };
   }
 
   removePlayer(pseudo) {
+    // Check Waiting List first
+    const qIndex = this.waitingList.findIndex((p) => p.pseudo === pseudo);
+    if (qIndex !== -1) {
+      this.waitingList.splice(qIndex, 1);
+      return true;
+    }
+
     const index = this.joueurs.findIndex((p) => p.pseudo === pseudo);
     if (index !== -1) {
       // Si le joueur actuel quitte pendant son tour
@@ -55,7 +84,12 @@ class BlackjackGame {
 
       this.joueurs.splice(index, 1);
 
-      // Si plus de joueurs, reset
+      // Si le jeu n'est pas en cours, on peut remplir les places vides depuis la file d'attente
+      if (!this.gameStarted) {
+        this.processQueue();
+      }
+
+      // Si plus de joueurs (même après processQueue), reset
       if (this.joueurs.length === 0) {
         this.resetGame();
       }
@@ -63,6 +97,21 @@ class BlackjackGame {
       return true;
     }
     return false;
+  }
+
+  processQueue() {
+    while (this.joueurs.length < 4 && this.waitingList.length > 0) {
+      const nextPlayer = this.waitingList.shift();
+      this.joueurs.push({
+        pseudo: nextPlayer.pseudo,
+        socketId: nextPlayer.socketId,
+        hands: [],
+        activeHandIndex: 0,
+        bet: 0,
+        status: "waiting",
+        winnings: 0,
+      });
+    }
   }
 
   addSpectator(pseudo, socketId) {
@@ -84,6 +133,10 @@ class BlackjackGame {
   updateSocketId(pseudo, newSocketId) {
     const joueur = this.joueurs.find((p) => p.pseudo === pseudo);
     if (joueur) joueur.socketId = newSocketId;
+
+    const queued = this.waitingList.find((p) => p.pseudo === pseudo);
+    if (queued) queued.socketId = newSocketId;
+
     const spectator = this.spectators.find((s) => s.pseudo === pseudo);
     if (spectator) spectator.socketId = newSocketId;
   }
@@ -94,22 +147,25 @@ class BlackjackGame {
 
   resetGame() {
     this.gameStarted = false;
+    this.processQueue(); // Remplir les places avec la file d'attente
+
     this.phase = "lobby";
     this.deck = [];
     this.dealerHand = [];
     this.currentPlayerIndex = 0;
     this.joueurs.forEach((p) => {
-      p.hand = [];
+      p.hands = [];
+      p.activeHandIndex = 0;
       p.bet = 0;
       p.status = "waiting";
-      p.score = 0;
+      p.winnings = 0;
     });
     if (this.turnTimer) clearTimeout(this.turnTimer);
     if (this.betTimer) clearTimeout(this.betTimer);
   }
 
   createDeck() {
-    const suits = ["H", "D", "C", "S"]; // Coeurs, Carreaux, Trèfles, Piques
+    const suits = ["H", "D", "C", "S"];
     const values = [
       "2",
       "3",
@@ -127,8 +183,8 @@ class BlackjackGame {
     ];
     this.deck = [];
 
-    // Utiliser 6 paquets
-    for (let i = 0; i < 6; i++) {
+    // Utiliser 8 paquets
+    for (let i = 0; i < 8; i++) {
       suits.forEach((suit) => {
         values.forEach((value) => {
           this.deck.push({ suit, value });
@@ -176,10 +232,11 @@ class BlackjackGame {
 
     // Réinitialiser états joueurs
     this.joueurs.forEach((p) => {
-      p.hand = [];
+      p.hands = [];
+      p.activeHandIndex = 0;
       p.bet = 0;
       p.status = "betting";
-      p.score = 0;
+      p.winnings = 0;
     });
     this.dealerHand = [];
 
@@ -223,21 +280,30 @@ class BlackjackGame {
 
     // Distribuer 2 cartes à chaque joueur
     this.joueurs.forEach((p) => {
-      p.hand.push(this.deck.pop());
-      p.hand.push(this.deck.pop());
-      p.score = this.calculateScore(p.hand);
-      if (p.score === 21) {
-        p.status = "blackjack";
-      } else {
-        p.status = "playing";
+      const cards = [this.deck.pop(), this.deck.pop()];
+      const score = this.calculateScore(cards);
+      let status = "playing";
+
+      // Blackjack naturel sur la première main
+      if (score === 21) {
+        status = "blackjack";
       }
+
+      p.hands = [
+        {
+          cards: cards,
+          bet: p.bet,
+          score: score,
+          status: status,
+        },
+      ];
+      p.activeHandIndex = 0;
     });
 
     // Distribuer 2 cartes au croupier (une cachée)
     this.dealerHand.push(this.deck.pop());
     this.dealerHand.push(this.deck.pop());
 
-    // Vérifier si le premier joueur a blackjack
     this.checkTurn();
   }
 
@@ -250,37 +316,59 @@ class BlackjackGame {
     }
 
     const player = this.joueurs[this.currentPlayerIndex];
+    if (player.activeHandIndex >= player.hands.length) {
+      this.nextPlayer();
+      return;
+    }
+
+    const currentHand = player.hands[player.activeHandIndex];
+
+    if (currentHand.status !== "playing") {
+      this.nextHandOrPlayer();
+      return;
+    }
 
     // Timer de tour (15s)
+    this.turnDeadline = Date.now() + 15000;
     this.turnTimer = setTimeout(() => {
       this.stand(player.pseudo);
     }, 15000);
+  }
 
-    if (player.status === "blackjack") {
-      this.nextTurn();
+  nextHandOrPlayer() {
+    const player = this.joueurs[this.currentPlayerIndex];
+    player.activeHandIndex++;
+    if (player.activeHandIndex >= player.hands.length) {
+      this.nextPlayer();
+    } else {
+      this.checkTurn();
     }
   }
 
-  nextTurn() {
+  nextPlayer() {
     this.currentPlayerIndex++;
     this.checkTurn();
   }
+
+  // --- ACTIONS ---
 
   hit(pseudo) {
     const player = this.joueurs[this.currentPlayerIndex];
     if (!player || player.pseudo !== pseudo || this.phase !== "playing")
       return false;
 
-    player.hand.push(this.deck.pop());
-    player.score = this.calculateScore(player.hand);
+    const hand = player.hands[player.activeHandIndex];
+    if (!hand || hand.status !== "playing") return false;
 
-    if (player.score > 21) {
-      player.status = "bust";
-      this.nextTurn();
-    } else if (player.score === 21) {
-      // Stand auto à 21
-      player.status = "stand";
-      this.nextTurn();
+    hand.cards.push(this.deck.pop());
+    hand.score = this.calculateScore(hand.cards);
+
+    if (hand.score > 21) {
+      hand.status = "bust";
+      this.nextHandOrPlayer();
+    } else if (hand.score === 21) {
+      hand.status = "stand"; // Auto stand à 21
+      this.nextHandOrPlayer();
     }
 
     return true;
@@ -291,21 +379,100 @@ class BlackjackGame {
     if (!player || player.pseudo !== pseudo || this.phase !== "playing")
       return false;
 
-    player.status = "stand";
-    this.nextTurn();
+    const hand = player.hands[player.activeHandIndex];
+    if (!hand || hand.status !== "playing") return false;
+
+    hand.status = "stand";
+    this.nextHandOrPlayer();
     return true;
+  }
+
+  double(pseudo) {
+    const player = this.joueurs[this.currentPlayerIndex];
+    if (!player || player.pseudo !== pseudo || this.phase !== "playing")
+      return { success: false };
+
+    const hand = player.hands[player.activeHandIndex];
+    if (!hand || hand.status !== "playing" || hand.cards.length !== 2)
+      return { success: false };
+
+    const cost = hand.bet;
+
+    player.bet += cost;
+    hand.bet += cost;
+
+    hand.cards.push(this.deck.pop());
+    hand.score = this.calculateScore(hand.cards);
+
+    if (hand.score > 21) {
+      hand.status = "bust";
+    } else {
+      hand.status = "stand";
+    }
+
+    this.nextHandOrPlayer();
+    return { success: true, cost };
+  }
+
+  split(pseudo) {
+    const player = this.joueurs[this.currentPlayerIndex];
+    if (!player || player.pseudo !== pseudo || this.phase !== "playing")
+      return { success: false };
+
+    const hand = player.hands[player.activeHandIndex];
+
+    // Vérif conditions: 2 cartes, même valeur de rang
+    if (!hand || hand.status !== "playing" || hand.cards.length !== 2)
+      return { success: false };
+    if (hand.cards[0].value !== hand.cards[1].value) return { success: false };
+
+    if (player.hands.length >= 2)
+      return { success: false, reason: "max_splits" };
+
+    const splitBet = hand.bet;
+
+    const card1 = hand.cards[0];
+    const card2 = hand.cards[1];
+
+    // Main 1
+    hand.cards = [card1, this.deck.pop()];
+    hand.score = this.calculateScore(hand.cards);
+    if (hand.score === 21) hand.status = "stand";
+
+    // Main 2
+    const newHand = {
+      cards: [card2, this.deck.pop()],
+      bet: splitBet,
+      status: "playing",
+      score: 0,
+    };
+    newHand.score = this.calculateScore(newHand.cards);
+    if (newHand.score === 21) newHand.status = "stand";
+
+    player.hands.splice(player.activeHandIndex + 1, 0, newHand);
+
+    player.bet += splitBet;
+
+    // On reste sur la même main (maintennant Main 1) pour la jouer
+    // On ne fait pas nextHandOrPlayer
+    // Reset timer manually:
+    if (this.turnTimer) clearTimeout(this.turnTimer);
+    this.turnDeadline = Date.now() + 15000;
+    this.turnTimer = setTimeout(() => {
+      this.stand(player.pseudo);
+    }, 15000);
+
+    return { success: true, cost: splitBet };
   }
 
   async startDealerTurn() {
     this.phase = "dealer";
 
-    // Révéler carte cachée immédiatement
     if (this.emitState) this.emitState(this.getState());
     await new Promise((r) => setTimeout(r, 800));
 
     let dealerScore = this.calculateScore(this.dealerHand);
 
-    // Croupier tire jusqu'à 17
     while (dealerScore < 17) {
       this.dealerHand.push(this.deck.pop());
       dealerScore = this.calculateScore(this.dealerHand);
@@ -325,37 +492,45 @@ class BlackjackGame {
     const dealerBlackjack = dealerScore === 21 && this.dealerHand.length === 2;
 
     this.joueurs.forEach((p) => {
-      if (p.status === "bust") {
-        p.winnings = -p.bet;
-      } else if (p.status === "blackjack") {
-        if (dealerBlackjack) {
-          p.winnings = 0; // Egalité
+      let totalWinnings = 0;
+
+      p.hands.forEach((hand) => {
+        let handWin = 0;
+
+        if (hand.status === "bust") {
+          handWin = -hand.bet;
+        } else if (hand.status === "blackjack") {
+          if (dealerBlackjack) {
+            handWin = 0;
+          } else {
+            handWin = Math.floor(hand.bet * 1.5);
+          }
         } else {
-          p.winnings = Math.floor(p.bet * 1.5); // Blackjack paie 3:2
+          if (dealerBlackjack) {
+            handWin = -hand.bet;
+          } else if (dealerBust) {
+            handWin = hand.bet;
+          } else if (hand.score > dealerScore) {
+            handWin = hand.bet;
+          } else if (hand.score < dealerScore) {
+            handWin = -hand.bet;
+          } else {
+            handWin = 0;
+          }
         }
-      } else {
-        // Joueur a resté
-        if (p.score === 21 && dealerScore === 21) {
-          p.winnings = 0; // Egalité si les deux ont 21
-        } else if (dealerBlackjack) {
-          p.winnings = -p.bet;
-        } else if (dealerBust) {
-          p.winnings = p.bet;
-        } else if (p.score > dealerScore) {
-          p.winnings = p.bet;
-        } else if (p.score < dealerScore) {
-          p.winnings = -p.bet;
-        } else {
-          p.winnings = 0; // Egalité
-        }
-      }
+        totalWinnings += handWin;
+      });
+
+      p.winnings = totalWinnings;
     });
 
     if (this.onRoundEnd) {
       this.onRoundEnd();
     }
 
-    // Auto-restart après 5 secondes
+    this.turnDeadline = Date.now() + 5000;
+    if (this.emitState) this.emitState(this.getState());
+
     setTimeout(() => {
       this.resetGame();
       if (this.joueurs.length > 0) {
@@ -385,16 +560,20 @@ class BlackjackGame {
       phase: this.phase,
       joueurs: this.joueurs.map((p) => ({
         pseudo: p.pseudo,
-        hand: p.hand,
-        score: p.score,
+        hands: p.hands,
         bet: p.bet,
-        status: p.status,
+        status:
+          p.hands.length > 0 ? p.hands[p.activeHandIndex]?.status : p.status,
+        score: p.hands.length > 0 ? p.hands[p.activeHandIndex]?.score : p.score,
         winnings: p.winnings,
+        activeHandIndex: p.activeHandIndex,
       })),
       dealerHand: visibleDealerHand,
       dealerScore: dealerScore,
       currentPlayerIndex: this.currentPlayerIndex,
       gameStarted: this.gameStarted,
+      waitingList: this.waitingList.map((p) => p.pseudo),
+      turnDeadline: this.turnDeadline, // Send deadline
     };
   }
 }

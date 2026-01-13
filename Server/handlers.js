@@ -2200,12 +2200,17 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("blackjack:join", () => {
     const res = blackjackGame.addPlayer(pseudo, socket.id);
     if (!res.success) {
-      if (res.reason === "full") {
-        blackjackGame.addSpectator(pseudo, socket.id);
-        socket.emit("blackjack:error", "Table pleine, mode spectateur");
-      } else if (res.reason === "gameStarted") {
-        blackjackGame.addSpectator(pseudo, socket.id);
-        socket.emit("blackjack:error", "Partie en cours, mode spectateur");
+      if (res.reason === "alreadyIn") {
+        // Déjà dedans, pas grave
+      } else {
+        // Autre erreur
+      }
+    } else {
+      if (res.status === "queued") {
+        socket.emit(
+          "blackjack:error",
+          `Table pleine ou partie en cours. Vous êtes en position ${res.position} dans la file d'attente.`
+        );
       }
     }
     io.emit("blackjack:state", blackjackGame.getState());
@@ -2224,11 +2229,23 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   socket.on("blackjack:bet", (amount) => {
-    const bet = parseInt(amount);
+    let bet = parseInt(amount);
     if (isNaN(bet) || bet <= 0) return;
 
     const currentClicks = FileService.data.clicks[pseudo] || 0;
 
+    // Limite 50% de la richesse
+    const maxBet = Math.floor(currentClicks * 0.5);
+    if (bet > maxBet) {
+      bet = maxBet;
+    }
+
+    if (bet <= 0) {
+      socket.emit("blackjack:error", "Mise impossible (fonds insuffisants)");
+      return;
+    }
+
+    /* Redondant avec le cap mais securité */
     if (currentClicks < bet) {
       socket.emit("blackjack:error", "Pas assez de clicks !");
       return;
@@ -2256,6 +2273,63 @@ function initSocketHandlers(io, socket, gameState) {
   socket.on("blackjack:stand", () => {
     if (blackjackGame.stand(pseudo)) {
       io.emit("blackjack:state", blackjackGame.getState());
+    }
+  });
+
+  socket.on("blackjack:double", () => {
+    const player = blackjackGame.joueurs.find((p) => p.pseudo === pseudo);
+    if (!player) return;
+    // On suppose que le client sait quelle main est active, le serveur gère activeHandIndex
+    const hand = player.hands[player.activeHandIndex];
+    if (!hand) return;
+
+    const cost = hand.bet;
+    const currentClicks = FileService.data.clicks[pseudo] || 0;
+
+    if (currentClicks < cost) {
+      socket.emit("blackjack:error", "Pas assez de clicks pour doubler !");
+      return;
+    }
+
+    const res = blackjackGame.double(pseudo);
+    if (res.success) {
+      FileService.data.clicks[pseudo] = currentClicks - res.cost;
+      FileService.save("clicks", FileService.data.clicks);
+      recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
+      io.to("user:" + pseudo).emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
+      });
+      io.emit("blackjack:state", blackjackGame.getState());
+    }
+  });
+
+  socket.on("blackjack:split", () => {
+    const player = blackjackGame.joueurs.find((p) => p.pseudo === pseudo);
+    if (!player) return;
+    const hand = player.hands[player.activeHandIndex];
+    if (!hand) return;
+
+    const cost = hand.bet;
+    const currentClicks = FileService.data.clicks[pseudo] || 0;
+
+    if (currentClicks < cost) {
+      socket.emit("blackjack:error", "Pas assez de clicks pour spliter !");
+      return;
+    }
+
+    const res = blackjackGame.split(pseudo);
+    if (res.success) {
+      FileService.data.clicks[pseudo] = currentClicks - res.cost;
+      FileService.save("clicks", FileService.data.clicks);
+      recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
+      io.to("user:" + pseudo).emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
+      });
+      io.emit("blackjack:state", blackjackGame.getState());
+    } else {
+      if (res.reason === "max_splits") {
+        socket.emit("blackjack:error", "Max splits atteints !");
+      }
     }
   });
 

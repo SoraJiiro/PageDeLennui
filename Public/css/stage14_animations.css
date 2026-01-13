@@ -1,0 +1,74 @@
+/* Animations Blackjack */
+@keyframes bj-pulse-gold {
+  0% {
+    box-shadow: 0 0 5px gold;
+    border-color: gold;
+  }
+  50% {
+    box-shadow: 0 0 20px gold;
+    border-color: #fff;
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 5px gold;
+    border-color: gold;
+  }
+}
+
+@keyframes bj-pulse-green {
+  0% {
+    box-shadow: 0 0 5px #0f0;
+    border-color: #0f0;
+  }
+  50% {
+    box-shadow: 0 0 20px #0f0;
+    border-color: #afa;
+  }
+  100% {
+    box-shadow: 0 0 5px #0f0;
+    border-color: #0f0;
+  }
+}
+
+@keyframes bj-pulse-red {
+  0% {
+    box-shadow: 0 0 5px #f00;
+    border-color: #f00;
+  }
+  50% {
+    box-shadow: 0 0 15px #f00;
+    border-color: #faa;
+  }
+  100% {
+    box-shadow: 0 0 5px #f00;
+    border-color: #f00;
+  }
+}
+
+.bj-anim-blackjack {
+  animation: bj-pulse-gold 1.5s infinite ease-in-out;
+  z-index: 2;
+  padding: 10px;
+  border-color: gold !important;
+}
+
+.bj-anim-bust {
+  border-color: #f00 !important;
+  opacity: 0.8;
+  box-shadow: 0 0 10px #f00;
+}
+
+.player-seat.bj-anim-win {
+  animation: bj-pulse-green 1.5s infinite ease-in-out;
+  border-color: #0f0;
+}
+
+.player-seat.bj-anim-lose {
+  animation: bj-pulse-red 2s infinite ease-in-out;
+  border-color: #f00;
+}
+
+.player-seat.bj-anim-push {
+  border-color: #aaa;
+  box-shadow: 0 0 10px #aaa;
+}

@@ -1,4 +1,6 @@
 /* Stage 14: Blackjack */
+@import url("stage14_animations.css");
+
 #stage14 {
   display: flex;
   justify-content: center;
@@ -281,4 +283,35 @@
   font-weight: bold;
   margin: 20px 0;
   min-height: 1.5em;
+}
+
+/* Input Style for Blackjack */
+.bj-input {
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 8px 12px;
+  min-height: clamp(40px, 5.5vh, 56px); /* Match button height */
+  font-size: clamp(0.9rem, 1.1vw + 0.6rem, 1.2rem);
+  font-family: inherit;
+  width: 140px;
+  outline: none;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.bj-input:focus {
+  box-shadow: 0 0 10px var(--primary-color);
+  background: rgba(0, 255, 0, 0.05);
+}
+
+.bj-input::placeholder {
+  color: rgba(0, 255, 0, 0.5);
+}
+
+/* Ensure controls container doesn't collapse */
+#bj-play-controls,
+#bj-bet-controls {
+  margin-top: 15px;
+  width: 100%;
 }
