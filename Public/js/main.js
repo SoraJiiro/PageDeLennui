@@ -55,6 +55,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./password_change.js"),
       import("./mash.js"),
       import("./mash_leaderboard.js"),
+      import("./blackjack_leaderboard.js"),
+      import("./coinflip_leaderboard.js"),
     ]);
 
     const [
@@ -83,6 +85,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       passwordChange,
       mash,
       mashLeaderboard,
+      blackjackLeaderboard,
+      coinflipLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -157,6 +161,10 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (mash?.initMash) mash.initMash(socket);
     if (mashLeaderboard?.initMashLeaderboard)
       mashLeaderboard.initMashLeaderboard(socket);
+    if (blackjackLeaderboard?.initBlackjackLeaderboard)
+      blackjackLeaderboard.initBlackjackLeaderboard(socket);
+    if (coinflipLeaderboard?.initCoinflipLeaderboard)
+      coinflipLeaderboard.initCoinflipLeaderboard(socket);
     if (passwordChange?.setupPasswordChange)
       passwordChange.setupPasswordChange(socket);
     socket.connect();

@@ -358,8 +358,8 @@ p.pause-info {
 }
 
 .keybind-mark {
-  background: #0f0 !important;
-  color: #000 !important;
+  background: var(--primary-color) !important;
+  color: var(--bg-color) !important;
   padding: 7px 7px;
   text-align: center;
   display: inline-block;
@@ -367,7 +367,7 @@ p.pause-info {
 
 .keybind-mark-underline {
   text-decoration: underline;
-  text-decoration-color: #000;
+  text-decoration-color: var(--bg-color);
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
 }
@@ -430,7 +430,7 @@ body ::-webkit-scrollbar {
 }
 
 .modal-content {
-  background: #000;
+  background: var(--bg-color);
   border: 2px solid var(--primary-color);
   padding: 2rem;
   width: 90%;
@@ -446,7 +446,7 @@ body ::-webkit-scrollbar {
 }
 
 .modal-content p {
-  color: #fff;
+  color: var(--primary-color);
   margin-bottom: 1.5rem;
 }
 
@@ -454,9 +454,9 @@ body ::-webkit-scrollbar {
   width: 100%;
   padding: 10px;
   margin-bottom: 1.5rem;
-  background: #111;
+  background: var(--bg-color);
   border: 1px solid var(--primary-color);
-  color: #fff;
+  color: var(--primary-color);
   font-size: 1rem;
   text-align: center;
 }
@@ -477,7 +477,7 @@ body ::-webkit-scrollbar {
 
 .btn-confirm {
   background: var(--primary-color);
-  color: #000;
+  color: var(--bg-color);
 }
 
 .btn-confirm:hover {
@@ -487,13 +487,13 @@ body ::-webkit-scrollbar {
 
 .btn-cancel {
   background: transparent;
-  color: #fff;
-  border-color: #fff;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .btn-cancel:hover {
-  background: #fff;
-  color: #000;
+  background: var(--primary-color);
+  color: var(--bg-color);
 }
 
 section[id^="stage"],

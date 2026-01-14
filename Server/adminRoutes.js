@@ -46,6 +46,12 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       case "mashWins":
         leaderboardManager.broadcastMashLB(io);
         break;
+      case "blackjackStats":
+        leaderboardManager.broadcastBlackjackLB(io);
+        break;
+      case "coinflipStats":
+        leaderboardManager.broadcastCoinflipLB(io);
+        break;
     }
   }
 
@@ -232,7 +238,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
   // Modifier une stat
   router.post("/modify-stat", requireAdmin, (req, res) => {
-    const { pseudo, statType, value } = req.body;
+    const { pseudo, statType, value, field } = req.body;
 
     if (!pseudo || !statType || typeof value !== "number") {
       return res.status(400).json({ message: "Données invalides" });
@@ -249,10 +255,38 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "motusScores",
       "scores2048",
       "mashWins",
+      "blackjackStats",
+      "coinflipStats",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "blackjackStats" || statType === "coinflipStats") {
+      if (!field) {
+        return res
+          .status(400)
+          .json({ message: "Le champ (field) est requis pour " + statType });
+      }
+
+      if (!FileService.data[statType]) FileService.data[statType] = {};
+      if (!FileService.data[statType][pseudo])
+        FileService.data[statType][pseudo] = {};
+
+      FileService.data[statType][pseudo][field] = value;
+      FileService.save(statType, FileService.data[statType]);
+
+      refreshLeaderboard(statType);
+
+      console.log({
+        level: "action",
+        message: `Modification: ${pseudo} - ${statType}.${field} = ${value}`,
+      });
+
+      return res.json({
+        message: `Statistique ${statType}.${field} de ${pseudo} mise à jour à ${value}`,
+      });
     }
 
     if (statType === "motusScores") {
@@ -437,7 +471,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
   });
 
   router.post("/modify-all-users-stat", requireAdmin, (req, res) => {
-    const { statType, value } = req.body;
+    const { statType, value, field } = req.body;
 
     if (!statType || typeof value !== "number") {
       return res.status(400).json({ message: "Données invalides" });
@@ -454,15 +488,36 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "motusScores",
       "scores2048",
       "mashWins",
+      "blackjackStats",
+      "coinflipStats",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
     }
 
+    if (
+      (statType === "blackjackStats" || statType === "coinflipStats") &&
+      !field
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Le champ (field) est requis pour " + statType });
+    }
+
+    // Si le leaderboard n'existe pas encore, on itère sur users? Non, sur FileService.data[statType?].
+    // Note: Si le leaderboard blackjackStats est vide, Object.keys renvoie vide.
+    // L'admin veut peut-être initialiser pour tout le monde?
+    // Mais le code original itère sur `Object.keys(FileService.data[statType])`.
+    // Donc ça modifie seulement ceux qui ont DÉJÀ une entrée.
+
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      if (statType === "motusScores") {
+      if (statType === "blackjackStats" || statType === "coinflipStats") {
+        if (!FileService.data[statType][pseudo])
+          FileService.data[statType][pseudo] = {};
+        FileService.data[statType][pseudo][field] = value;
+      } else if (statType === "motusScores") {
         const current = FileService.data.motusScores[pseudo] || {
           words: 0,
           tries: 0,
@@ -496,7 +551,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
   // Ajouter stat pour ALL les utilisateurs
   router.post("/add-all-users-stat", requireAdmin, (req, res) => {
-    const { statType, value } = req.body;
+    const { statType, value, field } = req.body;
 
     if (!statType || typeof value !== "number") {
       return res.status(400).json({ message: "Données invalides" });
@@ -513,15 +568,29 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "motusScores",
       "scores2048",
       "mashWins",
+      "blackjackStats",
+      "coinflipStats",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
     }
 
+    if (
+      (statType === "blackjackStats" || statType === "coinflipStats") &&
+      !field
+    ) {
+      return res.status(400).json({ message: "Field required" });
+    }
+
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      if (statType === "motusScores") {
+      if (statType === "blackjackStats" || statType === "coinflipStats") {
+        if (!FileService.data[statType][pseudo])
+          FileService.data[statType][pseudo] = {};
+        const current = FileService.data[statType][pseudo][field] || 0;
+        FileService.data[statType][pseudo][field] = current + value;
+      } else if (statType === "motusScores") {
         const current = FileService.data.motusScores[pseudo] || {
           words: 0,
           tries: 0,
@@ -559,7 +628,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
   // Retirer stat pour ALL les utilisateurs
   router.post("/remove-all-users-stat", requireAdmin, (req, res) => {
-    const { statType, value } = req.body;
+    const { statType, value, field } = req.body;
 
     if (!statType || typeof value !== "number") {
       return res.status(400).json({ message: "Données invalides" });
@@ -576,15 +645,32 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "motusScores",
       "scores2048",
       "mashWins",
+      "blackjackStats",
+      "coinflipStats",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
     }
 
+    if (
+      (statType === "blackjackStats" || statType === "coinflipStats") &&
+      !field
+    ) {
+      return res.status(400).json({ message: "Field required" });
+    }
+
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      if (statType === "motusScores") {
+      if (statType === "blackjackStats" || statType === "coinflipStats") {
+        if (!FileService.data[statType][pseudo])
+          FileService.data[statType][pseudo] = {};
+        const current = FileService.data[statType][pseudo][field] || 0;
+        FileService.data[statType][pseudo][field] = Math.max(
+          0,
+          current - value
+        );
+      } else if (statType === "motusScores") {
         const current = FileService.data.motusScores[pseudo] || {
           words: 0,
           tries: 0,
@@ -622,7 +708,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
   // Ajouter stat
   router.post("/add-stat", requireAdmin, (req, res) => {
-    const { pseudo, statType, value } = req.body;
+    const { pseudo, statType, value, field } = req.body;
 
     if (!pseudo || !statType || typeof value !== "number") {
       return res.status(400).json({ message: "Données invalides" });
@@ -639,10 +725,31 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "motusScores",
       "scores2048",
       "mashWins",
+      "blackjackStats",
+      "coinflipStats",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "blackjackStats" || statType === "coinflipStats") {
+      if (!field) return res.status(400).json({ message: "Field required" });
+
+      if (!FileService.data[statType]) FileService.data[statType] = {};
+      if (!FileService.data[statType][pseudo])
+        FileService.data[statType][pseudo] = {};
+
+      const currentVal = FileService.data[statType][pseudo][field] || 0;
+      const newVal = currentVal + value;
+      FileService.data[statType][pseudo][field] = newVal;
+
+      FileService.save(statType, FileService.data[statType]);
+      refreshLeaderboard(statType);
+
+      return res.json({
+        message: `Statistique ${statType}.${field} de ${pseudo} augmentée de ${value} (total: ${newVal})`,
+      });
     }
 
     if (statType === "motusScores") {
@@ -809,7 +916,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
   // Retirer stat
   router.post("/remove-stat", requireAdmin, (req, res) => {
-    const { pseudo, statType, value } = req.body;
+    const { pseudo, statType, value, field } = req.body;
 
     if (!pseudo || !statType || typeof value !== "number") {
       return res.status(400).json({ message: "Données invalides" });
@@ -826,10 +933,31 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "motusScores",
       "scores2048",
       "mashWins",
+      "blackjackStats",
+      "coinflipStats",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "blackjackStats" || statType === "coinflipStats") {
+      if (!field) return res.status(400).json({ message: "Field required" });
+
+      if (!FileService.data[statType]) FileService.data[statType] = {};
+      if (!FileService.data[statType][pseudo])
+        FileService.data[statType][pseudo] = {};
+
+      const current = FileService.data[statType][pseudo][field] || 0;
+      const newVal = current - value;
+      FileService.data[statType][pseudo][field] = newVal;
+
+      FileService.save(statType, FileService.data[statType]);
+      refreshLeaderboard(statType);
+
+      return res.json({
+        message: `Statistique ${statType}.${field} de ${pseudo} diminuée de ${value} (total: ${newVal})`,
+      });
     }
 
     if (statType === "motusScores") {

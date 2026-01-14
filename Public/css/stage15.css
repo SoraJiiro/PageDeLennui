@@ -140,26 +140,7 @@
 }
 
 .bet-btn {
-  padding: 15px 30px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  border: 2px solid;
-  background: transparent;
   color: white;
-}
-
-.bet-btn.red {
-  border-color: #ff4444;
-}
-.bet-btn.red:hover {
-  background: #ff4444;
-}
-
-.bet-btn.blue {
-  border-color: #4444ff;
-}
-.bet-btn.blue:hover {
-  background: #4444ff;
 }
 
 .bet-amount-input {

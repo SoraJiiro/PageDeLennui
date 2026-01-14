@@ -59,7 +59,7 @@
 .rule-item p {
   margin: 0;
   line-height: 1.5;
-  color: #fff;
+  color: var(--primary-color);
 }
 
 .rule-item.warning {

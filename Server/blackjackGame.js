@@ -405,6 +405,7 @@ class BlackjackGame {
 
     player.bet += cost;
     hand.bet += cost;
+    hand.doubled = true;
 
     hand.cards.push(this.deck.pop());
     hand.score = this.calculateScore(hand.cards);
@@ -496,29 +497,47 @@ class BlackjackGame {
     const dealerBust = dealerScore > 21;
     const dealerBlackjack = dealerScore === 21 && this.dealerHand.length === 2;
 
+    const roundStats = [];
+
     this.joueurs.forEach((p) => {
       let totalWinnings = 0;
+      let handsPlayed = 0;
+      let handsWon = 0;
+      let handsLost = 0;
+      let biggestBet = 0;
+      let doubles = 0;
+      let bjs = 0;
 
       p.hands.forEach((hand) => {
         let handWin = 0;
+        handsPlayed++;
+        if (hand.bet > biggestBet) biggestBet = hand.bet;
+        if (hand.doubled) doubles++;
 
         if (hand.status === "bust") {
           handWin = -hand.bet;
+          handsLost++;
         } else if (hand.status === "blackjack") {
+          bjs++;
           if (dealerBlackjack) {
             handWin = 0;
           } else {
             handWin = Math.floor(hand.bet * 1.5);
+            handsWon++;
           }
         } else {
           if (dealerBlackjack) {
             handWin = -hand.bet;
+            handsLost++;
           } else if (dealerBust) {
             handWin = hand.bet;
+            handsWon++;
           } else if (hand.score > dealerScore) {
             handWin = hand.bet;
+            handsWon++;
           } else if (hand.score < dealerScore) {
             handWin = -hand.bet;
+            handsLost++;
           } else {
             handWin = 0;
           }
@@ -527,10 +546,21 @@ class BlackjackGame {
       });
 
       p.winnings = totalWinnings;
+      roundStats.push({
+        pseudo: p.pseudo,
+        statUpdates: {
+          handsPlayed,
+          handsWon,
+          handsLost,
+          biggestBet,
+          doubles,
+          bjs,
+        },
+      });
     });
 
     if (this.onRoundEnd) {
-      this.onRoundEnd();
+      this.onRoundEnd(roundStats);
     }
 
     this.turnDeadline = Date.now() + 5000;

@@ -85,7 +85,7 @@ export function initMash(socket) {
   });
 
   socket.on("mash:state", (state) => {
-    console.log("[MASH] State received:", state);
+    //console.log("[MASH] State received:", state);
     syncState(state);
   });
   socket.on("mash:update", (data) => {
@@ -98,7 +98,7 @@ export function initMash(socket) {
       window.username ||
       document.querySelector(".sb-username")?.textContent?.trim() ||
       "";
-    console.log("[MASH] Syncing state. My pseudo (local):", username);
+    //console.log("[MASH] Syncing state. My pseudo (local):", username);
 
     // Update players
     const p1 = state.players.find((p) => p.team === "red");
@@ -113,7 +113,7 @@ export function initMash(socket) {
     // Use trim() to avoid issues with DOM text content
     const me = state.players.find((p) => p.pseudo === username);
     isPlaying = !!(me && state.gameState === "playing");
-    console.log("[MASH] Am I in game?", !!me, "Is playing?", isPlaying);
+    //console.log("[MASH] Am I in game?", !!me, "Is playing?", isPlaying);
 
     // Spectators logic: Hide number, only show status if spectator
     if (specCount) {

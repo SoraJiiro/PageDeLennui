@@ -1,8 +1,8 @@
 :root {
   --sidebar-width: 280px;
-  --sidebar-bg: rgba(10, 10, 10, 0.95);
+  --sidebar-bg: var(--bg-color);
   --sidebar-border: 1px solid var(--primary-color);
-  --sidebar-text: #fff;
+  --sidebar-text: var(--primary-color);
 }
 
 .sidebar-toggle {
@@ -27,6 +27,7 @@
   flex-direction: column;
   backdrop-filter: blur(10px);
   box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+  /* Ensure opacity/contrast if bg is transparent */
 }
 
 .sidebar.active {
@@ -38,7 +39,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--primary-color);
 }
 
 .sidebar-header h2 {
@@ -52,14 +53,14 @@
 .sidebar-close {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--primary-color);
   font-size: 1.5rem;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
 }
 
 .sidebar-close:hover {
-  color: var(--primary-color);
+  opacity: 0.7;
 }
 
 .sidebar-content {
@@ -82,7 +83,7 @@
 }
 
 .sidebar-section h3 {
-  color: #888;
+  color: var(--primary-color);
   font-size: 0.9rem;
   text-transform: uppercase;
   margin-bottom: 15px;
@@ -91,6 +92,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  opacity: 0.9;
 }
 
 .sidebar-section h3.money,

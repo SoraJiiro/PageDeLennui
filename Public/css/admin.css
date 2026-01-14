@@ -37,7 +37,7 @@ body {
 }
 
 .admin-header p {
-  color: #fff;
+  color: var(--primary-color);
   font-size: 1.1rem;
 }
 
@@ -162,7 +162,7 @@ table tr:hover {
 }
 
 .user-stat .value {
-  color: #fff;
+  color: var(--primary-color);
 }
 
 .admin-controls {

@@ -133,6 +133,10 @@
                                 <button class="lb-tab"
                                     data-board="2048">2048</button>
                                 <button class="lb-tab"
+                                    data-board="blackjack">Blackjack</button>
+                                <button class="lb-tab"
+                                    data-board="coinflip">Coin Flip</button>
+                                <button class="lb-tab"
                                     data-board="mash">Mash</button>
                             </div>
                         </center>
@@ -256,6 +260,39 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lb-2048"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="blackjack">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Mains</th>
+                                        <th>W/L</th>
+                                        <th>Max Bet</th>
+                                        <th>Double/BJ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-blackjack"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="coinflip">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Parties</th>
+                                        <th>W/L</th>
+                                        <th>Max Bet</th>
+                                        <th>Max Loss</th>
+                                        <th>All-ins</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-coinflip"></tbody>
                             </table>
                         </div>
 
@@ -397,9 +434,22 @@
                                                 <option
                                                     value="scores2048">2048</option>
                                                 <option
+                                                    value="blackjackStats">Blackjack</option>
+                                                <option
+                                                    value="coinflipStats">Coin
+                                                    Flip</option>
+                                                <option
                                                     value="mashWins">Mash</option>
                                                 <option value="all">Toutes les
                                                     stats</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-field"
+                                            id="statFieldContainer"
+                                            style="display:none;">
+                                            <label>Champ</label>
+                                            <select id="modifyStatField">
+                                                <!-- Populated by JS -->
                                             </select>
                                         </div>
                                     </div>
@@ -809,6 +859,8 @@
             socket.on('motus:leaderboard', (data) => updateLeaderboard('motus', data, 'words'));
             socket.on('2048:leaderboard', (data) => updateLeaderboard('2048', data, 'score'));
             socket.on('mash:leaderboard', (data) => updateLeaderboard('mash', data, 'wins'));
+            socket.on('blackjack:leaderboard', (data) => updateLeaderboard('blackjack', data, 'handsWon'));
+            socket.on('coinflip:leaderboard', (data) => updateLeaderboard('coinflip', data, 'wins'));
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {
@@ -875,6 +927,52 @@
                 if (type === 'motus') {
                     const tries = item.tries || 0;
                     extraTd = `<td>${tries}</td>`;
+                }
+
+                if (type === 'blackjack') {
+                    // Mots clés: Mains | W/L | Max Bet | Double/BJ
+                    const hands = item.handsPlayed || 0;
+                    const won = item.handsWon || 0;
+                    const lost = item.handsLost || 0;
+                    const maxBet = (item.biggestBet || 0).toLocaleString('fr-FR');
+                    const dbl = item.doubles || 0;
+                    const bj = item.bjs || 0;
+
+                    val = hands; // Override val used for main column if needed, or structured differently
+                    
+                    // Reconstruction complète pour blackjack car colonnes spécifiques
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${hands}</td>
+                        <td>${won} / ${lost}</td>
+                        <td>${maxBet}</td>
+                        <td>${dbl} / ${bj}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return; // Skip default row construction
+                }
+
+                if (type === 'coinflip') {
+                    // Rang | Pseudo | Parties | W/L | Max Bet | Max Loss | All-ins
+                    const games = item.gamesPlayed || 0;
+                    const won = item.wins || 0;
+                    const lost = item.losses || 0;
+                    const maxBet = (item.biggestBet || 0).toLocaleString('fr-FR');
+                    const maxLoss = (item.biggestLoss || 0).toLocaleString('fr-FR');
+                    const allins = item.allIns || 0;
+
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${games}</td>
+                        <td>${won} / ${lost}</td>
+                        <td>${maxBet}</td>
+                        <td>${maxLoss}</td>
+                        <td>${allins}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return; // Skip default row construction
                 }
 
                 tr.innerHTML = `
@@ -1210,44 +1308,98 @@
             }
         }
 
+        // Setup Stat Field Selector
+        const complexStats = {
+            'blackjackStats': [
+                { value: 'wins', label: 'Victoires' },
+                { value: 'losses', label: 'Défaites' },
+                { value: 'draws', label: 'Égalités' },
+                { value: 'blackjacks', label: 'Blackjacks' },
+                { value: 'doubles', label: 'Doubles' }
+            ],
+            'coinflipStats': [
+                { value: 'wins', label: 'Victoires' },
+                { value: 'losses', label: 'Défaites' },
+                { value: 'allIns', label: 'All-ins' },
+                { value: 'highestWin', label: 'Plus gros gain' },
+                { value: 'totalWon', label: 'Total Gagné' },
+                { value: 'totalLost', label: 'Total Perdu' }
+            ]
+        };
+
+        const modifyStatTypeSelect = document.getElementById('modifyStatType');
+        if (modifyStatTypeSelect) {
+            modifyStatTypeSelect.addEventListener('change', function() {
+                const val = this.value;
+                const container = document.getElementById('statFieldContainer');
+                const select = document.getElementById('modifyStatField');
+                
+                select.innerHTML = '';
+                
+                if (complexStats[val]) {
+                    container.style.display = 'block';
+                    complexStats[val].forEach(opt => {
+                        const el = document.createElement('option');
+                        el.value = opt.value;
+                        el.innerText = opt.label;
+                        select.appendChild(el);
+                    });
+                } else {
+                    container.style.display = 'none';
+                }
+            });
+        }
+
         // Modifier Stat
         async function modifyStat() {
-  const pseudo = document.getElementById('modifyUser').value.trim();
-  const statType = document.getElementById('modifyStatType').value;
-  const value = parseInt(document.getElementById('modifyStatValue').value);
+          const pseudo = document.getElementById('modifyUser').value.trim();
+          const statType = document.getElementById('modifyStatType').value;
+          const value = parseInt(document.getElementById('modifyStatValue').value);
 
-  if (!pseudo || isNaN(value)) {
-    showNotification('⚠️ Veuillez remplir tous les champs', 'error');
-    return;
-  }
+          let field = null;
+          const fieldSelect = document.getElementById('modifyStatField');
+          if (document.getElementById('statFieldContainer').style.display !== 'none') {
+             field = fieldSelect.value;
+          }
 
-  const targetAll = pseudo.toUpperCase() === 'ALL';
-  const confirmMsg = targetAll 
-    ? `Modifier ${statType} de ALL LES JOUEURS à ${value} ?`
-    : `Modifier ${statType} de ${pseudo} à ${value} ?`;
-  
-  if (!confirm(confirmMsg)) return;
+          if (!pseudo || isNaN(value)) {
+            showNotification('⚠️ Veuillez remplir tous les champs', 'error');
+            return;
+          }
 
-  if (statType === 'all') {
-    if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats ${targetAll ? 'de ALL LES JOUEURS' : 'de ' + pseudo} à ${value} ! Confirmer ?`)) return;
-  }
+          const targetAll = pseudo.toUpperCase() === 'ALL';
+          let confirmMsg = targetAll 
+            ? `Modifier ${statType} de ALL LES JOUEURS à ${value} ?`
+            : `Modifier ${statType} de ${pseudo} à ${value} ?`;
 
-  try {
-    const endpoint = targetAll ? '/api/admin/modify-all-users-stat' : '/api/admin/modify-stat';
-    const body = targetAll 
-      ? { statType, value }
-      : { pseudo, statType, value };
+          if (field) {
+            confirmMsg = targetAll
+                ? `Modifier ${statType}.${field} de ALL LES JOUEURS à ${value} ?`
+                : `Modifier ${statType}.${field} de ${pseudo} à ${value} ?`;
+          }
+          
+          if (!confirm(confirmMsg)) return;
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+          if (statType === 'all') {
+            if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats ${targetAll ? 'de ALL LES JOUEURS' : 'de ' + pseudo} à ${value} ! Confirmer ?`)) return;
+          }
 
-    const data = await res.json();
-    
-    if (res.ok) {
-      showNotification(`✅ ${data.message}`, 'success');
+          try {
+            const endpoint = targetAll ? '/api/admin/modify-all-users-stat' : '/api/admin/modify-stat';
+            const body = targetAll 
+              ? { statType, value, field }
+              : { pseudo, statType, value, field };
+
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+              showNotification(`✅ ${data.message}`, 'success');
       socket.emit('admin:refresh');
       document.getElementById('modifyUser').value = '';
       document.getElementById('modifyStatValue').value = '';
@@ -1270,18 +1422,30 @@ async function addStat() {
     return;
   }
 
+  let field = null;
+  const fieldSelect = document.getElementById('modifyStatField');
+  if (document.getElementById('statFieldContainer') && document.getElementById('statFieldContainer').style.display !== 'none') {
+     field = fieldSelect.value;
+  }
+
   const targetAll = pseudo.toUpperCase() === 'ALL';
-  const confirmMsg = targetAll 
+  let confirmMsg = targetAll 
     ? `Ajouter ${value} à ${statType} de ALL LES JOUEURS ?`
     : `Ajouter ${value} à ${statType} de ${pseudo} ?`;
+    
+  if (field) {
+     confirmMsg = targetAll 
+      ? `Ajouter ${value} à ${statType}.${field} de ALL LES JOUEURS ?`
+      : `Ajouter ${value} à ${statType}.${field} de ${pseudo} ?`;
+  }
   
   if (!confirm(confirmMsg)) return;
 
   try {
     const endpoint = targetAll ? '/api/admin/add-all-users-stat' : '/api/admin/add-stat';
     const body = targetAll 
-      ? { statType, value }
-      : { pseudo, statType, value };
+      ? { statType, value, field }
+      : { pseudo, statType, value, field };
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -1315,18 +1479,30 @@ async function removeStat() {
     return;
   }
 
+  let field = null;
+  const fieldSelect = document.getElementById('modifyStatField');
+  if (document.getElementById('statFieldContainer') && document.getElementById('statFieldContainer').style.display !== 'none') {
+     field = fieldSelect.value;
+  }
+
   const targetAll = pseudo.toUpperCase() === 'ALL';
-  const confirmMsg = targetAll 
+  let confirmMsg = targetAll 
     ? `Retirer ${value} de ${statType} de ALL LES JOUEURS ?`
     : `Retirer ${value} de ${statType} de ${pseudo} ?`;
+
+  if (field) {
+     confirmMsg = targetAll 
+      ? `Retirer ${value} de ${statType}.${field} de ALL LES JOUEURS ?`
+      : `Retirer ${value} de ${statType}.${field} de ${pseudo} ?`;
+  }
   
   if (!confirm(confirmMsg)) return;
 
   try {
         const endpoint = targetAll ? '/api/admin/remove-all-users-stat' : '/api/admin/remove-stat';
         const body = targetAll 
-            ? { statType, value }
-            : { pseudo, statType, value };
+            ? { statType, value, field }
+            : { pseudo, statType, value, field };
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -1361,12 +1537,11 @@ async function modifyTime() {
         return;
     }
 
-    // Accept only snakeScores or blockblastScores as boards for time editing
-    const allowed = { snakeScores: 'snake', blockblastScores: 'blockblast' };
-    if (!allowed[board]) {
-        showNotification('⚠️ Sélectionnez Snake ou Block Blast dans Stat ?', 'error');
-        return;
-    }
+            const allowed = { snakeScores: 'snake', blockblastScores: 'blockblast' };
+            if (!allowed[board]) {
+                showNotification('⚠️ Sélectionnez Snake ou Block Blast dans Stat ?', 'error');
+                return;
+            }
 
     if (!confirm(`Définir la durée (${time} ms) pour ${pseudo} sur ${allowed[board]} ?`)) return;
 
@@ -1585,6 +1760,8 @@ async function modifyTries() {
                 snake: 'Snake',
                 motus: 'Motus',
                 score2048: '2048',
+                blackjack: 'Blackjack',
+                coinflip: 'Coin Flip',
                 mash: 'Mash'
             };
 

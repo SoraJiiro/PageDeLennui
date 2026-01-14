@@ -2,8 +2,8 @@
 
 html,
 body {
-  background: #000;
-  color: #fafafa;
+  background: var(--bg-color);
+  color: var(--primary-color);
   margin: 0;
   padding: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -20,8 +20,8 @@ body {
   background: var(--bg);
   box-shadow: 0 2px 0 rgba(255, 255, 255, 0.05);
   z-index: 2;
-  background: #111;
-  border-bottom: 2px solid #fff;
+  background: var(--bg-color);
+  border-bottom: 2px solid var(--primary-color);
   list-style: none;
   margin: 0;
 }
@@ -29,7 +29,7 @@ body {
 .bar > li {
   display: flex;
   align-items: center;
-  border-right: 2px solid #fff;
+  border-right: 2px solid var(--primary-color);
   height: 100%;
   width: 100%;
   text-align: center;
@@ -50,35 +50,37 @@ body {
 .pill {
   padding: 7.5px 35px;
   border-radius: 0;
-  background: #444444;
-  border: 2px solid #f1f1f1;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
   cursor: pointer;
   user-select: none;
 }
 
 /* état actif pour les pills (y compris le bouton autoscroll) */
 .pill.active {
-  background: #8d8d8d;
-  border-color: #dcdcdc;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--bg-color);
 }
 
 .pill:hover {
-  background: #6a6a6a;
+  background: var(--primary-hover);
+  color: var(--bg-color);
 }
 
 /* Assure que le bouton avec classe .pill garde le style des pills */
 button.pill {
-  background: #444444;
+  background: var(--bg-color);
   color: inherit;
-  border: 2px solid #f1f1f1;
+  border: 2px solid var(--primary-color);
   border-radius: 0;
   padding: 7.5px 35px;
 }
 
 .pill.active {
-  background: #8282f8;
-  color: #fff;
-  border-color: #fff;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  border-color: var(--primary-color);
 }
 
 #autoscroll {

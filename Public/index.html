@@ -119,6 +119,11 @@
                                 class="ui-color-picker">
                         </div>
                         <div class="control-item">
+                            <label for="bgColorPicker">Couleur Fond</label>
+                            <input type="color" id="bgColorPicker"
+                                class="ui-color-picker">
+                        </div>
+                        <div class="control-item">
                             <label for="keybind"
                                 style="font-size: 0.9rem;height:30px;display: flex; justify-content: center; align-items: center;">Key
                                 Pause</label>
@@ -127,7 +132,7 @@
                                 <input type="text" class="keybind" id="keybind"
                                     placeholder="P" autocomplete="off"
                                     maxlength="1" minlength="0"
-                                    style="width: 40px; height: 30px; text-align: center; background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: #fff; font-size: 1rem;" />
+                                    style="width: 40px; height: 30px; text-align: center; background: var(--bg-color); border: 1px solid var(--primary-color); color: var(--primary-color); font-size: 1rem;" />
                                 <button class="keybind-submit"
                                     style="min-height: 30px; padding: 0 10px; font-size: 0.8rem; height: 30px; border-width: 1px;">OK</button>
                             </div>
@@ -143,8 +148,9 @@
                                     id="mash-key-input" placeholder="K"
                                     autocomplete="off" maxlength="1"
                                     minlength="0"
-                                    style="width: 40px; height: 30px; text-align: center; background: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: #fff; font-size: 1rem;" />
+                                    style="width: 40px; height: 30px; text-align: center; background: var(--bg-color); border: 1px solid var(--primary-color); color: var(--primary-color); font-size: 1rem;" />
                                 <button id="mash-key-submit"
+                                    class="keybind-submit"
                                     style="min-height: 30px; padding: 0 10px; font-size: 0.8rem; height: 30px; border-width: 1px;">OK</button>
                             </div>
                         </div>
@@ -248,7 +254,7 @@
 
         <section id="stage1">
             <center style="transform: translateY(-30px);"><pre
-                    id="periodic-msg">Bonne année et bonne rentrée à tous !</pre>
+                    id="periodic-msg">Big Lancelot is watching 👀</pre>
                 <br><a href="patch_notes.html"><button class="temp-btn"> > PATCH
                         NOTES < </button></a></center>
             <h1 class="display" id="main-clock" style="cursor: default;"></h1>
@@ -392,6 +398,8 @@
                 <button data-board="motus">Motus</button>
                 <button data-board="mash">Mash</button>
                 <button data-board="2048">2048</button>
+                <button data-board="blackjack">Blackjack</button>
+                <button data-board="coinflip">Coin Flip</button>
             </div>
 
             <center>
@@ -498,6 +506,30 @@
                 </div>
                 <table class="board" id="mash-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Victoires</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD BLACKJACK -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Blackjack Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="blackjack-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Mains</th><th>W /
+                                L</th><th>Max
+                                Bet</th><th>Double</th><th>BlackJacks</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD COIN FLIP -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Coin Flip Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="coinflip-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>W
+                                / L</th><th>Max Bet</th><th>Max
+                                Loss</th><th>All-ins</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -692,6 +724,8 @@
         <section id="stage11">
             <div class="motus-container">
                 <div class="motus-header"><h2>Motus.exe</h2></div>
+                <p class="avancement"
+                    style="position: absolute; top: 10px; right: 10px; color: var(--primary-color); font-size: clamp(1rem, 2vw, 1.5rem);"></p>
                 <div class="motus-grid"></div>
                 <div class="motus-keyboard"></div>
                 <div class="motus-message"></div>

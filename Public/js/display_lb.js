@@ -14,6 +14,8 @@ function showLeaderboard(name) {
     motus: "#motus-leaderboard",
     2048: "#leaderboard-2048",
     mash: "#mash-leaderboard",
+    blackjack: "#blackjack-leaderboard",
+    coinflip: "#coinflip-leaderboard",
   };
 
   const table = document.querySelector(idMap[name]);

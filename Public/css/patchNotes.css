@@ -21,7 +21,7 @@
   border: 2px solid var(--primary-color);
   padding: 20px;
   margin-bottom: 30px;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--bg-color);
   box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -48,11 +48,12 @@
 
 .date {
   font-size: 0.9rem;
-  color: #aaa;
+  color: var(--primary-color);
+  opacity: 0.6;
 }
 
 .patch-content h3 {
-  color: #fff;
+  color: var(--primary-color);
   margin: 15px 0 10px 0;
   font-size: 1.1rem;
 }
@@ -66,7 +67,8 @@
   margin-bottom: 10px;
   padding-left: 20px;
   position: relative;
-  color: #ddd;
+  color: var(--primary-color);
+  opacity: 0.8;
   line-height: 22.5px;
   font-size: clamp(0.9rem, 2.5vw, 1rem);
 }

@@ -19,7 +19,7 @@
 }
 
 body {
-  background: #000;
+  background: var(--bg-color);
   color: var(--primary-color);
   display: flex;
   justify-content: center;
@@ -35,14 +35,14 @@ body {
 
 ::selection {
   background: var(--primary-color);
-  color: #000;
+  color: var(--bg-color);
 }
 
 form {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  background: #111;
+  background: var(--bg-color);
   padding: 30px;
   border: 4px solid var(--primary-color);
   margin: 10px;
@@ -57,7 +57,7 @@ p {
 }
 
 input {
-  background: #000;
+  background: var(--bg-color);
   border: 1px solid var(--primary-color);
   color: var(--primary-color);
   padding: 10px;
@@ -86,7 +86,7 @@ input {
 
 button {
   background: var(--primary-color);
-  color: #000;
+  color: var(--bg-color);
   border: none;
   padding: 10px;
   font-weight: bold;
@@ -97,12 +97,12 @@ button {
 
 button:hover {
   color: var(--primary-color);
-  background-color: #000;
+  background-color: var(--bg-color);
 }
 
 body p {
   margin-top: 50px;
-  color: #fff;
+  color: var(--primary-color);
 }
 
 a {

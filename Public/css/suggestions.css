@@ -7,7 +7,7 @@ body {
 }
 
 .suggestion-card {
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--bg-color);
   border: 2px solid var(--primary-color);
   padding: 2rem;
   width: 100%;
@@ -30,15 +30,15 @@ body {
 .input-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: var(--primary-color);
 }
 
 .input-group textarea {
   width: 100%;
   padding: 10px;
-  background: #000;
+  background: var(--bg-color);
   border: 1px solid var(--primary-color);
-  color: #fff;
+  color: var(--primary-color);
   font-size: 1.1rem;
   resize: vertical;
   font-family: inherit;
@@ -68,7 +68,7 @@ body {
 
 .btn {
   background: var(--primary-color);
-  color: #000;
+  color: var(--bg-color);
   border: none;
   padding: 10px 20px;
   font-size: 1.1rem;
@@ -93,5 +93,5 @@ body {
 
 .btn-back:hover {
   background: var(--primary-color);
-  color: #000;
+  color: var(--bg-color);
 }

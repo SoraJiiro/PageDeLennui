@@ -105,11 +105,14 @@ class FileService {
       cheaters: path.join(config.DATA, "cheaters.json"),
       tags: path.join(config.DATA, "tags.json"),
       uis: path.join(config.DATA, "uis.json"),
+      backgrounds: path.join(config.DATA, "backgrounds.json"),
       motusState: path.join(config.DATA, "motus_state.json"),
       motusScores: path.join(config.DATA, "motus_scores.json"),
       scores2048: path.join(config.DATA, "2048_scores.json"),
       mashWins: path.join(config.DATA, "mash_wins.json"),
       transactions: path.join(config.DATA, "transactions.json"),
+      blackjackStats: path.join(config.DATA, "blackjack_stats.json"),
+      coinflipStats: path.join(config.DATA, "coinflip_stats.json"),
     };
 
     this.data = this.loadAll();
@@ -151,11 +154,14 @@ class FileService {
       cheaters: this.readJSON(this.files.cheaters, []),
       tags: this.readJSON(this.files.tags, {}),
       uis: this.readJSON(this.files.uis, {}),
+      backgrounds: this.readJSON(this.files.backgrounds, {}),
       motusState: this.readJSON(this.files.motusState, {}),
       motusScores: this.readJSON(this.files.motusScores, {}),
       scores2048: this.readJSON(this.files.scores2048, {}),
       mashWins: this.readJSON(this.files.mashWins, {}),
       transactions: this.readJSON(this.files.transactions, []),
+      blackjackStats: this.readJSON(this.files.blackjackStats, {}),
+      coinflipStats: this.readJSON(this.files.coinflipStats, {}),
     };
   }
 
@@ -204,11 +210,14 @@ class FileService {
       cheaters: this.files.cheaters,
       tags: this.files.tags,
       uis: this.files.uis,
+      backgrounds: this.files.backgrounds,
       motusState: this.files.motusState,
       motusScores: this.files.motusScores,
       scores2048: this.files.scores2048,
       mashWins: this.files.mashWins,
       transactions: this.files.transactions,
+      blackjackStats: this.files.blackjackStats,
+      coinflipStats: this.files.coinflipStats,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

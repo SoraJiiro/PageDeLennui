@@ -1,65 +1,66 @@
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    flex-direction: column;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+  background: var(--bg-color);
 }
 .request-card {
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid var(--primary-color);
-    padding: 2rem;
-    width: 100%;
-    max-width: 500px;
-    text-align: center;
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
 }
 .request-card h2 {
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-    font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
 }
 .input-group {
-    margin-bottom: 1.5rem;
-    text-align: left;
+  margin-bottom: 1.5rem;
+  text-align: left;
 }
 .input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #fff;
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
 }
 .input-group input {
-    width: 100%;
-    padding: 10px;
-    background: #000;
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
-    font-size: 1.1rem;
+  width: 100%;
+  padding: 10px;
+  background: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  font-size: 1.1rem;
 }
 .status-message {
-    margin-top: 1rem;
-    padding: 10px;
-    border: 1px solid;
-    display: none;
+  margin-top: 1rem;
+  padding: 10px;
+  border: 1px solid;
+  display: none;
 }
 .status-pending {
-    border-color: #ffcc00;
-    color: #ffcc00;
+  border-color: #ffcc00;
+  color: #ffcc00;
 }
 .status-rejected {
-    border-color: #ff4444;
-    color: #ff4444;
+  border-color: #ff4444;
+  color: #ff4444;
 }
 .status-accepted {
-    border-color: #0f0;
-    color: #0f0;
+  border-color: #0f0;
+  color: #0f0;
 }
 .btn-back {
-    margin-top: 1rem;
-    background: transparent;
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
+  margin-top: 1rem;
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
 }
 .btn-back:hover {
-    background: rgba(0, 255, 0, 0.1);
+  background: rgba(0, 255, 0, 0.1);
 }

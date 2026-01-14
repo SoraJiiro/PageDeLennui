@@ -138,6 +138,46 @@ const leaderboardManager = {
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("snake:leaderboard", arr);
   },
+  broadcastBlackjackLB(io) {
+    const data = FileService.data.blackjackStats || {};
+    const arr = Object.entries(data)
+      .map(([u, s]) => ({
+        pseudo: u,
+        handsPlayed: s.handsPlayed || 0,
+        handsWon: s.handsWon || 0,
+        handsLost: s.handsLost || 0,
+        biggestBet: s.biggestBet || 0,
+        doubles: s.doubles || 0,
+        bjs: s.bjs || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.handsWon - a.handsWon ||
+          b.biggestBet - a.biggestBet ||
+          a.pseudo.localeCompare(b.pseudo)
+      );
+    io.emit("blackjack:leaderboard", arr);
+  },
+  broadcastCoinflipLB(io) {
+    const data = FileService.data.coinflipStats || {};
+    const arr = Object.entries(data)
+      .map(([u, s]) => ({
+        pseudo: u,
+        gamesPlayed: s.gamesPlayed || 0,
+        wins: s.wins || 0,
+        losses: s.losses || 0,
+        biggestBet: s.biggestBet || 0,
+        biggestLoss: s.biggestLoss || 0,
+        allIns: s.allIns || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.wins - a.wins ||
+          b.biggestBet - a.biggestBet ||
+          a.pseudo.localeCompare(b.pseudo)
+      );
+    io.emit("coinflip:leaderboard", arr);
+  },
 };
 
 // ------- Handler Socket -------
@@ -146,7 +186,7 @@ function initSocketHandlers(io, socket, gameState) {
   if (blackjackGame && !blackjackGame.emitState) {
     blackjackGame.setEmitter((state) => io.emit("blackjack:state", state));
 
-    blackjackGame.setRoundEndCallback(() => {
+    blackjackGame.setRoundEndCallback((roundStats) => {
       blackjackGame.joueurs.forEach((p) => {
         const amountToAdd = p.bet + p.winnings;
 
@@ -160,6 +200,39 @@ function initSocketHandlers(io, socket, gameState) {
       });
 
       FileService.save("clicks", FileService.data.clicks);
+
+      // Update Blackjack Stats
+      if (roundStats && Array.isArray(roundStats)) {
+        if (!FileService.data.blackjackStats)
+          FileService.data.blackjackStats = {};
+
+        roundStats.forEach((stat) => {
+          const u = stat.pseudo;
+          const updates = stat.statUpdates;
+          if (!FileService.data.blackjackStats[u]) {
+            FileService.data.blackjackStats[u] = {
+              handsPlayed: 0,
+              handsWon: 0,
+              handsLost: 0,
+              biggestBet: 0,
+              doubles: 0,
+              bjs: 0,
+            };
+          }
+          const current = FileService.data.blackjackStats[u];
+          current.handsPlayed =
+            (current.handsPlayed || 0) + updates.handsPlayed;
+          current.handsWon = (current.handsWon || 0) + updates.handsWon;
+          current.handsLost = (current.handsLost || 0) + updates.handsLost;
+          current.doubles = (current.doubles || 0) + updates.doubles;
+          current.bjs = (current.bjs || 0) + updates.bjs;
+          if (updates.biggestBet > (current.biggestBet || 0)) {
+            current.biggestBet = updates.biggestBet;
+          }
+        });
+        FileService.save("blackjackStats", FileService.data.blackjackStats);
+        leaderboardManager.broadcastBlackjackLB(io);
+      }
 
       // Update all players with new scores
       blackjackGame.joueurs.forEach((p) => {
@@ -232,6 +305,15 @@ function initSocketHandlers(io, socket, gameState) {
     socket.emit("ui:color", { color: savedUiColor });
   }
 
+  // Envoyer couleur Fond sauvegardée
+  const savedBgColor =
+    FileService.data.backgrounds && FileService.data.backgrounds[pseudo]
+      ? FileService.data.backgrounds[pseudo]
+      : null;
+  if (savedBgColor) {
+    socket.emit("ui:bgColor", { color: savedBgColor });
+  }
+
   // --- Coin Flip ---
   socket.on("coinflip:bet", (data) => {
     const { amount, side } = data;
@@ -266,6 +348,32 @@ function initSocketHandlers(io, socket, gameState) {
       // Ajouter gains (mise * 2)
       FileService.data.clicks[pseudo] += winnings;
     }
+
+    // Update Coin Flip Stats
+    if (!FileService.data.coinflipStats) FileService.data.coinflipStats = {};
+    if (!FileService.data.coinflipStats[pseudo]) {
+      FileService.data.coinflipStats[pseudo] = {
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        biggestBet: 0,
+        biggestLoss: 0,
+        allIns: 0,
+      };
+    }
+    const stats = FileService.data.coinflipStats[pseudo];
+    stats.gamesPlayed++;
+    if (won) {
+      stats.wins++;
+    } else {
+      stats.losses++;
+      if (bet > stats.biggestLoss) stats.biggestLoss = bet;
+    }
+    if (bet > stats.biggestBet) stats.biggestBet = bet;
+    if (bet >= Math.floor(currentClicks)) stats.allIns++;
+
+    FileService.save("coinflipStats", FileService.data.coinflipStats);
+    leaderboardManager.broadcastCoinflipLB(io);
 
     // Log transaction with IP
     const ip = getIpFromSocket(socket);
@@ -341,6 +449,8 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastSnakeLB(io);
   leaderboardManager.broadcastMotusLB(io);
   leaderboardManager.broadcast2048LB(io);
+  leaderboardManager.broadcastBlackjackLB(io);
+  leaderboardManager.broadcastCoinflipLB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
 
@@ -350,6 +460,13 @@ function initSocketHandlers(io, socket, gameState) {
     if (!FileService.data.uis) FileService.data.uis = {};
     FileService.data.uis[pseudo] = color;
     FileService.save("uis", FileService.data.uis);
+  });
+
+  socket.on("ui:saveBgColor", ({ color }) => {
+    if (!color || typeof color !== "string") return;
+    if (!FileService.data.backgrounds) FileService.data.backgrounds = {};
+    FileService.data.backgrounds[pseudo] = color;
+    FileService.save("backgrounds", FileService.data.backgrounds);
   });
 
   // ------- Chat -------
@@ -2036,6 +2153,11 @@ function initSocketHandlers(io, socket, gameState) {
         foundWords: [],
       };
     }
+
+    function getMotusTotalWords() {
+      return motusGame.getWordListLength();
+    }
+
     // Migration
     if (!FileService.data.motusState[pseudo].foundWords) {
       FileService.data.motusState[pseudo].foundWords = [];
@@ -2055,6 +2177,17 @@ function initSocketHandlers(io, socket, gameState) {
     }
     return newWord;
   }
+
+  socket.on("motus:getFoundWords", () => {
+    const state = getMotusState(pseudo);
+    socket.emit("motus:foundWords", { foundWords: state.foundWords.length });
+  });
+
+  socket.on("motus:requestWordListLength", () => {
+    const length = motusGame.getWordListLength();
+    console.log(`[Motus] Sending word list length: ${length}`);
+    socket.emit("motus:wordListLength", { length });
+  });
 
   socket.on("motus:guess", ({ guess }) => {
     if (!guess || typeof guess !== "string") return;

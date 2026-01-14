@@ -6,6 +6,7 @@ export function initMotus(socket) {
   const message = document.querySelector(".motus-message");
   const skipBtn = document.querySelector(".motus-skip");
   const continueBtn = document.querySelector(".motus-continue");
+  const avancement = document.querySelector("p.avancement");
 
   if (!grid || !keyboard) return;
 
@@ -15,6 +16,17 @@ export function initMotus(socket) {
   let gameActive = true;
   let maxRows = 6;
   let hyphenIndices = [];
+  let totalWords = null;
+  let foundWordsCount = 0;
+
+  function updateAvancement() {
+    if (avancement) {
+      const total = totalWords === null ? "?" : totalWords;
+      avancement.textContent = `${foundWordsCount} / ${total}`;
+    }
+  }
+
+  updateAvancement();
 
   if (skipBtn) {
     skipBtn.addEventListener("click", () => {
@@ -277,6 +289,18 @@ export function initMotus(socket) {
   }
 
   // Écouteurs Socket
+  socket.on("motus:wordListLength", ({ length }) => {
+    console.log("Reçu longueur mots motus:", length);
+    totalWords = length;
+    updateAvancement();
+  });
+
+  socket.on("motus:foundWords", ({ foundWords }) => {
+    console.log("Reçu mots trouvés motus:", foundWords);
+    foundWordsCount = foundWords;
+    updateAvancement();
+  });
+
   socket.on("motus:init", ({ length, hyphens, history, won }) => {
     currentRow = 0;
     currentGuess = ""; // Réinitialiser la supposition actuelle pour éviter le report
@@ -364,6 +388,9 @@ export function initMotus(socket) {
 
   socket.on("motus:result", ({ result, guess, won }) => {
     revealRow(result, guess);
+    if (won) {
+      socket.emit("motus:getFoundWords");
+    }
   });
 
   socket.on("motus:end", ({ message: msg }) => {
@@ -397,4 +424,19 @@ export function initMotus(socket) {
       handleKey(e.key.toUpperCase());
     }
   });
+
+  // Demander les stats initiales
+  const requestStats = () => {
+    console.log("Demande stats Motus (socket connecté)");
+    socket.emit("motus:requestWordListLength");
+    socket.emit("motus:getFoundWords");
+  };
+
+  if (socket.connected) {
+    requestStats();
+  } else {
+    socket.on("connect", () => {
+      requestStats();
+    });
+  }
 }

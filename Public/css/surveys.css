@@ -1,6 +1,6 @@
 body {
   background-color: var(--bg-color, #000);
-  color: #eee;
+  color: var(--primary-color);
 }
 
 .container {
@@ -11,7 +11,7 @@ body {
 }
 
 .survey-card {
-  background: rgba(20, 20, 20, 0.9);
+  background: var(--bg-color);
   border: 1px solid var(--primary-color);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -22,7 +22,7 @@ body {
 .survey-question {
   font-size: 1.3rem;
   margin-bottom: 1.5rem;
-  color: #fff;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
@@ -43,7 +43,8 @@ body {
 }
 
 .result-bar-bg {
-  background: #333;
+  background: transparent;
+  border: 1px solid var(--primary-color);
   height: 10px;
   border-radius: 0;
   overflow: hidden;
@@ -58,7 +59,8 @@ body {
 
 .survey-meta {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--primary-color);
+  opacity: 0.8;
   margin-top: 15px;
   display: flex;
   justify-content: space-between;
@@ -91,13 +93,14 @@ body {
 
 h2 {
   color: var(--primary-color);
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--primary-color);
   padding-bottom: 10px;
   margin-bottom: 20px;
 }
 
 .empty-msg {
-  color: #666;
+  color: var(--primary-color);
+  opacity: 0.7;
   font-style: italic;
   text-align: center;
   padding: 20px;
