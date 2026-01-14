@@ -6,6 +6,7 @@ const { FileService } = require("./util");
 const dbUsers = require("./dbUsers");
 const { exec } = require("child_process");
 const { recalculateMedals } = require("./medals");
+const words = require("./words");
 
 // Fonction pour créer le router avec accès à io
 function createAdminRouter(io, motusGame, leaderboardManager) {
@@ -201,6 +202,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         motusScores: FileService.data.motusScores
           ? FileService.data.motusScores[pseudo]
           : null,
+        motusTotalWords: words.length,
         medals:
           (FileService.data.medals && FileService.data.medals[pseudo]) || [],
         tag: FileService.data.tags ? FileService.data.tags[pseudo] || "" : "",

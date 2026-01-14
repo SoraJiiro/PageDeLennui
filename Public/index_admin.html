@@ -1126,6 +1126,12 @@
                         ? (typeof data.motusScores === 'object' ? `${data.motusScores.words} / ${data.motusScores.tries}` : `${data.motusScores} / ?`)
                         : '0 / 0'
                     }</span>
+                    <span class="label">Motus mots trouvés / mots totaux :</span>
+                    <span class="value">${
+                        data.motusScores 
+                        ? (typeof data.motusScores === 'object' ? `${data.motusScores.words} / ${data.motusTotalWords || '?'}` : `${data.motusScores} / ?`)
+                        : '0 / 0'
+                    }</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">Médailles:</span>
