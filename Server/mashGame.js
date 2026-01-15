@@ -13,6 +13,8 @@ class MashGame {
     this.MAX_SCORE = 100;
     this.phaseEndTime = 0;
 
+    this.bettingTimeout = null;
+
     this.emitState = null; // Callback to broadcast state
     this.onPayout = null;
   }
@@ -175,6 +177,14 @@ class MashGame {
     const userClicks = FileService.data.clicks[pseudo] || 0;
     if (userClicks < amount) return false;
 
+    // 25% Limit check
+    const maxBet = Math.floor(userClicks * 0.25);
+    if (amount > maxBet) return false;
+
+    // Check if target player exists (betOn is pseudo)
+    const target = this.players.find((p) => p.pseudo === betOn);
+    if (!target) return false;
+
     // Deduct
     FileService.data.clicks[pseudo] = userClicks - amount;
     FileService.save("clicks", FileService.data.clicks);
@@ -192,7 +202,10 @@ class MashGame {
     this.broadcastState();
     this.broadcastSystem("Les paris sont ouverts ! (10 secondes)");
 
-    setTimeout(() => {
+    if (this.bettingTimeout) clearTimeout(this.bettingTimeout);
+
+    this.bettingTimeout = setTimeout(() => {
+      this.bettingTimeout = null;
       // Check if still valid (players might have left)
       if (this.players.length < 2) {
         if (this.gameState === "betting") {
@@ -241,7 +254,7 @@ class MashGame {
 
     this.broadcastSystem(`VICTOIRE DE ${winner.pseudo.toUpperCase()} !`);
 
-    // Process bets
+    // Process betspseudo
     const winnersMsg = [];
     this.bets.forEach((bet) => {
       if (bet.betOn === winner.team) {
@@ -268,6 +281,10 @@ class MashGame {
   }
 
   terminateGame(reason, culprit) {
+    if (this.bettingTimeout) {
+      clearTimeout(this.bettingTimeout);
+      this.bettingTimeout = null;
+    }
     // Refund bets
     this.bets.forEach((bet) => {
       FileService.data.clicks[bet.pseudo] =
@@ -303,6 +320,10 @@ class MashGame {
     }
     this.players = [];
 
+    if (this.bettingTimeout) {
+      clearTimeout(this.bettingTimeout);
+      this.bettingTimeout = null;
+    }
     this.broadcastState();
   }
 

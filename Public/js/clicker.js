@@ -120,6 +120,40 @@ export function initClicker(socket) {
   }
   buildPrestigeListIfNeeded();
 
+  // ---------- Helper Calcul Bonus CPS (Médailles Full Black / Full White) ----------
+  function getPrestigeBonusCPS() {
+    let bonus = 0;
+    // On parcourt toutes les médailles prestige DÉBLOQUÉES
+    state.medalsDebloquees.forEach((nom) => {
+      if (!nom.startsWith("Médaille Prestige")) return;
+      const m = medalsList.find((x) => x.nom === nom);
+      if (!m || !m.couleurs || m.couleurs.length === 0) return;
+
+      let isFullBlack = true;
+      let isFullWhite = true;
+
+      for (const colorStr of m.couleurs) {
+        // On s'attend à du "hsl(H, S%, L%)"
+        // Regex simple pour chopper le L
+        const match = /hsl\(\s*\d+\s*,\s*\d+%\s*,\s*(\d+)%\s*\)/.exec(colorStr);
+        if (match) {
+          const l = parseInt(match[1], 10);
+          if (l > 10) isFullBlack = false;
+          if (l < 90) isFullWhite = false;
+        } else {
+          // Format inconnu => on invalide
+          isFullBlack = false;
+          isFullWhite = false;
+        }
+      }
+
+      if (isFullBlack || isFullWhite) {
+        bonus += 50;
+      }
+    });
+    return bonus;
+  }
+
   function createMedalElement(m, index, savedColors = null) {
     const existingEl = ui.medalsWrap.querySelector(`[data-name="${m.nom}"]`);
     if (existingEl) {
@@ -184,12 +218,34 @@ export function initClicker(socket) {
       m.nom.startsWith("Médaille Prestige")
     ) {
       const temp = [];
+      // 8.5% monochrome
+      const isMonochrome = Math.random() < 0.085;
+      // Chance RÉDUITE (ex: 0.2%) pour Full Black / White à la génération initiale
+      const isUltraRare = Math.random() < 0.002;
+
+      const theme = isUltraRare
+        ? Math.random() < 0.5
+          ? "black"
+          : "white"
+        : isMonochrome
+        ? "mono"
+        : "random";
+
       while (temp.length < 12) {
-        // Générateur simple – on évite la complexité rare pour stabilité
-        const h = Math.floor(Math.random() * 360);
-        const s = 70 + Math.floor(Math.random() * 25);
-        const l = 35 + Math.floor(Math.random() * 20);
-        temp.push(`hsl(${h}, ${s}%, ${l}%)`);
+        let c;
+        if (theme === "black") {
+          c = `hsl(0, 0%, ${Math.floor(Math.random() * 10)}%)`;
+        } else if (theme === "white") {
+          c = `hsl(0, 0%, ${90 + Math.floor(Math.random() * 10)}%)`;
+        } else if (theme === "mono") {
+          c = `hsl(0, 0%, ${Math.floor(Math.random() * 100)}%)`;
+        } else {
+          const h = Math.floor(Math.random() * 360);
+          const s = 70 + Math.floor(Math.random() * 25);
+          const l = 35 + Math.floor(Math.random() * 20);
+          c = `hsl(${h}, ${s}%, ${l}%)`;
+        }
+        temp.push(c);
       }
       temp.forEach((c, idx) => el.style.setProperty(`--grad${idx + 1}`, c));
       m.couleurs = temp;
@@ -319,7 +375,15 @@ export function initClicker(socket) {
         }
       });
 
-      const cpsToUse = medalCible.cps;
+      // Trouver la meilleure médaille parmi celles débloquées pour déterminer le CPS
+      const bestMedal = medalsList
+        .filter((m) => state.medalsDebloquees.has(m.nom))
+        .sort((a, b) => b.pallier - a.pallier)[0];
+
+      let cpsToUse = bestMedal ? bestMedal.cps : 0;
+      // Ajouter bonus Prestige
+      cpsToUse += getPrestigeBonusCPS();
+
       if (cpsToUse !== state.cpsActuel) setAutoClick(cpsToUse);
     }
   }
@@ -413,8 +477,8 @@ export function initClicker(socket) {
         const colors = [];
         // 8.5% de chance pour Monochrome (Noir/Blanc/Gris)
         const isMonochrome = Math.random() < 0.085;
-        // 4.5% de chance pour Noir Pur ou Blanc Pur (Ultra Rare)
-        const isUltraRare = Math.random() < 0.045;
+        // 0.2% de chance pour Noir Pur ou Blanc Pur (Ultra Rare) (Réduit de 4.5%)
+        const isUltraRare = Math.random() < 0.002;
 
         const theme = isUltraRare
           ? Math.random() < 0.5
@@ -540,7 +604,9 @@ export function initClicker(socket) {
 
     // On fait confiance au serveur : le CPS est déterminé par la meilleure médaille possédée
     // Cela permet de corriger le CPS si l'admin a retiré des médailles/clicks
-    const highestCps = medaillePlusHaute ? medaillePlusHaute.cps : 0;
+    let highestCps = medaillePlusHaute ? medaillePlusHaute.cps : 0;
+    // Ajout du bonus prestige si full black/white
+    highestCps += getPrestigeBonusCPS();
 
     // Vérifier si le score actuel mérite d'autres médailles (sync)
     verifMedals(state.scoreActuel);

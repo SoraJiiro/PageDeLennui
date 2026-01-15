@@ -81,7 +81,7 @@ function broadcastSystemMessage(io, text, persist = false) {
 }
 
 // Fonction pour recalculer les médailles d'un utilisateur en fonction de ses clicks
-function recalculateMedals(pseudo, clicks, io, silent = false) {
+function recalculateMedals(pseudo, clicks, io, silent = false, strict = false) {
   if (!FileService.data.medals) FileService.data.medals = {};
 
   // Gestion des tricheurs (score négatif)
@@ -114,7 +114,12 @@ function recalculateMedals(pseudo, clicks, io, silent = false) {
 
   // Déterminer quelles médailles l'utilisateur devrait avoir
   for (const medal of allMedals) {
-    if (clicks >= medal.pallier || existingNames.has(medal.nom)) {
+    // Si strict = true, on ne regarde QUE le palier, on ignore si l'utilisateur l'avait déjà
+    const condition = strict
+      ? clicks >= medal.pallier
+      : clicks >= medal.pallier || existingNames.has(medal.nom);
+
+    if (condition) {
       let colors = existingColors[medal.nom] || [];
 
       if (colors.length === 0) {
@@ -130,6 +135,7 @@ function recalculateMedals(pseudo, clicks, io, silent = false) {
         colors: colors,
       });
 
+      // On considère "nouveau" seulement si on ne l'avait pas avant
       if (!existingNames.has(medal.nom)) {
         newUnlocked.push(medal.nom);
       }
@@ -138,31 +144,34 @@ function recalculateMedals(pseudo, clicks, io, silent = false) {
 
   // --- Patch Paranoïaque : Restaurer toute médaille manquante qui était déjà acquise ---
   // (Sauf 'Tricheur' si on n'est plus en score négatif)
-  existingMedals.forEach((m) => {
-    const mName = typeof m === "string" ? m : m.name;
-    // Si la médaille est "Tricheur", on laisse la logique ci-dessus décider (basée sur le score négatif)
-    if (mName === "Tricheur") return;
+  // ON ACTIVE CE PATCH SEULEMENT SI strict EST FALSE
+  if (!strict) {
+    existingMedals.forEach((m) => {
+      const mName = typeof m === "string" ? m : m.name;
+      // Si la médaille est "Tricheur", on laisse la logique ci-dessus décider (basée sur le score négatif)
+      if (mName === "Tricheur") return;
 
-    // Si la médaille n'est pas dans la nouvelle liste userMedals
-    if (!userMedals.find((um) => um.name === mName)) {
-      // On la rajoute de force
-      let colors = [];
-      if (
-        typeof m === "object" &&
-        Array.isArray(m.colors) &&
-        m.colors.length > 0
-      ) {
-        colors = m.colors;
-      } else if (existingColors[mName]) {
-        colors = existingColors[mName];
+      // Si la médaille n'est pas dans la nouvelle liste userMedals
+      if (!userMedals.find((um) => um.name === mName)) {
+        // On la rajoute de force
+        let colors = [];
+        if (
+          typeof m === "object" &&
+          Array.isArray(m.colors) &&
+          m.colors.length > 0
+        ) {
+          colors = m.colors;
+        } else if (existingColors[mName]) {
+          colors = existingColors[mName];
+        }
+
+        userMedals.push({
+          name: mName,
+          colors: colors,
+        });
       }
-
-      userMedals.push({
-        name: mName,
-        colors: colors,
-      });
-    }
-  });
+    });
+  }
 
   // Trier les médailles par palier croissant (pour que l'affichage soit propre)
   userMedals.sort((a, b) => {

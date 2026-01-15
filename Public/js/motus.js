@@ -426,17 +426,6 @@ export function initMotus(socket) {
   });
 
   // Demander les stats initiales
-  const requestStats = () => {
-    console.log("Demande stats Motus (socket connecté)");
-    socket.emit("motus:requestWordListLength");
-    socket.emit("motus:getFoundWords");
-  };
-
-  if (socket.connected) {
-    requestStats();
-  } else {
-    socket.on("connect", () => {
-      requestStats();
-    });
-  }
+  socket.emit("motus:requestWordListLength");
+  socket.emit("motus:getFoundWords");
 }

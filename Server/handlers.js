@@ -305,15 +305,6 @@ function initSocketHandlers(io, socket, gameState) {
     socket.emit("ui:color", { color: savedUiColor });
   }
 
-  // Envoyer couleur Fond sauvegardée
-  const savedBgColor =
-    FileService.data.backgrounds && FileService.data.backgrounds[pseudo]
-      ? FileService.data.backgrounds[pseudo]
-      : null;
-  if (savedBgColor) {
-    socket.emit("ui:bgColor", { color: savedBgColor });
-  }
-
   // --- Coin Flip ---
   socket.on("coinflip:bet", (data) => {
     const { amount, side } = data;
@@ -460,13 +451,6 @@ function initSocketHandlers(io, socket, gameState) {
     if (!FileService.data.uis) FileService.data.uis = {};
     FileService.data.uis[pseudo] = color;
     FileService.save("uis", FileService.data.uis);
-  });
-
-  socket.on("ui:saveBgColor", ({ color }) => {
-    if (!color || typeof color !== "string") return;
-    if (!FileService.data.backgrounds) FileService.data.backgrounds = {};
-    FileService.data.backgrounds[pseudo] = color;
-    FileService.save("backgrounds", FileService.data.backgrounds);
   });
 
   // ------- Chat -------
@@ -641,7 +625,8 @@ function initSocketHandlers(io, socket, gameState) {
       if (!FileService.data.transactions) FileService.data.transactions = [];
       const transaction = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        from: `${pseudo} (${senderIp})`,
+        from: pseudo,
+        fromIp: senderIp,
         to: recipient,
         amount: val,
         date: new Date().toISOString(),
@@ -969,7 +954,7 @@ function initSocketHandlers(io, socket, gameState) {
     FileService.data.clicks[pseudo] = currentScore - COST;
     FileService.save("clicks", FileService.data.clicks);
 
-    // Update medals
+    // Update medals (apply new colors)
     const userMedals = FileService.data.medals[pseudo] || [];
     let updated = false;
 
@@ -991,16 +976,10 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.save("medals", FileService.data.medals);
     }
 
-    // Emit updates
-    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
-    leaderboardManager.broadcastClickerLB(io);
+    // Recalculate medals strictly (if dropped below tier, remove medal, otherwise keep new colors)
+    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io, false, true);
 
-    const normalized = userMedals.map((m) =>
-      typeof m === "string"
-        ? { name: m, colors: [] }
-        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
-    );
-    socket.emit("clicker:medals", normalized);
+    leaderboardManager.broadcastClickerLB(io);
 
     broadcastSystemMessage(
       io,
@@ -1625,6 +1604,14 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
 
+      recalculateMedals(
+        pseudo,
+        FileService.data.clicks[pseudo],
+        io,
+        false,
+        true
+      );
+
       // Notifier le nouveau solde de clicks
       socket.emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
@@ -1658,6 +1645,14 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
 
+      recalculateMedals(
+        pseudo,
+        FileService.data.clicks[pseudo],
+        io,
+        false,
+        true
+      );
+
       socket.emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
       });
@@ -1685,6 +1680,14 @@ function initSocketHandlers(io, socket, gameState) {
     if (userClicks >= cost) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
+
+      recalculateMedals(
+        pseudo,
+        FileService.data.clicks[pseudo],
+        io,
+        false,
+        true
+      );
 
       socket.emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
@@ -1717,6 +1720,14 @@ function initSocketHandlers(io, socket, gameState) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
 
+      recalculateMedals(
+        pseudo,
+        FileService.data.clicks[pseudo],
+        io,
+        false,
+        true
+      );
+
       socket.emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
       });
@@ -1747,6 +1758,14 @@ function initSocketHandlers(io, socket, gameState) {
     if (userClicks >= cost) {
       FileService.data.clicks[pseudo] = userClicks - cost;
       FileService.save("clicks", FileService.data.clicks);
+
+      recalculateMedals(
+        pseudo,
+        FileService.data.clicks[pseudo],
+        io,
+        false,
+        true
+      );
 
       socket.emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
@@ -2506,7 +2525,7 @@ function initSocketHandlers(io, socket, gameState) {
   // ------- Log off -------
   // ------- Mash Game -------
   if (!mashGame) {
-    mashGame = new MashGame((msg) => broadcastSystemMessage(io, msg));
+    mashGame = new MashGame((msg) => {}); // broadcastSystemMessage(io, msg));
   }
   if (mashGame && !mashGame.emitState) {
     mashGame.setEmitter((state) => io.emit("mash:state", state));

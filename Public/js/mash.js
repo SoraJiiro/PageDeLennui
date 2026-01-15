@@ -20,6 +20,7 @@ export function initMash(socket) {
 
   let isPlaying = false;
   let myKey = "k";
+  let currentPlayers = []; // Store players for betting mapping
 
   // Load saved key
   const savedKey = localStorage.getItem("mashKey");
@@ -54,14 +55,22 @@ export function initMash(socket) {
   if (btnBetRed) btnBetRed.addEventListener("click", () => sendBet("red"));
   if (btnBetBlue) btnBetBlue.addEventListener("click", () => sendBet("blue"));
 
-  function sendBet(color) {
+  function sendBet(teamColor) {
     const amount = parseInt(betInput.value);
+
+    // Find pseudo for the team
+    const p = currentPlayers.find((p) => p.team === teamColor);
+    const targetPseudo = p ? p.pseudo : null;
+
+    if (!targetPseudo) {
+      showNotification("Erreur: Joueur introuvable ?");
+      return;
+    }
+
     if (amount > 0) {
-      socket.emit("mash:bet", { betOn: color, amount: amount });
+      socket.emit("mash:bet", { betOn: targetPseudo, amount: amount });
       betOverlay.style.display = "none";
-      infoText.innerText = `Mise de ${amount} clicks placée sur ${
-        color === "red" ? "Rouge" : "Bleu"
-      } !`;
+      infoText.innerText = `Mise de ${amount} clicks placée sur ${targetPseudo} !`;
     }
   }
 
@@ -101,13 +110,25 @@ export function initMash(socket) {
     //console.log("[MASH] Syncing state. My pseudo (local):", username);
 
     // Update players
+    currentPlayers = state.players;
     const p1 = state.players.find((p) => p.team === "red");
     const p2 = state.players.find((p) => p.team === "blue");
 
-    if (p1) p1Pseudo.innerText = p1.pseudo;
-    else p1Pseudo.innerText = "En attente...";
-    if (p2) p2Pseudo.innerText = p2.pseudo;
-    else p2Pseudo.innerText = "En attente...";
+    if (p1) {
+      p1Pseudo.innerText = p1.pseudo;
+      if (btnBetRed) btnBetRed.innerText = `Miser sur ${p1.pseudo}`;
+    } else {
+      p1Pseudo.innerText = "En attente...";
+      if (btnBetRed) btnBetRed.innerText = "En attente...";
+    }
+
+    if (p2) {
+      p2Pseudo.innerText = p2.pseudo;
+      if (btnBetBlue) btnBetBlue.innerText = `Miser sur ${p2.pseudo}`;
+    } else {
+      p2Pseudo.innerText = "En attente...";
+      if (btnBetBlue) btnBetBlue.innerText = "En attente...";
+    }
 
     // Determine if I am playing
     // Use trim() to avoid issues with DOM text content

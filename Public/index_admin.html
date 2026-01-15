@@ -14,8 +14,35 @@
         </noscript>
 
         <link rel="stylesheet" type="text/css" href="css/common.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage1.css" />
         <link rel="stylesheet" type="text/css" href="css/stage3.css" />
         <link rel="stylesheet" type="text/css" href="css/admin.css" />
+        <style>
+            .admin-medals-wrap {
+                position: static !important;
+                width: 100% !important;
+                height: auto !important;
+                background: none !important;
+                border: none !important;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                padding: 10px 0;
+                justify-content: flex-start;
+                overflow: visible !important;
+            }
+            .admin-medals-wrap .medal {
+                width: 80px !important;
+                height: 80px !important;
+                flex-shrink: 0;
+            }
+            .admin-medals-wrap .medal.shown::after {
+                font-size: 2rem !important;
+            }
+            .admin-medals-wrap .medal .medal-index {
+                font-size: 2rem !important;
+            }
+        </style>
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
             media="(prefers-color-scheme: dark)" />
@@ -1015,9 +1042,15 @@
                 }
 
                 pending.forEach(tx => {
+                    // Gestion affichage ancien format vs nouveau format + IP
+                    let fromDisplay = tx.from;
+                    if (tx.fromIp) {
+                        fromDisplay = `${tx.from} (${tx.fromIp})`;
+                    }
+                    
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${tx.from}</td>
+                        <td>${fromDisplay}</td>
                         <td>${tx.to}</td>
                         <td>${tx.amount.toLocaleString()}</td>
                         <td>${new Date(tx.date).toLocaleString()}</td>
@@ -1233,19 +1266,42 @@
                 </div>
                 <div class="user-stat">
                     <span class="label">Médailles:</span>
-                    <span class="value" style="display:flex; flex-wrap:wrap; gap:5px;">
+                    <div class="medals-wrap admin-medals-wrap">
                         ${data.medals && data.medals.length > 0 
                             ? data.medals.map(m => {
-                                const bg = m.colors && m.colors.length > 0
-                                    ? (m.colors.length > 1 
-                                        ? `linear-gradient(45deg, ${m.colors.join(', ')})` 
-                                        : m.colors[0])
-                                    : '#888';
-                                return `<span style="background:${bg}; padding:2px 6px; border-radius:4px; color:#fff; text-shadow:0 0 2px #000; font-size:0.8em;">${m.name}</span>`;
+                                let styleStr = '';
+                                let innerContent = '';
+                                const isSpecial = ['Bronze', 'Argent', 'Or', 'Diamant', 'Rubis', 'Saphir'].includes(m.name);
+                                
+                                if (m.colors && m.colors.length) {
+                                    if (m.name.startsWith('Médaille') || m.name === 'Tricheur') {
+                                        m.colors.forEach((c, i) => styleStr += `--grad${i+1}: ${c}; `);
+                                    } else if (!isSpecial && m.name !== 'Légendaire' && m.name !== 'Rainbow') {
+                                        const bg = m.colors.length > 1 
+                                            ? `linear-gradient(120deg, ${m.colors[0]} 30%, ${m.colors[1]} 60%)` 
+                                            : m.colors[0];
+                                        styleStr = `background: ${bg} !important; border: 5px solid #fff;`;
+                                    }
+                                }
+
+                                if (m.name === 'Légendaire') {
+                                    innerContent = '<div class="medal-index">7</div>';
+                                } else if (m.name.startsWith('Médaille')) {
+                                    const num = m.name.replace('Médaille ', '');
+                                    innerContent = `<div class="medal-index">${num}</div>`;
+                                } else if (m.name === 'Tricheur') {
+                                    innerContent = '<div class="medal-index"><i class="fa-solid fa-ban"></i></div>';
+                                }
+
+                                const titleContent = m.colors && m.colors.length > 0 
+                                    ? `${m.name}\n${m.colors.join('\n')}`
+                                    : m.name;
+
+                                return `<div class="medal shown" data-name="${m.name}" style="${styleStr}" title="${titleContent}">${innerContent.replace("Prestige - ", "")}</div>`;
                             }).join('')
-                            : '0'
+                            : '<span style="color:var(--primary-color)">0</span>'
                         }
-                    </span>
+                    </div>
                 </div>
                 <div class="user-stat">
                     <span class="label">Tag:</span>

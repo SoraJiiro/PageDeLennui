@@ -58,15 +58,16 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
   // Helper pour envoyer des messages système (copié de handlers.js pour éviter les dépendances circulaires)
   function broadcastSystemMessage(text, persist = false) {
     if (!io) return;
-    const payload = {
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-      name: "System",
-      text: text,
-      at: new Date().toISOString(),
-      tag: { text: "System", color: "#ff0000" },
-    };
-    io.emit("chat:message", payload);
+    io.emit("system:info", text);
     if (persist) {
+      const payload = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        name: "Système",
+        text: text,
+        at: new Date().toISOString(),
+        tag: null,
+      };
+
       FileService.data.historique.push(payload);
       if (FileService.data.historique.length > 200) {
         FileService.data.historique = FileService.data.historique.slice(-200);
@@ -147,13 +148,23 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     if (tx.status !== "pending")
       return res.status(400).json({ message: "Transaction déjà traitée" });
 
+    // Nettoyage du pseudo si ancien format "Pseudo (IP)"
+    let senderPseudo = tx.from;
+    if (senderPseudo.includes(" (") && senderPseudo.endsWith(")")) {
+      const parts = senderPseudo.match(/^(.*) \((.*)\)$/);
+      if (parts && parts[1]) {
+        senderPseudo = parts[1];
+      }
+    }
+
     // Rembourser l'expéditeur
-    if (!FileService.data.clicks[tx.from]) FileService.data.clicks[tx.from] = 0;
-    FileService.data.clicks[tx.from] += tx.amount;
+    if (!FileService.data.clicks[senderPseudo])
+      FileService.data.clicks[senderPseudo] = 0;
+    FileService.data.clicks[senderPseudo] += tx.amount;
     FileService.save("clicks", FileService.data.clicks);
 
     // Recalculer médailles expéditeur
-    recalculateMedals(tx.from, FileService.data.clicks[tx.from], io);
+    recalculateMedals(senderPseudo, FileService.data.clicks[senderPseudo], io);
 
     // Mettre à jour statut
     tx.status = "rejected";
@@ -161,7 +172,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     FileService.save("transactions", FileService.data.transactions);
 
     broadcastSystemMessage(
-      `Don de ${tx.amount} clicks de ${tx.from} à ${tx.to} refusé par l'Admin.`,
+      `Don de ${tx.amount} clicks de ${senderPseudo} à ${tx.to} refusé par l'Admin.`,
       true
     );
     refreshLeaderboard("clicks");
@@ -314,7 +325,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // Si on modifie les clicks, recalculer les médailles
     if (statType === "clicks") {
-      recalculateMedals(pseudo, value, io);
+      recalculateMedals(pseudo, value, io, false, true);
     }
 
     refreshLeaderboard(statType);
@@ -456,7 +467,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
       // Si on modifie les clicks, recalculer les médailles
       if (statType === "clicks") {
-        recalculateMedals(pseudo, stats[statType], io);
+        recalculateMedals(pseudo, stats[statType], io, false, true);
       }
 
       console.log({
@@ -688,7 +699,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         const newValue = Math.max(0, current - value);
         FileService.data[statType][pseudo] = newValue;
         if (statType === "clicks") {
-          recalculateMedals(pseudo, newValue, io);
+          recalculateMedals(pseudo, newValue, io, false, true);
         }
       }
     });
@@ -991,7 +1002,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // Si on modifie les clicks, recalculer les médailles
     if (statType === "clicks") {
-      recalculateMedals(pseudo, newValue, io);
+      recalculateMedals(pseudo, newValue, io, false, true);
     }
 
     refreshLeaderboard(statType);
