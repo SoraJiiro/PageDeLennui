@@ -1,10 +1,12 @@
 const { FileService, getIpFromSocket, persistBanIp } = require("./util");
-const { recalculateMedals } = require("./services/medals");
 const dbUsers = require("./db/dbUsers");
-const UnoGame = require("./games/unoGame");
-const Puissance4Game = require("./games/puissance4Game");
-const MotusGame = require("./games/motusGame");
-const BlackjackGame = require("./games/blackjackGame");
+const {
+  recalculateMedals,
+  UnoGame,
+  Puissance4Game,
+  MotusGame,
+  BlackjackGame,
+} = require("./moduleGetter");
 
 const fs = require("fs");
 const path = require("path");

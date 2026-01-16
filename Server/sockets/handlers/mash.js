@@ -1,4 +1,4 @@
-const MashGame = require("../../games/mashGame");
+const { MashGame } = require("../../moduleGetter");
 
 function registerMashHandlers({
   io,

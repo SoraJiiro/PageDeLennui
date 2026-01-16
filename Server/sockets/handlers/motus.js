@@ -44,7 +44,7 @@ function registerMotusHandlers({
 
   socket.on("motus:requestWordListLength", () => {
     const length = motusGame.getWordListLength();
-    console.log(`[Motus] Sending word list length: ${length}`);
+    // console.log(`[Motus] Sending word list length: ${length}`);
     socket.emit("motus:wordListLength", { length });
   });
 

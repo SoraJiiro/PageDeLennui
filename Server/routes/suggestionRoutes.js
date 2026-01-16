@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const nodemailer = require("nodemailer");
-const requireAuth = require("../requireAuth");
+const { requireAuth } = require("../middlewareGetter");
 const { readAll, writeAll } = require("../db/dbUsers");
 
 // Configure transporter

@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const { FileService } = require("../util");
 const dbUsers = require("../db/dbUsers");
 const { exec } = require("child_process");
-const { recalculateMedals } = require("../services/medals");
+const { recalculateMedals } = require("../moduleGetter");
 const words = require("../constants/words");
 
 // Fonction pour créer le router avec accès à io

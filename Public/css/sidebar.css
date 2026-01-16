@@ -118,9 +118,10 @@
 
 .nav-btn,
 .nav-link {
+  position: relative;
   display: block;
   width: 100%;
-  padding: 10px 15px;
+  padding: 10px 40px 10px 15px;
   background: transparent;
   border: 1px solid transparent;
   color: #eee;

@@ -112,6 +112,7 @@ class FileService {
       transactions: path.join(config.DATA, "transactions.json"),
       blackjackStats: path.join(config.DATA, "blackjack_stats.json"),
       coinflipStats: path.join(config.DATA, "coinflip_stats.json"),
+      annonces: path.join(config.DATA, "annonces.json"),
     };
 
     this.data = this.loadAll();
@@ -160,6 +161,7 @@ class FileService {
       transactions: this.readJSON(this.files.transactions, []),
       blackjackStats: this.readJSON(this.files.blackjackStats, {}),
       coinflipStats: this.readJSON(this.files.coinflipStats, {}),
+      annonces: this.readJSON(this.files.annonces, []),
     };
   }
 
@@ -216,6 +218,7 @@ class FileService {
       transactions: this.files.transactions,
       blackjackStats: this.files.blackjackStats,
       coinflipStats: this.files.coinflipStats,
+      annonces: this.files.annonces,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);

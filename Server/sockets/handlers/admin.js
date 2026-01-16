@@ -182,11 +182,32 @@ function registerAdminHandlers({
     if (pseudo !== "Admin" || !message) return;
 
     const duration = 8000;
+    const notificationText = `📢 [ADMIN] ${message}`;
     io.emit("system:notification", {
-      message: `📢 [ADMIN] ${message}`,
+      message: notificationText,
       duration: duration,
       withCountdown: withCountdown || false,
     });
+
+    try {
+      if (!Array.isArray(FileService.data.annonces))
+        FileService.data.annonces = [];
+      FileService.data.annonces.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+        at: new Date().toISOString(),
+        author: pseudo,
+        message: notificationText,
+        rawMessage: message,
+        withCountdown: !!withCountdown,
+        duration,
+      });
+      if (FileService.data.annonces.length > 200) {
+        FileService.data.annonces = FileService.data.annonces.slice(-200);
+      }
+      FileService.save("annonces", FileService.data.annonces);
+    } catch (e) {
+      // ne pas bloquer l'envoi si la sauvegarde échoue
+    }
 
     console.log({
       level: "action",

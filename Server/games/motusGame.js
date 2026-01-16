@@ -51,7 +51,7 @@ class MotusGame {
   }
 
   getWordListLength() {
-    console.log(`Nb de mots au total: ${this.words.length}`);
+    //console.log(`Nb de mots au total: ${this.words.length}`);
     return this.words.length;
   }
 }

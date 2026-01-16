@@ -4,14 +4,20 @@ const express = require("express");
 
 // ------- Imports (legacy modules, paths preserved) -------
 const config = require("./config");
+const { GameStateManager } = require("./util");
 const {
   expressSession,
   blacklistMiddleware,
-  GameStateManager,
-} = require("./util");
-const authRoutes = require("./authRoutes");
-const requireAuth = require("./requireAuth");
-const createAdminRouter = require("./adminRoutes");
+  requireAuth,
+} = require("./middlewareGetter");
+const {
+  setupRoutes,
+  authRoutes,
+  createAdminRouter,
+  tagRoutes,
+  surveyRoutesFactory,
+  suggestionRoutes,
+} = require("./routeGetter");
 const {
   initSocketHandlers,
   motusGame,
@@ -24,7 +30,6 @@ const fileLogger = require("./logger");
 const { createHttpServer } = require("./bootstrap/createHttpServer");
 const { createIo } = require("./bootstrap/createIo");
 const { setupMiddleware } = require("./bootstrap/setupMiddleware");
-const { setupRoutes } = require("./routes/setupRoutes");
 const { setupSockets } = require("./sockets/setupSockets");
 const { setupAdminLogBridge } = require("./logging/setupAdminLogBridge");
 const { setupAutoReload } = require("./bootstrap/setupAutoReload");
@@ -48,9 +53,9 @@ setupRoutes(app, {
   io,
   motusGame,
   leaderboardManager,
-  tagRoutes: require("./tagRoutes"),
-  surveyRoutesFactory: require("./surveyRoutes"),
-  suggestionRoutes: require("./suggestionRoutes"),
+  tagRoutes,
+  surveyRoutesFactory,
+  suggestionRoutes,
 });
 
 // ------- Sockets -------

@@ -1,0 +1,101 @@
+body {
+  background-color: var(--bg-color, #000);
+  color: var(--primary-color);
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  padding-top: 80px;
+}
+
+.page-title {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.ann-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.input-group {
+  margin-bottom: 0;
+}
+
+.ann-filter {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  outline: none;
+}
+
+.ann-filter:focus {
+  box-shadow: 0 0 5px var(--primary-color);
+}
+
+.ann-status {
+  min-height: 22px;
+  margin: 0 0 14px;
+  color: var(--primary-color);
+  opacity: 0.8;
+}
+
+.ann-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.ann-item {
+  background: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  padding: 1rem;
+  border-radius: 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.ann-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+  color: var(--primary-color);
+  opacity: 0.8;
+  font-size: 0.85rem;
+}
+
+.ann-pill {
+  border: 1px solid var(--primary-color);
+  padding: 2px 10px;
+  border-radius: 0;
+  opacity: 0.95;
+}
+
+.ann-pill--admin {
+  background: rgba(0, 255, 0, 0.12);
+}
+
+.ann-message {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.ann-empty {
+  border: 1px dashed var(--primary-color);
+  border-radius: 0;
+  padding: 14px;
+  color: var(--primary-color);
+  opacity: 0.75;
+  text-align: center;
+}

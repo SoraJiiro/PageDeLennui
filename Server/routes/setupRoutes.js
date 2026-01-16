@@ -1,5 +1,7 @@
 const path = require("path");
+const fs = require("fs");
 const express = require("express");
+const { FileService } = require("../util");
 
 function setupRoutes(
   app,
@@ -22,6 +24,83 @@ function setupRoutes(
   app.use("/api/tag", tagRoutes);
   app.use("/api/surveys", surveyRoutesFactory(io));
   app.use("/api/suggestions", suggestionRoutes);
+
+  // Badges sidebar (auth)
+  app.get("/api/nav/badges", requireAuth, (req, res) => {
+    const toIso = (d) =>
+      d instanceof Date && !Number.isNaN(d.getTime()) ? d.toISOString() : null;
+    const safeStatMtimeIso = (filePath) => {
+      try {
+        const stat = fs.statSync(filePath);
+        return toIso(stat.mtime);
+      } catch (e) {
+        return null;
+      }
+    };
+    const maxIsoFromList = (list, field) => {
+      if (!Array.isArray(list) || list.length === 0) return null;
+      let max = null;
+      for (const item of list) {
+        const raw = item && item[field];
+        if (!raw) continue;
+        const ms = Date.parse(raw);
+        if (!Number.isFinite(ms)) continue;
+        if (max === null || ms > max) max = ms;
+      }
+      return max === null ? null : new Date(max).toISOString();
+    };
+
+    const patchNotesPath = path.join(config.PUBLIC, "patch_notes.html");
+    const patchNotesUpdatedAt = safeStatMtimeIso(patchNotesPath);
+
+    const annoncesLatestAt =
+      maxIsoFromList(FileService.data.annonces, "at") ||
+      safeStatMtimeIso(path.join(config.DATA, "annonces.json"));
+
+    const chatLatestAt =
+      maxIsoFromList(FileService.data.historique, "at") ||
+      safeStatMtimeIso(path.join(config.DATA, "chat_history.json"));
+
+    res.json({
+      patchNotesUpdatedAt,
+      annoncesLatestAt,
+      chatLatestAt,
+    });
+  });
+
+  // Historique des annonces (auth)
+  app.get("/api/annonces", requireAuth, (req, res) => {
+    const limitRaw = req.query && req.query.limit;
+    const requested = Number.parseInt(limitRaw, 10);
+    const limit = Number.isFinite(requested)
+      ? Math.min(Math.max(requested, 1), 500)
+      : 200;
+
+    const annonces = Array.isArray(FileService.data.annonces)
+      ? FileService.data.annonces
+      : [];
+
+    // renvoyer les plus récentes d'abord
+    const out = annonces.slice(-limit).reverse();
+    res.json({ annonces: out });
+  });
+
+  // Historique chat (auth)
+  app.get("/api/chat/history", requireAuth, (req, res) => {
+    const limitRaw = req.query && req.query.limit;
+    const requested = Number.parseInt(limitRaw, 10);
+    const limit = Number.isFinite(requested)
+      ? Math.min(Math.max(requested, 1), 500)
+      : 200;
+
+    const history = Array.isArray(FileService.data.historique)
+      ? FileService.data.historique
+      : [];
+
+    // renvoyer les plus récents d'abord
+    const out = history.slice(-limit).reverse();
+    res.json({ history: out });
+  });
 
   // Pages (auth)
   app.get("/login", (_, res) =>

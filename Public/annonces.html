@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Annonces - PDE</title>
+
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+
+        <link rel="stylesheet" href="css/common.css" />
+        <link rel="stylesheet" href="css/annonces.css" />
+
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)" />
+
+        <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer src="/socket.io/socket.io.js"></script>
+        <script defer type="text/javascript" src="js/nav.js"></script>
+        <script defer src="js/auto_reload.js"></script>
+        <script defer type="text/javascript" src="js/annonces.js"></script>
+    </head>
+
+    <body>
+        <div class="container">
+            <button onclick="window.location.href='/'" class="btn-back"><i
+                    class="fa-solid fa-arrow-left"></i> Retour</button>
+
+            <h1 class="page-title"><i class="fa-solid fa-bullhorn"></i>
+                Annonces</h1>
+
+            <div class="ann-controls">
+                <div class="input-group" style="flex: 1 1 320px;">
+                    <label for="ann-filter"
+                        style="margin-bottom: 5px;">Filtre</label>
+                    <input id="ann-filter" class="ann-filter" type="text"
+                        placeholder="Rechercher ..." autocomplete="off" />
+                </div>
+                <button id="ann-refresh" class="btn" type="button">
+                    Rafraîchir
+                </button>
+            </div>
+
+            <div id="ann-status" class="ann-status" aria-live="polite"></div>
+            <div id="ann-list" class="ann-list"></div>
+        </div>
+    </body>
+
+</html>
