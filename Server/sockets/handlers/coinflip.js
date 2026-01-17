@@ -7,6 +7,8 @@ function registerCoinflipHandlers({
   getIpFromSocket,
   recalculateMedals,
 }) {
+  const { applyDailyProfitCap } = require("../../services/economy");
+
   socket.on("coinflip:bet", (data) => {
     const { amount, side } = data;
     const bet = parseInt(amount);
@@ -36,9 +38,23 @@ function registerCoinflipHandlers({
     const won = side === resultSide;
     const winnings = won ? bet * 2 : 0;
 
+    // Cap quotidien: on ne limite que le PROFIT (pas le remboursement de la mise)
+    let profitAllowed = 0;
     if (won) {
-      // Ajouter gains (mise * 2)
-      FileService.data.clicks[pseudo] += winnings;
+      const profit = bet; // net profit d'un coinflip gagnant
+      const capInfo = applyDailyProfitCap({
+        FileService,
+        pseudo,
+        profit,
+        currentClicks,
+      });
+      profitAllowed = capInfo.allowedProfit;
+    }
+
+    if (won) {
+      // Ajouter gains: remboursement mise + profit (cap)
+      const credit = bet + profitAllowed;
+      FileService.data.clicks[pseudo] += credit;
     }
 
     // Update Coin Flip Stats
@@ -69,12 +85,13 @@ function registerCoinflipHandlers({
 
     // Log transaction with IP
     const ip = getIpFromSocket(socket);
+    const netChange = won ? profitAllowed : -bet;
     const logDetails = {
       type: "BET_COINFLIP",
       pseudo: `${pseudo} (${ip})`,
       bet: bet,
       result: won ? "WIN" : "LOSS",
-      netChange: won ? bet : -bet,
+      netChange,
       timestamp: new Date().toISOString(),
     };
     console.log(

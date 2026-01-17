@@ -8,12 +8,15 @@ function registerSnakeHandlers({
   withGame,
   colors,
 }) {
+  const { updateReviveContextFromScore } = require("../../services/economy");
   let isAlreadyLogged_snake = false;
 
   socket.on("snake:score", ({ score, elapsedMs, final }) => {
     const s = Number(score);
 
     if (isNaN(s) || s < 0) return;
+
+    updateReviveContextFromScore(socket, "snake", s);
 
     const current = FileService.data.snakeScores[pseudo] || 0;
 

@@ -89,6 +89,56 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     next();
   }
 
+  // --- Economy (cap quotidien casino) ---
+  router.get("/economy/daily-cap", requireAdmin, (req, res) => {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const clicks = FileService.data.clicks || {};
+    const daily = FileService.data.dailyEarnings || {};
+
+    const pseudos = new Set([...Object.keys(clicks), ...Object.keys(daily)]);
+
+    const rows = Array.from(pseudos).map((pseudo) => {
+      const currentClicks = Math.max(
+        0,
+        Math.floor(Number(clicks[pseudo]) || 0)
+      );
+      const bucket = daily[pseudo];
+
+      const hasToday = bucket && bucket.date === today;
+      const baseClicks = hasToday
+        ? Math.max(0, Math.floor(Number(bucket.baseClicks) || 0))
+        : null;
+      const earned = hasToday
+        ? Math.max(0, Math.floor(Number(bucket.earned) || 0))
+        : 0;
+      const cap = baseClicks == null ? null : Math.floor(baseClicks * 0.25);
+      const remaining = cap == null ? null : Math.max(0, cap - earned);
+
+      return {
+        pseudo,
+        date: hasToday ? today : bucket?.date || null,
+        currentClicks,
+        baseClicks,
+        cap,
+        earned,
+        remaining,
+        capPotential: Math.floor(currentClicks * 0.25),
+        hasToday,
+      };
+    });
+
+    rows.sort(
+      (a, b) => b.earned - a.earned || a.pseudo.localeCompare(b.pseudo)
+    );
+
+    res.json({ today, rows });
+  });
+
   // --- Transactions ---
   router.get("/transactions", requireAdmin, (req, res) => {
     const transactions = FileService.data.transactions || [];
@@ -244,6 +294,52 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       res
         .status(500)
         .json({ message: "Erreur serveur lors de la récupération des infos" });
+    }
+  });
+
+  // Reset Motus: mots trouvés (score) + mots déjà trouvés (state)
+  router.post("/motus/reset-found-words", requireAdmin, (req, res) => {
+    const { pseudo } = req.body || {};
+
+    if (!pseudo || typeof pseudo !== "string") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Pseudo manquant" });
+    }
+
+    const normalizedPseudo = pseudo.trim();
+    if (!normalizedPseudo) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Pseudo invalide" });
+    }
+
+    try {
+      if (!FileService.data.motusScores) FileService.data.motusScores = {};
+      FileService.data.motusScores[normalizedPseudo] = { words: 0, tries: 0 };
+      FileService.save("motusScores", FileService.data.motusScores);
+
+      if (!FileService.data.motusState) FileService.data.motusState = {};
+      FileService.data.motusState[normalizedPseudo] = {
+        currentWord: null,
+        history: [],
+        foundWords: [],
+      };
+      FileService.save("motusState", FileService.data.motusState);
+
+      refreshLeaderboard("motusScores");
+
+      broadcastSystemMessage(
+        `Motus: mots trouvés reset pour ${normalizedPseudo} (Admin).`,
+        true
+      );
+
+      return res.json({ success: true });
+    } catch (err) {
+      console.error("[ADMIN] Erreur /motus/reset-found-words", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Erreur serveur" });
     }
   });
 

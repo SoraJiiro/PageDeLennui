@@ -15,10 +15,17 @@ function registerBlockblastHandlers({
   colors,
   config,
 }) {
+  const { updateReviveContextFromScore } = require("../../services/economy");
+  const {
+    getReviveCostForSocket,
+    incrementReviveUsed,
+  } = require("../../services/economy");
   socket.on("blockblast:score", ({ score, elapsedMs, final }) => {
     const s = Number(score);
 
     if (isNaN(s) || s < 0) return;
+
+    updateReviveContextFromScore(socket, "blockblast", s);
 
     const current = FileService.data.blockblastScores[pseudo] || 0;
 
@@ -101,9 +108,21 @@ function registerBlockblastHandlers({
 
   socket.on("blockblast:payToContinue", ({ price }) => {
     const userClicks = FileService.data.clicks[pseudo] || 0;
-    const cost = Number(price);
+    const info = getReviveCostForSocket(socket, "blockblast");
+    if (!info || info.cost == null) {
+      socket.emit(
+        "blockblast:reviveError",
+        "Contexte de réanimation introuvable (score manquant)."
+      );
+      return;
+    }
+    if (info.error) {
+      socket.emit("blockblast:reviveError", info.error);
+      return;
+    }
 
-    if (isNaN(cost) || cost < 0) {
+    const cost = Number(info.cost);
+    if (!Number.isFinite(cost) || cost < 0) {
       socket.emit("blockblast:reviveError", "Prix invalide.");
       return;
     }
@@ -126,6 +145,7 @@ function registerBlockblastHandlers({
       });
       leaderboardManager.broadcastClickerLB(io);
 
+      incrementReviveUsed(socket, "blockblast");
       socket.emit("blockblast:reviveSuccess");
 
       console.log(

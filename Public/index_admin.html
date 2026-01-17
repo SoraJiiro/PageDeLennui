@@ -133,6 +133,35 @@
                         </div>
                     </section>
 
+                    <!-- ECONOMY DAILY CAP -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-coins"></i> /Cap quotidien
+                            (casino)</h2>
+                        <div class="transactions-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pseudo</th>
+                                        <th>Clicks</th>
+                                        <th>Base (snapshot)</th>
+                                        <th>Cap</th>
+                                        <th>Earned</th>
+                                        <th>Remaining</th>
+                                        <th>Cap (potentiel)</th>
+                                        <th>Date bucket</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="daily-cap-list"></tbody>
+                            </table>
+                            <center>
+                                <button onclick="refreshDailyCap()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
+                        </div>
+                    </section>
+
                     <!-- LEADERBOARDS -->
                     <section class="admin-section">
                         <h2><i class="fa-solid fa-trophy"></i>
@@ -1151,6 +1180,47 @@
             }
         }
 
+        // --- Cap quotidien (casino only) ---
+        async function refreshDailyCap() {
+            try {
+                const tbody = document.getElementById('daily-cap-list');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
+
+                const res = await fetch('/api/admin/economy/daily-cap');
+                if (!res.ok) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Erreur chargement</td></tr>';
+                    return;
+                }
+                const data = await res.json();
+                const rows = Array.isArray(data.rows) ? data.rows : [];
+
+                tbody.innerHTML = '';
+                if (rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Aucune donnée</td></tr>';
+                    return;
+                }
+
+                rows.forEach(r => {
+                    const tr = document.createElement('tr');
+                    const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('fr-FR') : '—');
+                    tr.innerHTML = `
+                        <td>${r.pseudo}</td>
+                        <td>${fmt(r.currentClicks)}</td>
+                        <td>${fmt(r.baseClicks)}</td>
+                        <td>${fmt(r.cap)}</td>
+                        <td>${fmt(r.earned)}</td>
+                        <td>${fmt(r.remaining)}</td>
+                        <td>${fmt(r.capPotential)}</td>
+                        <td>${r.date || '—'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Erreur refreshDailyCap', e);
+            }
+        }
+
         async function handlePasswordRequest(requestId, approve) {
             const action = approve ? "approuver" : "rejeter";
             if (!confirm(`Voulez-vous vraiment ${action} cette demande de changement de mot de passe ?`)) return;
@@ -1178,6 +1248,7 @@
         // Initial load
         refreshTransactions();
         refreshPasswordRequests();
+        refreshDailyCap();
 
         // Recherche utilisateur
         document.getElementById('userSearchInput').addEventListener('input', async (e) => {
@@ -1268,6 +1339,12 @@
                         ? (typeof data.motusScores === 'object' ? `${data.motusScores.words} / ${data.motusTotalWords || '?'}` : `${data.motusScores} / ?`)
                         : '0 / 0'
                     }</span>
+                    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+                        <button class="btn btn-red" onclick='resetMotusFoundWords(${JSON.stringify(data.pseudo)})' title="Remet à zéro les mots trouvés Motus (score + liste des mots déjà trouvés)">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            Reset mots trouvés (Motus)
+                        </button>
+                    </div>
                 </div>
                 <div class="user-stat">
                     <span class="label">Médailles:</span>
@@ -1366,6 +1443,40 @@
                 // initialiser état masqué
                 const plainElInit = document.getElementById('pwdPlain');
                 if (plainElInit) plainElInit.dataset.visible = '0';
+            }
+        }
+
+        async function resetMotusFoundWords(pseudo) {
+            if (!pseudo) return;
+
+            const ok = confirm(
+                `Reset les mots trouvés Motus de ${pseudo} ?\n\nCela remet aussi à zéro ses essais et sa liste de mots déjà trouvés.`
+            );
+            if (!ok) return;
+
+            try {
+                const res = await fetch('/api/admin/motus/reset-found-words', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+
+                const payload = await res.json().catch(() => ({}));
+                if (res.ok && payload.success) {
+                    showNotification(`✅ Motus reset pour ${pseudo}`, 'success');
+
+                    // refresh la fiche utilisateur
+                    const s = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                    if (s.ok) {
+                        const refreshed = await s.json();
+                        displayUserInfo(refreshed);
+                    }
+                } else {
+                    showNotification(`Erreur: ${payload.message || 'inconnue'}`, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 

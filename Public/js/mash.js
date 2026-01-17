@@ -21,6 +21,9 @@ export function initMash(socket) {
   let isPlaying = false;
   let myKey = "k";
   let currentPlayers = []; // Store players for betting mapping
+  let betPending = false;
+  let hasBetThisRound = false;
+  let myBet = null;
 
   // Load saved key
   const savedKey = localStorage.getItem("mashKey");
@@ -56,6 +59,8 @@ export function initMash(socket) {
   if (btnBetBlue) btnBetBlue.addEventListener("click", () => sendBet("blue"));
 
   function sendBet(teamColor) {
+    if (betPending) return;
+
     const amount = parseInt(betInput.value);
 
     // Find pseudo for the team
@@ -67,12 +72,40 @@ export function initMash(socket) {
       return;
     }
 
-    if (amount > 0) {
-      socket.emit("mash:bet", { betOn: targetPseudo, amount: amount });
-      betOverlay.style.display = "none";
-      infoText.innerText = `Mise de ${amount} clicks placée sur ${targetPseudo} !`;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showNotification("⚠️ Mise invalide");
+      if (betInput) betInput.focus();
+      return;
     }
+
+    betPending = true;
+    if (btnBetRed) btnBetRed.disabled = true;
+    if (btnBetBlue) btnBetBlue.disabled = true;
+
+    socket.emit("mash:bet", { betOn: targetPseudo, amount: amount });
   }
+
+  socket.on("mash:betError", (msg) => {
+    betPending = false;
+    if (btnBetRed) btnBetRed.disabled = false;
+    if (btnBetBlue) btnBetBlue.disabled = false;
+
+    // Garder l'overlay ouvert pour corriger
+    if (betOverlay) betOverlay.style.display = "flex";
+    showNotification(msg || "Mise refusée");
+    if (betInput) betInput.focus();
+  });
+
+  socket.on("mash:betSuccess", ({ betOn, amount }) => {
+    betPending = false;
+    if (btnBetRed) btnBetRed.disabled = false;
+    if (btnBetBlue) btnBetBlue.disabled = false;
+
+    hasBetThisRound = true;
+    myBet = { betOn, amount };
+    if (betOverlay) betOverlay.style.display = "none";
+    infoText.innerText = `Mise de ${amount} clicks placée sur ${betOn} !`;
+  });
 
   // Mash Event
   document.addEventListener("keyup", (e) => {
@@ -103,6 +136,14 @@ export function initMash(socket) {
   });
 
   function syncState(state) {
+    // Reset du flag pari quand on quitte la phase betting
+    if (state.gameState !== "betting") {
+      hasBetThisRound = false;
+      myBet = null;
+      betPending = false;
+      if (btnBetRed) btnBetRed.disabled = false;
+      if (btnBetBlue) btnBetBlue.disabled = false;
+    }
     const username =
       window.username ||
       document.querySelector(".sb-username")?.textContent?.trim() ||
@@ -162,8 +203,17 @@ export function initMash(socket) {
 
     // Betting overlay
     if (state.gameState === "betting" && !me) {
-      betOverlay.style.display = "flex";
-      infoText.innerText = "Les paris sont ouverts ! (10s)";
+      if (hasBetThisRound) {
+        betOverlay.style.display = "none";
+        if (myBet) {
+          infoText.innerText = `Mise placée: ${myBet.amount} sur ${myBet.betOn}`;
+        } else {
+          infoText.innerText = "Mise placée.";
+        }
+      } else {
+        betOverlay.style.display = "flex";
+        infoText.innerText = "Les paris sont ouverts ! (10s)";
+      }
     } else {
       betOverlay.style.display = "none";
     }

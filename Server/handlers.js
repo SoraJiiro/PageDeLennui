@@ -215,6 +215,30 @@ function initSocketHandlers(io, socket, gameState) {
   const pseudo = user.pseudo;
   socket.join("user:" + pseudo);
 
+  function getNormalizedMedalsFor(pseudo) {
+    const rawUserMedals =
+      (FileService.data.medals && FileService.data.medals[pseudo]) || [];
+    const normalized = rawUserMedals.map((m) =>
+      typeof m === "string"
+        ? { name: m, colors: [] }
+        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
+    );
+
+    // Forcer la médaille Tricheur si l'utilisateur est dans la liste.
+    if (
+      FileService.data.cheaters &&
+      FileService.data.cheaters.includes(pseudo) &&
+      !normalized.find((m) => m.name === "Tricheur")
+    ) {
+      normalized.unshift({
+        name: "Tricheur",
+        colors: ["#dcdcdc", "#ffffff", "#222", "#dcdcdc", "#ffffff", "#222"],
+      });
+    }
+
+    return normalized;
+  }
+
   // Joindre la room admin si Admin
   if (pseudo === "Admin") {
     try {
@@ -235,6 +259,16 @@ function initSocketHandlers(io, socket, gameState) {
   socket.emit("you:name", pseudo);
   socket.emit("chat:history", FileService.data.historique);
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
+
+  // Resync à la demande (utile si le client a raté un event init)
+  socket.on("chat:sync", () => {
+    socket.emit("chat:history", FileService.data.historique || []);
+  });
+
+  socket.on("clicker:sync", () => {
+    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
+    socket.emit("clicker:medals", getNormalizedMedalsFor(pseudo));
+  });
 
   // Init Mash Key
   const dbUser = dbUsers.findBypseudo(pseudo);

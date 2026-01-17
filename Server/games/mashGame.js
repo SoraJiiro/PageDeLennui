@@ -1,4 +1,5 @@
 const { FileService } = require("../util");
+const { applyDailyProfitCap } = require("../services/economy");
 
 class MashGame {
   constructor(broadcastSystemMsg) {
@@ -154,6 +155,9 @@ class MashGame {
   placeBet(pseudo, betOn, amount) {
     if (this.gameState !== "betting") return false;
 
+    // 1 pari max par joueur et par manche
+    if (this.bets.some((b) => b.pseudo === pseudo)) return false;
+
     if (!amount || amount <= 0) return false;
 
     const userClicks = FileService.data.clicks[pseudo] || 0;
@@ -229,13 +233,35 @@ class MashGame {
 
     this.broadcastSystem(`VICTOIRE DE ${winner.pseudo.toUpperCase()} !`);
 
+    const winningPseudo = winner.pseudo;
+    const winningTeam = winner.team;
+
     const winnersMsg = [];
     this.bets.forEach((bet) => {
-      if (bet.betOn === winner.team) {
-        const win = bet.amount * 2;
-        FileService.data.clicks[bet.pseudo] =
-          (FileService.data.clicks[bet.pseudo] || 0) + win;
-        winnersMsg.push(`${bet.pseudo} (+${bet.amount})`);
+      // betOn est normalement un pseudo (client), mais on accepte aussi l'ancien format (team)
+      let betTargetTeam = null;
+      if (bet.betOn === "red" || bet.betOn === "blue") {
+        betTargetTeam = bet.betOn;
+      } else {
+        const target = this.players.find((p) => p.pseudo === bet.betOn);
+        betTargetTeam = target ? target.team : null;
+      }
+
+      const isWinningBet =
+        bet.betOn === winningPseudo || betTargetTeam === winningTeam;
+
+      if (isWinningBet) {
+        const currentClicks = FileService.data.clicks[bet.pseudo] || 0;
+        const capInfo = applyDailyProfitCap({
+          FileService,
+          pseudo: bet.pseudo,
+          profit: bet.amount,
+          currentClicks,
+        });
+
+        const credit = bet.amount + capInfo.allowedProfit; // stake + profit (cap)
+        FileService.data.clicks[bet.pseudo] = currentClicks + credit;
+        winnersMsg.push(`${bet.pseudo} (+${capInfo.allowedProfit})`);
         if (this.onPayout)
           this.onPayout(bet.pseudo, FileService.data.clicks[bet.pseudo]);
       }

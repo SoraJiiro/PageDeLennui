@@ -589,13 +589,10 @@ class SnakeGame {
         if (this.ui.reviveCount)
           this.ui.reviveCount.textContent = 3 - this.revivesUsed;
 
-        let price = this.state.score;
-        if (
-          this.globalBestScore > 0 &&
-          this.state.score > this.globalBestScore
-        ) {
-          price = 500000;
-        }
+        const multiplier = 500;
+        const escalation = 1 + this.revivesUsed * 0.75;
+        let price = Math.floor(this.state.score * multiplier * escalation);
+        price = Math.max(5000, Math.min(5000000, price));
 
         if (this.ui.revivePrice)
           this.ui.revivePrice.textContent = price.toLocaleString("fr-FR");

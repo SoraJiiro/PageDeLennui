@@ -424,7 +424,10 @@ export function init2048(socket) {
         reviveOverlay.querySelector(".revive-count").textContent =
           3 - revivesUsed;
 
-        let price = Math.floor(score * 1.5);
+        const multiplier = 5;
+        const escalation = 1 + revivesUsed * 0.75;
+        let price = Math.floor(score * multiplier * escalation);
+        price = Math.max(5000, Math.min(5000000, price));
         reviveOverlay.querySelector(".cost").textContent =
           price.toLocaleString("fr-FR");
       } else {

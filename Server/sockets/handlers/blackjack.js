@@ -5,20 +5,34 @@ function ensureBlackjackGameConfigured({
   recalculateMedals,
   leaderboardManager,
 }) {
+  const { applyDailyProfitCap } = require("../../services/economy");
+
   // Init émetteur blackjack si non défini
   if (blackjackGame && !blackjackGame.emitState) {
     blackjackGame.setEmitter((state) => io.emit("blackjack:state", state));
 
     blackjackGame.setRoundEndCallback((roundStats) => {
       blackjackGame.joueurs.forEach((p) => {
-        const amountToAdd = p.bet + p.winnings;
-
-        if (amountToAdd > 0) {
+        const totalPayout = p.bet + p.winnings;
+        if (totalPayout > 0) {
           if (!FileService.data.clicks[p.pseudo])
             FileService.data.clicks[p.pseudo] = 0;
 
-          FileService.data.clicks[p.pseudo] += amountToAdd;
-          recalculateMedals(p.pseudo, FileService.data.clicks[p.pseudo], io);
+          // Décomposer: remboursement (non cap) + profit (cap)
+          const refundPart = Math.min(p.bet, totalPayout);
+          const profitPart = Math.max(0, totalPayout - refundPart);
+          const capInfo = applyDailyProfitCap({
+            FileService,
+            pseudo: p.pseudo,
+            profit: profitPart,
+            currentClicks: FileService.data.clicks[p.pseudo],
+          });
+
+          const amountToAdd = refundPart + capInfo.allowedProfit;
+          if (amountToAdd > 0) {
+            FileService.data.clicks[p.pseudo] += amountToAdd;
+            recalculateMedals(p.pseudo, FileService.data.clicks[p.pseudo], io);
+          }
         }
       });
 

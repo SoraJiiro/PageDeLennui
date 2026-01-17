@@ -8,10 +8,14 @@ function registerDinoFlappyHandlers({
   withGame,
   colors,
 }) {
+  const { updateReviveContextFromScore } = require("../../services/economy");
+
   // ------- Dino -------
   socket.on("dino:score", ({ score }) => {
     const s = Number(score);
     if (isNaN(s) || s < 0) return;
+
+    updateReviveContextFromScore(socket, "dino", s);
     const current = FileService.data.dinoScores[pseudo] || 0;
     if (s > current) {
       FileService.data.dinoScores[pseudo] = s;
@@ -48,6 +52,8 @@ function registerDinoFlappyHandlers({
   socket.on("flappy:score", ({ score }) => {
     const s = Number(score);
     if (isNaN(s) || s < 0) return;
+
+    updateReviveContextFromScore(socket, "flappy", s);
     const current = FileService.data.flappyScores[pseudo] || 0;
     if (s > current) {
       FileService.data.flappyScores[pseudo] = s;

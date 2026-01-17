@@ -473,10 +473,11 @@ export function initDino(socket) {
         toggleScrollLock(true);
         if (ui.reviveCount) ui.reviveCount.textContent = 3 - state.revivesUsed;
 
-        let price = Math.floor(state.score);
-        if (globalBestScore > 0 && price > globalBestScore) {
-          price = 500000;
-        }
+        const score = Math.floor(state.score);
+        const multiplier = 50;
+        const escalation = 1 + state.revivesUsed * 0.75;
+        let price = Math.floor(score * multiplier * escalation);
+        price = Math.max(5000, Math.min(5000000, price));
 
         if (ui.revivePrice)
           ui.revivePrice.textContent = price.toLocaleString("fr-FR");

@@ -7,9 +7,12 @@ function register2048Handlers({
   withGame,
   colors,
 }) {
+  const { updateReviveContextFromScore } = require("../../services/economy");
   socket.on("2048:submit_score", (score) => {
     const s = Number(score);
     if (isNaN(s)) return;
+
+    updateReviveContextFromScore(socket, "2048", s);
 
     if (!FileService.data.scores2048) FileService.data.scores2048 = {};
     const currentBest = FileService.data.scores2048[pseudo] || 0;

@@ -37,6 +37,63 @@ function registerMotusHandlers({
     return newWord;
   }
 
+  function emitMotusInitState() {
+    const state = getMotusState(pseudo);
+    if (!state.currentWord) {
+      assignNewWord(pseudo);
+    }
+
+    if (state.currentWord) {
+      const word = state.currentWord;
+      const hyphens = [];
+      for (let i = 0; i < word.length; i++) {
+        if (word[i] === "-") hyphens.push(i);
+      }
+
+      const last = state.history[state.history.length - 1];
+      const won = last && last.result.every((s) => s === 2);
+
+      socket.emit("motus:init", {
+        length: word.length,
+        hyphens: hyphens,
+        history: state.history,
+        won: won,
+      });
+    } else {
+      socket.emit("motus:end", {
+        message: "Toutes les communes ont été trouvées !",
+      });
+    }
+  }
+
+  function emitMotusMeta() {
+    try {
+      const state = getMotusState(pseudo);
+      socket.emit("motus:wordListLength", {
+        length: motusGame.getWordListLength(),
+      });
+      socket.emit("motus:foundWords", {
+        foundWords: (state.foundWords || []).length,
+      });
+    } catch (e) {}
+  }
+
+  function emitMotusLeaderboard() {
+    const lb = Object.entries(FileService.data.motusScores || {})
+      .map(([u, s]) => ({
+        pseudo: u,
+        words: s.words || 0,
+        tries: s.tries || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.words - a.words ||
+          a.tries - b.tries ||
+          a.pseudo.localeCompare(b.pseudo)
+      );
+    socket.emit("motus:leaderboard", lb);
+  }
+
   socket.on("motus:getFoundWords", () => {
     const state = getMotusState(pseudo);
     socket.emit("motus:foundWords", { foundWords: state.foundWords.length });
@@ -147,48 +204,16 @@ function registerMotusHandlers({
     });
   });
 
+  socket.on("motus:sync", () => {
+    emitMotusMeta();
+    emitMotusInitState();
+    emitMotusLeaderboard();
+  });
+
   // Send initial state on connect
-  const state = getMotusState(pseudo);
-  if (!state.currentWord) {
-    assignNewWord(pseudo);
-  }
-
-  if (state.currentWord) {
-    const word = state.currentWord;
-    const hyphens = [];
-    for (let i = 0; i < word.length; i++) {
-      if (word[i] === "-") hyphens.push(i);
-    }
-
-    const last = state.history[state.history.length - 1];
-    const won = last && last.result.every((s) => s === 2);
-
-    socket.emit("motus:init", {
-      length: word.length,
-      hyphens: hyphens,
-      history: state.history,
-      won: won,
-    });
-  } else {
-    socket.emit("motus:end", {
-      message: "Toutes les communes ont été trouvées !",
-    });
-  }
-
-  // Send LB on connect
-  const lb = Object.entries(FileService.data.motusScores || {})
-    .map(([u, s]) => ({
-      pseudo: u,
-      words: s.words || 0,
-      tries: s.tries || 0,
-    }))
-    .sort(
-      (a, b) =>
-        b.words - a.words ||
-        a.tries - b.tries ||
-        a.pseudo.localeCompare(b.pseudo)
-    );
-  socket.emit("motus:leaderboard", lb);
+  emitMotusMeta();
+  emitMotusInitState();
+  emitMotusLeaderboard();
 }
 
 module.exports = { registerMotusHandlers };

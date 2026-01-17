@@ -231,13 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
     await Promise.all([checkPatchNotes(), checkAnnonces(), checkChat()]);
   }
 
-  let socket = window.socket; // Si défini globalement
-  if (!socket && typeof io !== "undefined") {
-    socket = io();
-    window.socket = socket; // Partager
-  }
+  function setupRealtimeSocket(socket) {
+    if (!socket) return;
+    if (socket.__pdeNavSetup) return;
+    socket.__pdeNavSetup = true;
 
-  if (socket) {
     async function checkSurveys() {
       if (!surveysLink) return;
       try {
@@ -309,6 +307,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Si on ouvre directement des pages dédiées, marquer comme vu.
   }
+
+  let socket = window.socket; // Si défini globalement (par main.js)
+  if (socket) {
+    setupRealtimeSocket(socket);
+  }
+
+  // Attendre main.js (home) pour éviter 2 sockets différents.
+  // Fallback : si aucun socket n'arrive, on en crée un après un court délai.
+  window.addEventListener(
+    "pde:socket-ready",
+    (e) => {
+      try {
+        const s = e && e.detail && e.detail.socket;
+        if (s) {
+          socket = s;
+          setupRealtimeSocket(socket);
+        }
+      } catch {}
+    },
+    { once: true }
+  );
+
+  setTimeout(() => {
+    if (!socket && typeof io !== "undefined") {
+      socket = io();
+      window.socket = socket;
+      setupRealtimeSocket(socket);
+    }
+  }, 500);
 
   // Init badges
   refreshAllBadges();

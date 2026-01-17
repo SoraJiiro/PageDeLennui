@@ -100,6 +100,14 @@ import { initCanvasResizer } from "./canvas_resize.js";
       reconnexionEssais: 5,
     });
 
+    // Exposer le socket pour les scripts non-modules (ex: nav.js)
+    window.socket = socket;
+    try {
+      window.dispatchEvent(
+        new CustomEvent("pde:socket-ready", { detail: { socket } })
+      );
+    } catch {}
+
     window.username = username;
 
     if (window.initUiColor) {
@@ -167,12 +175,20 @@ import { initCanvasResizer } from "./canvas_resize.js";
       coinflipLeaderboard.initCoinflipLeaderboard(socket);
     if (passwordChange?.setupPasswordChange)
       passwordChange.setupPasswordChange(socket);
-    socket.connect();
 
+    // Important: enregistrer les listeners AVANT socket.connect()
     socket.on("connect", () => {
+      // Resync initial (au cas où certains events init auraient été ratés)
+      socket.emit("chat:sync");
+      socket.emit("clicker:sync");
+      socket.emit("motus:sync");
+
+      // États de jeux existants
       socket.emit("uno:getState");
       socket.emit("p4:getState");
     });
+
+    socket.connect();
   } catch (err) {
     console.error("Erreur chargement modules : ", err);
   }

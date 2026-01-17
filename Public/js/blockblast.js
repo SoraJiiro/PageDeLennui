@@ -1223,10 +1223,10 @@ export function initBlockBlast(socket) {
         ui.reviveSection.style.display = "block";
         if (ui.reviveCount) ui.reviveCount.textContent = 3 - state.revivesUsed;
 
-        let price = Math.floor((state.score * 4) / 0.9);
-        if (globalBestScore > 0 && state.score > globalBestScore) {
-          price = 500000;
-        }
+        const multiplier = 5;
+        const escalation = 1 + state.revivesUsed * 0.75;
+        let price = Math.floor(state.score * multiplier * escalation);
+        price = Math.max(5000, Math.min(5000000, price));
 
         if (ui.revivePrice)
           ui.revivePrice.textContent = price.toLocaleString("fr-FR");
