@@ -256,31 +256,37 @@ export function initMotus(socket) {
 
     if (result.every((s) => s === 2)) {
       // gameActive est déjà faux
-      setTimeout(() => {
-        showNotif("🎉 Bravo !");
-        if (continueBtn) continueBtn.style.display = "block";
-        if (skipBtn) skipBtn.style.display = "none";
-      }, wordLength * 100 + 100);
+      setTimeout(
+        () => {
+          showNotif("🎉 Bravo !");
+          if (continueBtn) continueBtn.style.display = "block";
+          if (skipBtn) skipBtn.style.display = "none";
+        },
+        wordLength * 100 + 100,
+      );
     } else if (currentRow >= maxRows) {
       // Réinitialiser la grille si pleine et non gagnée
       // gameActive est déjà faux
-      setTimeout(() => {
-        Array.from(grid.children).forEach((row) => {
-          Array.from(row.children).forEach((tile, index) => {
-            if (hyphenIndices.includes(index)) {
-              tile.textContent = "-";
-              tile.classList.add("fixed-hyphen");
-              delete tile.dataset.state;
-            } else {
-              tile.textContent = "";
-              delete tile.dataset.state;
-            }
+      setTimeout(
+        () => {
+          Array.from(grid.children).forEach((row) => {
+            Array.from(row.children).forEach((tile, index) => {
+              if (hyphenIndices.includes(index)) {
+                tile.textContent = "-";
+                tile.classList.add("fixed-hyphen");
+                delete tile.dataset.state;
+              } else {
+                tile.textContent = "";
+                delete tile.dataset.state;
+              }
+            });
           });
-        });
-        currentRow = 0;
-        gameActive = true;
-        showNotif("Grille réinitialisée !");
-      }, wordLength * 100 + 100);
+          currentRow = 0;
+          gameActive = true;
+          showNotif("Grille réinitialisée !");
+        },
+        wordLength * 100 + 100,
+      );
     } else {
       setTimeout(() => {
         gameActive = true;
@@ -290,13 +296,13 @@ export function initMotus(socket) {
 
   // Écouteurs Socket
   socket.on("motus:wordListLength", ({ length }) => {
-    console.log("Reçu longueur mots motus:", length);
+    //console.log("Reçu longueur mots motus:", length);
     totalWords = length;
     updateAvancement();
   });
 
   socket.on("motus:foundWords", ({ foundWords }) => {
-    console.log("Reçu mots trouvés motus:", foundWords);
+    //console.log("Reçu mots trouvés motus:", foundWords);
     foundWordsCount = foundWords;
     updateAvancement();
   });
@@ -332,7 +338,7 @@ export function initMotus(socket) {
         entry.result.forEach((status, i) => {
           const letter = entry.guess[i];
           const key = document.querySelector(
-            `.motus-key[data-key="${letter}"]`
+            `.motus-key[data-key="${letter}"]`,
           );
           if (status === 2) {
             if (key) key.dataset.state = "correct";

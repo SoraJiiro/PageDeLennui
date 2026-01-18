@@ -27,6 +27,19 @@ function registerMashHandlers({
 
   socket.on("mash:join", () => {
     mashGame.join(socket, pseudo);
+
+    // Appliquer la touche Mash sauvegardée au moment de rejoindre.
+    // Sans ça, MashGame.addPlayer() met mashKey="k" par défaut et le joueur
+    // doit re-cliquer OK à chaque session, ce qui donne l'impression que le choix ne marche pas.
+    try {
+      const dbUser = dbUsers.findBypseudo(pseudo);
+      const key =
+        dbUser && typeof dbUser.mashKey === "string" ? dbUser.mashKey : null;
+      if (key && key.length === 1) {
+        mashGame.setMashKey(pseudo, key);
+        mashGame.broadcastState();
+      }
+    } catch {}
   });
 
   socket.on("mash:leave", () => {
@@ -63,7 +76,7 @@ function registerMashHandlers({
       if (amount > maxBet) {
         socket.emit(
           "mash:betError",
-          `Mise trop élevée. Max: ${maxBet.toLocaleString("fr-FR")}`
+          `Mise trop élevée. Max: ${maxBet.toLocaleString("fr-FR")}`,
         );
         return;
       }

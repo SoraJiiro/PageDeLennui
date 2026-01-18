@@ -89,12 +89,182 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     next();
   }
 
+  // --- Profils: PFP Requests ---
+  router.get("/pfp/requests", requireAdmin, (req, res) => {
+    const reqs = Array.isArray(FileService.data.pfpRequests)
+      ? FileService.data.pfpRequests
+      : [];
+    res.json(reqs);
+  });
+
+  router.post("/pfp/requests/approve", requireAdmin, (req, res) => {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ message: "id manquant" });
+
+    const reqs = Array.isArray(FileService.data.pfpRequests)
+      ? FileService.data.pfpRequests
+      : [];
+    const item = reqs.find((r) => r && r.id === id);
+    if (!item) return res.status(404).json({ message: "Demande introuvable" });
+    if (item.status !== "pending") {
+      return res.status(400).json({ message: "Demande déjà traitée" });
+    }
+    if (!item.url || typeof item.url !== "string") {
+      return res.status(400).json({ message: "URL invalide" });
+    }
+
+    if (!FileService.data.pfps) FileService.data.pfps = {};
+    FileService.data.pfps[item.pseudo] = item.url;
+    FileService.save("pfps", FileService.data.pfps);
+
+    item.status = "approved";
+    item.processedAt = new Date().toISOString();
+    item.processedBy = req.session.user.pseudo;
+    FileService.save("pfpRequests", reqs);
+
+    broadcastSystemMessage(`🖼️ PFP approuvée pour ${item.pseudo}.`, false);
+
+    res.json({ success: true });
+  });
+
+  router.post("/pfp/requests/reject", requireAdmin, (req, res) => {
+    const { id, reason } = req.body || {};
+    if (!id) return res.status(400).json({ message: "id manquant" });
+
+    const reqs = Array.isArray(FileService.data.pfpRequests)
+      ? FileService.data.pfpRequests
+      : [];
+    const item = reqs.find((r) => r && r.id === id);
+    if (!item) return res.status(404).json({ message: "Demande introuvable" });
+    if (item.status !== "pending") {
+      return res.status(400).json({ message: "Demande déjà traitée" });
+    }
+
+    item.status = "rejected";
+    item.reason = reason ? String(reason).slice(0, 200) : null;
+    item.processedAt = new Date().toISOString();
+    item.processedBy = req.session.user.pseudo;
+    FileService.save("pfpRequests", reqs);
+
+    broadcastSystemMessage(`🖼️ PFP refusée pour ${item.pseudo}.`, false);
+    res.json({ success: true });
+  });
+
+  // --- Profils: Badges (catalog + assignation) ---
+  function ensureBadgesData() {
+    if (
+      !FileService.data.chatBadges ||
+      typeof FileService.data.chatBadges !== "object"
+    ) {
+      FileService.data.chatBadges = { catalog: {}, users: {} };
+    }
+    if (!FileService.data.chatBadges.catalog)
+      FileService.data.chatBadges.catalog = {};
+    if (!FileService.data.chatBadges.users)
+      FileService.data.chatBadges.users = {};
+    return FileService.data.chatBadges;
+  }
+
+  router.get("/badges", requireAdmin, (req, res) => {
+    const data = ensureBadgesData();
+    res.json(data);
+  });
+
+  router.post("/badges/create", requireAdmin, (req, res) => {
+    const { id, emoji, name } = req.body || {};
+    const badgeId = String(id || "").trim();
+    if (!badgeId || badgeId.length > 32 || !/^[a-zA-Z0-9_-]+$/.test(badgeId)) {
+      return res
+        .status(400)
+        .json({ message: "id invalide (a-zA-Z0-9_- max 32)" });
+    }
+    const badgeEmoji = String(emoji || "").trim();
+    const badgeName = String(name || "").trim();
+    if (!badgeEmoji || badgeEmoji.length > 10) {
+      return res.status(400).json({ message: "emoji invalide" });
+    }
+    if (!badgeName || badgeName.length > 30) {
+      return res.status(400).json({ message: "nom invalide" });
+    }
+
+    const data = ensureBadgesData();
+    if (data.catalog[badgeId]) {
+      return res.status(400).json({ message: "Badge déjà existant" });
+    }
+    data.catalog[badgeId] = { emoji: badgeEmoji, name: badgeName };
+    FileService.save("chatBadges", data);
+    res.json({ success: true });
+  });
+
+  router.post("/badges/delete", requireAdmin, (req, res) => {
+    const { id } = req.body || {};
+    const badgeId = String(id || "").trim();
+    if (!badgeId) return res.status(400).json({ message: "id manquant" });
+    const data = ensureBadgesData();
+    if (!data.catalog[badgeId]) {
+      return res.status(404).json({ message: "Badge introuvable" });
+    }
+    delete data.catalog[badgeId];
+
+    for (const pseudo of Object.keys(data.users)) {
+      const bucket = data.users[pseudo];
+      if (!bucket) continue;
+      const assigned = Array.isArray(bucket.assigned) ? bucket.assigned : [];
+      const selected = Array.isArray(bucket.selected) ? bucket.selected : [];
+      data.users[pseudo] = {
+        assigned: assigned.filter((x) => x !== badgeId),
+        selected: selected.filter((x) => x !== badgeId),
+      };
+    }
+
+    FileService.save("chatBadges", data);
+    res.json({ success: true });
+  });
+
+  router.post("/badges/assign", requireAdmin, (req, res) => {
+    const { pseudo, badgeId, action } = req.body || {};
+    const p = String(pseudo || "").trim();
+    const id = String(badgeId || "").trim();
+    const act = String(action || "add").trim();
+    if (!p || !id)
+      return res.status(400).json({ message: "Paramètres manquants" });
+
+    const userRec = dbUsers.findBypseudo(p);
+    if (!userRec)
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+
+    const data = ensureBadgesData();
+    if (!data.catalog[id]) {
+      return res.status(404).json({ message: "Badge introuvable" });
+    }
+    const canonicalPseudo = userRec.pseudo;
+    const bucket = data.users[canonicalPseudo] || {
+      assigned: [],
+      selected: [],
+    };
+    const assigned = Array.isArray(bucket.assigned) ? bucket.assigned : [];
+    const selected = Array.isArray(bucket.selected) ? bucket.selected : [];
+
+    if (act === "remove") {
+      data.users[canonicalPseudo] = {
+        assigned: assigned.filter((x) => x !== id),
+        selected: selected.filter((x) => x !== id),
+      };
+    } else {
+      const nextAssigned = assigned.includes(id) ? assigned : [...assigned, id];
+      data.users[canonicalPseudo] = { assigned: nextAssigned, selected };
+    }
+
+    FileService.save("chatBadges", data);
+    res.json({ success: true });
+  });
+
   // --- Economy (cap quotidien casino) ---
   router.get("/economy/daily-cap", requireAdmin, (req, res) => {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(now.getDate()).padStart(2, "0")}`;
 
     const clicks = FileService.data.clicks || {};
@@ -105,7 +275,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     const rows = Array.from(pseudos).map((pseudo) => {
       const currentClicks = Math.max(
         0,
-        Math.floor(Number(clicks[pseudo]) || 0)
+        Math.floor(Number(clicks[pseudo]) || 0),
       );
       const bucket = daily[pseudo];
 
@@ -133,7 +303,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     });
 
     rows.sort(
-      (a, b) => b.earned - a.earned || a.pseudo.localeCompare(b.pseudo)
+      (a, b) => b.earned - a.earned || a.pseudo.localeCompare(b.pseudo),
     );
 
     res.json({ today, rows });
@@ -174,7 +344,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     // Notifier
     broadcastSystemMessage(
       `Don de ${tx.amount} clicks de ${tx.from} à ${tx.to} approuvé par l'Admin.`,
-      true
+      true,
     );
 
     // Update destinataire si connecté
@@ -223,7 +393,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     broadcastSystemMessage(
       `Don de ${tx.amount} clicks de ${senderPseudo} à ${tx.to} refusé par l'Admin.`,
-      true
+      true,
     );
     refreshLeaderboard("clicks");
 
@@ -328,11 +498,6 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       FileService.save("motusState", FileService.data.motusState);
 
       refreshLeaderboard("motusScores");
-
-      broadcastSystemMessage(
-        `Motus: mots trouvés reset pour ${normalizedPseudo} (Admin).`,
-        true
-      );
 
       return res.json({ success: true });
     } catch (err) {
@@ -493,13 +658,13 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     if (FileService.data.cheaters) {
       const initialLength = FileService.data.cheaters.length;
       FileService.data.cheaters = FileService.data.cheaters.filter(
-        (p) => p !== pseudo
+        (p) => p !== pseudo,
       );
       if (FileService.data.cheaters.length < initialLength) {
         FileService.save("cheaters", FileService.data.cheaters);
 
         console.log(
-          `[ACTION_ADMIN] ${pseudo} retiré de la liste des TRICHEURS par l'Admin`
+          `[ACTION_ADMIN] ${pseudo} retiré de la liste des TRICHEURS par l'Admin`,
         );
         FileService.appendLog({
           type: "CHEATER_REMOVE",
@@ -775,7 +940,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         const current = FileService.data[statType][pseudo][field] || 0;
         FileService.data[statType][pseudo][field] = Math.max(
           0,
-          current - value
+          current - value,
         );
       } else if (statType === "motusScores") {
         const current = FileService.data.motusScores[pseudo] || {
@@ -930,7 +1095,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       FileService.data.blockblastBestTimes[pseudo] = time;
       FileService.save(
         "blockblastBestTimes",
-        FileService.data.blockblastBestTimes
+        FileService.data.blockblastBestTimes,
       );
       refreshLeaderboard("blockblastScores");
       return res.json({
@@ -1004,7 +1169,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
         delete FileService.data.blockblastBestTimes[pseudo];
         FileService.save(
           "blockblastBestTimes",
-          FileService.data.blockblastBestTimes
+          FileService.data.blockblastBestTimes,
         );
         refreshLeaderboard("blockblastScores");
         return res.json({
@@ -1181,7 +1346,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
     if (FileService.data.blockblastBestTimes) {
       FileService.save(
         "blockblastBestTimes",
-        FileService.data.blockblastBestTimes
+        FileService.data.blockblastBestTimes,
       );
     }
     // Save snake data if existed
@@ -1253,7 +1418,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
           delete FileService.data.blockblastBestTimes[pseudo];
           FileService.save(
             "blockblastBestTimes",
-            FileService.data.blockblastBestTimes
+            FileService.data.blockblastBestTimes,
           );
         }
         if (
@@ -1343,7 +1508,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       });
       return res.json({
         message: `Entrées supprimées des leaderboards (${removed.join(
-          ", "
+          ", ",
         )}) pour ${pseudo}`,
       });
     } catch (e) {
@@ -1552,7 +1717,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "..",
       "data",
       "stat_backup",
-      backupId
+      backupId,
     );
     if (!fs.existsSync(backupPath))
       return res.status(404).json({ message: "Backup introuvable" });
@@ -1617,13 +1782,8 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
     // On attend un peu que la réponse parte avant de tuer le processus
     setTimeout(() => {
-      if (process.platform === "win32") {
-        exec("taskkill /IM node.exe /F /T");
-      } else {
-        exec("pkill node");
-      }
-      // Fallback si les commandes échouent
-      setTimeout(() => process.exit(0), 500);
+      // Arrêt propre du process courant (évite de tuer d'autres Node sur la machine)
+      process.exit(0);
     }, 1000);
   });
 
@@ -1823,7 +1983,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "..",
       "..",
       "data",
-      "password_requests.json"
+      "password_requests.json",
     );
     try {
       if (fs.existsSync(reqFile)) {
@@ -1844,7 +2004,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "..",
       "..",
       "data",
-      "password_requests.json"
+      "password_requests.json",
     );
 
     try {
@@ -1871,7 +2031,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
           request.status = "approved";
           console.log(
-            `[ADMIN] Changement de mot de passe approuvé pour ${request.pseudo}`
+            `[ADMIN] Changement de mot de passe approuvé pour ${request.pseudo}`,
           );
         } else {
           request.status = "failed_user_not_found";
@@ -1879,7 +2039,7 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       } else {
         request.status = "rejected";
         console.log(
-          `[ADMIN] Changement de mot de passe rejeté pour ${request.pseudo}`
+          `[ADMIN] Changement de mot de passe rejeté pour ${request.pseudo}`,
         );
       }
 

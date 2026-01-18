@@ -27,7 +27,7 @@ function persistBanIp(ip) {
       fs.writeFileSync(
         BLACKLIST_PATH,
         JSON.stringify(defaultData, null, 2),
-        "utf8"
+        "utf8",
       );
     }
     const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
@@ -92,6 +92,9 @@ class FileService {
       clicks: path.join(config.DATA, "clicks.json"),
       historique: path.join(config.DATA, "chat_history.json"),
       chatLogs: path.join(config.DATA, "chat_logs.jsonl"),
+      pfps: path.join(config.DATA, "pfps.json"),
+      pfpRequests: path.join(config.DATA, "pfp_requests.json"),
+      chatBadges: path.join(config.DATA, "chat_badges.json"),
       dinoScores: path.join(config.DATA, "dino_scores.json"),
       flappyScores: path.join(config.DATA, "flappy_scores.json"),
       unoWins: path.join(config.DATA, "uno_wins.json"),
@@ -119,6 +122,8 @@ class FileService {
     this.data = this.loadAll();
     // Migration silencieuse des médailles vers format uniforme { name, colors: [] }
     this.migrateMedals();
+    // Migration silencieuse des badges chat (ancien format -> nouveau)
+    this.migrateChatBadges();
   }
 
   readJSON(file, fallback) {
@@ -142,6 +147,12 @@ class FileService {
     return {
       clicks: this.readJSON(this.files.clicks, {}),
       historique: this.readJSON(this.files.historique, []),
+      pfps: this.readJSON(this.files.pfps, {}),
+      pfpRequests: this.readJSON(this.files.pfpRequests, []),
+      chatBadges: this.readJSON(this.files.chatBadges, {
+        catalog: {},
+        users: {},
+      }),
       dinoScores: this.readJSON(this.files.dinoScores, {}),
       medals: this.readJSON(this.files.medals, {}),
       flappyScores: this.readJSON(this.files.flappyScores, {}),
@@ -194,11 +205,57 @@ class FileService {
     }
   }
 
+  migrateChatBadges() {
+    try {
+      const raw = this.data.chatBadges;
+      if (!raw || typeof raw !== "object") {
+        this.data.chatBadges = { catalog: {}, users: {} };
+        this.save("chatBadges", this.data.chatBadges);
+        return;
+      }
+
+      // Nouveau format attendu: { catalog: {id:{emoji,name}}, users: {pseudo:{assigned:[], selected:[]}} }
+      const hasCatalog = raw.catalog && typeof raw.catalog === "object";
+      const hasUsers = raw.users && typeof raw.users === "object";
+      if (hasCatalog && hasUsers) {
+        // Normalisation légère
+        raw.catalog = raw.catalog || {};
+        raw.users = raw.users || {};
+        this.data.chatBadges = raw;
+        return;
+      }
+
+      // Ancien format détecté: { "Pseudo": "badgeId" }
+      const legacy = raw;
+      const migrated = { catalog: {}, users: {} };
+      for (const [pseudo, badgeIdRaw] of Object.entries(legacy)) {
+        const badgeId = String(badgeIdRaw || "").trim();
+        if (!badgeId) continue;
+        if (!migrated.catalog[badgeId]) {
+          let emoji = "🏷️";
+          if (badgeId.toLowerCase() === "star") emoji = "⭐";
+          migrated.catalog[badgeId] = { emoji, name: badgeId };
+        }
+        migrated.users[pseudo] = { assigned: [badgeId], selected: [badgeId] };
+      }
+      this.data.chatBadges = migrated;
+      this.save("chatBadges", migrated);
+      console.log(
+        "[Migration] Badges chat migrés (format legacy -> nouveau). ✔️",
+      );
+    } catch (e) {
+      console.warn("[Migration] Échec de la migration des badges chat", e);
+    }
+  }
+
   save(key, data) {
     this.data[key] = data;
     const fileMap = {
       clicks: this.files.clicks,
       historique: this.files.historique,
+      pfps: this.files.pfps,
+      pfpRequests: this.files.pfpRequests,
+      chatBadges: this.files.chatBadges,
       dinoScores: this.files.dinoScores,
       medals: this.files.medals,
       flappyScores: this.files.flappyScores,

@@ -133,6 +133,109 @@
                         </div>
                     </section>
 
+                    <!-- PFP REQUESTS -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-image"></i> /Demandes de
+                            PFP</h2>
+                        <div class="transactions-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pseudo</th>
+                                        <th>URL</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pfp-requests-list"></tbody>
+                            </table>
+                            <center>
+                                <button onclick="refreshPfpRequests()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
+                        </div>
+                    </section>
+
+                    <!-- BADGES CHAT -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-tags"></i> /Badges (chat)</h2>
+                        <div class="transactions-container">
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="badgeId">ID</label>
+                                        <input id="badgeId"
+                                            placeholder="ex: star" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="badgeEmoji">Emoji</label>
+                                        <input id="badgeEmoji"
+                                            placeholder="⭐" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="badgeName">Nom</label>
+                                        <input id="badgeName"
+                                            placeholder="Star" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="createBadge()"
+                                            class="btn"><i
+                                                class="fa-solid fa-plus"></i>
+                                            Créer</button>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="assignPseudo">Pseudo</label>
+                                        <input id="assignPseudo"
+                                            placeholder="Pseudo" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="assignBadgeId">Badge</label>
+                                        <select id="assignBadgeId"></select>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="assignBadge('add')"
+                                            class="btn"><i
+                                                class="fa-solid fa-check"></i>
+                                            Donner</button>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="assignBadge('remove')"
+                                            class="btn btn-red"><i
+                                                class="fa-solid fa-times"></i>
+                                            Retirer</button>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="refreshBadges()"
+                                            class="btn"><i
+                                                class="fa-solid fa-rotate"></i>
+                                            Refresh</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Emoji</th>
+                                        <th>Nom</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="badges-catalog-list"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
                     <!-- ECONOMY DAILY CAP -->
                     <section class="admin-section">
                         <h2><i class="fa-solid fa-coins"></i> /Cap quotidien
@@ -1180,6 +1283,205 @@
             }
         }
 
+        // --- PFP Requests ---
+        async function refreshPfpRequests() {
+            try {
+                const res = await fetch('/api/admin/pfp/requests');
+                if (!res.ok) return;
+                const requests = await res.json();
+                const pending = requests.filter(r => r.status === 'pending');
+
+                const tbody = document.getElementById('pfp-requests-list');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                if (pending.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Aucune demande</td></tr>';
+                    return;
+                }
+
+                pending.forEach(req => {
+                    const safeUrl = (req.url || '').toString();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${req.pseudo}</td>
+                        <td style="max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            <a href="${safeUrl}" target="_blank" rel="noopener">${safeUrl}</a>
+                        </td>
+                        <td>${new Date(req.createdAt || req.date || Date.now()).toLocaleString()}</td>
+                        <td>
+                            <button onclick="approvePfp('${req.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;" title="Approuver">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                            <button onclick="rejectPfp('${req.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;" title="Refuser">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Erreur refreshPfpRequests', e);
+            }
+        }
+
+        async function approvePfp(id) {
+            if (!confirm('Approuver cette PFP ?')) return;
+            try {
+                const res = await fetch('/api/admin/pfp/requests/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) {
+                    showNotification('PFP approuvée', 'success');
+                    refreshPfpRequests();
+                } else {
+                    showNotification('Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function rejectPfp(id) {
+            const reason = prompt('Raison du refus ? (optionnel)') || '';
+            if (!confirm('Refuser cette PFP ?')) return;
+            try {
+                const res = await fetch('/api/admin/pfp/requests/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, reason })
+                });
+                if (res.ok) {
+                    showNotification('PFP refusée', 'success');
+                    refreshPfpRequests();
+                } else {
+                    showNotification('Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // --- Badges (chat) ---
+        let _badgesCache = null;
+        async function refreshBadges() {
+            try {
+                const res = await fetch('/api/admin/badges');
+                if (!res.ok) return;
+                const data = await res.json();
+                _badgesCache = data;
+                const catalog = data.catalog || {};
+
+                const tbody = document.getElementById('badges-catalog-list');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    const entries = Object.entries(catalog).sort((a,b)=>a[0].localeCompare(b[0]));
+                    if (entries.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Aucun badge</td></tr>';
+                    } else {
+                        entries.forEach(([id, def]) => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${id}</td>
+                                <td>${def.emoji || ''}</td>
+                                <td>${def.name || ''}</td>
+                                <td>
+                                    <button onclick="deleteBadge('${id}')" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;" title="Supprimer">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                }
+
+                const select = document.getElementById('assignBadgeId');
+                if (select) {
+                    select.innerHTML = '';
+                    Object.entries(catalog).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([id, def]) => {
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        opt.textContent = `${id} ${def.emoji ? '(' + def.emoji + ')' : ''} - ${def.name || ''}`;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('Erreur refreshBadges', e);
+            }
+        }
+
+        async function createBadge() {
+            const id = (document.getElementById('badgeId')?.value || '').trim();
+            const emoji = (document.getElementById('badgeEmoji')?.value || '').trim();
+            const name = (document.getElementById('badgeName')?.value || '').trim();
+            if (!id || !emoji || !name) {
+                showNotification('Champs manquants', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/badges/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, emoji, name })
+                });
+                const data = await res.json().catch(()=>({}));
+                if (res.ok) {
+                    showNotification('Badge créé', 'success');
+                    refreshBadges();
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteBadge(id) {
+            if (!confirm(`Supprimer le badge ${id} ?`)) return;
+            try {
+                const res = await fetch('/api/admin/badges/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) {
+                    showNotification('Badge supprimé', 'success');
+                    refreshBadges();
+                } else {
+                    showNotification('Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function assignBadge(action) {
+            const pseudo = (document.getElementById('assignPseudo')?.value || '').trim();
+            const badgeId = (document.getElementById('assignBadgeId')?.value || '').trim();
+            if (!pseudo || !badgeId) {
+                showNotification('Pseudo/Badge manquants', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/badges/assign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, badgeId, action })
+                });
+                const data = await res.json().catch(()=>({}));
+                if (res.ok) {
+                    showNotification(action === 'remove' ? 'Badge retiré' : 'Badge donné', 'success');
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         // --- Cap quotidien (casino only) ---
         async function refreshDailyCap() {
             try {
@@ -1248,6 +1550,8 @@
         // Initial load
         refreshTransactions();
         refreshPasswordRequests();
+        refreshPfpRequests();
+        refreshBadges();
         refreshDailyCap();
 
         // Recherche utilisateur

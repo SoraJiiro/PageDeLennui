@@ -213,7 +213,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const seen = await getSeenIds("seenChat");
     const unseen = history.filter(
-      (m) => m && m.id && !seen.includes(String(m.id)) && (!me || m.name !== me)
+      (m) =>
+        m && m.id && !seen.includes(String(m.id)) && (!me || m.name !== me),
     );
     const unseenCount = unseen.length;
 
@@ -250,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const seenIds = JSON.parse(localStorage.getItem(seenKey) || "[]");
           const count = surveys.filter(
-            (s) => s.status === "active" && !seenIds.includes(s.id)
+            (s) => s.status === "active" && !seenIds.includes(s.id),
           ).length;
 
           if (count > 0) {
@@ -267,7 +268,6 @@ document.addEventListener("DOMContentLoaded", () => {
     checkSurveys();
 
     socket.on("survey:new", () => {
-      console.log("Event survey:new reçu !");
       showNavNotification("Nouveau sondage disponible !");
       checkSurveys();
     });
@@ -326,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } catch {}
     },
-    { once: true }
+    { once: true },
   );
 
   setTimeout(() => {
@@ -455,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!entry || !entry.isIntersecting) return;
         await checkChat({ markSeen: true });
       },
-      { threshold: 0.6 }
+      { threshold: 0.6 },
     );
     obs.observe(stage3);
   }
@@ -466,7 +466,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mario.addEventListener("click", () => {
       window.open(
         "https://supermario-game.com/mario-game/mario.html",
-        "_blank"
+        "_blank",
       );
       closeSidebar();
     });

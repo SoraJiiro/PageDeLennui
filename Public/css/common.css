@@ -119,6 +119,15 @@ canvas,
   display: block;
 }
 
+/* Betting helpers */
+.bet-max-info {
+  margin-top: 6px;
+  font-size: 0.8em;
+  color: #aaa;
+  text-align: center;
+  letter-spacing: 0.06rem;
+}
+
 /* Utility to force canvas to maintain a fixed aspect ratio container */
 .aspect-16-9 {
   position: relative;

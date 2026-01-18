@@ -17,7 +17,7 @@ export function initBlackjack(socket, username) {
         <input type="number" id="bj-bet-input" class="bj-input" placeholder="Mise" min="1">
         <button id="bj-bet-confirm" class="btn">Miser</button>
       </div>
-      <div style="font-size:0.8em; margin-top:5px; color:#aaa; text-align:center;">Max: 50% de vos clicks</div>
+      <div id="bj-bet-max" style="font-size:0.8em; margin-top:5px; color:#aaa; text-align:center;"></div>
     `;
   }
 
@@ -47,12 +47,33 @@ export function initBlackjack(socket, username) {
   let gameState = null;
   let currentScore = 0; // User wealth
 
+  function updateMaxBetUI() {
+    const maxBet = Math.max(0, Math.floor((currentScore || 0) * 0.5));
+    if (betInput) betInput.max = String(maxBet);
+
+    const betMaxInfo = document.getElementById("bj-bet-max");
+    if (betMaxInfo) {
+      betMaxInfo.textContent = `Mise max : ${maxBet.toLocaleString(
+        "fr-FR",
+      )} (50% de vos clicks)`;
+    }
+
+    if (betInput && betInput.value !== "") {
+      const val = parseInt(betInput.value);
+      if (!isNaN(val) && val > maxBet) betInput.value = maxBet;
+    }
+  }
+
+  updateMaxBetUI();
+
   // Suivi du score
   socket.on("clicker:you", (data) => {
     currentScore = data.score;
+    updateMaxBetUI();
   });
   socket.on("clicker:update", (data) => {
     currentScore = data.score;
+    updateMaxBetUI();
   });
 
   // Listeners Rejoindre/Quitter

@@ -8,8 +8,50 @@ export function initChat(socket) {
   const submit = document.querySelector(".submit");
   let myPseudo = null;
   let onlineUsers = [];
+  const pfpModal = document.createElement("div");
+  pfpModal.className = "pfp-modal";
+  pfpModal.innerHTML = `
+    <div class="pfp-modal__overlay" aria-hidden="true"></div>
+    <div class="pfp-modal__content" role="dialog" aria-modal="true">
+      <button type="button" class="pfp-modal__close" aria-label="Fermer la photo"><i class="fa-solid fa-xmark"></i></button>
+      <img class="pfp-modal__image" alt="">
+      <p class="pfp-modal__caption" aria-live="polite"></p>
+    </div>
+  `;
+  document.body.appendChild(pfpModal);
+  const modalImage = pfpModal.querySelector(".pfp-modal__image");
+  const modalCaption = pfpModal.querySelector(".pfp-modal__caption");
+  const modalClose = pfpModal.querySelector(".pfp-modal__close");
+  const modalOverlay = pfpModal.querySelector(".pfp-modal__overlay");
+  const hidePfpModal = () => {
+    pfpModal.classList.remove("pfp-modal--visible");
+    modalImage.src = "";
+  };
+  const showPfpModal = (src, label) => {
+    if (!src) return;
+    modalImage.src = src;
+    modalCaption.textContent = label ? `PFP de ${label}` : "Photo de profil";
+    modalImage.alt = label ? `Avatar de ${label}` : "Photo de profil";
+    pfpModal.classList.add("pfp-modal--visible");
+  };
+  modalClose.addEventListener("click", hidePfpModal);
+  modalOverlay.addEventListener("click", hidePfpModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      hidePfpModal();
+    }
+  });
 
-  function addMessage({ id, auteur, text, at, type = "user", tag = null }) {
+  function addMessage({
+    id,
+    auteur,
+    text,
+    at,
+    type = "user",
+    tag = null,
+    pfp = null,
+    badges = null,
+  }) {
     const lastMsg = messages.lastElementChild;
     const currentTimestamp = at ? new Date(at).getTime() : Date.now();
     let isContinuation = false;
@@ -65,7 +107,7 @@ export function initChat(socket) {
               return `<span style="color:${color}">${word}</span>`;
             });
             tagHtml = ` [<span class="user-tag">${coloredWords.join(
-              " "
+              " ",
             )}</span>]`;
           } else {
             const style = tag.color ? `style="color:${tag.color}"` : "";
@@ -74,13 +116,38 @@ export function initChat(socket) {
         }
       }
 
+      let badgesHtml = "";
+      if (Array.isArray(badges) && badges.length) {
+        const safe = badges.slice(0, 3);
+        badgesHtml = ` <span class="chat-badges">${safe
+          .map(
+            (b) =>
+              `<span class="chat-badge" title="${String(
+                b.name || b.id || "",
+              ).replaceAll('"', "&quot;")}">${b.emoji || "🏷️"}</span>`,
+          )
+          .join("")}</span>`;
+      }
+
+      const safeAuthor = auteur.replaceAll('"', "&quot;");
+      const pseudoLink = `/profil.html?pseudo=${encodeURIComponent(auteur)}`;
+      const avatarTitle = `Avatar de ${safeAuthor}`;
+      const avatarHtml = pfp
+        ? `<img class="chat-avatar" src="${pfp}" alt="${avatarTitle}" title="${avatarTitle}" loading="lazy">`
+        : `<div class="chat-avatar placeholder" aria-hidden="true"></div>`;
+
       el.innerHTML = `
       <div class="meta">
-        <span class="auteur">${auteur}${tagHtml}</span>
+        <span class="meta-left">${avatarHtml}<a class="auteur auteur-link" href="${pseudoLink}">${auteur}</a>${tagHtml}${badgesHtml}</span>
         <span class="time"><i>${time}</i></span>
       </div>
       <div class="text"></div>`;
       el.querySelector(".text").textContent = text;
+
+      const avatarImage = el.querySelector(".chat-avatar");
+      if (avatarImage && avatarImage.tagName === "IMG" && pfp) {
+        avatarImage.addEventListener("click", () => showPfpModal(pfp, auteur));
+      }
 
       if (myPseudo === "Admin" && id) {
         const btn = document.createElement("button");
@@ -114,13 +181,15 @@ export function initChat(socket) {
         text: msg.text,
         at: msg.at,
         tag: msg.tag,
+        pfp: msg.pfp,
+        badges: msg.badges,
         type: msg.name === "Système" ? "system" : "user",
-      })
+      }),
     );
   });
 
   socket.on("system:info", (text) =>
-    addMessage({ auteur: "Système", text, type: "system" })
+    addMessage({ auteur: "Système", text, type: "system" }),
   );
 
   socket.on("users:list", (l) => {
@@ -138,6 +207,8 @@ export function initChat(socket) {
       text: payload.text,
       at: payload.at,
       tag: payload.tag,
+      pfp: payload.pfp,
+      badges: payload.badges,
     });
 
     if (
@@ -187,7 +258,7 @@ export function initChat(socket) {
         const mention = lastWord.slice(1).toLowerCase();
         const onlineUsersMinusSelf = onlineUsers.filter((u) => u !== myPseudo);
         const matches = onlineUsersMinusSelf.filter((u) =>
-          u.toLowerCase().startsWith(mention)
+          u.toLowerCase().startsWith(mention),
         );
 
         // Ajouter une boîte de suggestion à la suite de l'input

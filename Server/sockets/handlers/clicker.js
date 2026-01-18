@@ -128,7 +128,7 @@ function registerClickerHandlers({
 
           io.emit(
             "system:info",
-            `${pseudo} a été banni pour triche (CPS trop élevé) !`
+            `${pseudo} a été banni pour triche (CPS trop élevé) !`,
           );
 
           // Notifier et déconnecter sockets de cette IP
@@ -163,7 +163,7 @@ function registerClickerHandlers({
     try {
       const userMedals = FileService.data.medals[pseudo] || [];
       const hasTricheurMedal = userMedals.some((m) =>
-        typeof m === "string" ? m === "Tricheur" : m.name === "Tricheur"
+        typeof m === "string" ? m === "Tricheur" : m.name === "Tricheur",
       );
       const isInCheatersList =
         FileService.data.cheaters && FileService.data.cheaters.includes(pseudo);
@@ -214,8 +214,8 @@ function registerClickerHandlers({
     console.log(
       withGame(
         `\n🔄 Reset Clicker complet pour [${colors.orange}${pseudo}${colors.green}]\n`,
-        colors.green
-      )
+        colors.green,
+      ),
     );
   });
 
@@ -226,7 +226,7 @@ function registerClickerHandlers({
     const userMedals = allMedals[pseudo] || [];
 
     const already = userMedals.find((m) =>
-      typeof m === "string" ? m === medalName : m.name === medalName
+      typeof m === "string" ? m === medalName : m.name === medalName,
     );
     if (already) return; // rien à faire
 
@@ -244,20 +244,20 @@ function registerClickerHandlers({
     console.log(
       withGame(
         `🏅 [${colors.orange}${pseudo}${colors.green}] a débloqué ${medalName}`,
-        colors.green
-      )
+        colors.green,
+      ),
     );
     broadcastSystemMessage(
       io,
       `${pseudo} a débloqué la médaille ${medalName} !`,
-      true
+      true,
     );
 
     // Ré-émission normalisée (objets complets)
     const normalized = userMedals.map((m) =>
       typeof m === "string"
         ? { name: m, colors: [] }
-        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
+        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] },
     );
     socket.emit("clicker:medals", normalized);
   });
@@ -266,7 +266,7 @@ function registerClickerHandlers({
     if (!newColors || typeof newColors !== "object") return;
 
     const currentScore = FileService.data.clicks[pseudo] || 0;
-    const COST = 375000;
+    const COST = 1000000;
 
     if (currentScore < COST) return;
 
@@ -304,7 +304,7 @@ function registerClickerHandlers({
     broadcastSystemMessage(
       io,
       `${pseudo} a régénéré ses Médailles ! (pigeon)`,
-      true
+      true,
     );
     socket.emit("system:info", "✅ Couleurs régénérées avec succès !");
   });

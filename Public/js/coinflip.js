@@ -1,6 +1,7 @@
 export function initCoinFlip(socket) {
   const coin = document.getElementById("coin");
   const betInput = document.getElementById("cf-bet-amount");
+  const betMaxInfo = document.getElementById("cf-bet-max");
   const btnHeads = document.getElementById("cf-btn-heads");
   const btnTails = document.getElementById("cf-btn-tails");
   const resultMsg = document.getElementById("cf-result");
@@ -9,13 +10,27 @@ export function initCoinFlip(socket) {
   let isFlipping = false;
   let currentScore = 0;
 
+  function updateMaxBetUI() {
+    const maxBet = Math.max(0, Math.floor(currentScore || 0));
+    if (betInput) betInput.max = String(maxBet);
+    if (betMaxInfo) {
+      betMaxInfo.textContent = `Mise max : ${maxBet.toLocaleString(
+        "fr-FR",
+      )} (100% de vos clicks)`;
+    }
+  }
+
+  updateMaxBetUI();
+
   // Écouter les mises à jour du score depuis le serveur
   socket.on("clicker:you", (data) => {
     currentScore = data.score;
+    updateMaxBetUI();
   });
 
   socket.on("clicker:update", (data) => {
     currentScore = data.score;
+    updateMaxBetUI();
   });
 
   // Boutons de mise rapide
@@ -35,6 +50,15 @@ export function initCoinFlip(socket) {
       }
     });
   });
+
+  if (betInput) {
+    betInput.addEventListener("input", () => {
+      if (betInput.value === "") return;
+      const val = parseInt(betInput.value);
+      const maxBet = Math.max(0, Math.floor(currentScore || 0));
+      if (!isNaN(val) && val > maxBet) betInput.value = maxBet;
+    });
+  }
 
   function placeBet(side) {
     if (isFlipping) return;

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Profil - PDE</title>
+
+        <link
+            rel="preload"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+            as="style"
+            onload="this.onload=null;this.rel='stylesheet'" />
+        <noscript>
+            <link
+                rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" />
+        </noscript>
+
+        <link rel="stylesheet" type="text/css" href="css/common.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage1.css" />
+        <link rel="stylesheet" type="text/css" href="css/profil.css" />
+
+        <link
+            rel="icon"
+            type="img/png"
+            href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)" />
+        <link
+            rel="icon"
+            type="img/png"
+            href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)" />
+
+        <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer type="module" src="js/profil.js"></script>
+    </head>
+    <body>
+        <div class="profil-page">
+            <header class="profil-header">
+                <a class="btn back" href="/">← Retour</a>
+                <h1><i class="fa-solid fa-user"></i> Profil</h1>
+            </header>
+
+            <main class="profil-card">
+                <div class="profil-top">
+                    <div class="pfp-wrap">
+                        <img id="pfpImg" class="pfp" alt />
+                        <div id="pfpFallback" class="pfp-fallback">PFP</div>
+                    </div>
+
+                    <div class="profil-main">
+                        <div class="pseudo-line">
+                            <h2 id="pseudo" class="pseudo">—</h2>
+                            <div id="tag" class="tag"></div>
+                        </div>
+
+                        <div class="badges">
+                            <div class="badges-title">Badges affichés</div>
+                            <div id="badgesSelected" class="badges-row"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="meSection" class="me-section" hidden>
+                    <h3>Mon profil</h3>
+
+                    <div class="box">
+                        <div class="box-title">Demander une PFP (URL)</div>
+                        <div class="row">
+                            <input id="pfpUrl" class="profil-input"
+                                placeholder="https://..." />
+                            <button id="pfpSubmit" class="btn">Envoyer</button>
+                        </div>
+                        <div id="pfpStatus" class="hint"></div>
+                    </div>
+
+                    <div class="box">
+                        <div class="box-title">Choisir mes badges (max 3)</div>
+                        <div id="badgesPicker" class="badges-picker"></div>
+                        <button id="saveBadges"
+                            class="btn save-btn"
+                            style="margin-top: 8px;">Enregistrer</button>
+                        <div id="badgesSaveStatus" class="hint"></div>
+                    </div>
+                </section>
+
+                <section class="box">
+                    <div class="box-title">Stats</div>
+                    <div id="stats" class="stats"></div>
+                </section>
+            </main>
+        </div>
+    </body>
+</html>

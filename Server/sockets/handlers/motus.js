@@ -61,7 +61,7 @@ function registerMotusHandlers({
       });
     } else {
       socket.emit("motus:end", {
-        message: "Toutes les communes ont été trouvées !",
+        message: "Tous les pays ont été trouvées !",
       });
     }
   }
@@ -89,7 +89,7 @@ function registerMotusHandlers({
         (a, b) =>
           b.words - a.words ||
           a.tries - b.tries ||
-          a.pseudo.localeCompare(b.pseudo)
+          a.pseudo.localeCompare(b.pseudo),
       );
     socket.emit("motus:leaderboard", lb);
   }
@@ -161,7 +161,7 @@ function registerMotusHandlers({
 
     if (!word) {
       socket.emit("motus:end", {
-        message: "Toutes les communes ont été trouvées !",
+        message: "Tous les pays ont été trouvés !",
       });
       return;
     }
@@ -186,7 +186,7 @@ function registerMotusHandlers({
 
     if (!word) {
       socket.emit("motus:end", {
-        message: "Toutes les communes ont été trouvées !",
+        message: "Tous les pays ont été trouvés !",
       });
       return;
     }

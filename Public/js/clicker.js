@@ -90,7 +90,7 @@ export function initClicker(socket) {
       "title",
       `${medalData.nom} ${medalData.icon}\nPalier : ${medalData.pallier
         .toLocaleString("fr-FR")
-        .replace(/\s/g, "\u00a0")} clics\nCPS auto : ${medalData.cps}`
+        .replace(/\s/g, "\u00a0")} clics\nCPS auto : ${medalData.cps}`,
     );
   });
 
@@ -187,7 +187,7 @@ export function initClicker(socket) {
       "title",
       `${m.nom} ${m.icon}\nPalier : ${m.pallier
         .toLocaleString("fr-FR")
-        .replace(/\s/g, "\u00a0")} clics\nCPS auto : ${m.cps}`
+        .replace(/\s/g, "\u00a0")} clics\nCPS auto : ${m.cps}`,
     );
     // Accessibilité: chaque médaille agit comme une image décorative informative.
     el.setAttribute("role", "img");
@@ -207,7 +207,7 @@ export function initClicker(socket) {
       m.couleurs.length > 0
     ) {
       m.couleurs.forEach((c, idx) =>
-        el.style.setProperty(`--grad${idx + 1}`, c)
+        el.style.setProperty(`--grad${idx + 1}`, c),
       );
     }
 
@@ -228,8 +228,8 @@ export function initClicker(socket) {
           ? "black"
           : "white"
         : isMonochrome
-        ? "mono"
-        : "random";
+          ? "mono"
+          : "random";
 
       while (temp.length < 12) {
         let c;
@@ -260,7 +260,7 @@ export function initClicker(socket) {
       "aria-label",
       `${m.nom} - Rang ${(index + 1).toString()} - Palier ${m.pallier
         .toLocaleString("fr-FR")
-        .replace(/\s/g, "\u00a0")} clics - CPS auto ${m.cps}.${couleursPart}`
+        .replace(/\s/g, "\u00a0")} clics - CPS auto ${m.cps}.${couleursPart}`,
     );
 
     // Timing animation prestige (après la 7ème base)
@@ -326,7 +326,7 @@ export function initClicker(socket) {
     if (medalCible) {
       medalsList.forEach((m) => {
         const medalEl = ui.medalsWrap?.querySelector(
-          `.medal[data-name="${m.nom}"]`
+          `.medal[data-name="${m.nom}"]`,
         );
         if (!medalEl) return;
 
@@ -347,7 +347,7 @@ export function initClicker(socket) {
               showNotif(`🏅 ${m.nom} débloquée ! ${m.icon}`);
             }
             document.querySelector(
-              ".medal[data-name=Tricheur] .medal-index"
+              ".medal[data-name=Tricheur] .medal-index",
             ).textContent = "T";
           } else {
             medalEl.classList.remove("shown");
@@ -396,7 +396,7 @@ export function initClicker(socket) {
       return;
     }
     const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score, tes médailles et ton CPS auto seront perdus !"
+      "⚠️ Es-tu sûr de vouloir tout réinitialiser ?\nTon score, tes médailles et ton CPS auto seront perdus !",
     );
     if (!confirmReset) return;
 
@@ -458,14 +458,14 @@ export function initClicker(socket) {
 
   // ---------- Regen Colors ----------
   ui.regenBtn?.addEventListener("click", () => {
-    if (state.scoreActuel < 375000) {
-      showNotif("❌ Pas assez de clicks ! (375 000 requis)");
+    if (state.scoreActuel < 1000000) {
+      showNotif("❌ Pas assez de clicks ! (1 000 000 requis)");
       return;
     }
 
     if (
       !confirm(
-        "🎨 Veux-tu dépenser 375 000 clicks pour régénérer les couleurs de tes médailles Prestige ?"
+        "🎨 Veux-tu dépenser 1 000 000 clicks pour régénérer les couleurs de tes médailles Prestige ?",
       )
     )
       return;
@@ -485,8 +485,8 @@ export function initClicker(socket) {
             ? "black"
             : "white"
           : isMonochrome
-          ? "mono"
-          : "random";
+            ? "mono"
+            : "random";
 
         while (colors.length < 12) {
           let c;

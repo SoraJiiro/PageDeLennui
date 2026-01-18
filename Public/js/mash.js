@@ -1,3 +1,5 @@
+import { showNotif } from "./util.js";
+
 export function initMash(socket) {
   if (!socket) return;
 
@@ -12,6 +14,7 @@ export function initMash(socket) {
 
   const betOverlay = document.getElementById("mash-bet-overlay");
   const betInput = document.getElementById("mash-bet-amount");
+  const betMaxInfo = document.getElementById("mash-bet-max");
   const btnBetRed = document.getElementById("mash-bet-red");
   const btnBetBlue = document.getElementById("mash-bet-blue");
 
@@ -41,17 +44,55 @@ export function initMash(socket) {
         myKey = val.toLowerCase();
         localStorage.setItem("mashKey", myKey);
         socket.emit("mash:key", myKey);
-        inputKey.blur();
-        showNotification(`Touche de Mash définie sur : ${myKey.toUpperCase()}`);
+        showNotif(`Touche de Mash définie sur : ${myKey.toUpperCase()}`);
       } else {
-        showNotification("⚠️ Entrez une seule touche (1 caractère)");
+        showNotif("⚠️ Entrez une seule touche (1 caractère)");
       }
     });
   }
 
   // Buttons
-  if (joinBtn)
-    joinBtn.addEventListener("click", () => socket.emit("mash:join"));
+  let currentScore = 0;
+
+  function getMaxBet() {
+    return Math.max(0, Math.floor((currentScore || 0) * 0.25));
+  }
+
+  function updateMaxBetUI() {
+    const maxBet = getMaxBet();
+    if (betInput) betInput.max = String(maxBet);
+    if (betMaxInfo) {
+      betMaxInfo.textContent = `Mise max : ${maxBet.toLocaleString(
+        "fr-FR"
+      )} (25% de vos clicks)`;
+    }
+
+    if (betInput && betInput.value !== "") {
+      const val = parseInt(betInput.value);
+      if (!isNaN(val) && val > maxBet) betInput.value = maxBet;
+    }
+  }
+
+  socket.on("clicker:you", (data) => {
+    currentScore = data.score;
+    updateMaxBetUI();
+  });
+
+  socket.on("clicker:update", (data) => {
+    currentScore = data.score;
+    updateMaxBetUI();
+  });
+
+  if (betInput) {
+    betInput.addEventListener("input", () => {
+      if (betInput.value === "") return;
+      const val = parseInt(betInput.value);
+      const maxBet = getMaxBet();
+      if (!isNaN(val) && val > maxBet) betInput.value = maxBet;
+    });
+  }
+
+  if (joinBtn) joinBtn.addEventListener("click", () => socket.emit("mash:join"));
   if (leaveBtn)
     leaveBtn.addEventListener("click", () => socket.emit("mash:leave"));
 
@@ -68,12 +109,12 @@ export function initMash(socket) {
     const targetPseudo = p ? p.pseudo : null;
 
     if (!targetPseudo) {
-      showNotification("Erreur: Joueur introuvable ?");
+      showNotif("Erreur: Joueur introuvable ?");
       return;
     }
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      showNotification("⚠️ Mise invalide");
+      showNotif("⚠️ Mise invalide");
       if (betInput) betInput.focus();
       return;
     }
@@ -85,6 +126,8 @@ export function initMash(socket) {
     socket.emit("mash:bet", { betOn: targetPseudo, amount: amount });
   }
 
+  updateMaxBetUI();
+
   socket.on("mash:betError", (msg) => {
     betPending = false;
     if (btnBetRed) btnBetRed.disabled = false;
@@ -92,7 +135,7 @@ export function initMash(socket) {
 
     // Garder l'overlay ouvert pour corriger
     if (betOverlay) betOverlay.style.display = "flex";
-    showNotification(msg || "Mise refusée");
+    showNotif(msg || "Mise refusée");
     if (betInput) betInput.focus();
   });
 
@@ -230,6 +273,7 @@ export function initMash(socket) {
 
     // Default show game area
     if (gameArea) gameArea.style.display = "flex";
+    updateMaxBetUI();
 
     // Info text updates
     if (state.gameState === "waiting") {
@@ -261,7 +305,12 @@ export function initMash(socket) {
       updateCountdown();
       window.mashCountdownInterval = setInterval(updateCountdown, 500);
     } else if (state.gameState === "playing") {
-      infoText.innerText = `SPAMMEZ LA TOUCHE [${myKey.toUpperCase()}] !`;
+      // Ne pas afficher le message d'action aux spectateurs
+      if (me) {
+        infoText.innerText = `SPAMMEZ LA TOUCHE [${myKey.toUpperCase()}] !`;
+      } else {
+        infoText.innerText = "Match en cours...";
+      }
     } else if (state.gameState === "finished") {
       // Hide game area on finish and show large message
       if (gameArea) gameArea.style.display = "none";
@@ -277,8 +326,8 @@ export function initMash(socket) {
         state.scores.red >= 100
           ? "Rouge"
           : state.scores.blue >= 100
-          ? "Bleu"
-          : "Inconnu";
+            ? "Bleu"
+            : "Inconnu";
       const winnerName =
         winnerTeam === "Rouge"
           ? state.players.find((p) => p.team === "red")?.pseudo || "Rouge"

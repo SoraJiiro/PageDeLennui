@@ -51,7 +51,7 @@ class MashGame {
     }
 
     let existingSpecIndex = this.spectators.findIndex(
-      (s) => s.pseudo === pseudo
+      (s) => s.pseudo === pseudo,
     );
     if (existingSpecIndex !== -1) {
       if (this.players.length < 2 && this.gameState === "waiting") {
@@ -203,7 +203,6 @@ class MashGame {
     this.gameState = "playing";
     this.phaseEndTime = 0;
     this.broadcastState();
-    this.broadcastSystem("MASH START ! SPAMMEZ VOTRE TOUCHE !");
   }
 
   handleMash(pseudo, key) {

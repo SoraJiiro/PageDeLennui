@@ -1,0 +1,224 @@
+.profil-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px;
+  color: var(--primary-color);
+}
+
+.profil-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 14px;
+  padding: 14px;
+  border: 2px solid var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 4%, transparent);
+}
+
+.profil-header h1 {
+  margin: 0;
+  font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+  text-transform: uppercase;
+}
+
+.back.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.profil-card {
+  border: 2px solid var(--primary-color);
+  border-radius: 0;
+  padding: 18px;
+  background: color-mix(in srgb, var(--primary-color) 2%, transparent);
+}
+
+.profil-top {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.pfp-wrap {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.pfp {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-color);
+  display: none;
+}
+
+.pfp-fallback {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 3px solid var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+  background: var(--bg-color);
+}
+
+.pseudo-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pseudo {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.tag {
+  opacity: 0.95;
+}
+
+.badges-title {
+  opacity: 0.85;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.badges-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--primary-color);
+  padding: 6px 10px;
+  border-radius: 0;
+  background: var(--bg-color);
+}
+
+.badge-emoji {
+  font-size: 1.2rem;
+}
+
+.me-section {
+  margin-top: 16px;
+}
+
+.box {
+  margin-top: 14px;
+  padding: 14px;
+  border: 2px solid var(--primary-color);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-color) 18%, transparent) inset;
+}
+
+.box-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profil-input {
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 12px 14px;
+  border-radius: 0;
+  min-width: min(520px, 100%);
+  flex: 1 1 320px;
+}
+
+.profil-input:focus {
+  outline: none;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary-color) 35%, transparent);
+}
+
+.hint {
+  margin-top: 8px;
+  opacity: 0.85;
+}
+
+.badges-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.badge-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 2px solid var(--primary-color);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-color) 14%, transparent) inset;
+}
+
+.badge-pick input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  padding: 10px;
+  border: 2px solid var(--primary-color);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.14);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-color) 12%, transparent) inset;
+}
+
+.stat .label {
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.stat .value {
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .profil-top {
+    grid-template-columns: 1fr;
+  }
+  .pfp-wrap {
+    margin: 0 auto;
+  }
+  .profil-input {
+    min-width: 0;
+    width: 100%;
+  }
+}

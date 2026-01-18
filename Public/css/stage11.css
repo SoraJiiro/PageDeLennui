@@ -37,7 +37,7 @@
 }
 
 .motus-header::after {
-  content: "(Communes FR)";
+  content: "(Pays du monde)";
   font-size: 0.8rem;
   position: absolute;
   color: var(--primary-color);

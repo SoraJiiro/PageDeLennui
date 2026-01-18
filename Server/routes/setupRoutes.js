@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const express = require("express");
 const { FileService } = require("../util");
+const profileRoutes = require("./profileRoutes");
 
 function setupRoutes(
   app,
@@ -16,7 +17,7 @@ function setupRoutes(
     tagRoutes,
     surveyRoutesFactory,
     suggestionRoutes,
-  }
+  },
 ) {
   // API
   app.use("/api", authRoutes);
@@ -24,6 +25,7 @@ function setupRoutes(
   app.use("/api/tag", tagRoutes);
   app.use("/api/surveys", surveyRoutesFactory(io));
   app.use("/api/suggestions", suggestionRoutes);
+  app.use("/api/profile", requireAuth, profileRoutes);
 
   // Badges sidebar (auth)
   app.get("/api/nav/badges", requireAuth, (req, res) => {
@@ -104,10 +106,10 @@ function setupRoutes(
 
   // Pages (auth)
   app.get("/login", (_, res) =>
-    res.sendFile(path.join(config.PUBLIC, "login.html"))
+    res.sendFile(path.join(config.PUBLIC, "login.html")),
   );
   app.get("/register", (_, res) =>
-    res.sendFile(path.join(config.PUBLIC, "register.html"))
+    res.sendFile(path.join(config.PUBLIC, "register.html")),
   );
 
   // Admin

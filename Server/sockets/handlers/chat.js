@@ -5,6 +5,33 @@ function registerChatHandlers({
   FileService,
   getMotusState,
 }) {
+  const getPfpFor = (p) => {
+    const url = FileService.data.pfps ? FileService.data.pfps[p] : null;
+    return typeof url === "string" && url ? url : null;
+  };
+
+  const getSelectedBadgesFor = (p) => {
+    const badgesData = FileService.data.chatBadges || {
+      catalog: {},
+      users: {},
+    };
+    const userBucket = (badgesData.users && badgesData.users[p]) || null;
+    const selectedIds = Array.isArray(userBucket && userBucket.selected)
+      ? userBucket.selected.slice(0, 3)
+      : [];
+    const out = [];
+    for (const id of selectedIds) {
+      const def = badgesData.catalog ? badgesData.catalog[id] : null;
+      if (!def) continue;
+      out.push({
+        id,
+        emoji: String(def.emoji || "🏷️"),
+        name: String(def.name || id),
+      });
+    }
+    return out;
+  };
+
   socket.on("chat:message", ({ text }) => {
     let msg = String(text || "").trim();
     if (!msg) return;
@@ -66,6 +93,8 @@ function registerChatHandlers({
       text: msg,
       at: new Date().toISOString(),
       tag: tagPayload,
+      pfp: getPfpFor(pseudo),
+      badges: getSelectedBadgesFor(pseudo),
     };
 
     FileService.data.historique.push(payload);
