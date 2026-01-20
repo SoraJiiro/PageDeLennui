@@ -118,6 +118,7 @@ router.get("/user/:pseudo", (req, res) => {
     tag: getTagFor(exists.pseudo),
     pfpUrl: chatProfile.pfpUrl,
     badges: {
+      assigned: chatProfile.badges.assigned,
       selected: chatProfile.badges.selected,
     },
     stats: getStatsFor(exists.pseudo),

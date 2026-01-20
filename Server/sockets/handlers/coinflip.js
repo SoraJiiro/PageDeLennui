@@ -7,7 +7,10 @@ function registerCoinflipHandlers({
   getIpFromSocket,
   recalculateMedals,
 }) {
-  const { applyDailyProfitCap } = require("../../services/economy");
+  const {
+    applyDailyProfitCap,
+    getDailyProfitCapInfo,
+  } = require("../../services/economy");
 
   socket.on("coinflip:bet", (data) => {
     const { amount, side } = data;
@@ -40,15 +43,23 @@ function registerCoinflipHandlers({
 
     // Cap quotidien: on ne limite que le PROFIT (pas le remboursement de la mise)
     let profitAllowed = 0;
+    let capInfo = null;
     if (won) {
       const profit = bet; // net profit d'un coinflip gagnant
-      const capInfo = applyDailyProfitCap({
+      capInfo = applyDailyProfitCap({
         FileService,
         pseudo,
         profit,
         currentClicks,
       });
       profitAllowed = capInfo.allowedProfit;
+    } else {
+      // Fournir l'état courant du cap pour affichage client
+      capInfo = getDailyProfitCapInfo({
+        FileService,
+        pseudo,
+        currentClicks,
+      });
     }
 
     if (won) {
@@ -56,6 +67,11 @@ function registerCoinflipHandlers({
       const credit = bet + profitAllowed;
       FileService.data.clicks[pseudo] += credit;
     }
+
+    // Informer client du statut du cap quotidien (pour mise à jour sidebar)
+    try {
+      if (capInfo) io.to("user:" + pseudo).emit("economy:profitCap", capInfo);
+    } catch (e) {}
 
     // Update Coin Flip Stats
     if (!FileService.data.coinflipStats) FileService.data.coinflipStats = {};
@@ -85,7 +101,22 @@ function registerCoinflipHandlers({
 
     // Log transaction with IP
     const ip = getIpFromSocket(socket);
-    const netChange = won ? profitAllowed : -bet;
+    // If user lost but quota already reached, refund the bet (no net loss)
+    let netChange = 0;
+    if (won) netChange = profitAllowed;
+    else {
+      try {
+        if (capInfo && Number(capInfo.remaining) === 0) {
+          // refund bet
+          FileService.data.clicks[pseudo] += bet;
+          netChange = 0;
+        } else {
+          netChange = -bet;
+        }
+      } catch (e) {
+        netChange = -bet;
+      }
+    }
     const logDetails = {
       type: "BET_COINFLIP",
       pseudo: `${pseudo} (${ip})`,
@@ -97,7 +128,7 @@ function registerCoinflipHandlers({
     console.log(
       `[PILE_OU_FACE] ${logDetails.pseudo} a parié ${bet} sur ${
         side === "heads" ? "PILE" : "FACE"
-      } -> ${won ? "GAGNÉ" : "PERDU"} (${logDetails.netChange})`
+      } -> ${won ? "GAGNÉ" : "PERDU"} (${logDetails.netChange})`,
     );
     FileService.appendLog(logDetails);
 
@@ -110,6 +141,7 @@ function registerCoinflipHandlers({
       side: resultSide,
       newScore: FileService.data.clicks[pseudo],
       amount: bet,
+      capInfo,
     });
 
     // Mettre à jour affichage score client

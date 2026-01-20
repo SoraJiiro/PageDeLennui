@@ -68,6 +68,36 @@ function applyDailyProfitCap({ FileService, pseudo, profit, currentClicks }) {
   };
 }
 
+function getDailyProfitCapInfo({ FileService, pseudo, currentClicks }) {
+  if (!pseudo) return { cap: 0, earned: 0, remaining: 0, baseClicks: 0 };
+
+  const dailyEarnings = ensureDailyEarningsBucket(FileService);
+  const today = getTodayKey();
+
+  const existing = dailyEarnings[pseudo];
+  if (!existing || existing.date !== today) {
+    const baseClicks = Math.max(0, Math.floor(Number(currentClicks) || 0));
+    const cap = Math.floor(baseClicks * 0.25);
+    return { cap, earned: 0, remaining: cap, baseClicks, active: false };
+  }
+
+  const bucket = existing;
+  bucket.earned = Math.max(0, Math.floor(Number(bucket.earned) || 0));
+  bucket.baseClicks = Math.max(0, Math.floor(Number(bucket.baseClicks) || 0));
+
+  const cap = Math.floor(bucket.baseClicks * 0.25);
+  const remaining = Math.max(0, cap - bucket.earned);
+
+  return {
+    cap,
+    earned: bucket.earned,
+    remaining,
+    baseClicks: bucket.baseClicks,
+    active: true,
+    date: bucket.date,
+  };
+}
+
 function ensureReviveContext(socket) {
   if (!socket.data) socket.data = {};
   if (!socket.data.reviveContext) socket.data.reviveContext = {};
@@ -144,4 +174,5 @@ module.exports = {
   incrementReviveUsed,
   computeReviveCost,
   REVIVE_PRICING,
+  getDailyProfitCapInfo,
 };

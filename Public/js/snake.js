@@ -130,7 +130,7 @@ class SnakeGame {
       this.myBest > prevBest
     ) {
       showNotif(
-        `🐍 Nouveau record ! Score: ${this.myBest.toLocaleString("fr-FR")}`
+        `🐍 Nouveau record ! Score: ${this.myBest.toLocaleString("fr-FR")}`,
       );
       this.scoreAttente = null;
     }
@@ -264,6 +264,16 @@ class SnakeGame {
       this.state.frameCount = 0;
     } else if (!this.state.paused && this.state.countdown === 0) {
       this.state.paused = true;
+      try {
+        if (this.socket) {
+          this.socket.emit("snake:score", {
+            score: this.state.score,
+            elapsedMs: this.state.elapsedMs,
+            final: false,
+          });
+          this.scoreAttente = this.state.score;
+        }
+      } catch {}
       // Fonctionnalité Anti-triche / Boss key
       try {
         window.open("../search.html", "_blank");
@@ -392,7 +402,7 @@ class SnakeGame {
 
     const progress = Math.min(
       1,
-      this.state.tickAccumulator / CONSTANTS.GAME_SPEED
+      this.state.tickAccumulator / CONSTANTS.GAME_SPEED,
     );
     this.draw(progress);
 
@@ -444,7 +454,7 @@ class SnakeGame {
         y: Math.floor(Math.random() * CONSTANTS.GRID_SIZE),
       };
       valid = !this.state.snake.some(
-        (s) => s.x === this.state.food.x && s.y === this.state.food.y
+        (s) => s.x === this.state.food.x && s.y === this.state.food.y,
       );
     }
   }
@@ -490,7 +500,7 @@ class SnakeGame {
         x * this.cellSize + 1,
         y * this.cellSize + 1,
         this.cellSize - 2,
-        this.cellSize - 2
+        this.cellSize - 2,
       );
       this.ctx.globalAlpha = 1.0;
     }
@@ -502,7 +512,7 @@ class SnakeGame {
         this.state.food.x * this.cellSize + 1,
         this.state.food.y * this.cellSize + 1,
         this.cellSize - 2,
-        this.cellSize - 2
+        this.cellSize - 2,
       );
     }
 
@@ -513,7 +523,7 @@ class SnakeGame {
     this.ctx.fillText(
       this.state.score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0"),
       cssSize - 10,
-      30
+      30,
     );
 
     // Overlay Pause/Compte à rebours
@@ -534,7 +544,7 @@ class SnakeGame {
       this.ctx.fillText(
         this.state.countdown.toString(),
         cssSize / 2,
-        cssSize / 2
+        cssSize / 2,
       );
     } else {
       this.ctx.fillText("PAUSE", cssSize / 2, cssSize / 2);
@@ -542,7 +552,7 @@ class SnakeGame {
       this.ctx.fillText(
         `Appuie sur ${this.pauseKeyText} pour reprendre`,
         cssSize / 2,
-        cssSize / 2 + 40
+        cssSize / 2 + 40,
       );
     }
   }
@@ -563,14 +573,14 @@ class SnakeGame {
         .toLocaleString("fr-FR")
         .replace(/\s/g, "\u00a0")}`,
       cssSize / 2,
-      cssSize / 2 + 20
+      cssSize / 2 + 20,
     );
 
     const totalSeconds = Math.floor(this.state.elapsedMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const timeStr = `${String(minutes).padStart(2, "0")}:${String(
-      seconds
+      seconds,
     ).padStart(2, "0")}`;
 
     this.ctx.fillText(`Temps: ${timeStr}`, cssSize / 2, cssSize / 2 + 50);
@@ -578,7 +588,7 @@ class SnakeGame {
     this.ctx.fillText(
       "Appuie sur ESPACE pour rejouer",
       cssSize / 2,
-      cssSize / 2 + 90
+      cssSize / 2 + 90,
     );
 
     // --- Logique de réanimation ---
@@ -693,7 +703,7 @@ class SnakeGame {
 
   async handleReset() {
     const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Snake ?\nTon meilleur score sera définitivement perdu !"
+      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Snake ?\nTon meilleur score sera définitivement perdu !",
     );
     if (!confirmReset) return;
 

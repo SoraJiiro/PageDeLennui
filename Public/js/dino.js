@@ -88,7 +88,7 @@ export function initDino(socket) {
       showNotif(
         `🦖 Nouveau record ! Score: ${myBest
           .toLocaleString("fr-FR")
-          .replace(/\s/g, "\u00a0")}`
+          .replace(/\s/g, "\u00a0")}`,
       );
       scoreAttente = null;
     }
@@ -108,7 +108,7 @@ export function initDino(socket) {
       CLIENT_W = Math.max(200, Math.round(rect.width));
       CLIENT_H = Math.max(
         120,
-        Math.round(rect.height || (rect.width * 9) / 16)
+        Math.round(rect.height || (rect.width * 9) / 16),
       );
 
       const displayWidth = Math.floor(CLIENT_W * ratio);
@@ -159,7 +159,7 @@ export function initDino(socket) {
         this.x,
         CLIENT_H - this.y - this.height,
         this.width,
-        this.height
+        this.height,
       );
     },
 
@@ -328,7 +328,7 @@ export function initDino(socket) {
       c.fillText(
         `Appuie sur ${pauseKeyText} pour reprendre`,
         CLIENT_W / 2,
-        CLIENT_H / 2 + 40
+        CLIENT_H / 2 + 40,
       );
     }
   }
@@ -405,7 +405,7 @@ export function initDino(socket) {
         ) {
           state.gameSpeed = Math.min(
             state.gameSpeed + SPEED_INCREMENT,
-            MAX_SPEED
+            MAX_SPEED,
           );
         }
       }
@@ -432,7 +432,7 @@ export function initDino(socket) {
         .toLocaleString("fr-FR")
         .replace(/\s/g, "\u00a0")}`,
       CLIENT_W - 20,
-      30
+      30,
     );
 
     c.font = "14px monospace";
@@ -456,14 +456,14 @@ export function initDino(socket) {
         .toLocaleString("fr-FR")
         .replace(/\s/g, "\u00a0")}`,
       CLIENT_W / 2,
-      CLIENT_H / 2 + 20
+      CLIENT_H / 2 + 20,
     );
 
     c.font = "18px monospace";
     c.fillText(
       "Appuie sur ESPACE pour rejouer",
       CLIENT_W / 2,
-      CLIENT_H / 2 + 60
+      CLIENT_H / 2 + 60,
     );
 
     // --- Logique de réanimation ---
@@ -607,6 +607,13 @@ export function initDino(socket) {
       } else if (!state.paused && state.countdown === 0) {
         state.paused = true;
         try {
+          const s = Math.floor(state.score);
+          if (socket) {
+            socket.emit("dino:score", { score: s });
+            scoreAttente = s;
+          }
+        } catch {}
+        try {
           window.open("../search.html", "_blank");
           console.log("Chrome save");
         } catch {
@@ -663,7 +670,7 @@ export function initDino(socket) {
   // ---------- Reset (confirm + password) ----------
   ui.resetBtn?.addEventListener("click", async () => {
     const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Dino ?\nTon meilleur score sera définitivement perdu !"
+      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Dino ?\nTon meilleur score sera définitivement perdu !",
     );
     if (!confirmReset) return;
 

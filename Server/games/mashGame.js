@@ -1,5 +1,8 @@
 const { FileService } = require("../util");
-const { applyDailyProfitCap } = require("../services/economy");
+const {
+  applyDailyProfitCap,
+  getDailyProfitCapInfo,
+} = require("../services/economy");
 
 class MashGame {
   constructor(broadcastSystemMsg) {
@@ -263,6 +266,21 @@ class MashGame {
         winnersMsg.push(`${bet.pseudo} (+${capInfo.allowedProfit})`);
         if (this.onPayout)
           this.onPayout(bet.pseudo, FileService.data.clicks[bet.pseudo]);
+      } else {
+        // Loser: if daily profit cap already exhausted, refund the stake
+        try {
+          const currentClicks = FileService.data.clicks[bet.pseudo] || 0;
+          const capInfo = getDailyProfitCapInfo({
+            FileService,
+            pseudo: bet.pseudo,
+            currentClicks,
+          });
+          if (capInfo && Number(capInfo.remaining) === 0) {
+            FileService.data.clicks[bet.pseudo] = currentClicks + bet.amount;
+            if (this.onPayout)
+              this.onPayout(bet.pseudo, FileService.data.clicks[bet.pseudo]);
+          }
+        } catch (e) {}
       }
     });
 

@@ -166,6 +166,7 @@ async function main() {
 
   setPfp(data.pfpUrl);
   renderBadgesRow(qs("badgesSelected"), data.badges && data.badges.selected);
+  renderBadgesRow(qs("badgesAll"), data.badges && data.badges.assigned);
   renderStats(data.stats);
 
   const meSection = qs("meSection");

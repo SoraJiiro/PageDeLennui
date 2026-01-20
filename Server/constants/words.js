@@ -1,6 +1,5 @@
 module.exports = [
   "afghanistan",
-  "johannesbourg",
   "albanie",
   "algerie",
   "allemagne",
@@ -76,7 +75,6 @@ module.exports = [
   "guatemala",
   "guernesey",
   "guinée",
-  "guyana",
   "guyane",
   "haiti",
   "honduras",
@@ -105,6 +103,7 @@ module.exports = [
   "liberia",
   "libye",
   "liechtenstein",
+  "listenbourg",
   "lituanie",
   "luxembourg",
   "macédoine",

@@ -104,7 +104,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
     window.socket = socket;
     try {
       window.dispatchEvent(
-        new CustomEvent("pde:socket-ready", { detail: { socket } })
+        new CustomEvent("pde:socket-ready", { detail: { socket } }),
       );
     } catch {}
 
@@ -112,9 +112,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
 
     if (window.initUiColor) {
       window.initUiColor(socket);
-      document.getElementsByClassName(
-        "sb-username"
-      )[0].innerHTML = `<i class="fa-solid fa-user"></i> ${username}`;
+      document.getElementsByClassName("sb-username")[0].innerHTML =
+        `<i class="fa-solid fa-user"></i> ${username}`;
     }
 
     socket.on("reload", (data) => {
@@ -186,6 +185,28 @@ import { initCanvasResizer } from "./canvas_resize.js";
       // États de jeux existants
       socket.emit("uno:getState");
       socket.emit("p4:getState");
+      socket.emit("blackjack:state");
+      socket.emit("coinflip:state");
+      socket.emit("mash:state");
+
+      try {
+        socket.emit("economy:getProfitCap");
+      } catch (e) {}
+    });
+
+    // Listen for profit cap updates and update sidebar
+    socket.on("economy:profitCap", (capInfo) => {
+      try {
+        const el = document.getElementById("sb-cap-info");
+        if (!el) return;
+        const rem = Number(capInfo?.remaining || 0);
+        if (rem <= 0) {
+          el.innerHTML = `<i class="fa-solid fa-lock"></i> Quota de gains atteint aujourd'hui.`;
+          el.style.color = "#ff6666";
+        } else {
+          el.innerHTML = `<i class="fa-solid fa-lock"></i> Quota quotidien : ${rem.toLocaleString("fr-FR")}`;
+        }
+      } catch (e) {}
     });
 
     socket.connect();

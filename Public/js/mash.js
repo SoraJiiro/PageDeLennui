@@ -63,7 +63,7 @@ export function initMash(socket) {
     if (betInput) betInput.max = String(maxBet);
     if (betMaxInfo) {
       betMaxInfo.textContent = `Mise max : ${maxBet.toLocaleString(
-        "fr-FR"
+        "fr-FR",
       )} (25% de vos clicks)`;
     }
 
@@ -76,11 +76,17 @@ export function initMash(socket) {
   socket.on("clicker:you", (data) => {
     currentScore = data.score;
     updateMaxBetUI();
+    try {
+      socket.emit("economy:getProfitCap");
+    } catch (e) {}
   });
 
   socket.on("clicker:update", (data) => {
     currentScore = data.score;
     updateMaxBetUI();
+    try {
+      socket.emit("economy:getProfitCap");
+    } catch (e) {}
   });
 
   if (betInput) {
@@ -92,7 +98,8 @@ export function initMash(socket) {
     });
   }
 
-  if (joinBtn) joinBtn.addEventListener("click", () => socket.emit("mash:join"));
+  if (joinBtn)
+    joinBtn.addEventListener("click", () => socket.emit("mash:join"));
   if (leaveBtn)
     leaveBtn.addEventListener("click", () => socket.emit("mash:leave"));
 
@@ -176,6 +183,16 @@ export function initMash(socket) {
   socket.on("mash:update", (data) => {
     // console.log("[MASH] Update:", data);
     updateBars(data.scores);
+  });
+
+  // Afficher notification si le quota de gains est atteint
+  socket.on("economy:profitCap", (capInfo) => {
+    try {
+      const rem = Number(capInfo?.remaining || 0);
+      if (rem <= 0) {
+        showNotif("Quota de gains atteint aujourd'hui.");
+      }
+    } catch (e) {}
   });
 
   function syncState(state) {

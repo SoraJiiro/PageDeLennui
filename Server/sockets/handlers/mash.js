@@ -1,4 +1,5 @@
 const { MashGame } = require("../../moduleGetter");
+const { getDailyProfitCapInfo } = require("../../services/economy");
 
 function registerMashHandlers({
   io,
@@ -22,6 +23,14 @@ function registerMashHandlers({
     mashGame.setEmitter((state) => io.emit("mash:state", state));
     mashGame.setPayoutCallback((winnerPseudo, score) => {
       io.to("user:" + winnerPseudo).emit("clicker:you", { score });
+      try {
+        const capInfo = getDailyProfitCapInfo({
+          FileService,
+          pseudo: winnerPseudo,
+          currentClicks: score,
+        });
+        io.to("user:" + winnerPseudo).emit("economy:profitCap", capInfo);
+      } catch (e) {}
     });
   }
 

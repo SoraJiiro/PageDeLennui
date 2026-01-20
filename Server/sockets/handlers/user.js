@@ -33,7 +33,7 @@ function registerUserHandlers({
     // Check tricheur
     const userMedals = FileService.data.medals[pseudo] || [];
     const hasTricheurMedal = userMedals.some((m) =>
-      typeof m === "string" ? m === "Tricheur" : m.name === "Tricheur"
+      typeof m === "string" ? m === "Tricheur" : m.name === "Tricheur",
     );
     const isInCheatersList =
       FileService.data.cheaters && FileService.data.cheaters.includes(pseudo);
@@ -127,7 +127,7 @@ function registerUserHandlers({
       FileService.save("transactions", FileService.data.transactions);
 
       console.log(
-        `[DON_EN_ATTENTE] De ${pseudo} (${senderIp}) à ${recipient} : ${val}`
+        `[DON_EN_ATTENTE] De ${pseudo} (${senderIp}) à ${recipient} : ${val}`,
       );
       FileService.appendLog({
         type: "DONATION_PENDING",
@@ -138,7 +138,7 @@ function registerUserHandlers({
 
       socket.emit(
         "system:info",
-        `Don de ${val} clicks à ${recipient} en attente de validation (montant > 250k).`
+        `Don de ${val} clicks à ${recipient} en attente de validation (montant > 250k).`,
       );
 
       // Notifier les admins connectés
@@ -162,12 +162,12 @@ function registerUserHandlers({
         recipient,
         FileService.data.clicks[recipient],
         io,
-        true
+        true,
       ); // Silent recalc
 
       socket.emit(
         "system:info",
-        `Vous avez donné ${val} clicks à ${recipient}.`
+        `Vous avez donné ${val} clicks à ${recipient}.`,
       );
 
       // Notifier le destinataire s'il est en ligne
@@ -176,7 +176,7 @@ function registerUserHandlers({
         recipientSocketId.forEach((sid) => {
           io.to(sid).emit(
             "system:info",
-            `${pseudo} vous a donné ${val} clicks !`
+            `${pseudo} vous a donné ${val} clicks !`,
           );
           io.to(sid).emit("clicker:you", {
             score: FileService.data.clicks[recipient],
@@ -186,6 +186,20 @@ function registerUserHandlers({
     }
 
     leaderboardManager.broadcastClickerLB(io);
+  });
+
+  // Fournir l'état du cap quotidien au client (sidebar / UI)
+  socket.on("economy:getProfitCap", () => {
+    try {
+      const { getDailyProfitCapInfo } = require("../../services/economy");
+      const currentClicks = FileService.data.clicks[pseudo] || 0;
+      const capInfo = getDailyProfitCapInfo({
+        FileService,
+        pseudo,
+        currentClicks,
+      });
+      socket.emit("economy:profitCap", capInfo);
+    } catch (e) {}
   });
 }
 

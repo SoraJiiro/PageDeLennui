@@ -18,6 +18,7 @@ export function initBlackjack(socket, username) {
         <button id="bj-bet-confirm" class="btn">Miser</button>
       </div>
       <div id="bj-bet-max" style="font-size:0.8em; margin-top:5px; color:#aaa; text-align:center;"></div>
+      <div id="bj-cap-info" style="font-size:0.85em; margin-top:6px; color:#ccc; text-align:center;"></div>
     `;
   }
 
@@ -66,14 +67,36 @@ export function initBlackjack(socket, username) {
 
   updateMaxBetUI();
 
+  socket.on("economy:profitCap", (capInfo) => {
+    const el = document.getElementById("bj-cap-info");
+    if (!el) return;
+    try {
+      const rem = Number(capInfo?.remaining || 0);
+      const cap = Number(capInfo?.cap || 0);
+      if (rem <= 0) {
+        el.textContent = `Quota de gains atteint aujourd'hui.`;
+        el.style.color = "#ff6666";
+      } else {
+        el.textContent = `Gains restants aujourd'hui : ${rem.toLocaleString("fr-FR")} / ${cap.toLocaleString("fr-FR")}`;
+        el.style.color = "#ccc";
+      }
+    } catch (e) {}
+  });
+
   // Suivi du score
   socket.on("clicker:you", (data) => {
     currentScore = data.score;
     updateMaxBetUI();
+    try {
+      socket.emit("economy:getProfitCap");
+    } catch (e) {}
   });
   socket.on("clicker:update", (data) => {
     currentScore = data.score;
     updateMaxBetUI();
+    try {
+      socket.emit("economy:getProfitCap");
+    } catch (e) {}
   });
 
   // Listeners Rejoindre/Quitter

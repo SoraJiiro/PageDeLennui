@@ -5,7 +5,10 @@ function ensureBlackjackGameConfigured({
   recalculateMedals,
   leaderboardManager,
 }) {
-  const { applyDailyProfitCap } = require("../../services/economy");
+  const {
+    applyDailyProfitCap,
+    getDailyProfitCapInfo,
+  } = require("../../services/economy");
 
   // Init émetteur blackjack si non défini
   if (blackjackGame && !blackjackGame.emitState) {
@@ -14,10 +17,10 @@ function ensureBlackjackGameConfigured({
     blackjackGame.setRoundEndCallback((roundStats) => {
       blackjackGame.joueurs.forEach((p) => {
         const totalPayout = p.bet + p.winnings;
-        if (totalPayout > 0) {
-          if (!FileService.data.clicks[p.pseudo])
-            FileService.data.clicks[p.pseudo] = 0;
+        if (!FileService.data.clicks[p.pseudo])
+          FileService.data.clicks[p.pseudo] = 0;
 
+        if (totalPayout > 0) {
           // Décomposer: remboursement (non cap) + profit (cap)
           const refundPart = Math.min(p.bet, totalPayout);
           const profitPart = Math.max(0, totalPayout - refundPart);
@@ -33,6 +36,33 @@ function ensureBlackjackGameConfigured({
             FileService.data.clicks[p.pseudo] += amountToAdd;
             recalculateMedals(p.pseudo, FileService.data.clicks[p.pseudo], io);
           }
+
+          // Informer le client du statut du cap quotidien
+          try {
+            const sock = io.sockets.sockets.get(p.socketId);
+            if (sock) sock.emit("economy:profitCap", capInfo);
+          } catch (e) {}
+        } else {
+          // Perte: si le quota est déjà atteint, rembourser la mise
+          try {
+            const capInfo = getDailyProfitCapInfo({
+              FileService,
+              pseudo: p.pseudo,
+              currentClicks: FileService.data.clicks[p.pseudo],
+            });
+            if (capInfo && Number(capInfo.remaining) === 0) {
+              FileService.data.clicks[p.pseudo] += p.bet;
+              recalculateMedals(
+                p.pseudo,
+                FileService.data.clicks[p.pseudo],
+                io,
+              );
+            }
+            try {
+              const sock = io.sockets.sockets.get(p.socketId);
+              if (sock) sock.emit("economy:profitCap", capInfo);
+            } catch (e) {}
+          } catch (e) {}
         }
       });
 
@@ -107,7 +137,7 @@ function registerBlackjackHandlers({
       if (res.status === "queued") {
         socket.emit(
           "blackjack:error",
-          `Table pleine ou partie en cours. Vous êtes en position ${res.position} dans la file d'attente.`
+          `Table pleine ou partie en cours. Vous êtes en position ${res.position} dans la file d'attente.`,
         );
       }
     }

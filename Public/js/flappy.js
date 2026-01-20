@@ -48,7 +48,7 @@ export function initFlappy(socket) {
       const cssW = Math.max(1, Math.round(rect.width));
       const cssH = Math.max(
         1,
-        Math.round(rect.height || (rect.width * 9) / 16)
+        Math.round(rect.height || (rect.width * 9) / 16),
       );
 
       const displayWidth = Math.floor(cssW * ratio);
@@ -103,7 +103,7 @@ export function initFlappy(socket) {
       showNotif(
         `🐤 Nouveau record ! Score: ${myBest
           .toLocaleString("fr-FR")
-          .replace(/\s/g, "\u00a0")}`
+          .replace(/\s/g, "\u00a0")}`,
       );
       scoreAttente = null;
     }
@@ -188,7 +188,7 @@ export function initFlappy(socket) {
         p.x,
         p.top + pipeGap,
         pipeWidth,
-        cssH - (p.top + pipeGap)
+        cssH - (p.top + pipeGap),
       );
     });
   }
@@ -212,7 +212,7 @@ export function initFlappy(socket) {
       ui.ctx.fillText(
         `Appuie sur ${pauseKeyText} pour reprendre`,
         cssW / 2,
-        cssH / 2 + 40
+        cssH / 2 + 40,
       );
     }
   }
@@ -302,7 +302,7 @@ export function initFlappy(socket) {
     ui.ctx.fillText(
       `${score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
       cssW - 20,
-      30
+      30,
     );
 
     requestAnimationFrame(update);
@@ -336,7 +336,7 @@ export function initFlappy(socket) {
     ui.ctx.fillText(
       `Score: ${score.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}`,
       cssW / 2,
-      cssH / 2 + 20
+      cssH / 2 + 20,
     );
 
     ui.ctx.font = "18px monospace";
@@ -440,6 +440,12 @@ export function initFlappy(socket) {
         // Mettre en pause
         paused = true;
         try {
+          if (socket) {
+            socket.emit("flappy:score", { score });
+            scoreAttente = score;
+          }
+        } catch {}
+        try {
           window.open("../search.html", "_blank");
           console.log("Chrome save");
         } catch {
@@ -492,7 +498,7 @@ export function initFlappy(socket) {
   // ---------- Reset (confirm + password) ----------
   ui.resetBtn?.addEventListener("click", async () => {
     const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Flappy ?\nTon meilleur score sera définitivement perdu !"
+      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Flappy ?\nTon meilleur score sera définitivement perdu !",
     );
     if (!confirmReset) return;
 
