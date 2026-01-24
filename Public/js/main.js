@@ -16,6 +16,19 @@ import { initCanvasResizer } from "./canvas_resize.js";
   const username = sessionData.pseudo || sessionData.username;
   const rulesAccepted = sessionData.rulesAccepted;
 
+  // LS Clear
+  try {
+    const lastClearKey = `pde_lastLocalClear_${username}`;
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const last = window.localStorage.getItem(lastClearKey);
+    if (last !== today) {
+      window.localStorage.clear();
+      window.localStorage.setItem(lastClearKey, today);
+    }
+  } catch (e) {
+    console.warn("Daily localStorage clear failed:", e);
+  }
+
   try {
     keyBind(username);
     try {

@@ -36,8 +36,7 @@ function registerChatHandlers({
     let msg = String(text || "").trim();
     if (!msg) return;
 
-    // Censure du mot du jour (Motus)
-    // On doit vérifier le mot actuel de l'utilisateur car chacun a son propre mot
+    // Censure du motus
     const userMotusState = getMotusState ? getMotusState(pseudo) : null;
     if (userMotusState && userMotusState.currentWord) {
       const word = userMotusState.currentWord.toUpperCase();
@@ -56,13 +55,9 @@ function registerChatHandlers({
         C: "[Cç]",
       };
 
-      // Construction du pattern regex pour le mot
-      // On autorise la répétition des caractères (ex: R+E+I+M+S+) pour attraper RREEIIMMSS
       let regexPattern = "";
       for (const char of word) {
         const mapped = leetMap[char] || char;
-        // On ajoute + pour dire "1 ou plusieurs fois ce caractère"
-        // On ajoute aussi des séparateurs optionnels (espaces, tirets, points) entre les lettres
         regexPattern += mapped + "+[\\s\\-_.]*";
       }
 

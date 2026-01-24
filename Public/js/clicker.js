@@ -103,9 +103,9 @@ export function initClicker(socket) {
       let precedente = medalsList[medalsList.length - 1];
       for (let idx = 8; idx <= TOTAL_PRESTIGE + 7; idx++) {
         // Calcul pallier/cps identique à l'ancienne logique
-        let pallierTemp = precedente.pallier * 2;
-        let pallier = Math.ceil(pallierTemp * 0.78 - 6500);
-        let cps = precedente.cps + 2;
+        let pallierTemp = precedente.pallier * 1.8;
+        let pallier = Math.ceil(pallierTemp - 50);
+        let cps = precedente.cps + 1;
         const entry = {
           nom: `Médaille Prestige - ${idx}`,
           icon: "[⭐]",

@@ -28,12 +28,7 @@ export function initMash(socket) {
   let hasBetThisRound = false;
   let myBet = null;
 
-  // Load saved key
-  const savedKey = localStorage.getItem("mashKey");
-  if (savedKey) {
-    myKey = savedKey;
-    if (inputKey) inputKey.value = myKey;
-  }
+  // mashKey is managed server-side; do not persist client-side
 
   // Key Config
   const btnKeySubmit = document.getElementById("mash-key-submit");
@@ -42,7 +37,11 @@ export function initMash(socket) {
       const val = inputKey.value.trim();
       if (val && val.length === 1) {
         myKey = val.toLowerCase();
-        localStorage.setItem("mashKey", myKey);
+        try {
+          window.dispatchEvent(
+            new CustomEvent("mashKey:changed", { detail: { key: myKey } }),
+          );
+        } catch (e) {}
         socket.emit("mash:key", myKey);
         showNotif(`Touche de Mash définie sur : ${myKey.toUpperCase()}`);
       } else {
@@ -172,7 +171,11 @@ export function initMash(socket) {
     if (key) {
       myKey = key;
       if (inputKey) inputKey.value = key;
-      localStorage.setItem("mashKey", key);
+      try {
+        window.dispatchEvent(
+          new CustomEvent("mashKey:changed", { detail: { key: key } }),
+        );
+      } catch (e) {}
     }
   });
 
