@@ -117,6 +117,8 @@ class FileService {
       coinflipStats: path.join(config.DATA, "coinflip_stats.json"),
       dailyEarnings: path.join(config.DATA, "daily_earnings.json"),
       annonces: path.join(config.DATA, "annonces.json"),
+      sharedFiles: path.join(config.DATA, "shared_files.json"),
+      fileActions: path.join(config.DATA, "file_actions.log"),
     };
 
     this.data = this.loadAll();
@@ -175,6 +177,8 @@ class FileService {
       coinflipStats: this.readJSON(this.files.coinflipStats, {}),
       dailyEarnings: this.readJSON(this.files.dailyEarnings, {}),
       annonces: this.readJSON(this.files.annonces, []),
+      sharedFiles: this.readJSON(this.files.sharedFiles, {}),
+      // fileActions is an append-only log, don't try to parse as JSON here
     };
   }
 
@@ -279,6 +283,7 @@ class FileService {
       coinflipStats: this.files.coinflipStats,
       dailyEarnings: this.files.dailyEarnings,
       annonces: this.files.annonces,
+      sharedFiles: this.files.sharedFiles,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);
@@ -288,9 +293,28 @@ class FileService {
   appendLog(payload) {
     fs.appendFileSync(this.files.chatLogs, JSON.stringify(payload) + "\n");
   }
+
+  appendFileAction(payload) {
+    try {
+      const line = JSON.stringify(payload) + "\n";
+      fs.appendFileSync(this.files.fileActions, line, { encoding: "utf8" });
+    } catch (e) {
+      console.error("Erreur écriture file action log:", e);
+    }
+  }
 }
 
-// ------- Anti-Spam -------
+// ------- Nettoyage files -------
+
+const { cleanExpiredFiles } = require("./sockets/handlers/chat");
+
+setInterval(
+  () => {
+    const FileService = require("./util").FileService;
+    cleanExpiredFiles(FileService);
+  },
+  120 * 120 * 1000,
+);
 
 // ------- Gestionnaire Game State -------
 class GameStateManager {

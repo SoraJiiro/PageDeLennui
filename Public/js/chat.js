@@ -1,4 +1,4 @@
-import { showNotif } from "./util.js";
+// Public/js/chat.js - Ajout du système de partage de fichiers
 
 export function initChat(socket) {
   const usersCount = document.getElementById("usersCount");
@@ -8,6 +8,130 @@ export function initChat(socket) {
   const submit = document.querySelector(".submit");
   let myPseudo = null;
   let onlineUsers = [];
+
+  // NOUVEAU: Bouton d'upload de fichier
+  const fileButton = document.createElement("button");
+  fileButton.type = "button";
+  fileButton.className = "file-upload-btn";
+  fileButton.title = "Partager un fichier";
+  fileButton.innerHTML = '<i class="fa-solid fa-paperclip"></i>';
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.style.display = "none";
+  fileInput.accept =
+    "image/*,video/*,application/pdf,text/plain,application/zip,text/html,text/css,application/javascript,text/javascript,application/x-httpd-php,text/x-php,.php,.html,.css,.js";
+
+  form.insertBefore(fileButton, submit);
+  form.appendChild(fileInput);
+
+  fileButton.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
+    if (file.size > MAX_SIZE) {
+      alert("Fichier trop volumineux (max 20 MB)");
+      fileInput.value = "";
+      return;
+    }
+
+    try {
+      // Afficher un indicateur de chargement
+      const loadingMsg = addMessage({
+        auteur: "Système",
+        text: `⏳ Upload de ${file.name} en cours...`,
+        type: "system",
+      });
+
+      // Convertir en base64
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = reader.result.split(",")[1];
+
+        socket.emit("chat:uploadFile", {
+          fileName: file.name,
+          fileData: base64Data,
+          fileType: file.type,
+          fileSize: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+
+      fileInput.value = "";
+    } catch (err) {
+      console.error("Erreur upload:", err);
+      alert("Erreur lors de l'upload du fichier");
+    }
+  });
+
+  // Gestion des événements fichiers
+  socket.on("chat:fileUploaded", ({ fileId }) => {
+    console.log("Fichier uploadé avec succès:", fileId);
+  });
+
+  socket.on("chat:fileError", (error) => {
+    alert(error);
+  });
+
+  socket.on("chat:fileDeleted", ({ fileId }) => {
+    // Mettre à jour l'UI pour indiquer que le fichier n'est plus disponible
+    const fileLinks = document.querySelectorAll(
+      `.file-download[data-file-id="${fileId}"]`,
+    );
+    fileLinks.forEach((link) => {
+      link.style.opacity = "0.5";
+      link.style.pointerEvents = "none";
+      link.title = "Fichier expiré ou supprimé";
+    });
+  });
+
+  socket.on("chat:fileData", ({ id, name, type, data }) => {
+    try {
+      // Créer un blob et déclencher le téléchargement
+      const byteCharacters = atob(data || "");
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+
+      // Forcer un type binaire pour les types potentiellement exécutables
+      const risky = [
+        "text/html",
+        "application/javascript",
+        "text/javascript",
+        "application/x-httpd-php",
+        "text/x-php",
+      ];
+      const blobType = risky.includes(type)
+        ? "application/octet-stream"
+        : type || "application/octet-stream";
+
+      const blob = new Blob([byteArray], { type: blobType });
+
+      const safeName = (name || "file")
+        .split(/[\\/\\\\]/)
+        .pop()
+        .replace(/\0/g, "")
+        .slice(0, 200);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = safeName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Erreur téléchargement:", err);
+      alert("Erreur lors du téléchargement");
+    }
+  });
+
+  // Modal PFP (code existant)
   const pfpModal = document.createElement("div");
   pfpModal.className = "pfp-modal";
   pfpModal.innerHTML = `
@@ -51,6 +175,7 @@ export function initChat(socket) {
     tag = null,
     pfp = null,
     badges = null,
+    file = null,
   }) {
     const lastMsg = messages.lastElementChild;
     const currentTimestamp = at ? new Date(at).getTime() : Date.now();
@@ -59,10 +184,10 @@ export function initChat(socket) {
     if (
       lastMsg &&
       lastMsg.dataset.author === auteur &&
-      lastMsg.dataset.type === type
+      lastMsg.dataset.type === type &&
+      !file // Pas de continuation pour les fichiers
     ) {
       const lastTimestamp = parseInt(lastMsg.dataset.timestamp || "0");
-      // 5 minutes = 5 * 60 * 1000 = 300000 ms
       if (currentTimestamp - lastTimestamp < 300000) {
         isContinuation = true;
       }
@@ -142,7 +267,38 @@ export function initChat(socket) {
         <span class="time"><i>${time}</i></span>
       </div>
       <div class="text"></div>`;
-      el.querySelector(".text").textContent = text;
+
+      const textDiv = el.querySelector(".text");
+      textDiv.textContent = text;
+
+      // NOUVEAU: Affichage du fichier
+      if (file) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "file-attachment";
+
+        const fileIcon = getFileIcon(file.type, file.name);
+        const fileSize = formatFileSize(file.size || 0);
+
+        fileDiv.innerHTML = `
+          <div class="file-info">
+            <i class="${fileIcon}"></i>
+            <div class="file-details">
+              <div class="file-name">${file.name || "Fichier"}</div>
+              <div class="file-size">${fileSize}</div>
+            </div>
+          </div>
+          <button class="file-download" data-file-id="${file.id}" title="Télécharger">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        `;
+
+        const downloadBtn = fileDiv.querySelector(".file-download");
+        downloadBtn.addEventListener("click", () => {
+          socket.emit("chat:downloadFile", { fileId: file.id });
+        });
+
+        textDiv.appendChild(fileDiv);
+      }
 
       const avatarImage = el.querySelector(".chat-avatar");
       if (avatarImage && avatarImage.tagName === "IMG" && pfp) {
@@ -160,11 +316,58 @@ export function initChat(socket) {
           }
         };
         el.appendChild(btn);
+
+        // Admin peut aussi supprimer les fichiers
+        if (file) {
+          const fileDelBtn = document.createElement("button");
+          fileDelBtn.className = "msg-delete-btn file-delete-btn";
+          fileDelBtn.innerHTML = '<i class="fa-solid fa-file-slash"></i>';
+          fileDelBtn.title = "Supprimer ce fichier";
+          fileDelBtn.onclick = () => {
+            if (confirm("Supprimer ce fichier ?")) {
+              socket.emit("chat:deleteFile", { fileId: file.id });
+            }
+          };
+          el.appendChild(fileDelBtn);
+        }
       }
 
       messages.appendChild(el);
       messages.scrollTop = messages.scrollHeight;
     }
+
+    return el;
+  }
+
+  function getFileIcon(type, name) {
+    if (typeof type === "string") {
+      if (type.startsWith("image/")) return "fa-solid fa-image";
+      if (type === "application/pdf") return "fa-solid fa-file-pdf";
+      if (type === "text/plain") return "fa-solid fa-file-lines";
+      if (type === "application/zip") return "fa-solid fa-file-zipper";
+      if (type.startsWith("video/")) return "fa-solid fa-file-video";
+    }
+
+    if (typeof name === "string") {
+      const lower = name.toLowerCase();
+      if (/(\.png|\.jpe?g|\.gif|\.webp|\.bmp|\.svg)$/.test(lower))
+        return "fa-solid fa-image";
+      if (lower.endsWith(".pdf")) return "fa-solid fa-file-pdf";
+      if (/(\.txt|\.md|\.csv|\.log)$/.test(lower))
+        return "fa-solid fa-file-lines";
+      if (/(\.zip|\.rar|\.7z|\.tar|\.gz)$/.test(lower))
+        return "fa-solid fa-file-zipper";
+      if (/(\.mp4|\.mov|\.webm|\.avi|\.mkv)$/.test(lower))
+        return "fa-solid fa-file-video";
+    }
+
+    return "fa-solid fa-file";
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
   }
 
   socket.on("you:name", (name) => {
@@ -183,6 +386,7 @@ export function initChat(socket) {
         tag: msg.tag,
         pfp: msg.pfp,
         badges: msg.badges,
+        file: msg.file,
         type: msg.name === "Système" ? "system" : "user",
       }),
     );
@@ -209,6 +413,7 @@ export function initChat(socket) {
       tag: payload.tag,
       pfp: payload.pfp,
       badges: payload.badges,
+      file: payload.file,
     });
 
     if (
@@ -261,14 +466,13 @@ export function initChat(socket) {
           u.toLowerCase().startsWith(mention),
         );
 
-        // Ajouter une boîte de suggestion à la suite de l'input
         let suggestionBox = document.getElementById("mention-suggestions");
         if (!suggestionBox) {
           suggestionBox = document.createElement("div");
           suggestionBox.id = "mention-suggestions";
           suggestionBox.style.position = "absolute";
           suggestionBox.style.bottom = "100%";
-          suggestionBox.style.left = "15px"; // Aligner avec le padding
+          suggestionBox.style.left = "15px";
           suggestionBox.style.background = "var(--bg-color)";
           suggestionBox.style.border = "1px solid var(--primary-color)";
           suggestionBox.style.zIndex = "1000";
@@ -278,7 +482,6 @@ export function initChat(socket) {
           suggestionBox.style.borderRadius = "5px";
           suggestionBox.style.minWidth = "150px";
 
-          // S'assurer que le parent est relatif pour le positionnement
           if (getComputedStyle(input.parentNode).position === "static") {
             input.parentNode.style.position = "relative";
           }
@@ -363,5 +566,11 @@ export function initChat(socket) {
         }
       }
     });
+  }
+}
+
+function showNotif(message) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(message);
   }
 }

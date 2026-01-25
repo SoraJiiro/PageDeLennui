@@ -158,6 +158,106 @@
                         </div>
                     </section>
 
+                    <!-- SHARED FILES (ADMIN) -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-file"></i> /Fichiers
+                            partagés</h2>
+                        <div class="transactions-container">
+                            <div
+                                style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                                <input id="filter-shared-files"
+                                    placeholder="Filtrer (nom/type/uploader)"
+                                    style="flex:1; padding:6px; background:var(--bg-color); border:1px solid #444; color:var(--fg-color);" />
+                                <select id="shared-files-page-size"
+                                    style="padding:6px; background:var(--bg-color); border:1px solid #444; color:var(--fg-color);">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <button id="apply-filter-shared-files"
+                                    class="btn">Filtrer</button>
+                            </div>
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Aperçu</th>
+                                        <th>Nom</th>
+                                        <th>Type</th>
+                                        <th>Taille</th>
+                                        <th>Uploader</th>
+                                        <th>Uploadé</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shared-files-list"></tbody>
+                            </table>
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                                <div>
+                                    <button id="first-page-shared-files"
+                                        class="btn">&laquo; Première</button>
+                                    <button id="prev-page-shared-files"
+                                        class="btn">Préc.</button>
+                                    <span id="shared-files-page-info"
+                                        style="margin:0 8px;color:#ccc"></span>
+                                    <button id="next-page-shared-files"
+                                        class="btn">Suiv.</button>
+                                    <button id="last-page-shared-files"
+                                        class="btn">Dernière &raquo;</button>
+                                </div>
+                                <div>
+                                    <button id="refresh-shared-files-btn"
+                                        class="refresh-btn"><i
+                                            class="fa-solid fa-rotate"></i>
+                                        Actualiser</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- FILE ACTIONS LOGS -->
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-clipboard-list"></i> /Logs
+                            actions fichiers</h2>
+                        <div class="transactions-container">
+                            <div
+                                style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                                <select id="file-logs-page-size"
+                                    style="padding:6px; background:var(--bg-color); border:1px solid #444; color:var(--fg-color);">
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <button id="refresh-file-logs-btn"
+                                    class="refresh-btn">Actualiser</button>
+                            </div>
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                        <th>Fichier</th>
+                                        <th>Utilisateur</th>
+                                        <th>Détails</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="file-logs-list"></tbody>
+                            </table>
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                                <div>
+                                    <button id="prev-file-logs"
+                                        class="btn">Préc.</button>
+                                    <span id="file-logs-page-info"
+                                        style="margin:0 8px;color:#ccc"></span>
+                                    <button id="next-file-logs"
+                                        class="btn">Suiv.</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- BADGES CHAT -->
                     <section class="admin-section">
                         <h2><i class="fa-solid fa-tags"></i> /Badges (chat)</h2>
@@ -2903,6 +3003,7 @@ async function modifyTries() {
     // Initialiser
     checkSes();
     </script>
+        <script src="/js/admin_files.js"></script>
         <!-- Password Modal -->
         <div id="password-modal" class="modal-overlay" style="display: none;">
             <div class="modal-content">
@@ -2916,6 +3017,16 @@ async function modifyTries() {
                     <button id="password-confirm"
                         class="btn-confirm">Confirmer</button>
                 </div>
+            </div>
+        </div>
+        <!-- File Preview Modal -->
+        <div id="file-preview-modal" class="modal-overlay"
+            style="display:none; align-items:center; justify-content:center;">
+            <div id="file-preview-box" class="modal-content"
+                style="max-width:90%; max-height:80%; overflow:auto;">
+                <button id="file-preview-close" class="btn"
+                    style="float:right;">Fermer</button>
+                <div id="file-preview-content" style="color:#fff"></div>
             </div>
         </div>
     </body>

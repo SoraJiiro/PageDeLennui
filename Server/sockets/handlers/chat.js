@@ -1,3 +1,7 @@
+// Server/sockets/handlers/chat.js - Version avec partage de fichiers
+
+const path = require("path");
+
 function registerChatHandlers({
   io,
   socket,
@@ -36,7 +40,7 @@ function registerChatHandlers({
     let msg = String(text || "").trim();
     if (!msg) return;
 
-    // Censure du motus
+    // Censure du mot du jour (Motus)
     const userMotusState = getMotusState ? getMotusState(pseudo) : null;
     if (userMotusState && userMotusState.currentWord) {
       const word = userMotusState.currentWord.toUpperCase();
@@ -61,7 +65,6 @@ function registerChatHandlers({
         regexPattern += mapped + "+[\\s\\-_.]*";
       }
 
-      // On retire le dernier séparateur optionnel inutile
       if (regexPattern.endsWith("[\\s\\-_.]*")) {
         regexPattern = regexPattern.slice(0, -10);
       }
@@ -101,6 +104,300 @@ function registerChatHandlers({
     io.emit("chat:message", payload);
   });
 
+  // NOUVEAU: Upload de fichier
+  socket.on("chat:uploadFile", ({ fileName, fileData, fileType, fileSize }) => {
+    try {
+      // Validation
+      const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+      if (fileSize > MAX_FILE_SIZE) {
+        socket.emit("chat:fileError", "Fichier trop volumineux (max 20 MB)");
+        return;
+      }
+
+      // Types autorisés: images, vidéos et quelques types courants
+      const allowedExact = new Set([
+        "application/pdf",
+        "text/plain",
+        "application/zip",
+        "text/html",
+        "text/css",
+        "application/javascript",
+        "text/javascript",
+        "application/x-httpd-php",
+        "text/x-php",
+      ]);
+
+      const isAllowed =
+        (typeof fileType === "string" &&
+          (fileType.startsWith("image/") || fileType.startsWith("video/"))) ||
+        allowedExact.has(fileType);
+
+      if (!isAllowed) {
+        socket.emit("chat:fileError", "Type de fichier non autorisé");
+        return;
+      }
+
+      // Créer une entrée de fichier
+      if (!FileService.data.sharedFiles) FileService.data.sharedFiles = {};
+
+      const fileId =
+        Date.now().toString(36) + Math.random().toString(36).substr(2);
+      // Sanitize filename to avoid path traversal or weird chars
+      const safeNameRaw = String(fileName || "file");
+      const safeName = path
+        .basename(safeNameRaw)
+        .replace(/\0/g, "")
+        .slice(0, 200);
+
+      const fileEntry = {
+        id: fileId,
+        name: safeName,
+        type: fileType,
+        size: fileSize,
+        data: fileData, // base64
+        uploader: pseudo,
+        uploadedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
+      };
+
+      FileService.data.sharedFiles[fileId] = fileEntry;
+      FileService.save("sharedFiles", FileService.data.sharedFiles);
+      // Log action
+      try {
+        FileService.appendFileAction({
+          action: "upload",
+          fileId,
+          name: safeName,
+          uploader: pseudo,
+          size: fileSize,
+          at: new Date().toISOString(),
+        });
+      } catch (e) {}
+
+      // Créer un message de fichier partagé
+      const tagData = FileService.data.tags
+        ? FileService.data.tags[pseudo]
+        : null;
+      let tagPayload = null;
+      if (tagData) {
+        if (typeof tagData === "string") {
+          tagPayload = { text: tagData, color: null };
+        } else if (typeof tagData === "object") {
+          tagPayload = tagData;
+        }
+      }
+
+      const payload = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        name: pseudo,
+        text: `📎 Fichier partagé: ${fileName}`,
+        at: new Date().toISOString(),
+        tag: tagPayload,
+        pfp: getPfpFor(pseudo),
+        badges: getSelectedBadgesFor(pseudo),
+        file: {
+          id: fileId,
+          name: safeName,
+          type: fileType,
+          size: fileSize,
+        },
+      };
+
+      FileService.data.historique.push(payload);
+      if (FileService.data.historique.length > 200) {
+        FileService.data.historique = FileService.data.historique.slice(-200);
+      }
+      FileService.save("historique", FileService.data.historique);
+      FileService.appendLog(payload);
+
+      io.emit("chat:message", payload);
+      socket.emit("chat:fileUploaded", { fileId });
+
+      console.log(
+        `📎 [${pseudo}] a partagé un fichier: ${fileName} (${(fileSize / 1024).toFixed(2)} KB)`,
+      );
+    } catch (err) {
+      console.error("Erreur upload fichier:", err);
+      socket.emit("chat:fileError", "Erreur lors de l'upload");
+    }
+  });
+
+  // NOUVEAU: Télécharger un fichier
+  socket.on("chat:downloadFile", ({ fileId }) => {
+    try {
+      const file = FileService.data.sharedFiles?.[fileId];
+
+      if (!file) {
+        socket.emit("chat:fileError", "Fichier introuvable ou expiré");
+        return;
+      }
+
+      // Vérifier expiration
+      if (new Date(file.expiresAt) < new Date()) {
+        delete FileService.data.sharedFiles[fileId];
+        FileService.save("sharedFiles", FileService.data.sharedFiles);
+        socket.emit("chat:fileError", "Fichier expiré");
+        return;
+      }
+
+      socket.emit("chat:fileData", {
+        id: file.id,
+        name: file.name,
+        type: file.type,
+        data: file.data,
+      });
+
+      try {
+        FileService.appendFileAction({
+          action: "download",
+          fileId: file.id,
+          name: file.name,
+          downloader: pseudo,
+          at: new Date().toISOString(),
+        });
+      } catch (e) {}
+      console.log(`📥 [${pseudo}] a téléchargé: ${file.name}`);
+    } catch (err) {
+      console.error("Erreur download fichier:", err);
+      socket.emit("chat:fileError", "Erreur lors du téléchargement");
+    }
+  });
+
+  // Admin: obtenir la liste des fichiers partagés
+  socket.on("admin:getSharedFiles", () => {
+    if (pseudo !== "Admin") return;
+    try {
+      const all = FileService.data.sharedFiles || {};
+      const list = Object.values(all).map((f) => ({
+        id: f.id,
+        name: f.name,
+        type: f.type,
+        size: f.size,
+        uploader: f.uploader,
+        uploadedAt: f.uploadedAt,
+        expiresAt: f.expiresAt,
+      }));
+      socket.emit("admin:sharedFiles", list);
+    } catch (err) {
+      console.error("Erreur admin:getSharedFiles", err);
+    }
+  });
+
+  // Admin: supprimer un fichier
+  socket.on("chat:deleteFile", ({ fileId }) => {
+    if (pseudo !== "Admin") return;
+
+    try {
+      const target = FileService.data.sharedFiles?.[fileId];
+      if (target) {
+        // log deletion
+        try {
+          FileService.appendFileAction({
+            action: "delete",
+            fileId,
+            name: target.name,
+            deletedBy: pseudo,
+            at: new Date().toISOString(),
+          });
+        } catch (e) {}
+        delete FileService.data.sharedFiles[fileId];
+        FileService.save("sharedFiles", FileService.data.sharedFiles);
+        io.emit("chat:fileDeleted", { fileId });
+      }
+    } catch (err) {
+      console.error("Erreur suppression fichier:", err);
+    }
+  });
+
+  // Admin: obtenir la liste des fichiers partagés (avec pagination/filtrage)
+  socket.on(
+    "admin:getSharedFiles",
+    ({ page = 1, pageSize = 50, filter = "" } = {}) => {
+      if (pseudo !== "Admin") return;
+      try {
+        const all = FileService.data.sharedFiles || {};
+        const arr = Object.values(all).map((f) => ({
+          id: f.id,
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          uploader: f.uploader,
+          uploadedAt: f.uploadedAt,
+          expiresAt: f.expiresAt,
+        }));
+
+        const q = String(filter || "")
+          .toLowerCase()
+          .trim();
+        const filtered = q
+          ? arr.filter(
+              (f) =>
+                (f.name && f.name.toLowerCase().includes(q)) ||
+                (f.type && f.type.toLowerCase().includes(q)) ||
+                (f.uploader && f.uploader.toLowerCase().includes(q)),
+            )
+          : arr;
+
+        const total = filtered.length;
+        const start = (page - 1) * pageSize;
+        const pageItems = filtered.slice(start, start + pageSize);
+
+        socket.emit("admin:sharedFiles", {
+          items: pageItems,
+          total,
+          page,
+          pageSize,
+        });
+      } catch (err) {
+        console.error("Erreur admin:getSharedFiles", err);
+      }
+    },
+  );
+
+  // Admin: obtenir les logs d'actions sur les fichiers (pagination)
+  socket.on("admin:getFileLogs", ({ page = 1, pageSize = 100 } = {}) => {
+    if (pseudo !== "Admin") return;
+    try {
+      const filePath = FileService.files.fileActions;
+      if (!filePath)
+        return socket.emit("admin:fileLogs", {
+          items: [],
+          total: 0,
+          page,
+          pageSize,
+        });
+      const fs = require("fs");
+      if (!fs.existsSync(filePath))
+        return socket.emit("admin:fileLogs", {
+          items: [],
+          total: 0,
+          page,
+          pageSize,
+        });
+      const raw = fs.readFileSync(filePath, "utf8").trim();
+      if (!raw)
+        return socket.emit("admin:fileLogs", {
+          items: [],
+          total: 0,
+          page,
+          pageSize,
+        });
+      const lines = raw.split(/\n+/).filter(Boolean);
+      const total = lines.length;
+      const start = (page - 1) * pageSize;
+      const slice = lines.slice(start, start + pageSize).map((l) => {
+        try {
+          return JSON.parse(l);
+        } catch (e) {
+          return { raw: l };
+        }
+      });
+      socket.emit("admin:fileLogs", { items: slice, total, page, pageSize });
+    } catch (err) {
+      console.error("Erreur admin:getFileLogs", err);
+    }
+  });
+
   socket.on("chat:delete", ({ id }) => {
     if (pseudo !== "Admin") return;
     const idx = FileService.data.historique.findIndex((m) => m.id === id);
@@ -112,4 +409,28 @@ function registerChatHandlers({
   });
 }
 
-module.exports = { registerChatHandlers };
+// Nettoyage automatique des fichiers expirés (à appeler périodiquement)
+function cleanExpiredFiles(FileService) {
+  try {
+    if (!FileService.data.sharedFiles) return;
+
+    const now = new Date();
+    let cleaned = 0;
+
+    for (const [id, file] of Object.entries(FileService.data.sharedFiles)) {
+      if (new Date(file.expiresAt) < now) {
+        delete FileService.data.sharedFiles[id];
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      FileService.save("sharedFiles", FileService.data.sharedFiles);
+      console.log(`🧹 ${cleaned} fichier(s) expiré(s) supprimé(s)`);
+    }
+  } catch (err) {
+    console.error("Erreur nettoyage fichiers:", err);
+  }
+}
+
+module.exports = { registerChatHandlers, cleanExpiredFiles };
