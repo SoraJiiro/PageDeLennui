@@ -383,12 +383,17 @@
                     aria-live="polite"></div>
                 <form id="chat-form" autocomplete="off" autocorrect="off"
                     class="chat-form">
+                    <button type="button" class="file-upload-btn"
+                        id="file-upload-btn" title="Partager un fichier">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </button>
+                    <input type="file" id="file-input" style="display:none"
+                        accept="image/*,video/*,application/pdf,text/plain,application/zip,text/html,text/css,application/javascript,text/javascript,application/x-httpd-php,text/x-php,.php,.html,.css,.js" />
                     <textarea id="chat-input" rows="1"
                         placeholder="Écris ton message..."></textarea>
                     <button type="submit" title="Envoyer message"
-                        class="submit"><i
-                            class="fa-solid fa-circle-arrow-right"></i>
-
+                        class="submit">
+                        <i class="fa-solid fa-circle-arrow-right"></i>
                     </button>
                 </form>
             </div>

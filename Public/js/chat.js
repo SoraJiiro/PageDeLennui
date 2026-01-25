@@ -9,63 +9,52 @@ export function initChat(socket) {
   let myPseudo = null;
   let onlineUsers = [];
 
-  // NOUVEAU: Bouton d'upload de fichier
-  const fileButton = document.createElement("button");
-  fileButton.type = "button";
-  fileButton.className = "file-upload-btn";
-  fileButton.title = "Partager un fichier";
-  fileButton.innerHTML = '<i class="fa-solid fa-paperclip"></i>';
+  // Bouton d'upload de fichier (HTML statique)
+  const fileButton = document.getElementById("file-upload-btn");
+  const fileInput = document.getElementById("file-input");
 
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.style.display = "none";
-  fileInput.accept =
-    "image/*,video/*,application/pdf,text/plain,application/zip,text/html,text/css,application/javascript,text/javascript,application/x-httpd-php,text/x-php,.php,.html,.css,.js";
+  if (fileButton && fileInput) {
+    fileButton.addEventListener("click", () => fileInput.click());
 
-  form.insertBefore(fileButton, submit);
-  form.appendChild(fileInput);
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-  fileButton.addEventListener("click", () => fileInput.click());
-
-  fileInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
-    if (file.size > MAX_SIZE) {
-      alert("Fichier trop volumineux (max 20 MB)");
-      fileInput.value = "";
-      return;
-    }
-
-    try {
-      // Afficher un indicateur de chargement
-      const loadingMsg = addMessage({
-        auteur: "Système",
-        text: `⏳ Upload de ${file.name} en cours...`,
-        type: "system",
-      });
-
-      // Convertir en base64
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64Data = reader.result.split(",")[1];
-
-        socket.emit("chat:uploadFile", {
-          fileName: file.name,
-          fileData: base64Data,
-          fileType: file.type,
-          fileSize: file.size,
+      const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
+      if (file.size > MAX_SIZE) {
+        alert("Fichier trop volumineux (max 20 MB)");
+        fileInput.value = "";
+        return;
+      }
+      try {
+        // Afficher un indicateur de chargement
+        const loadingMsg = addMessage({
+          auteur: "Système",
+          text: `⏳ Upload de ${file.name} en cours...`,
+          type: "system",
         });
-      };
-      reader.readAsDataURL(file);
 
-      fileInput.value = "";
-    } catch (err) {
-      console.error("Erreur upload:", err);
-      alert("Erreur lors de l'upload du fichier");
-    }
-  });
+        // Convertir en base64
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64Data = reader.result.split(",")[1];
+
+          socket.emit("chat:uploadFile", {
+            fileName: file.name,
+            fileData: base64Data,
+            fileType: file.type,
+            fileSize: file.size,
+          });
+        };
+        reader.readAsDataURL(file);
+
+        fileInput.value = "";
+      } catch (err) {
+        console.error("Erreur upload:", err);
+        alert("Erreur lors de l'upload du fichier");
+      }
+    });
+  }
 
   // Gestion des événements fichiers
   socket.on("chat:fileUploaded", ({ fileId }) => {
