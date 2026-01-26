@@ -1843,7 +1843,13 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
 
   // --- Gestion des demandes de Tag ---
   // Use project root `data/` (same as other routes)
-  const REQUESTS_FILE = path.join(__dirname, "..", "..", "data", "tag_requests.json");
+  const REQUESTS_FILE = path.join(
+    __dirname,
+    "..",
+    "..",
+    "data",
+    "tag_requests.json",
+  );
 
   function getTagRequests() {
     if (!fs.existsSync(REQUESTS_FILE)) return [];
