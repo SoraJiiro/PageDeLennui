@@ -6,6 +6,9 @@ import { initCanvasResizer } from "./canvas_resize.js";
   if (window.socketInitialized) return;
   window.socketInitialized = true;
 
+  const subPageName = document.URL.split("/")[3];
+  const sidebar = document.getElementById("sidebar");
+
   const sessionRes = await fetch("/api/session");
   if (!sessionRes.ok) {
     window.location.href = "/login";
@@ -125,8 +128,10 @@ import { initCanvasResizer } from "./canvas_resize.js";
 
     if (window.initUiColor) {
       window.initUiColor(socket);
-      document.getElementsByClassName("sb-username")[0].innerHTML =
-        `<i class="fa-solid fa-user"></i> ${username}`;
+      if (sidebar) {
+        document.getElementsByClassName("sb-username")[0].innerHTML =
+          `<i class="fa-solid fa-user"></i> ${username}`;
+      }
     }
 
     socket.on("reload", (data) => {
@@ -147,47 +152,53 @@ import { initCanvasResizer } from "./canvas_resize.js";
       }
     });
 
-    if (chat?.initChat) chat.initChat(socket);
-    if (clicker?.initClicker) clicker.initClicker(socket);
-    if (clickerLeaderboard?.initClickerLeaderboard)
-      clickerLeaderboard.initClickerLeaderboard(socket);
-    if (dino?.initDino) dino.initDino(socket);
-    if (dinoLeaderboard?.initDinoLeaderboard)
-      dinoLeaderboard.initDinoLeaderboard(socket);
-    if (uno?.initUno) uno.initUno(socket);
-    if (flappy?.initFlappy) flappy.initFlappy(socket);
-    if (flappyLeaderboard?.initFlappyLeaderboard)
-      flappyLeaderboard.initFlappyLeaderboard(socket);
-    if (unoLeaderboard?.initUnoLeaderboard)
-      unoLeaderboard.initUnoLeaderboard(socket);
-    if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
-    if (p4Leaderboard?.initP4Leaderboard)
-      p4Leaderboard.initP4Leaderboard(socket);
-    if (blockblast?.initBlockBlast) blockblast.initBlockBlast(socket);
-    if (blockblastLeaderboard?.initBlockBlastLeaderboard)
-      blockblastLeaderboard.initBlockBlastLeaderboard(socket);
-    if (snake?.initSnake) snake.initSnake(socket);
-    if (snakeLeaderboard?.initSnakeLeaderboard)
-      snakeLeaderboard.initSnakeLeaderboard(socket);
-    if (system?.initSystem) system.initSystem(socket, rulesAccepted);
-    if (motus?.initMotus) motus.initMotus(socket);
-    if (blackjack?.initBlackjack) blackjack.initBlackjack(socket, username);
-    if (coinflip?.initCoinFlip) coinflip.initCoinFlip(socket);
-    if (motusLeaderboard?.initMotusLeaderboard)
-      motusLeaderboard.initMotusLeaderboard(socket);
-    if (game2048?.init2048) game2048.init2048(socket);
-    if (game2048Leaderboard?.init2048Leaderboard)
-      game2048Leaderboard.init2048Leaderboard(socket);
-    if (mash?.initMash) mash.initMash(socket);
-    if (mashLeaderboard?.initMashLeaderboard)
-      mashLeaderboard.initMashLeaderboard(socket);
-    if (blackjackLeaderboard?.initBlackjackLeaderboard)
-      blackjackLeaderboard.initBlackjackLeaderboard(socket);
-    if (coinflipLeaderboard?.initCoinflipLeaderboard)
-      coinflipLeaderboard.initCoinflipLeaderboard(socket);
-    if (passwordChange?.setupPasswordChange)
-      passwordChange.setupPasswordChange(socket);
-
+    if (
+      subPageName !== "demande-tag.html" &&
+      subPageName !== "suggestions.html"
+    ) {
+      if (chat?.initChat) chat.initChat(socket);
+      if (clicker?.initClicker) clicker.initClicker(socket);
+      if (clickerLeaderboard?.initClickerLeaderboard)
+        clickerLeaderboard.initClickerLeaderboard(socket);
+      if (dino?.initDino) dino.initDino(socket);
+      if (dinoLeaderboard?.initDinoLeaderboard)
+        dinoLeaderboard.initDinoLeaderboard(socket);
+      if (uno?.initUno) uno.initUno(socket);
+      if (flappy?.initFlappy) flappy.initFlappy(socket);
+      if (flappyLeaderboard?.initFlappyLeaderboard)
+        flappyLeaderboard.initFlappyLeaderboard(socket);
+      if (unoLeaderboard?.initUnoLeaderboard)
+        unoLeaderboard.initUnoLeaderboard(socket);
+      if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
+      if (p4Leaderboard?.initP4Leaderboard)
+        p4Leaderboard.initP4Leaderboard(socket);
+      if (blockblast?.initBlockBlast) blockblast.initBlockBlast(socket);
+      if (blockblastLeaderboard?.initBlockBlastLeaderboard)
+        blockblastLeaderboard.initBlockBlastLeaderboard(socket);
+      if (snake?.initSnake) snake.initSnake(socket);
+      if (snakeLeaderboard?.initSnakeLeaderboard)
+        snakeLeaderboard.initSnakeLeaderboard(socket);
+      if (system?.initSystem) system.initSystem(socket, rulesAccepted);
+      if (motus?.initMotus) motus.initMotus(socket);
+      if (blackjack?.initBlackjack) blackjack.initBlackjack(socket, username);
+      if (coinflip?.initCoinFlip) coinflip.initCoinFlip(socket);
+      if (motusLeaderboard?.initMotusLeaderboard)
+        motusLeaderboard.initMotusLeaderboard(socket);
+      if (game2048?.init2048) game2048.init2048(socket);
+      if (game2048Leaderboard?.init2048Leaderboard)
+        game2048Leaderboard.init2048Leaderboard(socket);
+      if (mash?.initMash) mash.initMash(socket);
+      if (mashLeaderboard?.initMashLeaderboard)
+        mashLeaderboard.initMashLeaderboard(socket);
+      if (blackjackLeaderboard?.initBlackjackLeaderboard)
+        blackjackLeaderboard.initBlackjackLeaderboard(socket);
+      if (coinflipLeaderboard?.initCoinflipLeaderboard)
+        coinflipLeaderboard.initCoinflipLeaderboard(socket);
+      if (passwordChange?.setupPasswordChange)
+        passwordChange.setupPasswordChange(socket);
+    } else {
+      console.warn("Modules non initialisés (page demande tag)");
+    }
     // Important: enregistrer les listeners AVANT socket.connect()
     socket.on("connect", () => {
       // Resync initial (au cas où certains events init auraient été ratés)

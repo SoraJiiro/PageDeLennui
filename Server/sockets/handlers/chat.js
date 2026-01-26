@@ -110,7 +110,12 @@ function registerChatHandlers({
       // Validation
       const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
       if (fileSize > MAX_FILE_SIZE) {
-        socket.emit("chat:fileError", "Fichier trop volumineux (max 20 MB)");
+        socket.emit(
+          "chat:fileError",
+          "Fichier trop volumineux (max " +
+            MAX_FILE_SIZE / (1024 * 1024) +
+            " Mo)",
+        );
         return;
       }
 
@@ -125,6 +130,14 @@ function registerChatHandlers({
         "text/javascript",
         "application/x-httpd-php",
         "text/x-php",
+        "text/php",
+        ".php",
+        ".js",
+        ".html",
+        ".css",
+        ".txt",
+        ".pdf",
+        ".zip",
       ]);
 
       const isAllowed =

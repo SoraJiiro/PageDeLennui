@@ -37,7 +37,7 @@ router.get("/status", (req, res) => {
   const user = req.session.user;
   const requests = getRequests();
   const pending = requests.find(
-    (r) => r.pseudo === user.pseudo && !r.fulfilled
+    (r) => r.pseudo === user.pseudo && !r.fulfilled,
   );
 
   if (pending) {
@@ -96,7 +96,7 @@ router.post("/request", (req, res) => {
 
   const requests = getRequests();
   const pending = requests.find(
-    (r) => r.pseudo === user.pseudo && !r.fulfilled
+    (r) => r.pseudo === user.pseudo && !r.fulfilled,
   );
 
   if (pending) {
@@ -116,6 +116,19 @@ router.post("/request", (req, res) => {
   saveRequests(requests);
 
   res.json({ success: true, request: newRequest });
+});
+
+router.get("/admin/tag/list", (req, res) => {
+  if (
+    !req.session ||
+    !req.session.user ||
+    req.session.user.pseudo !== "Admin"
+  ) {
+    return res.status(403).json({ message: "Accès refusé" });
+  }
+  const requests = getRequests();
+  const pending = requests.filter((r) => !r.fulfilled);
+  res.json(pending);
 });
 
 module.exports = router;

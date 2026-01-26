@@ -15,6 +15,9 @@
     </head>
     <body>
 
+        <script
+            type="text/javascript">alert("Les suggestions sont désactivées pour le moment. En revanche, vous pouvez toujours nous contacter via le chat (peu recommandé) ou envoyer un mail.\nMail suggestions : rrrdku2@gmail.com\nMerci de votre compréhension.");</script>
+
         <div class="suggestion-card">
             <h2><i class="fa-solid fa-lightbulb"></i> Boîte à Suggestions</h2>
             <p style="color: #ccc; margin-bottom: 20px;">Une idée ? Un bug ?
@@ -27,7 +30,8 @@
                         placeholder="Écrivez votre suggestion ici..."></textarea>
                 </div>
 
-                <button class="btn" onclick="submitSuggestion()">Envoyer la
+                <button class="btn" onclick="submitSuggestion()" disabled
+                    title="SUGGESTIONS DESACTIVEES DEPUIS LE SITE">Envoyer la
                     suggestion</button>
             </div>
 

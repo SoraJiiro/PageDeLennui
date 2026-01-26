@@ -22,7 +22,9 @@ export function initChat(socket) {
 
       const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
       if (file.size > MAX_SIZE) {
-        alert("Fichier trop volumineux (max 20 MB)");
+        alert(
+          "Fichier trop volumineux (max " + MAX_SIZE / (1024 * 1024) + " Mo)",
+        );
         fileInput.value = "";
         return;
       }
