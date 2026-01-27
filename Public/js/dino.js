@@ -1,4 +1,10 @@
-import { showNotif, keys, toggleScrollLock, requestPassword } from "./util.js";
+import {
+  showNotif,
+  keys,
+  toggleScrollLock,
+  requestPassword,
+  openSearchNoSocket,
+} from "./util.js";
 
 export function initDino(socket) {
   // ---------- Cache UI ----------
@@ -614,12 +620,8 @@ export function initDino(socket) {
           }
         } catch {}
         try {
-          window.open("../search.html", "_blank");
-          console.log("Chrome save");
-        } catch {
-          window.open("about:newtab", "_blank");
-          console.log("Firefox save");
-        }
+          openSearchNoSocket();
+        } catch {}
       }
       return;
     }

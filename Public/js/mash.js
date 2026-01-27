@@ -12,21 +12,12 @@ export function initMash(socket) {
   const p1Bar = document.querySelector("#mash-p1 .progress-bar");
   const p2Bar = document.querySelector("#mash-p2 .progress-bar");
 
-  const betOverlay = document.getElementById("mash-bet-overlay");
-  const betInput = document.getElementById("mash-bet-amount");
-  const betMaxInfo = document.getElementById("mash-bet-max");
-  const btnBetRed = document.getElementById("mash-bet-red");
-  const btnBetBlue = document.getElementById("mash-bet-blue");
-
   const infoText = document.getElementById("mash-info-text");
   const specCount = document.getElementById("mash-spec-count");
 
   let isPlaying = false;
   let myKey = "k";
   let currentPlayers = []; // Store players for betting mapping
-  let betPending = false;
-  let hasBetThisRound = false;
-  let myBet = null;
 
   // mashKey is managed server-side; do not persist client-side
 
@@ -53,108 +44,10 @@ export function initMash(socket) {
   // Buttons
   let currentScore = 0;
 
-  function getMaxBet() {
-    return Math.max(0, Math.floor((currentScore || 0) * 0.25));
-  }
-
-  function updateMaxBetUI() {
-    const maxBet = getMaxBet();
-    if (betInput) betInput.max = String(maxBet);
-    if (betMaxInfo) {
-      betMaxInfo.textContent = `Mise max : ${maxBet.toLocaleString(
-        "fr-FR",
-      )} (25% de vos clicks)`;
-    }
-
-    if (betInput && betInput.value !== "") {
-      const val = parseInt(betInput.value);
-      if (!isNaN(val) && val > maxBet) betInput.value = maxBet;
-    }
-  }
-
-  socket.on("clicker:you", (data) => {
-    currentScore = data.score;
-    updateMaxBetUI();
-    try {
-      socket.emit("economy:getProfitCap");
-    } catch (e) {}
-  });
-
-  socket.on("clicker:update", (data) => {
-    currentScore = data.score;
-    updateMaxBetUI();
-    try {
-      socket.emit("economy:getProfitCap");
-    } catch (e) {}
-  });
-
-  if (betInput) {
-    betInput.addEventListener("input", () => {
-      if (betInput.value === "") return;
-      const val = parseInt(betInput.value);
-      const maxBet = getMaxBet();
-      if (!isNaN(val) && val > maxBet) betInput.value = maxBet;
-    });
-  }
-
   if (joinBtn)
     joinBtn.addEventListener("click", () => socket.emit("mash:join"));
   if (leaveBtn)
     leaveBtn.addEventListener("click", () => socket.emit("mash:leave"));
-
-  if (btnBetRed) btnBetRed.addEventListener("click", () => sendBet("red"));
-  if (btnBetBlue) btnBetBlue.addEventListener("click", () => sendBet("blue"));
-
-  function sendBet(teamColor) {
-    if (betPending) return;
-
-    const amount = parseInt(betInput.value);
-
-    // Find pseudo for the team
-    const p = currentPlayers.find((p) => p.team === teamColor);
-    const targetPseudo = p ? p.pseudo : null;
-
-    if (!targetPseudo) {
-      showNotif("Erreur: Joueur introuvable ?");
-      return;
-    }
-
-    if (!Number.isFinite(amount) || amount <= 0) {
-      showNotif("⚠️ Mise invalide");
-      if (betInput) betInput.focus();
-      return;
-    }
-
-    betPending = true;
-    if (btnBetRed) btnBetRed.disabled = true;
-    if (btnBetBlue) btnBetBlue.disabled = true;
-
-    socket.emit("mash:bet", { betOn: targetPseudo, amount: amount });
-  }
-
-  updateMaxBetUI();
-
-  socket.on("mash:betError", (msg) => {
-    betPending = false;
-    if (btnBetRed) btnBetRed.disabled = false;
-    if (btnBetBlue) btnBetBlue.disabled = false;
-
-    // Garder l'overlay ouvert pour corriger
-    if (betOverlay) betOverlay.style.display = "flex";
-    showNotif(msg || "Mise refusée");
-    if (betInput) betInput.focus();
-  });
-
-  socket.on("mash:betSuccess", ({ betOn, amount }) => {
-    betPending = false;
-    if (btnBetRed) btnBetRed.disabled = false;
-    if (btnBetBlue) btnBetBlue.disabled = false;
-
-    hasBetThisRound = true;
-    myBet = { betOn, amount };
-    if (betOverlay) betOverlay.style.display = "none";
-    infoText.innerText = `Mise de ${amount} clicks placée sur ${betOn} !`;
-  });
 
   // Mash Event
   document.addEventListener("keyup", (e) => {
@@ -188,30 +81,11 @@ export function initMash(socket) {
     updateBars(data.scores);
   });
 
-  // Afficher notification si le quota de gains est atteint
-  socket.on("economy:profitCap", (capInfo) => {
-    try {
-      const rem = Number(capInfo?.remaining || 0);
-      if (rem <= 0) {
-        showNotif("Quota de gains atteint aujourd'hui.");
-      }
-    } catch (e) {}
-  });
-
   function syncState(state) {
-    // Reset du flag pari quand on quitte la phase betting
-    if (state.gameState !== "betting") {
-      hasBetThisRound = false;
-      myBet = null;
-      betPending = false;
-      if (btnBetRed) btnBetRed.disabled = false;
-      if (btnBetBlue) btnBetBlue.disabled = false;
-    }
     const username =
       window.username ||
       document.querySelector(".sb-username")?.textContent?.trim() ||
       "";
-    //console.log("[MASH] Syncing state. My pseudo (local):", username);
 
     // Update players
     currentPlayers = state.players;
@@ -220,25 +94,18 @@ export function initMash(socket) {
 
     if (p1) {
       p1Pseudo.innerText = p1.pseudo;
-      if (btnBetRed) btnBetRed.innerText = `Miser sur ${p1.pseudo}`;
     } else {
       p1Pseudo.innerText = "En attente...";
-      if (btnBetRed) btnBetRed.innerText = "En attente...";
     }
 
     if (p2) {
       p2Pseudo.innerText = p2.pseudo;
-      if (btnBetBlue) btnBetBlue.innerText = `Miser sur ${p2.pseudo}`;
     } else {
       p2Pseudo.innerText = "En attente...";
-      if (btnBetBlue) btnBetBlue.innerText = "En attente...";
     }
 
-    // Determine if I am playing
-    // Use trim() to avoid issues with DOM text content
     const me = state.players.find((p) => p.pseudo === username);
     isPlaying = !!(me && state.gameState === "playing");
-    //console.log("[MASH] Am I in game?", !!me, "Is playing?", isPlaying);
 
     // Spectators logic: Hide number, only show status if spectator
     if (specCount) {
@@ -264,23 +131,6 @@ export function initMash(socket) {
       }
     }
 
-    // Betting overlay
-    if (state.gameState === "betting" && !me) {
-      if (hasBetThisRound) {
-        betOverlay.style.display = "none";
-        if (myBet) {
-          infoText.innerText = `Mise placée: ${myBet.amount} sur ${myBet.betOn}`;
-        } else {
-          infoText.innerText = "Mise placée.";
-        }
-      } else {
-        betOverlay.style.display = "flex";
-        infoText.innerText = "Les paris sont ouverts ! (10s)";
-      }
-    } else {
-      betOverlay.style.display = "none";
-    }
-
     let countdownInterval = null;
 
     if (window.mashCountdownInterval) {
@@ -293,7 +143,6 @@ export function initMash(socket) {
 
     // Default show game area
     if (gameArea) gameArea.style.display = "flex";
-    updateMaxBetUI();
 
     // Info text updates
     if (state.gameState === "waiting") {
@@ -309,16 +158,8 @@ export function initMash(socket) {
         if (left > 0) {
           const txt = `Début dans ${left}s...`;
           if (me) infoText.innerText = txt;
-          else {
-            infoText.innerText = `Les paris sont ouverts ! (${left}s)`;
-            // Also update overlay title if visible
-            const overlayTitle = betOverlay.querySelector("h3");
-            if (overlayTitle)
-              overlayTitle.innerText = `Faites vos jeux ! (Fin dans ${left}s)`;
-          }
         } else {
           infoText.innerText = "C'est parti !";
-          betOverlay.style.display = "none";
         }
       };
 

@@ -60,7 +60,7 @@ export function initBlockBlast(socket) {
     if (h > 0)
       return `${String(h).padStart(2, "0")}:${String(m).padStart(
         2,
-        "0"
+        "0",
       )}:${String(s).padStart(2, "0")}`;
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
@@ -178,7 +178,7 @@ export function initBlockBlast(socket) {
       showNotif(
         `Nouveau record Block Blast ! Score: ${myBest
           .toLocaleString("fr-FR")
-          .replace(/\s/g, "\u00a0")}`
+          .replace(/\s/g, "\u00a0")}`,
       );
       scoreAttente = null;
     }
@@ -704,7 +704,7 @@ export function initBlockBlast(socket) {
     // Si toujours pas solvable après 50 essais, on force des pièces très simples (1x1 ou 2x1)
     if (!solvable) {
       console.warn(
-        "BlockBlast: Impossible de générer un set complexe solvable, fallback sur pièces simples."
+        "BlockBlast: Impossible de générer un set complexe solvable, fallback sur pièces simples.",
       );
       pieces = [];
       const simpleShapes = [[[1]], [[1, 1]], [[1], [1]]];
@@ -896,7 +896,7 @@ export function initBlockBlast(socket) {
         state.previewCells.forEach((k) => {
           const [r, c] = k.split("|").map((n) => parseInt(n, 10));
           const el = ui.grid.querySelector(
-            `[data-row="${r}"][data-col="${c}"]`
+            `[data-row="${r}"][data-col="${c}"]`,
           );
           if (el) el.classList.remove("preview", "valid", "invalid");
         });
@@ -1041,7 +1041,7 @@ export function initBlockBlast(socket) {
     // Animation de placement
     placedCells.forEach(({ row, col }, i) => {
       const cell = ui.grid.querySelector(
-        `[data-row="${row}"][data-col="${col}"]`
+        `[data-row="${row}"][data-col="${col}"]`,
       );
       if (cell) {
         setTimeout(() => {
@@ -1157,7 +1157,7 @@ export function initBlockBlast(socket) {
     cellsArray.forEach((key, i) => {
       const [row, col] = key.split(",").map(Number);
       const cell = ui.grid.querySelector(
-        `[data-row="${row}"][data-col="${col}"]`
+        `[data-row="${row}"][data-col="${col}"]`,
       );
       if (cell) {
         setTimeout(() => {
@@ -1166,28 +1166,31 @@ export function initBlockBlast(socket) {
       }
     });
 
-    setTimeout(() => {
-      // Supprimer les lignes et colonnes
-      rowsToClear.forEach((row) => {
-        state.grid[row] = Array(GRID_SIZE).fill(false);
-      });
+    setTimeout(
+      () => {
+        // Supprimer les lignes et colonnes
+        rowsToClear.forEach((row) => {
+          state.grid[row] = Array(GRID_SIZE).fill(false);
+        });
 
-      colsToClear.forEach((col) => {
-        for (let row = 0; row < GRID_SIZE; row++) {
-          state.grid[row][col] = false;
-        }
-      });
+        colsToClear.forEach((col) => {
+          for (let row = 0; row < GRID_SIZE; row++) {
+            state.grid[row][col] = false;
+          }
+        });
 
-      const clearScore = calculateClearScore(totalCleared);
-      const perfectBonus = calculatePerfectClearBonus();
+        const clearScore = calculateClearScore(totalCleared);
+        const perfectBonus = calculatePerfectClearBonus();
 
-      state.score +=
-        clearScore + perfectBonus + state.consecutivePlacements + 35;
+        state.score +=
+          clearScore + perfectBonus + state.consecutivePlacements + 35;
 
-      updateScore();
-      renderGrid();
-      reportBestIfImproved();
-    }, cellsArray.length * 15 + 300);
+        updateScore();
+        renderGrid();
+        reportBestIfImproved();
+      },
+      cellsArray.length * 15 + 300,
+    );
 
     return { rows: rowsToClear, cols: colsToClear, total: totalCleared };
   }
@@ -1491,7 +1494,7 @@ export function initBlockBlast(socket) {
   // Bouton Reset : réinitialise la partie actuelle + le meilleur score (avec mot de passe)
   ui.resetBtn?.addEventListener("click", async () => {
     const confirmReset = confirm(
-      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Block Blast ?\nTon meilleur score et ton temps seront définitivement perdus !"
+      "⚠️ Es-tu sûr de vouloir réinitialiser ton score Block Blast ?\nTon meilleur score et ton temps seront définitivement perdus !",
     );
     if (!confirmReset) return;
 
@@ -1528,7 +1531,7 @@ export function initBlockBlast(socket) {
   // Nouveau bouton : reset de la grille / nouvelle partie sans toucher au meilleur score
   ui.resetGridBtn?.addEventListener("click", async () => {
     const confirmReset = confirm(
-      "⚠️ Réinitialiser la grille actuelle pour commencer une nouvelle partie ?\nLe meilleur score ne sera PAS supprimé."
+      "⚠️ Réinitialiser la grille actuelle pour commencer une nouvelle partie ?\nLe meilleur score ne sera PAS supprimé.",
     );
     if (!confirmReset) return;
 
@@ -1554,7 +1557,7 @@ export function initBlockBlast(socket) {
     // Si pas de socket disponible (au cas où), on démarre une nouvelle partie
     console.warn(
       "Pas de socket disponible pour charger l'état BlockBlast, génération locale de pièces.",
-      e
+      e,
     );
     generateNewPieces();
   }
@@ -1613,7 +1616,7 @@ export function initBlockBlast(socket) {
             }
           });
         },
-        { threshold: [0, 0.1, 0.5] }
+        { threshold: [0, 0.1, 0.5] },
       );
       obs.observe(wrap);
     }

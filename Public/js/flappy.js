@@ -1,4 +1,5 @@
 import { showNotif, keys, toggleScrollLock, requestPassword } from "./util.js";
+import { openSearchNoSocket } from "./util.js";
 
 export function initFlappy(socket) {
   // ---------- Cache UI ----------
@@ -228,10 +229,6 @@ export function initFlappy(socket) {
     if (countdown > 0) {
       frameCount++;
 
-      ui.ctx.clearRect(0, 0, cssW, cssH);
-      ui.ctx.fillStyle = "#000";
-      ui.ctx.fillRect(0, 0, cssW, cssH);
-
       drawPipes();
       bird.draw();
 
@@ -304,7 +301,6 @@ export function initFlappy(socket) {
       cssW - 20,
       30,
     );
-
     requestAnimationFrame(update);
   }
 
@@ -446,12 +442,8 @@ export function initFlappy(socket) {
           }
         } catch {}
         try {
-          window.open("../search.html", "_blank");
-          console.log("Chrome save");
-        } catch {
-          window.open("about:newtab", "_blank");
-          console.log("Firefox save");
-        }
+          openSearchNoSocket();
+        } catch {}
       }
       return;
     }

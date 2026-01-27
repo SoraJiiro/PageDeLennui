@@ -118,8 +118,23 @@ function registerChatHandlers({
         );
         return;
       }
+      const safeNameRaw = String(fileName || "file");
+      const ext = path.extname(safeNameRaw).toLowerCase();
 
-      // Types autorisés: images, vidéos et quelques types courants
+      const allowedExtensions = new Set([
+        ".php",
+        ".js",
+        ".html",
+        ".css",
+        ".txt",
+        ".pdf",
+        ".zip",
+        ".mp4",
+        ".webm",
+        ".ogg",
+        ".mov",
+      ]);
+
       const allowedExact = new Set([
         "application/pdf",
         "text/plain",
@@ -131,19 +146,27 @@ function registerChatHandlers({
         "application/x-httpd-php",
         "text/x-php",
         "text/php",
-        ".php",
-        ".js",
-        ".html",
-        ".css",
-        ".txt",
-        ".pdf",
-        ".zip",
+        "video/mp4",
+        "video/webm",
+        "video/ogg",
+        "video/quicktime",
+        "text/*",
+        "application/*",
+        "video/*",
+        "image/*",
+        "audio/*",
+        "application/octet-stream",
+        "binary/octet-stream",
       ]);
 
       const isAllowed =
+        // MIME images / vidéos
         (typeof fileType === "string" &&
           (fileType.startsWith("image/") || fileType.startsWith("video/"))) ||
-        allowedExact.has(fileType);
+        // MIME explicites
+        allowedExact.has(fileType) ||
+        // fallback extension
+        allowedExtensions.has(ext);
 
       if (!isAllowed) {
         socket.emit("chat:fileError", "Type de fichier non autorisé");
@@ -156,7 +179,6 @@ function registerChatHandlers({
       const fileId =
         Date.now().toString(36) + Math.random().toString(36).substr(2);
       // Sanitize filename to avoid path traversal or weird chars
-      const safeNameRaw = String(fileName || "file");
       const safeName = path
         .basename(safeNameRaw)
         .replace(/\0/g, "")

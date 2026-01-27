@@ -101,7 +101,7 @@ export function keyBind() {
     console.log("Nouvelle touche de pause:", keys.default);
     try {
       window.dispatchEvent(
-        new CustomEvent("pauseKey:changed", { detail: { key: val } })
+        new CustomEvent("pauseKey:changed", { detail: { key: val } }),
       );
     } catch {}
   });
@@ -127,7 +127,7 @@ export function keyBind() {
       console.log("Nouvelle touche de pause:", keys.default);
       try {
         window.dispatchEvent(
-          new CustomEvent("pauseKey:changed", { detail: { key: val } })
+          new CustomEvent("pauseKey:changed", { detail: { key: val } }),
         );
       } catch {}
     }
@@ -161,20 +161,20 @@ export function darken(hex, percent) {
 
 export function requestPassword() {
   return new Promise((resolve) => {
-    const modal = document.getElementById('password-modal');
-    const input = document.getElementById('password-input');
-    const confirmBtn = document.getElementById('password-confirm');
-    const cancelBtn = document.getElementById('password-cancel');
+    const modal = document.getElementById("password-modal");
+    const input = document.getElementById("password-input");
+    const confirmBtn = document.getElementById("password-confirm");
+    const cancelBtn = document.getElementById("password-cancel");
 
     if (!modal || !input || !confirmBtn || !cancelBtn) {
-      console.error('Password modal elements missing');
+      console.error("Password modal elements missing");
       resolve(null);
       return;
     }
 
     const cleanup = () => {
-      modal.style.display = 'none';
-      input.value = '';
+      modal.style.display = "none";
+      input.value = "";
       confirmBtn.onclick = null;
       cancelBtn.onclick = null;
       input.onkeydown = null;
@@ -193,13 +193,60 @@ export function requestPassword() {
 
     confirmBtn.onclick = confirm;
     cancelBtn.onclick = cancel;
-    
+
     input.onkeydown = (e) => {
-      if (e.key === 'Enter') confirm();
-      if (e.key === 'Escape') cancel();
+      if (e.key === "Enter") confirm();
+      if (e.key === "Escape") cancel();
     };
 
-    modal.style.display = 'flex';
+    modal.style.display = "flex";
     input.focus();
   });
+}
+
+export async function openSearchNoSocket() {
+  try {
+    const resp = await fetch("/search.html");
+    if (!resp.ok) throw new Error("fetch failed");
+    let html = await resp.text();
+
+    // Remove all <script>...</script> blocks
+    html = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+
+    // Remove inline event handlers like onClick, onkeydown etc.
+    html = html.replace(/\son\w+\s*=\s*"[^"]*"/gi, "");
+    html = html.replace(/\son\w+\s*=\s*'[^']*'/gi, "");
+
+    // Ensure relative links (css, img, a, etc.) resolve by adding a <base> tag
+    try {
+      const baseHref = window.location.origin + "/";
+      if (/\<head[^>]*>/i.test(html)) {
+        html = html.replace(
+          /\<head([^>]*)>/i,
+          `<head$1><base href="${baseHref}">`,
+        );
+      } else {
+        // If no head tag, prepend a minimal head with base
+        html = `<head><base href="${baseHref}"></head>` + html;
+      }
+    } catch (e) {
+      // ignore if window not available or replacement fails
+    }
+
+    // Create a blob so the page opens without executing original scripts
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    // Revoke after a minute
+    setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+    return !!win;
+  } catch (e) {
+    try {
+      // Fallback to opening an empty tab
+      window.open("", "_blank");
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

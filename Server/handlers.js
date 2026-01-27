@@ -114,7 +114,7 @@ const leaderboardManager = {
         (a, b) =>
           b.words - a.words ||
           a.tries - b.tries ||
-          a.pseudo.localeCompare(b.pseudo)
+          a.pseudo.localeCompare(b.pseudo),
       );
     io.emit("motus:leaderboard", arr);
   },
@@ -170,7 +170,7 @@ const leaderboardManager = {
         (a, b) =>
           b.handsWon - a.handsWon ||
           b.biggestBet - a.biggestBet ||
-          a.pseudo.localeCompare(b.pseudo)
+          a.pseudo.localeCompare(b.pseudo),
       );
     io.emit("blackjack:leaderboard", arr);
   },
@@ -190,7 +190,7 @@ const leaderboardManager = {
         (a, b) =>
           b.wins - a.wins ||
           b.biggestBet - a.biggestBet ||
-          a.pseudo.localeCompare(b.pseudo)
+          a.pseudo.localeCompare(b.pseudo),
       );
     io.emit("coinflip:leaderboard", arr);
   },
@@ -221,7 +221,7 @@ function initSocketHandlers(io, socket, gameState) {
     const normalized = rawUserMedals.map((m) =>
       typeof m === "string"
         ? { name: m, colors: [] }
-        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
+        : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] },
     );
 
     // Forcer la médaille Tricheur si l'utilisateur est dans la liste.
@@ -413,7 +413,7 @@ function initSocketHandlers(io, socket, gameState) {
   const normalizedInit = rawUserMedalsInit.map((m) =>
     typeof m === "string"
       ? { name: m, colors: [] }
-      : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] }
+      : { name: m.name, colors: Array.isArray(m.colors) ? m.colors : [] },
   );
 
   // Si le joueur est dans la liste des tricheurs, on force l'ajout de la médaille Tricheur

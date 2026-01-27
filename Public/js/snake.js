@@ -4,6 +4,7 @@ import {
   darken,
   toggleScrollLock,
   requestPassword,
+  openSearchNoSocket,
 } from "./util.js";
 
 const CONSTANTS = {
@@ -276,10 +277,8 @@ class SnakeGame {
       } catch {}
       // Fonctionnalité Anti-triche / Boss key
       try {
-        window.open("../search.html", "_blank");
-      } catch {
-        window.open("about:newtab", "_blank");
-      }
+        openSearchNoSocket();
+      } catch {}
     }
   }
 
