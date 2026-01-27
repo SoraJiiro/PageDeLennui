@@ -1,6 +1,8 @@
 // Server/sockets/handlers/chat.js - Version avec partage de fichiers
 
 const path = require("path");
+const fs = require("fs");
+const config = require("../../config");
 
 function registerChatHandlers({
   io,
@@ -184,12 +186,31 @@ function registerChatHandlers({
         .replace(/\0/g, "")
         .slice(0, 200);
 
+      const uploadsDir = path.join(config.PUBLIC, "uploads");
+      try {
+        if (!fs.existsSync(uploadsDir))
+          fs.mkdirSync(uploadsDir, { recursive: true });
+      } catch (e) {}
+
+      const savedName = `${fileId}${ext || ""}`;
+      const savedPath = path.join(uploadsDir, savedName);
+      try {
+        fs.writeFileSync(
+          savedPath,
+          Buffer.from(String(fileData || ""), "base64"),
+        );
+      } catch (e) {
+        console.error("Erreur écriture fichier disque:", e);
+      }
+
       const fileEntry = {
         id: fileId,
         name: safeName,
         type: fileType,
         size: fileSize,
-        data: fileData, // base64
+        // chemin relatif côté serveur (servi via express.static Public)
+        diskPath: path.join("uploads", savedName),
+        url: `/uploads/${savedName}`,
         uploader: pseudo,
         uploadedAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
@@ -225,7 +246,7 @@ function registerChatHandlers({
       const payload = {
         id: Date.now().toString(36) + Math.random().toString(36).substr(2),
         name: pseudo,
-        text: `📎 Fichier partagé: ${fileName}`,
+        text: ``,
         at: new Date().toISOString(),
         tag: tagPayload,
         pfp: getPfpFor(pseudo),
@@ -235,6 +256,7 @@ function registerChatHandlers({
           name: safeName,
           type: fileType,
           size: fileSize,
+          url: fileEntry.url,
         },
       };
 
@@ -275,12 +297,38 @@ function registerChatHandlers({
         return;
       }
 
-      socket.emit("chat:fileData", {
-        id: file.id,
-        name: file.name,
-        type: file.type,
-        data: file.data,
-      });
+      // Lire le fichier depuis le disque si présent, sinon fallback sur data
+      try {
+        if (file.diskPath) {
+          const absolute = path.join(config.PUBLIC, file.diskPath);
+          if (fs.existsSync(absolute)) {
+            const buf = fs.readFileSync(absolute);
+            socket.emit("chat:fileData", {
+              id: file.id,
+              name: file.name,
+              type: file.type,
+              data: buf.toString("base64"),
+            });
+          } else {
+            // fallback
+            socket.emit("chat:fileData", {
+              id: file.id,
+              name: file.name,
+              type: file.type,
+              data: file.data || null,
+            });
+          }
+        } else {
+          socket.emit("chat:fileData", {
+            id: file.id,
+            name: file.name,
+            type: file.type,
+            data: file.data || null,
+          });
+        }
+      } catch (e) {
+        socket.emit("chat:fileError", "Impossible de lire le fichier");
+      }
 
       try {
         FileService.appendFileAction({
@@ -311,6 +359,7 @@ function registerChatHandlers({
         uploader: f.uploader,
         uploadedAt: f.uploadedAt,
         expiresAt: f.expiresAt,
+        url: f.url || null,
       }));
       socket.emit("admin:sharedFiles", list);
     } catch (err) {
@@ -335,6 +384,14 @@ function registerChatHandlers({
             at: new Date().toISOString(),
           });
         } catch (e) {}
+        // supprimer le fichier sur disque si présent
+        try {
+          if (target.diskPath) {
+            const abs = path.join(config.PUBLIC, target.diskPath);
+            if (fs.existsSync(abs)) fs.unlinkSync(abs);
+          }
+        } catch (e) {}
+
         delete FileService.data.sharedFiles[fileId];
         FileService.save("sharedFiles", FileService.data.sharedFiles);
         io.emit("chat:fileDeleted", { fileId });
@@ -359,6 +416,7 @@ function registerChatHandlers({
           uploader: f.uploader,
           uploadedAt: f.uploadedAt,
           expiresAt: f.expiresAt,
+          url: f.url || null,
         }));
 
         const q = String(filter || "")
@@ -454,6 +512,14 @@ function cleanExpiredFiles(FileService) {
 
     for (const [id, file] of Object.entries(FileService.data.sharedFiles)) {
       if (new Date(file.expiresAt) < now) {
+        // supprimer le fichier sur disque si présent
+        try {
+          if (file.diskPath) {
+            const abs = path.join(config.PUBLIC, file.diskPath);
+            if (fs.existsSync(abs)) fs.unlinkSync(abs);
+          }
+        } catch (e) {}
+
         delete FileService.data.sharedFiles[id];
         cleaned++;
       }

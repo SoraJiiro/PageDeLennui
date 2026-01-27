@@ -50,18 +50,32 @@
       const deleteBtn = tr.querySelector(".delete-btn");
 
       previewBtn.addEventListener("click", () => {
-        socket.emit("chat:downloadFile", { fileId: f.id });
-        // show loading state
-        previewBtn.disabled = true;
-        previewBtn.textContent = "Chargement...";
-        setTimeout(() => {
-          previewBtn.disabled = false;
-          previewBtn.textContent = "Aperçu";
-        }, 10000);
+        // If server provides a direct URL, preview directly; otherwise request base64 via socket
+        if (f.url) {
+          showPreviewForFileUrl(f.url, f.name, f.type);
+        } else {
+          socket.emit("chat:downloadFile", { fileId: f.id });
+          // show loading state
+          previewBtn.disabled = true;
+          previewBtn.textContent = "Chargement...";
+          setTimeout(() => {
+            previewBtn.disabled = false;
+            previewBtn.textContent = "Aperçu";
+          }, 10000);
+        }
       });
 
       downloadBtn.addEventListener("click", () => {
-        socket.emit("chat:downloadFile", { fileId: f.id });
+        if (f.url) {
+          const a = document.createElement("a");
+          a.href = f.url;
+          a.download = (f.name || "file").split(/[\\/\\\\]/).pop();
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          socket.emit("chat:downloadFile", { fileId: f.id });
+        }
       });
 
       deleteBtn.addEventListener("click", () => {
@@ -159,6 +173,52 @@
     modal.style.display = "flex";
 
     // cleanup URL when modal closed
+    modal.dataset.currentUrl = url;
+  }
+
+  // Preview using a public URL (no base64 transfer)
+  function showPreviewForFileUrl(url, name, type) {
+    const modal = document.getElementById("file-preview-modal");
+    const container = document.getElementById("file-preview-content");
+    if (!modal || !container) return;
+    container.innerHTML = "";
+
+    const t = type || "";
+    const n = name || "file";
+
+    if (t.startsWith("image/")) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.style.maxWidth = "100%";
+      img.style.maxHeight = "60vh";
+      container.appendChild(img);
+    } else if (t.startsWith("video/")) {
+      const video = document.createElement("video");
+      video.src = url;
+      video.controls = true;
+      video.style.maxWidth = "100%";
+      video.style.maxHeight = "60vh";
+      container.appendChild(video);
+    } else {
+      const p = document.createElement("p");
+      p.textContent = "Aperçu non disponible pour ce type de fichier.";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = n;
+      a.textContent = "Télécharger le fichier";
+      a.className = "btn";
+      container.appendChild(p);
+      container.appendChild(a);
+    }
+
+    const info = document.createElement("div");
+    info.style.marginTop = "8px";
+    info.style.fontSize = "0.9em";
+    info.style.color = "#ccc";
+    info.innerHTML = `<strong>${sanitize(n)}</strong> — ${sanitize(t || "")}`;
+    container.appendChild(info);
+
+    modal.style.display = "flex";
     modal.dataset.currentUrl = url;
   }
 

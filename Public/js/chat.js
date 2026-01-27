@@ -283,10 +283,39 @@ export function initChat(socket) {
           </button>
         `;
 
-        const downloadBtn = fileDiv.querySelector(".file-download");
-        downloadBtn.addEventListener("click", () => {
-          socket.emit("chat:downloadFile", { fileId: file.id });
-        });
+        // Si le serveur expose une URL publique, afficher media inline quand c'est possible
+        if (file.url && typeof file.url === "string") {
+          if (file.type && file.type.startsWith("image/")) {
+            const img = document.createElement("img");
+            img.src = file.url;
+            img.alt = file.name || "image";
+            img.loading = "lazy";
+            img.className = "file-inline file-image";
+            fileDiv.insertBefore(img, fileDiv.firstChild);
+          } else if (file.type && file.type.startsWith("video/")) {
+            const vid = document.createElement("video");
+            vid.src = file.url;
+            vid.controls = true;
+            vid.className = "file-inline file-video";
+            fileDiv.insertBefore(vid, fileDiv.firstChild);
+          }
+
+          // Téléchargement direct via URL
+          const downloadBtn = fileDiv.querySelector(".file-download");
+          downloadBtn.addEventListener("click", () => {
+            const a = document.createElement("a");
+            a.href = file.url;
+            a.download = (file.name || "file").split(/[\\/\\\\]/).pop();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          });
+        } else {
+          const downloadBtn = fileDiv.querySelector(".file-download");
+          downloadBtn.addEventListener("click", () => {
+            socket.emit("chat:downloadFile", { fileId: file.id });
+          });
+        }
 
         textDiv.appendChild(fileDiv);
       }

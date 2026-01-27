@@ -459,16 +459,4 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     obs.observe(stage3);
   }
-
-  // Lien Mario
-  const mario = document.querySelector(".mario");
-  if (mario) {
-    mario.addEventListener("click", () => {
-      window.open(
-        "https://supermario-game.com/mario-game/mario.html",
-        "_blank",
-      );
-      closeSidebar();
-    });
-  }
 });
