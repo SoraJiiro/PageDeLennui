@@ -522,7 +522,8 @@ span#pseudo {
 }
 
 .file-attachment:has(video),
-.file-attachment:has(img) {
+.file-attachment:has(img),
+.file-attachment:has(audio) {
   flex-direction: column;
   gap: 7.5px;
 }

@@ -98,7 +98,7 @@ export function initMotus(socket) {
   }
 
   // Initialiser le clavier
-  const keys = ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"];
+  const keys = ["éèAZERTYUIOP", "QSDFGHJKLM", "WXCVBN"];
 
   function createKeyboard() {
     keyboard.innerHTML = "";
@@ -425,9 +425,35 @@ export function initMotus(socket) {
     else if (e.key === "Backspace") {
       e.preventDefault(); // Empecher le retour en arriere de la page sur Firefox
       handleBackspace();
-    } else if (/^[a-zA-Z-]$/.test(e.key)) {
-      e.preventDefault(); // Empecher le retour en arriere de la page sur Firefox
-      handleKey(e.key.toUpperCase());
+    } else {
+      // Supporter les lettres accentuées et autres caractères présents
+      // sur le clavier virtuel (ex: 'é'). On tente d'abord la version
+      // normalisée en MAJUSCULE, puis la valeur brute.
+      const raw = e.key;
+      if (raw && raw.length === 1) {
+        const norm = raw.toUpperCase();
+
+        // Accepter explicitement '-' également
+        if (raw === "-") {
+          e.preventDefault();
+          handleKey("-");
+          return;
+        }
+
+        // Chercher un bouton correspondant dans le clavier virtuel
+        const matchNorm = document.querySelector(
+          `.motus-key[data-key="${norm}"]`,
+        );
+        const matchRaw = document.querySelector(
+          `.motus-key[data-key="${raw}"]`,
+        );
+
+        if (matchNorm || matchRaw) {
+          e.preventDefault(); // Empecher le retour en arriere de la page sur Firefox
+          // Utiliser la forme MAJUSCULE pour rester cohérent avec handleKey
+          handleKey(norm);
+        }
+      }
     }
   });
 

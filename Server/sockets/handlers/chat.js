@@ -135,6 +135,73 @@ function registerChatHandlers({
         ".webm",
         ".ogg",
         ".mov",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".mp3",
+        ".opus",
+        ".wav",
+        ".flac",
+        ".gif",
+        ".bmp",
+        ".svg",
+        ".ico",
+        ".tiff",
+        ".avi",
+        ".mkv",
+        ".7z",
+        ".tar",
+        ".gz",
+        ".bz2",
+        ".doc",
+        ".docx",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx",
+        ".odt",
+        ".ods",
+        ".odp",
+        ".rtf",
+        ".csv",
+        ".md",
+        ".epub",
+        ".mobi",
+        ".azw",
+        ".azw3",
+        ".fb2",
+        ".cbz",
+        ".cbr",
+        ".bin",
+        ".exe",
+        ".dll",
+        ".iso",
+        ".dmg",
+        ".m4a",
+        ".cpp",
+        ".java",
+        ".py",
+        ".opus",
+        ".flv",
+        ".wmv",
+        ".mov",
+        ".webp",
+        ".json",
+        ".xml",
+        ".yml",
+        ".yaml",
+        ".ini",
+        ".log",
+        ".rtx",
+        ".sh",
+        ".bat",
+        ".ps1",
+        ".sass",
+        ".scss",
+        ".cs",
+        ".go",
+        ".c",
+        ".xhtml",
       ]);
 
       const allowedExact = new Set([
@@ -161,14 +228,20 @@ function registerChatHandlers({
         "binary/octet-stream",
       ]);
 
-      const isAllowed =
-        // MIME images / vidéos
-        (typeof fileType === "string" &&
-          (fileType.startsWith("image/") || fileType.startsWith("video/"))) ||
-        // MIME explicites
-        allowedExact.has(fileType) ||
-        // fallback extension
-        allowedExtensions.has(ext);
+      // Accept if MIME starts with image/, video/ or audio/
+      // or if fileType matches an allowedExact entry (supporting wildcards like "audio/*")
+      const isAllowedMime =
+        typeof fileType === "string" &&
+        (fileType.startsWith("image/") ||
+          fileType.startsWith("video/") ||
+          fileType.startsWith("audio/") ||
+          Array.from(allowedExact).some((a) =>
+            a.endsWith("/*")
+              ? fileType.startsWith(a.slice(0, -1))
+              : fileType === a,
+          ));
+
+      const isAllowed = isAllowedMime || allowedExtensions.has(ext);
 
       if (!isAllowed) {
         socket.emit("chat:fileError", "Type de fichier non autorisé");

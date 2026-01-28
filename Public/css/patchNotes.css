@@ -19,11 +19,25 @@
 
 .patch-entry {
   border: 2px solid var(--primary-color);
+  border-left-width: 4px;
   padding: 20px;
   margin-bottom: 30px;
   background: var(--bg-color);
   box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 32px 32px 0 32px;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  position: relative;
+}
+
+.patch-entry #topArrow {
+  position: absolute;
+  top: 2.5px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--primary-color);
+  font-size: 1.5rem;
 }
 
 .patch-entry:hover {
@@ -44,6 +58,7 @@
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--primary-color);
+  font-style: italic;
 }
 
 .date {
@@ -108,7 +123,9 @@
   color: #ff00f7;
   font-weight: bold;
   margin-right: 5px;
-  text-shadow: 0 0 2px #ff00f7, 0 0 5px #ff00f7;
+  text-shadow:
+    0 0 2px #ff00f7,
+    0 0 5px #ff00f7;
 }
 
 @media (max-width: 600px) {

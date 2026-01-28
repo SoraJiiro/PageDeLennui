@@ -262,7 +262,6 @@ export function initChat(socket) {
       const textDiv = el.querySelector(".text");
       textDiv.textContent = text;
 
-      // NOUVEAU: Affichage du fichier
       if (file) {
         const fileDiv = document.createElement("div");
         fileDiv.className = "file-attachment";
@@ -285,30 +284,177 @@ export function initChat(socket) {
 
         // Si le serveur expose une URL publique, afficher media inline quand c'est possible
         if (file.url && typeof file.url === "string") {
+          // Eviter les requêtes HEAD (problèmes 405/501 et synchro).
+          // On assigne directement `src` et on gère l'échec via les événements `error`.
+
           if (file.type && file.type.startsWith("image/")) {
             const img = document.createElement("img");
-            img.src = file.url;
             img.alt = file.name || "image";
             img.loading = "lazy";
             img.className = "file-inline file-image";
             fileDiv.insertBefore(img, fileDiv.firstChild);
+
+            // Assigner la source et laisser le navigateur signaler l'erreur si l'image
+            // est indisponible (évite les HEAD supplémentaires).
+            img.src = file.url;
+            img.addEventListener("error", () => {
+              console.warn("Image non trouvée. [debug]");
+              img.alt = (file.name || "image") + " (indisponible)";
+              img.classList.add("file-missing");
+            });
           } else if (file.type && file.type.startsWith("video/")) {
             const vid = document.createElement("video");
-            vid.src = file.url;
             vid.controls = true;
             vid.className = "file-inline file-video";
             fileDiv.insertBefore(vid, fileDiv.firstChild);
+
+            // Assign src and fallback on error (no HEAD check).
+            vid.src = file.url;
+            vid.addEventListener("error", () => {
+              const note = document.createElement("div");
+              note.className = "file-missing";
+              note.textContent = "Vidéo indisponible";
+              fileDiv.insertBefore(note, vid);
+              vid.remove();
+            });
+          } else if (
+            (file.type && file.type.startsWith("audio/")) ||
+            (typeof file.name === "string" &&
+              file.name.toLowerCase().endsWith(".opus"))
+          ) {
+            // Custom audio player (hidden native audio for playback control)
+            const player = document.createElement("div");
+            player.className = "chat-audio-player";
+
+            const audioEl = document.createElement("audio");
+            audioEl.preload = "metadata";
+            audioEl.className = "native-audio";
+            audioEl.style.display = "none";
+
+            const controls = document.createElement("div");
+            controls.className = "cap-controls";
+
+            const playBtn = document.createElement("button");
+            playBtn.className = "cap-play";
+            playBtn.type = "button";
+            playBtn.title = "Lire / Pause";
+            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+
+            const time = document.createElement("div");
+            time.className = "cap-time";
+            time.textContent = "0:00 / 0:00";
+
+            const progressWrap = document.createElement("div");
+            progressWrap.className = "cap-progress";
+            const progressBar = document.createElement("div");
+            progressBar.className = "cap-progress-bar";
+            const progressFill = document.createElement("div");
+            progressFill.className = "cap-progress-fill";
+            progressBar.appendChild(progressFill);
+            progressWrap.appendChild(progressBar);
+
+            controls.appendChild(playBtn);
+            controls.appendChild(progressWrap);
+            controls.appendChild(time);
+
+            player.appendChild(audioEl);
+            player.appendChild(controls);
+
+            // Insert player before other file info
+            fileDiv.insertBefore(player, fileDiv.firstChild);
+
+            // Assign src and handle error events instead of HEAD checks.
+            audioEl.src = file.url;
+            audioEl.addEventListener("error", () => {
+              const note = document.createElement("div");
+              note.className = "file-missing";
+              note.textContent = "Audio indisponible";
+              fileDiv.insertBefore(note, player);
+              player.remove();
+              console.warn("Audio non trouvé. [debug]");
+            });
+
+            // Helpers
+            function fmt(t) {
+              if (!isFinite(t)) return "0:00";
+              const m = Math.floor(t / 60);
+              const s = Math.floor(t % 60)
+                .toString()
+                .padStart(2, "0");
+              return `${m}:${s}`;
+            }
+
+            // Events
+            playBtn.addEventListener("click", () => {
+              if (audioEl.paused) audioEl.play();
+              else audioEl.pause();
+            });
+
+            audioEl.addEventListener("play", () => {
+              playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+              player.classList.add("playing");
+            });
+            audioEl.addEventListener("pause", () => {
+              playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+              player.classList.remove("playing");
+            });
+
+            audioEl.addEventListener("loadedmetadata", () => {
+              time.textContent = `${fmt(0)} / ${fmt(audioEl.duration)}`;
+            });
+
+            audioEl.addEventListener("timeupdate", () => {
+              const cur = audioEl.currentTime;
+              const dur = audioEl.duration || 0;
+              const pct = dur > 0 ? (cur / dur) * 100 : 0;
+              progressFill.style.width = pct + "%";
+              time.textContent = `${fmt(cur)} / ${fmt(dur)}`;
+            });
+
+            progressBar.addEventListener("click", (ev) => {
+              const rect = progressBar.getBoundingClientRect();
+              const x = ev.clientX - rect.left;
+              const pct = Math.max(0, Math.min(1, x / rect.width));
+              if (isFinite(audioEl.duration))
+                audioEl.currentTime = pct * audioEl.duration;
+            });
+
+            // Also listen on the progress wrapper to be more forgiving for clicks
+            progressWrap.addEventListener("click", (ev) => {
+              const rect = progressBar.getBoundingClientRect();
+              const x = ev.clientX - rect.left;
+              const pct = Math.max(0, Math.min(1, x / rect.width));
+              if (isFinite(audioEl.duration))
+                audioEl.currentTime = pct * audioEl.duration;
+            });
           }
 
-          // Téléchargement direct via URL
+          // Téléchargement direct via URL (vérifier existence avant)
           const downloadBtn = fileDiv.querySelector(".file-download");
-          downloadBtn.addEventListener("click", () => {
-            const a = document.createElement("a");
-            a.href = file.url;
-            a.download = (file.name || "file").split(/[\\/\\\\]/).pop();
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+          downloadBtn.addEventListener("click", async (ev) => {
+            ev.preventDefault();
+            try {
+              // Essayer une petite requête GET avec Range pour valider l'accès sans
+              // télécharger tout le fichier. Certains serveurs ne supportent pas
+              // HEAD, donc on évite HEAD.
+              const res = await fetch(file.url, {
+                method: "GET",
+                headers: { Range: "bytes=0-0" },
+              });
+              if (res.ok || res.status === 206) {
+                const a = document.createElement("a");
+                a.href = file.url;
+                a.download = (file.name || "file").split(/[\/\\\\]/).pop();
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                return;
+              }
+            } catch (e) {
+              // ignore et fallback
+            }
+            // Fallback: demander au serveur le base64 via socket
+            socket.emit("chat:downloadFile", { fileId: file.id });
           });
         } else {
           const downloadBtn = fileDiv.querySelector(".file-download");
@@ -366,6 +512,7 @@ export function initChat(socket) {
       if (type === "text/plain") return "fa-solid fa-file-lines";
       if (type === "application/zip") return "fa-solid fa-file-zipper";
       if (type.startsWith("video/")) return "fa-solid fa-file-video";
+      if (type.startsWith("audio/")) return "fa-solid fa-file-audio";
     }
 
     if (typeof name === "string") {
@@ -377,8 +524,26 @@ export function initChat(socket) {
         return "fa-solid fa-file-lines";
       if (/(\.zip|\.rar|\.7z|\.tar|\.gz)$/.test(lower))
         return "fa-solid fa-file-zipper";
-      if (/(\.mp4|\.mov|\.webm|\.avi|\.mkv)$/.test(lower))
+      if (/(\.mp4|\.mov|\.webm|\.avi|\.mkv|\.flv|\.wmv)$/.test(lower))
         return "fa-solid fa-file-video";
+      if (/(\.mp3|\.wav|\.ogg|\.flac|\.opus|\.m4a)$/.test(lower))
+        return "fa-solid fa-file-audio";
+
+      // Office / documents
+      if (/\.docx?$/.test(lower)) return "fa-solid fa-file-word";
+      if (/\.xlsx?$/.test(lower)) return "fa-solid fa-file-excel";
+      if (/\.pptx?$/.test(lower)) return "fa-solid fa-file-powerpoint";
+
+      // Code / markup / config
+      if (/\.(json|xml|yml|yaml|ini|html|xhtml|css|scss|sass)$/.test(lower))
+        return "fa-solid fa-file-code";
+      if (/\.(py|js|java|cpp|c|cs|go|sh|bat|ps1)$/.test(lower))
+        return "fa-solid fa-file-code";
+
+      // Other common types
+      if (/\.(epub|mobi|azw3|fb2|cbz|cbr)$/.test(lower))
+        return "fa-solid fa-book";
+      if (/\.(rtf)$/.test(lower)) return "fa-solid fa-file-lines";
     }
 
     return "fa-solid fa-file";

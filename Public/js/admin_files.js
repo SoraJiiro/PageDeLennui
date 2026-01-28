@@ -199,6 +199,11 @@
       video.style.maxWidth = "100%";
       video.style.maxHeight = "60vh";
       container.appendChild(video);
+    } else if (t.startsWith("audio/")) {
+      const audio = document.createElement("audio");
+      audio.src = url;
+      audio.controls = true;
+      container.appendChild(audio);
     } else {
       const p = document.createElement("p");
       p.textContent = "Aperçu non disponible pour ce type de fichier.";
