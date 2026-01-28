@@ -42,7 +42,7 @@ function applyDailyProfitCap({ FileService, pseudo, profit, currentClicks }) {
   bucket.earned = Math.max(0, Math.floor(Number(bucket.earned) || 0));
   bucket.baseClicks = Math.max(0, Math.floor(Number(bucket.baseClicks) || 0));
 
-  const cap = Math.floor(bucket.baseClicks * 0.25);
+  const cap = Math.floor(bucket.baseClicks * 0.55);
   const remaining = Math.max(0, cap - bucket.earned);
 
   const allowedProfit = Math.min(p, remaining);
