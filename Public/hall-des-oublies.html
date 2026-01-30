@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport"
+                content="width=device-width, initial-scale=1.0">
+            <title>Hall des Oubliés</title>
+            <link rel="stylesheet" href="css/common.css">
+            <link rel="stylesheet" href="css/hall.css">
+            <script src="js/uiColor.js" type="text/javascript"></script>
+            <script defer src="/socket.io/socket.io.js"></script>
+            <script type="text/javascript" src="js/nav.js"></script>
+            <script defer type="module" src="js/main.js"></script>
+            <script defer src="js/auto_reload.js"></script>
+            <link rel="preload"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+                as="style"
+                onload="this.onload=null;this.rel='stylesheet'">
+            <noscript>
+                <link rel="stylesheet"
+                    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+            </noscript>
+        </head>
+    </head>
+    <body>
+        <div class="forsaken-container">
+            <button onclick="window.location.href='/'" class="btn-back"><i
+                    class="fa-solid fa-arrow-left"></i> Retour</button>
+            <div class="forsaken-header">
+                <h1 class="forsaken-title"><i
+                        class="fa-solid fa-user-slash"></i> Hall des
+                    Oubliés</h1>
+            </div>
+
+            <div class="forsaken-intro">
+                <p>&nbsp;&nbsp;&nbsp; Bienvenue au Hall des Oubliés. Cet espace
+                    est dédié
+                    aux
+                    utilisateurs qui ont choisi (ou non) de se retirer de notre
+                    belle communauté du <b>BTS SIO.</b></p>
+                <p>&nbsp;&nbsp;&nbsp; Nous respectons la décision de chacun et
+                    espérons que
+                    ceux
+                    qui sont dans le Hall des Oubliés trouveront la paix et un
+                    job qui leur convient...</p>
+                <p>À eux tous ; <strong>On se reverra les gars.</strong></p>
+            </div>
+
+            <hr>
+
+            <div class="people">
+                <p
+                    class="honorable-mentions">* Mentions honorables pour ceux
+                    qui sont juste venus à la réunion à l'amphithéatre le
+                    premier jour et qui n'ont plus jamais donné signe de vie.
+                    <br>(Et à
+                    ceux qu'on a simplement jamais vu)</p>
+                <div class="person-card">
+                    <h3 class="person-name">"SOSO" alias Sofiane</h3>
+                    <p class="person-reason">A décidé de changer de voie
+                        pour une vie bien plus palpitante dans le
+                        marketing. <i class="fa-solid fa-ad"></i></p>
+                </div>
+                <div class="person-card">
+                    <h3 class="person-name">Falin</h3>
+                    <p class="person-reason">S'est retiré du BTS après avoir
+                        été élu délégué de la classe et avoir compris que
+                        c'est pas avec un BTS SIO qu'il allait devenir
+                        riche. <i
+                            class="fa-solid fa-money-bill-wave"></i></p>
+                </div>
+                <div class="person-card">
+                    <h3 class="person-name">Mathieu</h3>
+                    <p class="person-reason">Un vrai fantôme. <i
+                            class="fa-solid fa-ghost"></i></p>
+                </div>
+                <div class="person-card">
+                    <h3 class="person-name">Anouck</h3>
+                    <p class="person-reason">Le BTS ne fût pas à la hauteur
+                        de
+                        ses attente et elle s'en est donc allé, tout
+                        simplement,
+                        en
+                        détente. <i
+                            class="fa-solid fa-person-walking"></i></p>
+                </div>
+                <div class="person-card">
+                    <h3 class="person-name">Enzo S.</h3>
+                    <p
+                        class="person-reason"><i>"2 mois on est sur la calculatrice à IP, ça y est frère"</i>
+                        - Enzo S. <i
+                            class="fa-solid fa-network-wired"></i></p>
+                </div>
+                <div class="person-card">
+                    <h3 class="person-name">"Val" alias Valentin </h3>
+                    <p
+                        class="person-reason">Il a découvert que
+                        l'informatique
+                        c'était finir comme M. François avec un joli crâne
+                        dégarni et a vite filé vers Paris pour entamer des
+                        études dans l'Audio-visuel. <i
+                            class="fa-solid fa-video"></i></p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

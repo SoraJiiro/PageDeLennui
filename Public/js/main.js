@@ -154,7 +154,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
 
     if (
       subPageName !== "demande-tag.html" &&
-      subPageName !== "suggestions.html"
+      subPageName !== "suggestions.html" &&
+      subPageName !== "hall-des-oublies.html"
     ) {
       if (chat?.initChat) chat.initChat(socket);
       if (clicker?.initClicker) clicker.initClicker(socket);
@@ -197,7 +198,9 @@ import { initCanvasResizer } from "./canvas_resize.js";
       if (passwordChange?.setupPasswordChange)
         passwordChange.setupPasswordChange(socket);
     } else {
-      console.warn("Modules non initialisés (page demande tag)");
+      console.warn(
+        "Modules non initialisés (page non compatible  : " + subPageName + " )",
+      );
     }
     // Important: enregistrer les listeners AVANT socket.connect()
     socket.on("connect", () => {
