@@ -155,7 +155,10 @@ import { initCanvasResizer } from "./canvas_resize.js";
     if (
       subPageName !== "demande-tag.html" &&
       subPageName !== "suggestions.html" &&
-      subPageName !== "hall-des-oublies.html"
+      subPageName !== "hall-des-oublies.html" &&
+      subPageName !== "patch_notes.html" &&
+      subPageName !== "profile.html" &&
+      subPageName !== "403.html"
     ) {
       if (chat?.initChat) chat.initChat(socket);
       if (clicker?.initClicker) clicker.initClicker(socket);

@@ -16,18 +16,17 @@
 .sidebar {
   position: fixed;
   top: 0;
-  left: -300px;
+  left: -300%;
   width: var(--sidebar-width);
   height: 100vh;
   background: var(--sidebar-bg);
   border-right: var(--sidebar-border);
   z-index: 1001;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(10px);
   box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
-  /* Ensure opacity/contrast if bg is transparent */
 }
 
 .sidebar.active {

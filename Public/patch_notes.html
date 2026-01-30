@@ -16,6 +16,7 @@
             media="(prefers-color-scheme: light)" />
 
         <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer type="module" src="js/main.js"></script>
         <script defer src="/socket.io/socket.io.js"></script>
         <script defer type="text/javascript" src="js/nav.js"></script>
         <script defer src="js/auto_reload.js"></script>
@@ -29,6 +30,29 @@
                 <h1><i class="fa-solid fa-pen-to-square"></i> Patch Notes</h1>
                 <p>Historique des mises à jour et changements</p>
             </div>
+
+            <div class="patch-entry">
+            <i class="fa-solid fa-caret-down" id="topArrow"></i>
+            <div class="patch-title">
+                <span class="version">v2.1.5</span>
+                <span class="date">30/01/2026</span>
+            </div>
+            <div class="patch-content">
+                <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
+                <ul>
+                    <li><span class="tag-new">[NEW]</span> <strong>Hall des Oubliés : </strong> Vous pouvez désormais retrouver les joueurs disparus dans le Hall des Oubliés. Cliquez <a href="./hall-des-oublies.html" title="Hall des Oubliés" style="color: #00FF00;">ici</a> pour consulter la page.</li>
+                    <li><span class="tag-ee">[EASTER EGG]</span><strong>Easter Egg info : </strong>L'Easter Egg sera disponible en même temps que la mise à jour qui comportera le PixelWar. Soyez à l'affût, celui-ci risque d'être très complexe à trouver et à déchiffrer... ;)</li>
+                </ul>
+                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
+                <ul>
+                    <li><span class="tag-change">[FIX]</span> <strong>Affichage quota & paliers : </strong>Les bugs d'affichages concernants le quota quotidien et les paliers des médailles a été corrigé. Les valeurs affiché sont désormais les bonnes.</li>
+                </ul>
+                <h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Retraits / Resets —</h3>
+                <ul>
+                    <li><span class="tag-removed">[RESET]</span> <strong>Médailles : </strong> Les médailles ont été réinitialisées pour tous les joueurs. (aucune incidence sur vos clicks)</li>
+                </ul>
+            </div>
+        </div>
 
             <div class="patch-entry">
                 <i class="fa-solid fa-caret-down" id="topArrow"></i>
@@ -97,7 +121,9 @@
                     <h3><i
                             class="fa-solid fa-arrow-right-arrow-left"></i>
                         Retraits / Resets —</h3>
-                        <ul><li><span class="tag-removed">[RESET]</span><strong>Motus : </strong> Reset Motus général dû aux erreurs dans la liste de mots à la sortie de la MaJ des pays du monde.</li></ul>
+                        <ul><li><span class="tag-removed">[RESET]</span><strong>Motus : </strong> Reset Motus général dû aux erreurs dans la liste de mots à la sortie de la MaJ des pays du monde.</li>
+                        <li><span class="tag-removed">[REMOVED]</span><strong>Paris Mash : </strong>Le système de paris sur le Mash game a été supprimé pour causes de bugs inpatchable. Les paris ne reviendront sûrement pas.</li>
+                        </ul>
                 </div>
             </div>
             <div class="patch-entry">
@@ -249,7 +275,7 @@
                             <br><a
                                 href="https://github.com/SoraJiiro/PageDeLennui#"
                                 title="PDE" target="_blank"
-                                style="color: var(--primary-color);margin-top: 10px;">
+                                style="color: #00FF00;margin-top: 10px;">
                                 > Lien du GitHub</a></li>
                     </ul>
                 </div>
@@ -527,11 +553,11 @@
                 <ul>
                     <li><span class="tag-new">[NEW]</span> <strong>...</strong></li>
                 </ul>
-                <h3><i class="fa-solid fa-wrench"></i>Améliorations —</h3>
+                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
                 <ul>
                     <li><span class="tag-change">[CHANGE]</span> <strong>...</strong></li>
                 </ul>
-                <h3><i class="fa-solid fa-arrow-right-arrow-left"></i>Retraits / Resets —</h3>
+                <h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Retraits / Resets —</h3>
                 <ul>
                     <li><span class="tag-removed">[REMOVED]</span> <strong>...</strong></li>
                 </ul>

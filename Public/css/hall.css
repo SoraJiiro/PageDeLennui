@@ -25,6 +25,8 @@
   line-height: 18px;
   padding: 20px;
   padding-bottom: 0px;
+  border-left: 2px solid var(--primary-color);
+  border-right: 2px solid var(--primary-color);
 }
 
 .forsaken-intro p {
