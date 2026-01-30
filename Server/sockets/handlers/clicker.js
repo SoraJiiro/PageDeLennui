@@ -88,8 +88,9 @@ function registerClickerHandlers({
               const prestige = [];
               let precedente = medalsList[medalsList.length - 1];
               for (let idx = 8; idx <= 21; idx++) {
-                let pallierTemp = precedente.pallier * 2;
-                let pallier = Math.ceil(pallierTemp * 0.85 - 6500);
+                // Même calcul que le client : multiplier par 1.8 puis soustraire 50
+                let pallierTemp = precedente.pallier * 1.8;
+                let pallier = Math.ceil(pallierTemp - 50);
                 prestige.push({ nom: `Médaille Prestige - ${idx}`, pallier });
                 precedente = { pallier };
               }

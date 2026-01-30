@@ -16,7 +16,7 @@ function ensureDailyEarningsBucket(FileService) {
 }
 
 /**
- * Limite un profit (gain net) selon un cap quotidien = 25% des clicks "base" du jour.
+ * Limite un profit (gain net) selon un cap quotidien = 55% des clicks "base" du jour.
  * - Le "baseClicks" est figé au premier gain du jour (snapshot).
  * - Ne cappe que les profits positifs; les remboursements de mise doivent rester hors cap.
  */
@@ -77,7 +77,7 @@ function getDailyProfitCapInfo({ FileService, pseudo, currentClicks }) {
   const existing = dailyEarnings[pseudo];
   if (!existing || existing.date !== today) {
     const baseClicks = Math.max(0, Math.floor(Number(currentClicks) || 0));
-    const cap = Math.floor(baseClicks * 0.25);
+    const cap = Math.floor(baseClicks * 0.55);
     return { cap, earned: 0, remaining: cap, baseClicks, active: false };
   }
 
@@ -85,7 +85,7 @@ function getDailyProfitCapInfo({ FileService, pseudo, currentClicks }) {
   bucket.earned = Math.max(0, Math.floor(Number(bucket.earned) || 0));
   bucket.baseClicks = Math.max(0, Math.floor(Number(bucket.baseClicks) || 0));
 
-  const cap = Math.floor(bucket.baseClicks * 0.25);
+  const cap = Math.floor(bucket.baseClicks * 0.55);
   const remaining = Math.max(0, cap - bucket.earned);
 
   return {

@@ -163,6 +163,24 @@ export function initClicker(socket) {
         });
         m.couleurs = savedColors.slice();
       }
+      // Mettre à jour le title et l'aria-label au cas où les paliers / cps aient changé
+      existingEl.setAttribute(
+        "title",
+        `${m.nom} ${m.icon}\nPalier : ${m.pallier
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")} clics\nCPS auto : ${m.cps}`,
+      );
+      const couleursSlice = (m.couleurs || []).slice(0, 3).join(", ");
+      const couleursPart = couleursSlice
+        ? ` Couleurs: ${couleursSlice}${m.couleurs.length > 3 ? ", …" : ""}.`
+        : "";
+      const idxForLabel = existingEl.dataset.index || (index + 1).toString();
+      existingEl.setAttribute(
+        "aria-label",
+        `${m.nom} - Rang ${idxForLabel} - Palier ${m.pallier
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")} clics - CPS auto ${m.cps}.${couleursPart}`,
+      );
       return;
     }
 

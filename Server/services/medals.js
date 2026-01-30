@@ -15,8 +15,8 @@ function generatePrestigeMedals() {
   let precedente = medalsList[medalsList.length - 1];
 
   for (let idx = 8; idx <= 21; idx++) {
-    const pallierTemp = precedente.pallier * 2;
-    const pallier = Math.ceil(pallierTemp * 0.78 - 6500);
+    const pallierTemp = precedente.pallier * 1.8;
+    const pallier = Math.ceil(pallierTemp - 50);
     prestige.push({
       nom: `Médaille Prestige - ${idx}`,
       pallier: pallier,
