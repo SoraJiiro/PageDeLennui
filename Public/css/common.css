@@ -58,6 +58,52 @@ body {
   overflow-x: hidden;
 }
 
+/* Shared floating notifications used across the UI */
+.pde-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 18px;
+  min-width: 220px;
+  text-align: center;
+  letter-spacing: 0.1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  background: var(--primary-color);
+  color: #000;
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 0 0 2px #000 inset;
+  z-index: 10000;
+  opacity: 0.95;
+  animation: pdeSlideIn 0.3s ease-out;
+}
+.pde-notification--success {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #000;
+}
+.pde-notification--error {
+  background: var(--red-color);
+  border-color: var(--red-color);
+  color: var(--bg-color);
+}
+.pde-notification--warning {
+  background: #ffdb5d;
+  border-color: #ffdb5d;
+  color: #000;
+}
+
+@keyframes pdeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 0.95;
+    transform: translateY(0);
+  }
+}
+
 hr {
   border: 1px solid var(--primary-color);
   margin-bottom: 15px;

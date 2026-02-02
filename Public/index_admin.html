@@ -48,6 +48,7 @@
             media="(prefers-color-scheme: dark)" />
         <link rel="icon" type="img/png" href="imgs/icon_l.png"
             media="(prefers-color-scheme: light)" />
+        <script defer type="module" src="js/notifications.js"></script>
         <script src="/js/uiColor.js" type="text/javascript"></script>
     </head>
     <body>
@@ -1030,11 +1031,14 @@
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {
-                adminShowNotif(
-                    data && data.message ? data.message : 'Notification',
-                    (data && data.duration) ? data.duration : 8000,
-                    !!(data && data.withCountdown)
-                );
+                const message = data && data.message ? data.message : 'Notification';
+                const duration = (data && data.duration) ? data.duration : 8000;
+                const withCountdown = !!(data && data.withCountdown);
+                if (window.showNotif) {
+                    window.showNotif(message, duration, withCountdown);
+                } else if (window.PDENotifications?.show) {
+                    window.PDENotifications.show(message, { duration, withCountdown });
+                }
             });
 
             socket.on('system:redirect', (url) => {
@@ -2553,70 +2557,24 @@ async function modifyTries() {
             document.getElementById('countdownCheckbox').checked = false;
         }
 
-        function adminShowNotif(text, duration = 4000, withCountdown = false) {
-            try {
-                const notif = document.createElement('div');
-                notif.className = 'notif';
-                notif.textContent = text;
-                notif.style.cssText = `
-                  position: fixed;
-                  top: 20px;
-                  right: 20px;
-                  background: #0f0;
-                  opacity: 0.9;
-                  color: #000;
-                  padding: 12px 18px;
-                  font-weight: 700;
-                  z-index: 9999;
-                  border: 2px solid #0f0;
-                  box-shadow: 0 0 0 2px #000 inset;
-                  animation: slideIn 0.25s ease-out;
-                  min-width: 240px;
-                  text-align: center;
-                `;
-                document.body.appendChild(notif);
-
-                if (withCountdown) {
-                    // After `duration` ms show a 3..1 countdown, then a short final marker and remove
-                    setTimeout(() => {
-                        let countdown = 3;
-                        notif.style.fontSize = '1.8rem';
-                        const countdownInterval = setInterval(() => {
-                            if (countdown > 0) {
-                                notif.textContent = `[${countdown}]`;
-                                countdown--;
-                            } else {
-                                // final marker
-                                notif.textContent = '!';
-                                notif.style.background = '#ff0';
-                                notif.style.border = '2px solid #ff0';
-                                clearInterval(countdownInterval);
-                                setTimeout(() => notif.remove(), 800);
-                            }
-                        }, 1000);
-                    }, duration);
-                } else {
-                    setTimeout(() => notif.remove(), duration);
-                }
-            } catch (e) {
-                console.warn('adminShowNotif fallback:', text);
-            }
-        }
-
-        // Afficher notification locale
         function showNotification(message, type = 'info') {
+            const variant = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            if (window.PDENotifications?.showStatus) {
+                window.PDENotifications.showStatus(message, variant);
+                return;
+            }
             const notif = document.createElement('div');
             notif.className = 'notification';
             notif.textContent = message;
-            
+
             if (type === 'error') {
                 notif.style.background = '#ff4444';
             } else if (type === 'success') {
                 notif.style.background = '#0f0';
             }
-            
+
             document.body.appendChild(notif);
-            
+
             setTimeout(() => {
                 notif.remove();
             }, 4000);

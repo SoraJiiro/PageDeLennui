@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
-  let showNotification = null;
-
   function showNavNotification(text, duration = 4000) {
+    if (typeof window !== "undefined" && typeof window.showNotif === "function") {
+      window.showNotif(text, duration);
+      return;
+    }
     const notif = document.createElement("div");
     notif.textContent = text;
     Object.assign(notif.style, {
