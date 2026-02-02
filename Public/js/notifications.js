@@ -44,12 +44,25 @@ function displayNotification(text, options = {}) {
   return notif;
 }
 
-export function showNotif(text, duration = DEFAULT_DURATION, withCountdown = false) {
-  return displayNotification(text, { duration, withCountdown, variant: "info" });
+export function showNotif(
+  text,
+  duration = DEFAULT_DURATION,
+  withCountdown = false,
+) {
+  return displayNotification(text, {
+    duration,
+    withCountdown,
+    variant: "info",
+  });
 }
 
-export function showStatusNotification(text, type = "info", duration = DEFAULT_DURATION) {
-  const variant = type === "error" ? "error" : type === "success" ? "success" : "info";
+export function showStatusNotification(
+  text,
+  type = "info",
+  duration = DEFAULT_DURATION,
+) {
+  const variant =
+    type === "error" ? "error" : type === "success" ? "success" : "info";
   return displayNotification(text, { duration, variant });
 }
 
