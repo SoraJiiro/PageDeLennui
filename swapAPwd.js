@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Script CLI pour réinitialiser le mot de passe de l'utilisateur Admin.
 
 const bcrypt = require("bcryptjs");
 const readline = require("readline");
