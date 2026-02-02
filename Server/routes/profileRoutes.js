@@ -102,6 +102,30 @@ function getPfpRequestStatus(pseudo) {
   return pending ? { pending: true, request: pending } : { pending: false };
 }
 
+function parseBirthDateInput(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+  const parts = trimmed.split("-").map((v) => parseInt(v, 10));
+  if (parts.some((p) => Number.isNaN(p))) return null;
+  const [year, month, day] = parts;
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    candidate.getUTCFullYear() !== year ||
+    candidate.getUTCMonth() + 1 !== month ||
+    candidate.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  const today = new Date();
+  const todayUtc = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+  );
+  if (candidate > todayUtc) return null;
+  return trimmed;
+}
+
 // --- Public profile (auth) ---
 router.get("/user/:pseudo", (req, res) => {
   const pseudo = normalizePseudo(req.params && req.params.pseudo);
@@ -117,10 +141,13 @@ router.get("/user/:pseudo", (req, res) => {
     pseudo: exists.pseudo,
     tag: getTagFor(exists.pseudo),
     pfpUrl: chatProfile.pfpUrl,
+    birthDate: exists.birthDate || null,
     badges: {
       assigned: chatProfile.badges.assigned,
       selected: chatProfile.badges.selected,
     },
+    medals:
+      (FileService.data.medals && FileService.data.medals[exists.pseudo]) || [],
     stats: getStatsFor(exists.pseudo),
   });
 });
@@ -141,6 +168,7 @@ router.get("/me", (req, res) => {
     pseudo: exists.pseudo,
     tag: getTagFor(exists.pseudo),
     pfpUrl: chatProfile.pfpUrl,
+    birthDate: exists.birthDate || null,
     pfpRequest: pfpStatus,
     badges: {
       assigned: chatProfile.badges.assigned,
@@ -148,6 +176,8 @@ router.get("/me", (req, res) => {
       assignedIds: chatProfile.badges.assignedIds,
       selectedIds: chatProfile.badges.selectedIds,
     },
+    medals:
+      (FileService.data.medals && FileService.data.medals[exists.pseudo]) || [],
     stats: getStatsFor(exists.pseudo),
   });
 });
@@ -223,6 +253,41 @@ router.post("/pfp/request", express.json(), (req, res) => {
 
   FileService.save("pfpRequests", FileService.data.pfpRequests);
   res.json({ success: true });
+});
+
+router.post("/birthdate", express.json(), (req, res) => {
+  const pseudo = req.session && req.session.user && req.session.user.pseudo;
+  if (!pseudo) return res.status(401).json({ message: "Non connecté" });
+
+  const body = req.body || {};
+  if (!Object.prototype.hasOwnProperty.call(body, "birthDate")) {
+    return res.status(400).json({ message: "Date manquante" });
+  }
+
+  const exists = dbUsers.findBypseudo(pseudo);
+  if (!exists)
+    return res.status(404).json({ message: "Utilisateur introuvable" });
+
+  const hasBirthDate =
+    typeof exists.birthDate === "string" && exists.birthDate.trim();
+  if (hasBirthDate) {
+    return res.status(403).json({ message: "Date déjà enregistrée" });
+  }
+
+  const rawValue = body.birthDate;
+  if (typeof rawValue !== "string" || rawValue.trim() === "") {
+    return res.status(400).json({ message: "Date invalide" });
+  }
+
+  const parsedDate = parseBirthDateInput(rawValue);
+  if (!parsedDate) {
+    return res.status(400).json({ message: "Date invalide" });
+  }
+
+  const updated = dbUsers.updateUserFields(pseudo, { birthDate: parsedDate });
+  if (!updated)
+    return res.status(500).json({ message: "Impossible de mettre à jour" });
+  res.json({ success: true, birthDate: updated.birthDate || null });
 });
 
 module.exports = router;

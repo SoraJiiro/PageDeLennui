@@ -158,105 +158,7 @@
                         </div>
                     </section>
 
-                    <!-- SHARED FILES (ADMIN) -->
-                    <section class="admin-section">
-                        <h2><i class="fa-solid fa-file"></i> /Fichiers
-                            partagés</h2>
-                        <div class="transactions-container">
-                            <div
-                                style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-                                <input id="filter-shared-files"
-                                    placeholder="Filtrer (nom/type/uploader)"
-                                    style="flex:1; padding:6px; background:var(--bg-color); border:1px solid #444; color:var(--fg-color);" />
-                                <select id="shared-files-page-size"
-                                    style="padding:6px; background:var(--bg-color); border:1px solid #444; color:var(--fg-color);">
-                                    <option value="10">10</option>
-                                    <option value="25">25</option>
-                                    <option value="50" selected>50</option>
-                                    <option value="100">100</option>
-                                </select>
-                                <button id="apply-filter-shared-files"
-                                    class="btn">Filtrer</button>
-                            </div>
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Aperçu</th>
-                                        <th>Nom</th>
-                                        <th>Type</th>
-                                        <th>Taille</th>
-                                        <th>Uploader</th>
-                                        <th>Uploadé</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="shared-files-list"></tbody>
-                            </table>
-                            <div
-                                style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                                <div>
-                                    <button id="first-page-shared-files"
-                                        class="btn">&laquo; Première</button>
-                                    <button id="prev-page-shared-files"
-                                        class="btn">Préc.</button>
-                                    <span id="shared-files-page-info"
-                                        style="margin:0 8px;color:#ccc"></span>
-                                    <button id="next-page-shared-files"
-                                        class="btn">Suiv.</button>
-                                    <button id="last-page-shared-files"
-                                        class="btn">Dernière &raquo;</button>
-                                </div>
-                                <div>
-                                    <button id="refresh-shared-files-btn"
-                                        class="refresh-btn"><i
-                                            class="fa-solid fa-rotate"></i>
-                                        Actualiser</button>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- FILE ACTIONS LOGS -->
-                    <section class="admin-section">
-                        <h2><i class="fa-solid fa-clipboard-list"></i> /Logs
-                            actions fichiers</h2>
-                        <div class="transactions-container">
-                            <div
-                                style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-                                <select id="file-logs-page-size"
-                                    style="padding:6px; background:var(--bg-color); border:1px solid #444; color:var(--fg-color);">
-                                    <option value="25">25</option>
-                                    <option value="50" selected>50</option>
-                                    <option value="100">100</option>
-                                </select>
-                                <button id="refresh-file-logs-btn"
-                                    class="refresh-btn">Actualiser</button>
-                            </div>
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Action</th>
-                                        <th>Fichier</th>
-                                        <th>Utilisateur</th>
-                                        <th>Détails</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="file-logs-list"></tbody>
-                            </table>
-                            <div
-                                style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                                <div>
-                                    <button id="prev-file-logs"
-                                        class="btn">Préc.</button>
-                                    <span id="file-logs-page-info"
-                                        style="margin:0 8px;color:#ccc"></span>
-                                    <button id="next-file-logs"
-                                        class="btn">Suiv.</button>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    <!-- Sections "Fichiers partagés" et "Logs actions fichiers" supprimées -->
 
                     <!-- BADGES CHAT -->
                     <section class="admin-section">
@@ -1743,11 +1645,19 @@
                         ? (typeof data.motusScores === 'object' ? `${data.motusScores.words} / ${data.motusTotalWords || '?'}` : `${data.motusScores} / ?`)
                         : '0 / 0'
                     }</span>
-                    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-                        <button class="btn btn-red" onclick='resetMotusFoundWords(${JSON.stringify(data.pseudo)})' title="Remet à zéro les mots trouvés Motus (score + liste des mots déjà trouvés)">
+                        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <button type="button" class="btn btn-red" id="resetMotusBtn"> 
                             <i class="fa-solid fa-rotate-left"></i>
                             Reset mots trouvés (Motus)
                         </button>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.9rem;margin-right:6px;">Essais:</label>
+                            <input type="number" id="motusTriesInput" min="0" step="1" value="${(data.motusScores && typeof data.motusScores === 'object' && typeof data.motusScores.tries === 'number') ? data.motusScores.tries : 0}" style="width:80px;padding:6px;background:var(--bg-color);border:1px solid #444;color:var(--fg-color);" />
+                            <button type="button" class="btn" id="modifyMotusBtn" data-pseudo="${(data.pseudo||'')}">
+                                <i class="fa-solid fa-pen"></i>
+                                Modifier
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="user-stat">
@@ -1848,6 +1758,17 @@
                 const plainElInit = document.getElementById('pwdPlain');
                 if (plainElInit) plainElInit.dataset.visible = '0';
             }
+
+                // Attacher listeners pour Motus (reset + modifier essais)
+                const resetBtn = document.getElementById('resetMotusBtn');
+                if (resetBtn) {
+                    resetBtn.addEventListener('click', () => resetMotusFoundWords(data.pseudo));
+                }
+
+                const modBtn = document.getElementById('modifyMotusBtn');
+                if (modBtn) {
+                    modBtn.addEventListener('click', () => modifyMotusTries(modBtn.dataset.pseudo || data.pseudo));
+                }
         }
 
         async function resetMotusFoundWords(pseudo) {
@@ -1877,6 +1798,66 @@
                     }
                 } else {
                     showNotification(`Erreur: ${payload.message || 'inconnue'}`, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur serveur', 'error');
+            }
+        }
+
+        // Modifier le nombre d'essais Motus pour un joueur
+        async function modifyMotusTries(pseudo) {
+            // Normalize pseudo: remove surrounding quotes if present
+            try {
+                if (typeof pseudo === 'string') {
+                    pseudo = pseudo.trim();
+                    if ((pseudo.startsWith('"') && pseudo.endsWith('"')) || (pseudo.startsWith("'") && pseudo.endsWith("'"))) {
+                        pseudo = pseudo.slice(1, -1);
+                    }
+                }
+            } catch (e) { /* ignore */ }
+
+            // Fallback: try to read pseudo from displayed user info
+            if (!pseudo) {
+                const pEl = document.getElementById('userInfoPseudo');
+                if (pEl) {
+                    // remove icon if present
+                    const txt = pEl.textContent || '';
+                    pseudo = txt.replace(/^[^\s]+\s*/, '').trim();
+                }
+            }
+
+            const input = document.getElementById('motusTriesInput');
+            if (!pseudo || !input) {
+                showNotification('⚠️ Veuillez sélectionner un utilisateur et renseigner les essais', 'error');
+                return;
+            }
+
+            const tries = parseInt(input.value, 10);
+            if (isNaN(tries) || tries < 0) {
+                showNotification('⚠️ Valeur d\'essais invalide', 'error');
+                return;
+            }
+
+            if (!confirm(`Modifier le nombre d'essais Motus de ${pseudo} à ${tries} ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/modify-tries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, tries })
+                });
+                const data = await res.json().catch(()=>({}));
+                if (res.ok) {
+                    showNotification('✅ Essais Motus modifiés', 'success');
+                    // refresh la fiche utilisateur
+                    const s = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                    if (s.ok) {
+                        const refreshed = await s.json();
+                        displayUserInfo(refreshed);
+                    }
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
@@ -1926,13 +1907,22 @@
             });
         }
 
-        // Modifier Stat
-        async function modifyStat() {
-          const pseudo = document.getElementById('modifyUser').value.trim();
-          const statType = document.getElementById('modifyStatType').value;
-          const value = parseInt(document.getElementById('modifyStatValue').value);
-
-          let field = null;
+                // Modifier Stat
+                async function modifyStat() {
+                    const pseudo = document.getElementById('modifyUser').value.trim();
+                    const statType = document.getElementById('modifyStatType').value;
+                    let field = null;
+                    let value = parseInt(document.getElementById('modifyStatValue').value);
+                    // support for Motus tries: if statType is motusScores and modifyStatValue is empty,
+                    // fallback to the "Nouveaux essais" input
+                    if ((isNaN(value) || value === null) && statType === 'motusScores') {
+                        const triesVal = parseInt(document.getElementById('modifyStatTries').value, 10);
+                        if (!isNaN(triesVal)) {
+                            value = triesVal;
+                            // indicate we are changing the 'tries' field
+                            field = 'tries';
+                        }
+                    }
           const fieldSelect = document.getElementById('modifyStatField');
           if (document.getElementById('statFieldContainer').style.display !== 'none') {
              field = fieldSelect.value;
@@ -1955,50 +1945,85 @@
           }
           
           if (!confirm(confirmMsg)) return;
+                    if (statType === 'all') {
+                        if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats ${targetAll ? 'de ALL LES JOUEURS' : 'de ' + pseudo} à ${value} ! Confirmer ?`)) return;
+                    }
 
-          if (statType === 'all') {
-            if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats ${targetAll ? 'de ALL LES JOUEURS' : 'de ' + pseudo} à ${value} ! Confirmer ?`)) return;
-          }
+                    // Special handling for Motus tries: use /modify-tries endpoint
+                    if (statType === 'motusScores' && field === 'tries') {
+                        if (targetAll) {
+                            showNotification('⚠️ Modification des essais pour ALL non supportée', 'error');
+                            return;
+                        }
 
-          try {
-            const endpoint = targetAll ? '/api/admin/modify-all-users-stat' : '/api/admin/modify-stat';
-            const body = targetAll 
-              ? { statType, value, field }
-              : { pseudo, statType, value, field };
+                        try {
+                            const res = await fetch('/api/admin/modify-tries', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ pseudo, tries: value })
+                            });
+                            const data = await res.json().catch(()=>({}));
+                            if (res.ok) {
+                                showNotification('✅ Essais Motus modifiés', 'success');
+                                if (socket) socket.emit('admin:refresh');
+                                document.getElementById('modifyUser').value = '';
+                                document.getElementById('modifyStatValue').value = '';
+                            } else {
+                                showNotification(data.message || 'Erreur', 'error');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            showNotification('⚠️ Erreur lors de la modification', 'error');
+                        }
 
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(body)
-            });
+                        return;
+                    }
 
-            const data = await res.json();
+                    try {
+                        const endpoint = targetAll ? '/api/admin/modify-all-users-stat' : '/api/admin/modify-stat';
+                        const body = targetAll 
+                            ? { statType, value, field }
+                            : { pseudo, statType, value, field };
+
+                        const res = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
+                        });
+
+                        const data = await res.json();
             
-            if (res.ok) {
-              showNotification(`✅ ${data.message}`, 'success');
-      socket.emit('admin:refresh');
-      document.getElementById('modifyUser').value = '';
-      document.getElementById('modifyStatValue').value = '';
-    } else {
-      showNotification(`❌ ${data.message}`, 'error');
+                        if (res.ok) {
+                            showNotification(`✅ ${data.message}`, 'success');
+            socket.emit('admin:refresh');
+            document.getElementById('modifyUser').value = '';
+            document.getElementById('modifyStatValue').value = '';
+        } else {
+            showNotification(`❌ ${data.message}`, 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showNotification('⚠️ Erreur lors de la modification', 'error');
     }
-  } catch (err) {
-    console.error(err);
-    showNotification('⚠️ Erreur lors de la modification', 'error');
-  }
 }
 
 async function addStat() {
-  const pseudo = document.getElementById('modifyUser').value.trim();
-  const statType = document.getElementById('modifyStatType').value;
-  const value = parseInt(document.getElementById('modifyStatValue').value);
+    const pseudo = document.getElementById('modifyUser').value.trim();
+    const statType = document.getElementById('modifyStatType').value;
+        let value = parseInt(document.getElementById('modifyStatValue').value);
+        let field = null;
+        if ((isNaN(value) || value === null) && statType === 'motusScores') {
+                const triesVal = parseInt(document.getElementById('modifyStatTries').value, 10);
+                if (!isNaN(triesVal)) {
+                        value = triesVal;
+                        field = 'tries';
+                }
+        }
 
-  if (!pseudo || isNaN(value)) {
-    showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
-    return;
-  }
-
-  let field = null;
+        if (!pseudo || isNaN(value)) {
+                showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
+                return;
+        }
   const fieldSelect = document.getElementById('modifyStatField');
   if (document.getElementById('statFieldContainer') && document.getElementById('statFieldContainer').style.display !== 'none') {
      field = fieldSelect.value;
@@ -2018,10 +2043,42 @@ async function addStat() {
   if (!confirm(confirmMsg)) return;
 
   try {
-    const endpoint = targetAll ? '/api/admin/add-all-users-stat' : '/api/admin/add-stat';
-    const body = targetAll 
-      ? { statType, value, field }
-      : { pseudo, statType, value, field };
+        // If adding to Motus tries, compute new tries and call modify-tries
+        if (statType === 'motusScores' && field === 'tries') {
+            if (targetAll) {
+                showNotification('⚠️ Ajout d\'essais pour ALL non supporté', 'error');
+                return;
+            }
+
+            // fetch current user info to get current tries
+            const curRes = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+            if (!curRes.ok) return showNotification('❌ Utilisateur introuvable', 'error');
+            const cur = await curRes.json().catch(()=>({}));
+            const currentTries = (cur.motusScores && typeof cur.motusScores === 'object') ? (cur.motusScores.tries || 0) : 0;
+            const newTries = Math.max(0, currentTries + value);
+
+            const res = await fetch('/api/admin/modify-tries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pseudo, tries: newTries })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showNotification(`✅ Essais Motus augmentés (total: ${newTries})`, 'success');
+                socket.emit('admin:refresh');
+                document.getElementById('modifyUser').value = '';
+                document.getElementById('modifyStatValue').value = '';
+            } else {
+                showNotification(`❌ ${data.message}`, 'error');
+            }
+
+            return;
+        }
+
+        const endpoint = targetAll ? '/api/admin/add-all-users-stat' : '/api/admin/add-stat';
+        const body = targetAll 
+            ? { statType, value, field }
+            : { pseudo, statType, value, field };
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -2046,16 +2103,22 @@ async function addStat() {
 }
 
 async function removeStat() {
-  const pseudo = document.getElementById('modifyUser').value.trim();
-  const statType = document.getElementById('modifyStatType').value;
-  const value = parseInt(document.getElementById('modifyStatValue').value);
+    const pseudo = document.getElementById('modifyUser').value.trim();
+    const statType = document.getElementById('modifyStatType').value;
+        let value = parseInt(document.getElementById('modifyStatValue').value);
+        let field = null;
+        if ((isNaN(value) || value === null) && statType === 'motusScores') {
+                const triesVal = parseInt(document.getElementById('modifyStatTries').value, 10);
+                if (!isNaN(triesVal)) {
+                        value = triesVal;
+                        field = 'tries';
+                }
+        }
 
-  if (!pseudo || isNaN(value) || value <= 0) {
-    showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
-    return;
-  }
-
-  let field = null;
+        if (!pseudo || isNaN(value) || value <= 0) {
+                showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
+                return;
+        }
   const fieldSelect = document.getElementById('modifyStatField');
   if (document.getElementById('statFieldContainer') && document.getElementById('statFieldContainer').style.display !== 'none') {
      field = fieldSelect.value;
@@ -2075,27 +2138,58 @@ async function removeStat() {
   if (!confirm(confirmMsg)) return;
 
   try {
-        const endpoint = targetAll ? '/api/admin/remove-all-users-stat' : '/api/admin/remove-stat';
-        const body = targetAll 
-            ? { statType, value, field }
-            : { pseudo, statType, value, field };
+                // If removing from Motus tries, compute new tries and call modify-tries
+                if (statType === 'motusScores' && field === 'tries') {
+                        if (targetAll) {
+                                showNotification('⚠️ Retrait d\'essais pour ALL non supporté', 'error');
+                                return;
+                        }
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+                        const curRes = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                        if (!curRes.ok) return showNotification('❌ Utilisateur introuvable', 'error');
+                        const cur = await curRes.json().catch(()=>({}));
+                        const currentTries = (cur.motusScores && typeof cur.motusScores === 'object') ? (cur.motusScores.tries || 0) : 0;
+                        const newTries = Math.max(0, currentTries - value);
 
-    const data = await res.json();
-    
-    if (res.ok) {
-      showNotification(`✅ ${data.message}`, 'success');
-      socket.emit('admin:refresh');
-      document.getElementById('modifyUser').value = '';
-      document.getElementById('modifyStatValue').value = '';
-    } else {
-      showNotification(`❌ ${data.message}`, 'error');
-    }
+                        const res = await fetch('/api/admin/modify-tries', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ pseudo, tries: newTries })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                                showNotification(`✅ Essais Motus mis à jour (total: ${newTries})`, 'success');
+                                socket.emit('admin:refresh');
+                                document.getElementById('modifyUser').value = '';
+                                document.getElementById('modifyStatValue').value = '';
+                        } else {
+                                showNotification(`❌ ${data.message}`, 'error');
+                        }
+
+                        return;
+                }
+
+                const endpoint = targetAll ? '/api/admin/remove-all-users-stat' : '/api/admin/remove-stat';
+                const body = targetAll 
+                        ? { statType, value, field }
+                        : { pseudo, statType, value, field };
+
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showNotification(`✅ ${data.message}`, 'success');
+            socket.emit('admin:refresh');
+            document.getElementById('modifyUser').value = '';
+            document.getElementById('modifyStatValue').value = '';
+        } else {
+            showNotification(`❌ ${data.message}`, 'error');
+        }
   } catch (err) {
     console.error(err);
     showNotification('⚠️ Erreur lors de la suppression', 'error');
@@ -3003,14 +3097,13 @@ async function modifyTries() {
     // Initialiser
     checkSes();
     </script>
-        <script src="/js/admin_files.js"></script>
         <!-- Password Modal -->
         <div id="password-modal" class="modal-overlay" style="display: none;">
             <div class="modal-content">
                 <h3>🔒 Confirmation requise</h3>
                 <p>Entre ton mot de passe pour confirmer cette action :</p>
                 <input type="password" id="password-input"
-                    placeholder="Mot de passe" autocomplete="current-password">
+                    placeholder="Mot de passe" autocomplete="off">
                 <div class="modal-buttons">
                     <button id="password-cancel"
                         class="btn-cancel">Annuler</button>

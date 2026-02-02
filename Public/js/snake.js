@@ -598,7 +598,7 @@ class SnakeGame {
         if (this.ui.reviveCount)
           this.ui.reviveCount.textContent = 3 - this.revivesUsed;
 
-        const multiplier = 500;
+        const multiplier = 75;
         const escalation = 1 + this.revivesUsed * 0.75;
         let price = Math.floor(this.state.score * multiplier * escalation);
         price = Math.max(5000, Math.min(5000000, price));

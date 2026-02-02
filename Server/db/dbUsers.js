@@ -26,7 +26,7 @@ function findBypseudo(pseudo) {
   const db = readAll();
   return (
     db.users.find(
-      (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase()
+      (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase(),
     ) || null
   );
 }
@@ -58,10 +58,24 @@ function findById(id) {
   return db.users.find((u) => u.id === id) || null;
 }
 
+function updateUserFields(pseudo, changes) {
+  if (!pseudo || !changes || typeof changes !== "object") return null;
+  const db = readAll();
+  const lower = String(pseudo).toLowerCase();
+  const index = db.users.findIndex((u) => u.pseudo.toLowerCase() === lower);
+  if (index === -1) return null;
+  db.users[index] = {
+    ...db.users[index],
+    ...changes,
+  };
+  writeAll(db);
+  return db.users[index];
+}
+
 function updateUserMashKey(pseudo, key) {
   const db = readAll();
   const index = db.users.findIndex(
-    (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase()
+    (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase(),
   );
   if (index !== -1) {
     db.users[index].mashKey = key;
@@ -74,7 +88,7 @@ function updateUserMashKey(pseudo, key) {
 function deleteUser(pseudo) {
   const db = readAll();
   const index = db.users.findIndex(
-    (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase()
+    (u) => u.pseudo.toLowerCase() === String(pseudo).toLowerCase(),
   );
   if (index !== -1) {
     db.users.splice(index, 1);
@@ -93,5 +107,6 @@ module.exports = {
   countByIp,
   createUser,
   deleteUser,
+  updateUserFields,
   updateUserMashKey,
 };

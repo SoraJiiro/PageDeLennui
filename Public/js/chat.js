@@ -157,6 +157,37 @@ export function initChat(socket) {
     }
   });
 
+  const linkPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+  const htmlEscapes = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+
+  function escapeHtml(value) {
+    return String(value || "").replace(/[&<>"']/g, (char) => htmlEscapes[char]);
+  }
+
+  function formatChatText(text) {
+    const normalized = String(text || "");
+    let lastIndex = 0;
+    let formatted = "";
+
+    normalized.replace(linkPattern, (match, offset) => {
+      formatted += escapeHtml(normalized.slice(lastIndex, offset));
+      const hasProtocol = /^https?:\/\//i.test(match);
+      const href = hasProtocol ? match : `https://${match}`;
+      formatted += `<a class="chat-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(match)}</a>`;
+      lastIndex = offset + match.length;
+      return match;
+    });
+
+    formatted += escapeHtml(normalized.slice(lastIndex));
+    return formatted.replace(/\n/g, "<br>");
+  }
+
   function addMessage({
     id,
     auteur,
@@ -260,7 +291,7 @@ export function initChat(socket) {
       <div class="text"></div>`;
 
       const textDiv = el.querySelector(".text");
-      textDiv.textContent = text;
+      textDiv.innerHTML = formatChatText(text);
 
       if (file) {
         const fileDiv = document.createElement("div");

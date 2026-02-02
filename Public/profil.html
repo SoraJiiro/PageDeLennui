@@ -33,6 +33,7 @@
 
         <script defer type="text/javascript" src="js/uiColor.js"></script>
         <script defer type="module" src="js/profil.js"></script>
+        <script defer type="text/javascript" src="js/auto_reload.js"></script>
     </head>
     <body>
         <div class="profil-page">
@@ -44,7 +45,7 @@
             <main class="profil-card">
                 <div class="profil-top">
                     <div class="pfp-wrap">
-                        <img id="pfpImg" class="pfp" alt />
+                        <img id="pfpImg" class="pfp" alt="Photo de profil" />
                         <div id="pfpFallback" class="pfp-fallback">PFP</div>
                     </div>
 
@@ -52,6 +53,13 @@
                         <div class="pseudo-line">
                             <h2 id="pseudo" class="pseudo">—</h2>
                             <div id="tag" class="tag"></div>
+                        </div>
+
+                        <div class="birth-date-line">
+                            <span class="birth-date-label">Date de naissance
+                                :</span>
+                            <span id="birthDateValue"
+                                class="birth-date-value">—</span>
                         </div>
 
                         <div class="badges">
@@ -87,11 +95,27 @@
                             style="margin-top: 8px;">Enregistrer</button>
                         <div id="badgesSaveStatus" class="hint"></div>
                     </div>
+
+                    <div class="box">
+                        <div class="box-title">Date de naissance</div>
+                        <div class="row">
+                            <input id="birthDateInput" class="profil-input"
+                                type="date" />
+                            <button id="birthDateSave"
+                                class="btn save-btn">Enregistrer</button>
+                        </div>
+                        <div id="birthDateStatus" class="hint"></div>
+                    </div>
                 </section>
 
                 <section class="box">
                     <div class="box-title">Stats</div>
                     <div id="stats" class="stats"></div>
+                </section>
+
+                <section class="box">
+                    <div class="box-title">Médailles</div>
+                    <div id="medalsWrap" class="medals-wrap"></div>
                 </section>
             </main>
         </div>

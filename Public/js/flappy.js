@@ -345,7 +345,7 @@ export function initFlappy(socket) {
         toggleScrollLock(true);
         if (ui.reviveCount) ui.reviveCount.textContent = 3 - revivesUsed;
 
-        const multiplier = 1000;
+        const multiplier = 150;
         const escalation = 1 + revivesUsed * 0.75;
         let price = Math.floor(score * multiplier * escalation);
         price = Math.max(5000, Math.min(5000000, price));

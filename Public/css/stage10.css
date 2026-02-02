@@ -1,5 +1,3 @@
-/* Snake Game - Stage 10 */
-
 #stage10 {
   display: flex;
   flex-direction: column;
@@ -53,12 +51,11 @@
 
 .snake-wrap .snake-btns-wrap button {
   width: 35%;
-  /* Styles inherited from common.css */
 }
 
 #snake-canvas {
   width: 100%;
-  max-width: 650px;
+  max-width: 67.5dvw;
   aspect-ratio: 1/1;
   max-height: calc(100vh - 220px);
   height: auto;

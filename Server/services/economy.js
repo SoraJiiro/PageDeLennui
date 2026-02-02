@@ -124,10 +124,10 @@ function updateReviveContextFromScore(socket, game, score) {
 
 const REVIVE_PRICING = {
   dino: { multiplier: 50, min: 5000, max: 5_000_000 },
-  flappy: { multiplier: 1000, min: 5000, max: 5_000_000 },
-  snake: { multiplier: 500, min: 5000, max: 5_000_000 },
-  2048: { multiplier: 5, min: 5000, max: 5_000_000 },
-  blockblast: { multiplier: 5, min: 5000, max: 5_000_000 },
+  flappy: { multiplier: 150, min: 5000, max: 5_000_000 },
+  snake: { multiplier: 75, min: 5000, max: 5_000_000 },
+  2048: { multiplier: 10, min: 5000, max: 5_000_000 },
+  blockblast: { multiplier: 25, min: 5000, max: 5_000_000 },
 };
 
 function computeReviveCost(game, score, revivesUsed) {
@@ -139,6 +139,8 @@ function computeReviveCost(game, score, revivesUsed) {
 
   const escalation = 1 + used * 0.75;
   let cost = Math.floor(s * cfg.multiplier * escalation);
+
+  if (cost == null) return "Prix buggué";
 
   if (!Number.isFinite(cost) || cost < 0) cost = cfg.min;
   cost = Math.max(cfg.min, cost);

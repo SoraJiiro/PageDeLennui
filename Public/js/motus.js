@@ -57,17 +57,18 @@ export function initMotus(socket) {
     grid.innerHTML = "";
     wordLength = length;
 
-    // Calculer la taille optimale des tuiles pour tenir dans le conteneur 350x300px
     const maxWidth = 350;
     const maxHeight = 300;
     const gap = 5;
     const rows = 6;
 
-    // Calculer la taille maximale possible en fonction des contraintes de largeur et de hauteur
     const sizeFromWidth = (maxWidth - (length - 1) * gap) / length;
     const sizeFromHeight = (maxHeight - (rows - 1) * gap) / rows;
-
-    const tileSize = Math.floor(Math.min(sizeFromWidth, sizeFromHeight));
+    const baseTileSize = Math.floor(Math.min(sizeFromWidth, sizeFromHeight));
+    const minTileSize = 40;
+    const maxTileSize = 70;
+    const tileSize = Math.max(minTileSize, Math.min(maxTileSize, baseTileSize));
+    grid.style.setProperty("--motus-tile-size", `${tileSize}px`);
 
     // Mettre à jour les styles de la grille
     grid.style.width = "fit-content";
@@ -98,14 +99,18 @@ export function initMotus(socket) {
   }
 
   // Initialiser le clavier
-  const keys = ["éèAZERTYUIOP", "QSDFGHJKLM", "WXCVBN"];
+  const accentRows = ["ÀÁÂÈÉÊÎÏÔ"];
+  const alphabetRows = ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"];
 
   function createKeyboard() {
     keyboard.innerHTML = "";
-    keys.forEach((rowKeys, i) => {
+
+    const renderRow = (rowKeys, options = {}) => {
       const row = document.createElement("div");
       row.className = "motus-key-row";
-
+      if (options.accent) {
+        row.classList.add("motus-accent-row");
+      }
       rowKeys.split("").forEach((key) => {
         const btn = document.createElement("button");
         btn.className = "motus-key";
@@ -114,9 +119,14 @@ export function initMotus(socket) {
         btn.onclick = () => handleKey(key);
         row.appendChild(btn);
       });
+      keyboard.appendChild(row);
+      return row;
+    };
 
-      if (i === 2) {
-        // Touche Retour arrière
+    accentRows.forEach((rowKeys) => renderRow(rowKeys, { accent: true }));
+    alphabetRows.forEach((rowKeys, index) => {
+      const row = renderRow(rowKeys);
+      if (index === alphabetRows.length - 1) {
         const back = document.createElement("button");
         back.className = "motus-key big";
         back.innerHTML = '<i class="fa-solid fa-delete-left"></i>';
@@ -124,9 +134,35 @@ export function initMotus(socket) {
         back.onclick = handleBackspace;
         row.appendChild(back);
       }
-
-      keyboard.appendChild(row);
     });
+
+    const spaceRow = document.createElement("div");
+    spaceRow.className = "motus-key-row motus-space-row";
+
+    const spaceBtn = document.createElement("button");
+    spaceBtn.className = "motus-key motus-key-space";
+    spaceBtn.textContent = "Espace";
+    spaceBtn.dataset.key = " ";
+    spaceBtn.onclick = () => handleKey(" ");
+
+    spaceRow.appendChild(spaceBtn);
+    keyboard.appendChild(spaceRow);
+  }
+
+  function updateKeyCorrectIndices(letter, tileIndex, keyElement) {
+    const key =
+      keyElement || document.querySelector(`.motus-key[data-key="${letter}"]`);
+    if (!key) return;
+    const humanIndex = tileIndex + 1;
+    const existing = key.dataset.correctIndices
+      ? key.dataset.correctIndices
+          .split(",")
+          .map((value) => parseInt(value, 10))
+      : [];
+    if (existing.includes(humanIndex)) return;
+    existing.push(humanIndex);
+    existing.sort((a, b) => a - b);
+    key.dataset.correctIndices = existing.join(",");
   }
 
   function updateGrid() {
@@ -234,7 +270,12 @@ export function initMotus(socket) {
 
         if (status === 2) {
           tile.dataset.state = "correct";
-          if (key) key.dataset.state = "correct";
+          if (key) {
+            key.dataset.state = "correct";
+            updateKeyCorrectIndices(letter, i, key);
+          } else {
+            updateKeyCorrectIndices(letter, i);
+          }
         } else if (status === 1) {
           tile.dataset.state = "present";
           if (key && key.dataset.state !== "correct")
@@ -341,7 +382,12 @@ export function initMotus(socket) {
             `.motus-key[data-key="${letter}"]`,
           );
           if (status === 2) {
-            if (key) key.dataset.state = "correct";
+            if (key) {
+              key.dataset.state = "correct";
+              updateKeyCorrectIndices(letter, i, key);
+            } else {
+              updateKeyCorrectIndices(letter, i);
+            }
           } else if (status === 1) {
             if (key && key.dataset.state !== "correct")
               key.dataset.state = "present";

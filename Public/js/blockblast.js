@@ -1226,7 +1226,7 @@ export function initBlockBlast(socket) {
         ui.reviveSection.style.display = "block";
         if (ui.reviveCount) ui.reviveCount.textContent = 3 - state.revivesUsed;
 
-        const multiplier = 5;
+        const multiplier = 25;
         const escalation = 1 + state.revivesUsed * 0.75;
         let price = Math.floor(state.score * multiplier * escalation);
         price = Math.max(5000, Math.min(5000000, price));

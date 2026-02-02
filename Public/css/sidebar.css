@@ -135,8 +135,8 @@
   background: transparent;
   border: 1px solid transparent;
   color: #eee;
-  text-align: left;
   cursor: pointer;
+  text-align: left;
   border-radius: 0;
   transition: all 0.2s;
   text-decoration: none;

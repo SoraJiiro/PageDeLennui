@@ -128,7 +128,7 @@ export function init2048(socket) {
 
     reviveBtn.onclick = () => {
       const price = parseInt(
-        div.querySelector(".cost").textContent.replace(/\s/g, "")
+        div.querySelector(".cost").textContent.replace(/\s/g, ""),
       );
       socket.emit("2048:payToContinue", { price });
     };
@@ -226,7 +226,7 @@ export function init2048(socket) {
         tileEl = document.createElement("div");
         tileEl.classList.add("tile");
         tileEl.classList.add(
-          `tile-${tileObj.value <= 2048 ? tileObj.value : "super"}`
+          `tile-${tileObj.value <= 2048 ? tileObj.value : "super"}`,
         );
         tileEl.textContent = tileObj.value;
         tileEl.dataset.id = tileObj.id;
@@ -424,7 +424,7 @@ export function init2048(socket) {
         reviveOverlay.querySelector(".revive-count").textContent =
           3 - revivesUsed;
 
-        const multiplier = 5;
+        const multiplier = 10;
         const escalation = 1 + revivesUsed * 0.75;
         let price = Math.floor(score * multiplier * escalation);
         price = Math.max(5000, Math.min(5000000, price));

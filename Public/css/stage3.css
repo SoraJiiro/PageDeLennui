@@ -258,8 +258,8 @@
 }
 
 .chat-avatar {
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--primary-color);
@@ -309,10 +309,21 @@
 }
 
 .msg .text {
-  font-size: 1rem;
-  line-height: 1.4;
+  font-size: 1.1rem;
+  line-height: 1.5;
   word-wrap: break-word;
   white-space: pre-wrap;
+}
+
+.msg .text a.chat-link {
+  color: var(--primary-color);
+  text-decoration: underline dotted;
+  text-underline-offset: 4.25px;
+}
+
+.msg .text a.chat-link:hover {
+  color: var(--bg-color);
+  background: var(--primary-color);
 }
 
 .msg-delete-btn {
@@ -509,14 +520,13 @@ span#pseudo {
   border: 1.5px solid var(--primary-color);
 }
 
-/* Prevent videos from overflowing the chat card */
 .file-attachment video,
 .file-inline.file-video {
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: 360px; /* adjust if you want taller videos */
+  max-height: 360px;
   object-fit: contain;
   border-radius: 6px;
 }

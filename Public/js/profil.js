@@ -29,6 +29,14 @@ function renderTag(tag) {
   return "";
 }
 
+function formatBirthDate(value) {
+  if (!value) return "—";
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return String(value);
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+}
+
 function setPfp(url) {
   const img = qs("pfpImg");
   const fallback = qs("pfpFallback");
@@ -51,7 +59,7 @@ function setPfp(url) {
   };
 }
 
-function renderBadgesRow(container, badges) {
+function renderBadgesRow(container, badges, max = 3) {
   if (!container) return;
   container.innerHTML = "";
   const list = Array.isArray(badges) ? badges : [];
@@ -59,7 +67,9 @@ function renderBadgesRow(container, badges) {
     container.innerHTML = '<span style="opacity:.75;">Aucun</span>';
     return;
   }
-  list.slice(0, 3).forEach((b) => {
+  const toRender =
+    typeof max === "number" && isFinite(max) ? list.slice(0, max) : list;
+  toRender.forEach((b) => {
     const el = document.createElement("span");
     el.className = "badge-chip";
     el.innerHTML = `<span class="badge-emoji">${b.emoji || "🏷️"}</span><span>${b.name || b.id}</span>`;
@@ -83,7 +93,7 @@ function renderStats(stats) {
     ["2048", s.score2048],
     ["Mash (victoires)", s.mashWins],
     [
-      "Motus (mots)",
+      "Motus (mots trouvés)",
       s.motus && typeof s.motus.words === "number" ? s.motus.words : "—",
     ],
   ];
@@ -97,6 +107,81 @@ function renderStats(stats) {
     }</div>`;
     container.appendChild(el);
   });
+}
+
+function renderMedals(container, medals) {
+  if (!container) return;
+  const list = Array.isArray(medals) ? medals : [];
+  if (list.length === 0) {
+    container.innerHTML =
+      '<span style="opacity:.75;width:100%;text-align:center;">Aucune</span>';
+    return;
+  }
+
+  const html = list
+    .map((m) => {
+      let styleStr = "";
+      let innerContent = "";
+      const isSpecial = [
+        "Bronze",
+        "Argent",
+        "Or",
+        "Diamant",
+        "Rubis",
+        "Saphir",
+      ].includes(m.name);
+
+      if (m.colors && m.colors.length) {
+        if (
+          m.name &&
+          (m.name.startsWith("Médaille") || m.name === "Tricheur")
+        ) {
+          m.colors.forEach((c, i) => (styleStr += `--grad${i + 1}: ${c}; `));
+        } else if (
+          !isSpecial &&
+          m.name !== "Légendaire" &&
+          m.name !== "Rainbow"
+        ) {
+          const bg =
+            m.colors.length > 1
+              ? `linear-gradient(120deg, ${m.colors[0]} 30%, ${m.colors[1]} 60%)`
+              : m.colors[0];
+          styleStr = `background: ${bg} !important; border: 5px solid #fff;`;
+        }
+      }
+
+      if (m.name === "Légendaire") {
+        innerContent = '<div class="medal-index">7</div>';
+      } else if (m.name && /^Médaille\s+Prestige/i.test(m.name)) {
+        // Extract only the prestige number (e.g. "Médaille Prestige - 3" -> "3")
+        const match = m.name.match(/Médaille\s+Prestige\s*[-–:]?\s*(\d+)/i);
+        const num = match
+          ? match[1]
+          : m.name
+              .replace(/Médaille\s+Prestige/i, "")
+              .replace(/[^0-9]/g, "")
+              .trim() || "";
+        innerContent = `<div class="medal-index">${num}</div>`;
+      } else if (m.name && m.name.startsWith("Médaille")) {
+        const num = m.name.replace("Médaille ", "");
+        innerContent = `<div class="medal-index">${num}</div>`;
+      } else if (m.name === "Tricheur") {
+        innerContent =
+          '<div class="medal-index"><i class="fa-solid fa-ban"></i></div>';
+      }
+
+      const titleContent =
+        m.colors && m.colors.length > 0
+          ? `${m.name}\n${m.colors.join("\n")}`
+          : m.name;
+      const nameAttr = m.name ? `data-name="${m.name}"` : "";
+      const shownClass = "shown";
+
+      return `<div class="medal ${shownClass}" ${nameAttr} style="${styleStr}" title="${titleContent}">${innerContent}</div>`;
+    })
+    .join("");
+
+  container.innerHTML = html;
 }
 
 function renderBadgesPicker(assigned, selectedIds) {
@@ -165,9 +250,17 @@ async function main() {
   qs("tag").innerHTML = data.tag ? `[ ${renderTag(data.tag)} ]` : "";
 
   setPfp(data.pfpUrl);
-  renderBadgesRow(qs("badgesSelected"), data.badges && data.badges.selected);
-  renderBadgesRow(qs("badgesAll"), data.badges && data.badges.assigned);
+  renderBadgesRow(qs("badgesSelected"), data.badges && data.badges.selected, 3);
+  renderBadgesRow(
+    qs("badgesAll"),
+    data.badges && data.badges.assigned,
+    Infinity,
+  );
+  renderMedals(qs("medalsWrap"), data.medals || []);
   renderStats(data.stats);
+  const birthDateDisplay = qs("birthDateValue");
+  if (birthDateDisplay)
+    birthDateDisplay.textContent = formatBirthDate(data.birthDate);
 
   const meSection = qs("meSection");
   if (meSection) meSection.hidden = !isMe;
@@ -255,6 +348,64 @@ async function main() {
           saveStatus.textContent = "";
         }
       });
+    }
+
+    const birthInput = qs("birthDateInput");
+    const birthBtn = qs("birthDateSave");
+    const birthStatus = qs("birthDateStatus");
+    const today = new Date().toISOString().split("T")[0];
+    const allowBirthEdit = !data.birthDate;
+    if (birthInput) {
+      birthInput.value = data.birthDate || "";
+      birthInput.max = today;
+      birthInput.disabled = !allowBirthEdit;
+    }
+    if (birthBtn) {
+      birthBtn.disabled = !allowBirthEdit;
+    }
+    if (!allowBirthEdit && birthStatus) {
+      birthStatus.textContent = "✅ Date enregistrée (non modifiable)";
+    }
+    if (allowBirthEdit && birthInput && birthBtn) {
+      birthBtn.onclick = async () => {
+        const payload = (birthInput.value || "").trim();
+        if (!payload) {
+          if (birthStatus)
+            birthStatus.textContent = "❌ Veuillez choisir une date";
+          return;
+        }
+        const body = { birthDate: payload };
+        if (birthStatus) birthStatus.textContent = "";
+        birthBtn.disabled = true;
+        try {
+          const res = await fetch("/api/profile/birthdate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const result = await res.json().catch(() => ({}));
+          if (res.ok) {
+            const savedDate = result.birthDate || payload;
+            if (birthDateDisplay)
+              birthDateDisplay.textContent = formatBirthDate(savedDate);
+            if (birthInput) {
+              birthInput.value = savedDate || "";
+              birthInput.disabled = true;
+            }
+            if (birthBtn) birthBtn.disabled = true;
+            if (birthStatus)
+              birthStatus.textContent = "✅ Date enregistrée (non modifiable)";
+            return;
+          }
+          if (birthStatus)
+            birthStatus.textContent = `❌ ${result.message || "Erreur"}`;
+          if (birthBtn) birthBtn.disabled = false;
+        } catch (error) {
+          if (birthStatus)
+            birthStatus.textContent = "❌ Impossible de contacter le serveur";
+          if (birthBtn) birthBtn.disabled = false;
+        }
+      };
     }
   }
 }

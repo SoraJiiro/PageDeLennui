@@ -199,6 +199,16 @@
 
                     <div class="rule-item">
                         <i class="fa fa-info-circle"></i>
+                        <p>La date de naissance n'est saisissable qu'une seule
+                            fois, je vous demande donc de bien vérifier avant de
+                            la valider et bien évidement d'entrer la vraie date.
+                            Si vous vous êtes trompés ou que la date est
+                            incorrecte, demandez à l'Admin et il la
+                            modifiera.</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
                         <p>Les stats seront <u>RESET</u> à chaque départ en
                             vacances à partir du <u>5 Janvier 2026</u>.</p>
                     </div>
@@ -923,7 +933,7 @@
                 <h3>🔒 Confirmation requise</h3>
                 <p>Entre ton mot de passe pour confirmer cette action :</p>
                 <input type="password" id="password-input"
-                    placeholder="Mot de passe" autocomplete="current-password">
+                    placeholder="Mot de passe" autocomplete="off">
                 <div class="modal-buttons">
                     <button id="password-cancel"
                         class="btn-cancel">Annuler</button>
@@ -941,9 +951,9 @@
                 <p>Saisissez votre nouveau mot de passe souhaité :</p>
                 <input type="password" id="new-password-input"
                     placeholder="Nouveau mot de passe"
-                    style="margin-bottom: 10px;">
+                    style="margin-bottom: 10px;" autocomplete="off">
                 <input type="password" id="confirm-password-input"
-                    placeholder="Confirmer le mot de passe">
+                    placeholder="Confirmer le mot de passe" autocomplete="off">
                 <div class="modal-buttons" style="margin-top: 15px;">
                     <button id="password-change-cancel"
                         class="btn-cancel">Annuler</button>

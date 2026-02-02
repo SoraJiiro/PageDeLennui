@@ -4,8 +4,8 @@ body {
 }
 
 .admin-container {
-  max-width: 1600px;
-  min-width: 80px;
+  max-width: 95%;
+  min-width: 95dvw;
   margin: 20px auto;
   padding: 12px;
 }
@@ -44,12 +44,14 @@ body {
 .admin-sections {
   display: grid;
   gap: 30px;
+  width: 100%;
 }
 
 .admin-section {
   border: 2px solid var(--primary-color);
   padding: 25px;
   background: rgba(0, 255, 0, 0.02);
+  max-width: 100%;
 }
 
 .admin-section h2 {
@@ -451,7 +453,9 @@ button.password-btn {
   border-radius: 0;
   font-family: inherit;
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   width: 100%;
   box-sizing: border-box;
 }
@@ -472,7 +476,9 @@ button.password-btn {
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 0;
-  transition: transform 0.2s, border-color 0.2s;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
 }
 
 .admin-item:hover {
