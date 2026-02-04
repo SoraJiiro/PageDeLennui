@@ -14,6 +14,7 @@ function setupRoutes(
     io,
     motusGame,
     leaderboardManager,
+    pixelWarGame,
     tagRoutes,
     surveyRoutesFactory,
     suggestionRoutes,
@@ -21,7 +22,10 @@ function setupRoutes(
 ) {
   // API
   app.use("/api", authRoutes);
-  app.use("/api/admin", createAdminRouter(io, motusGame, leaderboardManager));
+  app.use(
+    "/api/admin",
+    createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame),
+  );
   app.use("/api/tag", tagRoutes);
   app.use("/api/surveys", surveyRoutesFactory(io));
   app.use("/api/suggestions", suggestionRoutes);

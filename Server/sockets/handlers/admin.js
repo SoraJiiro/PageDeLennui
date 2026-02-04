@@ -10,6 +10,7 @@ function registerAdminHandlers({
   broadcastSystemMessage,
   leaderboardManager,
   gameState,
+  pixelWarGame,
 }) {
   // ------- Admin Events -------
   // Admin: blacklist management via socket (Admin only)
@@ -174,7 +175,7 @@ function registerAdminHandlers({
     broadcastSystemMessage(
       io,
       "🔙 L'historique du chat a été effacé par l'Admin.",
-      true
+      true,
     );
   });
 
@@ -259,6 +260,22 @@ function registerAdminHandlers({
       }
     } catch (e) {
       console.error("Erreur disconnect-others:", e);
+    }
+  });
+
+  socket.on("admin:pixelwar:reset_board", () => {
+    if (pseudo !== "Admin") return;
+    if (pixelWarGame) {
+      pixelWarGame.resetBoard();
+      io.emit("pixelwar:init", { board: pixelWarGame.board });
+    }
+  });
+
+  socket.on("admin:pixelwar:reset_area", ({ x1, y1, x2, y2 }) => {
+    if (pseudo !== "Admin") return;
+    if (pixelWarGame) {
+      pixelWarGame.resetArea(x1, y1, x2, y2);
+      io.emit("pixelwar:init", { board: pixelWarGame.board });
     }
   });
 }

@@ -22,6 +22,7 @@ const {
   initSocketHandlers,
   motusGame,
   leaderboardManager,
+  pixelWarGame,
 } = require("./handlers");
 const { checkReconnect } = require("./reconnectHandler");
 const fileLogger = require("./logger");
@@ -53,6 +54,7 @@ setupRoutes(app, {
   io,
   motusGame,
   leaderboardManager,
+  pixelWarGame,
   tagRoutes,
   surveyRoutesFactory,
   suggestionRoutes,
@@ -77,6 +79,6 @@ server.listen(config.PORT, config.HOST, () => {
   console.log(
     `>> ✅ Serveur en ligne : http://${config.HOST || "localhost"}:${
       config.PORT
-    }\n`
+    }\n`,
   );
 });

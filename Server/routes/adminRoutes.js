@@ -9,7 +9,7 @@ const { recalculateMedals } = require("../moduleGetter");
 const words = require("../constants/words");
 
 // Fonction pour créer le router avec accès à io
-function createAdminRouter(io, motusGame, leaderboardManager) {
+function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
   const router = express.Router();
 
   // Helper pour refresh les leaderboards
@@ -529,10 +529,40 @@ function createAdminRouter(io, motusGame, leaderboardManager) {
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "pixelwar",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "pixelwar") {
+      if (!field || (field !== "pixels" && field !== "maxPixels")) {
+        return res.status(400).json({
+          message: "Champ invalide pour Pixel War (pixels ou maxPixels requis)",
+        });
+      }
+
+      if (pixelWarGame) {
+        if (!pixelWarGame.users[pseudo]) {
+          pixelWarGame.getUserState(pseudo);
+        }
+
+        pixelWarGame.users[pseudo][field] = value;
+        pixelWarGame.usersDirty = true;
+        // pixelWarGame.saveUsers(); // Autosave takes care of it
+
+        console.log({
+          level: "action",
+          message: `Modification PixelWar: ${pseudo} - ${field} = ${value}`,
+        });
+
+        return res.json({
+          message: `PixelWar ${field} de ${pseudo} mis à jour à ${value}`,
+        });
+      } else {
+        return res.status(500).json({ message: "PixelWarGame non disponible" });
+      }
     }
 
     if (statType === "blackjackStats" || statType === "coinflipStats") {

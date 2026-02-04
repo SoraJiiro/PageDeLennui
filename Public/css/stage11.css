@@ -16,7 +16,7 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
   height: auto;
   position: relative;
 }
@@ -51,6 +51,7 @@
 .motus-grid {
   display: grid;
   padding: 10px;
+  width: fit-content;
   box-sizing: border-box;
   margin-top: 20px;
   justify-content: center;
@@ -154,6 +155,24 @@
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
   font-size: 1rem;
   position: relative;
+}
+
+button.motus-key:hover {
+  background-color: #a4a4a5;
+  border: none;
+  outline: none;
+}
+
+button.motus-key[data-state="absent"]:hover {
+  background-color: #2a2a2a;
+  color: #a4a4a5;
+  border: none;
+  outline: none;
+  cursor: not-allowed;
+}
+button.motus-key[data-state="correct"]:hover {
+  border: none;
+  outline: none;
 }
 
 .motus-key:last-of-type {

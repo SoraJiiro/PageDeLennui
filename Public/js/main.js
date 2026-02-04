@@ -73,6 +73,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./mash_leaderboard.js"),
       import("./blackjack_leaderboard.js"),
       import("./coinflip_leaderboard.js"),
+      import("./pixelwar.js"),
+      import("./pixelwar_leaderboard.js"),
     ]);
 
     const [
@@ -103,6 +105,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
       mashLeaderboard,
       blackjackLeaderboard,
       coinflipLeaderboard,
+      pixelwar,
+      pixelwarLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -198,6 +202,9 @@ import { initCanvasResizer } from "./canvas_resize.js";
         blackjackLeaderboard.initBlackjackLeaderboard(socket);
       if (coinflipLeaderboard?.initCoinflipLeaderboard)
         coinflipLeaderboard.initCoinflipLeaderboard(socket);
+      if (pixelwar?.initPixelWar) pixelwar.initPixelWar(socket);
+      if (pixelwarLeaderboard?.initPixelwarLeaderboard)
+        pixelwarLeaderboard.initPixelwarLeaderboard(socket);
       if (passwordChange?.setupPasswordChange)
         passwordChange.setupPasswordChange(socket);
     } else {

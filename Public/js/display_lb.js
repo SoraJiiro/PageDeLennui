@@ -16,6 +16,7 @@ function showLeaderboard(name) {
     mash: "#mash-leaderboard",
     blackjack: "#blackjack-leaderboard",
     coinflip: "#coinflip-leaderboard",
+    pixelwar: "#pixelwar-leaderboard",
   };
 
   const table = document.querySelector(idMap[name]);

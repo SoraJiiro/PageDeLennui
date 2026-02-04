@@ -1,0 +1,138 @@
+#stage16 {
+  width: 100dvw;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 50px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+#stage16 h2 {
+  margin: 0;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  padding: 5px 15px;
+  font-size: 1.5rem;
+  position: relative;
+  width: fit-content;
+}
+
+.pixelwar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.pixelwar-controls {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border: 2px solid var(--primary-color);
+}
+
+.color-palette {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.color-swatch {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition:
+    transform 0.1s,
+    border-color 0.1s;
+}
+
+.color-swatch:hover,
+.color-swatch.active {
+  transform: scale(1.1);
+  border-color: #fff;
+}
+
+.tool-btn {
+  padding: 5px 15px;
+  border: 1px solid var(--primary-color);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tool-btn:hover,
+.tool-btn.active {
+  background: var(--primary-color);
+  color: black;
+}
+
+.board-wrapper {
+  position: relative;
+  width: 80vw;
+  height: 60vh;
+  border: 2px solid var(--primary-color);
+  overflow: hidden;
+  background: #e0e0e0;
+  cursor: crosshair;
+  margin-bottom: 50px;
+}
+
+#pixelwar-canvas {
+  image-rendering: pixelated;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  z-index: 1;
+  background-color: white;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+#grid-canvas {
+  z-index: 2;
+}
+
+.pixel-info-modal {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  pointer-events: none;
+  z-index: 100;
+  display: none;
+  border: 1px solid var(--primary-color);
+  font-size: 0.8rem;
+  align-items: center;
+  gap: 5px;
+}
+
+.pixel-info-modal img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.stats-panel {
+  display: flex;
+  gap: 20px;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.shop-panel {
+  display: flex;
+  gap: 15px;
+}
+
+.leaderboard-btn {
+  margin-top: 20px;
+}

@@ -32,6 +32,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage13.css" />
         <link rel="stylesheet" type="text/css" href="css/stage14.css" />
         <link rel="stylesheet" type="text/css" href="css/stage15.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage16.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -88,6 +89,8 @@
                         <li><button
                                 class="nav-btn sec14">Blackjack</button></li>
                         <li><button class="nav-btn sec15">Mash</button></li>
+                        <li><button class="nav-btn sec16">Pixel
+                                War</button></li>
 
                     </ul>
                 </div>
@@ -435,6 +438,7 @@
                 <button data-board="2048">2048</button>
                 <button data-board="blackjack">Blackjack</button>
                 <button data-board="coinflip">Coin Flip</button>
+                <button data-board="pixelwar">PixelWar</button>
             </div>
 
             <center>
@@ -565,6 +569,18 @@
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>W
                                 / L</th><th>Max Bet</th><th>Max
                                 Loss</th><th>All-ins</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD PIXELWAR -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>PixelWar Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="pixelwar-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Pixels
+                                Placés</th><th>Couleur
+                                Fav</th><th>Overrided</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -924,6 +940,89 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stage16">
+            <div class="pixelwar-container">
+                <h2>PixelWar.exe</h2>
+                <div class="stats-panel">
+                    <span>
+                        <i class="fa-solid fa-paintbrush"></i>
+                        <span id="pixel-count"
+                            style="color:var(--primary-color)">0</span> / <span
+                            id="pixel-max">30</span>
+                    </span>
+                    <span
+                        style="margin-left:15px; font-size: 0.9em; opacity: 0.8;">
+                        <i class="fa-regular fa-clock"></i> <span
+                            id="pixel-timer">--:--</span>
+                    </span>
+                </div>
+
+                <div class="pixelwar-controls">
+                    <div class="color-palette" id="pixelwar-palette"></div>
+                    <div
+                        style="width:1px;background:var(--primary-color);margin:0 5px; opacity:0.5;"></div>
+                    <button class="tool-btn" id="btn-move"
+                        title="Se déplacer (ou clic molette / clic droit)"><i
+                            class="fa-solid fa-hand"></i></button>
+                    <button class="tool-btn active" id="btn-draw"
+                        title="Crayon"><i
+                            class="fa-solid fa-pencil"></i></button>
+                    <button class="tool-btn" id="btn-erase"
+                        title="Gomme (Efface TES pixels)"><i
+                            class="fa-solid fa-eraser"></i></button>
+                    <div
+                        style="width:1px;background:var(--primary-color);margin:0 5px; opacity:0.5;"></div>
+                    <button class="tool-btn" id="btn-zoom-out"
+                        title="Dézoomer"><i
+                            class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <button class="tool-btn" id="btn-pixel-reset-view"
+                        title="Vue par défaut"><i
+                            class="fa-solid fa-compress"></i></button>
+                    <button class="tool-btn" id="btn-zoom-in" title="Zoomer"><i
+                            class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <div
+                        style="width:1px;background:var(--primary-color);margin:0 5px; opacity:0.5;"></div>
+                    <button class="tool-btn" id="btn-mode-batch"
+                        title="Mode Dessin"><i
+                            class="fa-solid fa-draw"></i> Dessin</button>
+                    <div id="batch-controls"
+                        style="display:none; gap:5px; align-items:center;">
+                        <button class="tool-btn" id="btn-batch-confirm"
+                            title="Valider"
+                            style="border-color:#00ff00; color:#00ff00;"><i
+                                class="fa-solid fa-check"></i></button>
+                        <button class="tool-btn" id="btn-batch-cancel"
+                            title="Annuler"
+                            style="border-color:#ff0000; color:#ff0000;"><i
+                                class="fa-solid fa-xmark"></i></button>
+                        <span id="batch-count"
+                            style="font-weight:bold; color:var(--primary-color); margin-left:5px;">0</span>
+                    </div>
+                </div>
+
+                <div class="shop-panel">
+                    <button class="shop-btn" id="buy-pixel-single">1 Pixel (2.5k
+                        Clicks)</button>
+                    <button class="shop-btn" id="buy-pixel-pack">15 Pixels (30k
+                        Clicks)</button>
+                    <button class="shop-btn" id="buy-storage">Stockage +10
+                        (10.5k Clicks)</button>
+                </div>
+
+                <br>
+                <div class="board-wrapper" id="board-wrapper">
+                    <div id="canvas-container"
+                        style="transform-origin: 0 0; position:absolute; top:0; left:0;">
+                        <canvas id="pixelwar-canvas" class="game" width="256"
+                            height="256"></canvas>
+                    </div>
+                    <canvas id="grid-canvas" class="game"
+                        style="position:absolute; top:0; left:0; pointer-events:none;"></canvas>
+                    <div id="pixel-info-modal" class="pixel-info-modal"></div>
                 </div>
             </div>
         </section>

@@ -1,6 +1,7 @@
 (function () {
   if (typeof io === "undefined") return;
   const socket = io();
+  window.adminSocket = socket;
 
   function humanSize(bytes) {
     if (!bytes) return "0 B";

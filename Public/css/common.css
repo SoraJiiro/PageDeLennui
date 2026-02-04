@@ -125,7 +125,6 @@ pre p {
   width: 100%;
 }
 
-/* Layout helpers */
 .container {
   width: 100%;
   max-width: var(--container-max-width);
@@ -146,7 +145,6 @@ pre p {
   min-width: 0;
 }
 
-/* Canvas / Game area helpers */
 .canvas-wrapper {
   width: 100%;
   display: flex;
@@ -155,9 +153,6 @@ pre p {
   padding: 12px;
 }
 
-/* Keep canvas large but never overflow viewport - preserve aspect visually with CSS scaling.
-   Note: some games may use canvas width/height attributes in JS, ideally they should adapt to
-   CSS size. This rule prevents canvas from exceeding viewport while keeping it playable. */
 canvas,
 .game-canvas {
   max-width: min(100%, 1100px);
@@ -249,6 +244,7 @@ button.log-off:hover {
   color: var(--bg-color);
 }
 
+button,
 .btn,
 .btns-wrap button,
 .dino-btns-wrap button,
@@ -288,6 +284,7 @@ button.log-off:hover {
   outline: 2px solid var(--bg-color);
 }
 
+button:not(:disabled):hover,
 .btn:not(:disabled):hover,
 .btns-wrap button:not(:disabled):hover,
 .dino-btns-wrap button:not(:disabled):hover,
@@ -320,6 +317,7 @@ button.log-off:not(:disabled):hover,
   outline: 2px solid var(--primary-color);
 }
 
+button:disabled,
 .btn:disabled,
 .btns-wrap button:disabled,
 .dino-btns-wrap button:disabled,

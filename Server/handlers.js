@@ -32,6 +32,9 @@ const {
   registerBlackjackHandlers,
 } = require("./sockets/handlers/blackjack");
 
+const PixelWarGame = require("./games/pixelWarGame");
+const { registerPixelWarHandlers } = require("./sockets/handlers/pixelwar");
+
 function broadcastSystemMessage(io, text, persist = false) {
   io.emit("system:info", text);
   if (persist) {
@@ -57,6 +60,8 @@ let p4Game = new Puissance4Game();
 let motusGame = new MotusGame();
 let blackjackGame = new BlackjackGame();
 let mashGame = null; // Will be initialized with broadcastSystemMessage wrapper
+let pixelWarGame = new PixelWarGame(FileService);
+pixelWarGame.startAutoSave();
 
 // ------- Colors -------
 const orange = "\x1b[38;5;208m"; // pseudos
@@ -466,6 +471,7 @@ function initSocketHandlers(io, socket, gameState) {
     broadcastSystemMessage,
     leaderboardManager,
     gameState,
+    pixelWarGame,
   });
 
   registerMotusHandlers({
@@ -512,6 +518,14 @@ function initSocketHandlers(io, socket, gameState) {
     },
   });
 
+  registerPixelWarHandlers({
+    io,
+    socket,
+    pseudo,
+    FileService,
+    pixelWarGame,
+  });
+
   socket.on("disconnect", () => {
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
 
@@ -546,4 +560,9 @@ function initSocketHandlers(io, socket, gameState) {
   });
 }
 
-module.exports = { initSocketHandlers, leaderboardManager, motusGame };
+module.exports = {
+  initSocketHandlers,
+  leaderboardManager,
+  motusGame,
+  pixelWarGame,
+};

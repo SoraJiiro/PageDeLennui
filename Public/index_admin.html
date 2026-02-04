@@ -50,6 +50,7 @@
             media="(prefers-color-scheme: light)" />
         <script defer type="module" src="js/notifications.js"></script>
         <script src="/js/uiColor.js" type="text/javascript"></script>
+        <script defer src="/js/admin_pixelwar.js"></script>
     </head>
     <body>
         <button class="password-btn" onclick="requestUnlock()">Afficher</button>
@@ -265,6 +266,52 @@
                                         class="fa-solid fa-rotate"></i>
                                     Actualiser</button>
                             </center>
+                        </div>
+                    </section>
+
+                    <section class="admin-section">
+                        <h2><i class="fa-solid fa-paintbrush"></i> /Pixel
+                            War</h2>
+                        <div class="transactions-container">
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="pixelWarResetBoard()"
+                                            class="btn btn-red">RESET
+                                            BOARD</button>
+                                    </div>
+                                </div>
+                                <hr style="border-color:#555; width:100%;">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="pw-x1">X1</label>
+                                        <input id="pw-x1" type="number"
+                                            placeholder="0">
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="pw-y1">Y1</label>
+                                        <input id="pw-y1" type="number"
+                                            placeholder="0">
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="pw-x2">X2</label>
+                                        <input id="pw-x2" type="number"
+                                            placeholder="200">
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="pw-y2">Y2</label>
+                                        <input id="pw-y2" type="number"
+                                            placeholder="200">
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="pixelWarResetArea()"
+                                            class="btn btn-red">RESET
+                                            AREA</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -600,6 +647,8 @@
                                                 <option
                                                     value="coinflipStats">Coin
                                                     Flip</option>
+                                                <option value="pixelwar">Pixel
+                                                    War</option>
                                                 <option
                                                     value="mashWins">Mash</option>
                                                 <option value="all">Toutes les
@@ -979,6 +1028,10 @@
                 query: { username: currentUser },
                 autoConnect: false,
             });
+
+            // Expose pour scripts admin externes (ex: admin_pixelwar.js)
+            window.adminSocket = socket;
+            window.socket = socket;
 
             if (window.initUiColor) {
                 window.initUiColor(socket);
@@ -1885,6 +1938,10 @@
                 { value: 'highestWin', label: 'Plus gros gain' },
                 { value: 'totalWon', label: 'Total Gagné' },
                 { value: 'totalLost', label: 'Total Perdu' }
+            ],
+            'pixelwar': [
+                { value: 'pixels', label: 'Pixels (Stock)' },
+                { value: 'maxPixels', label: 'Stockage Max' }
             ]
         };
 
