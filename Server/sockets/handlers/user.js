@@ -10,12 +10,36 @@ function registerUserHandlers({
   recalculateMedals,
 }) {
   socket.on("system:acceptRules", () => {
-    const db = dbUsers.readAll();
-    const u = db.users.find((u) => u.pseudo === pseudo);
-    if (u) {
-      u.rulesAccepted = true;
-      dbUsers.writeAll(db);
-      socket.emit("system:rulesAccepted");
+    try {
+      // IMPORTANT: pseudo peut varier en casse selon les clients.
+      // On met à jour de façon case-insensitive pour que ça persiste au refresh.
+      const updated = dbUsers.updateUserFields
+        ? dbUsers.updateUserFields(pseudo, { rulesAccepted: true })
+        : null;
+
+      if (updated) {
+        socket.emit("system:rulesAccepted");
+        return;
+      }
+
+      // Fallback (si updateUserFields n'existe pas)
+      const db = dbUsers.readAll();
+      const users = Array.isArray(db?.users) ? db.users : [];
+      const lower = String(pseudo || "").toLowerCase();
+      const u = users.find(
+        (usr) =>
+          usr &&
+          typeof usr === "object" &&
+          typeof usr.pseudo === "string" &&
+          usr.pseudo.toLowerCase() === lower,
+      );
+      if (u) {
+        u.rulesAccepted = true;
+        dbUsers.writeAll({ ...db, users });
+        socket.emit("system:rulesAccepted");
+      }
+    } catch (e) {
+      console.warn("Err rules : ", e);
     }
   });
 

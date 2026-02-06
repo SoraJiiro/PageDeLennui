@@ -1195,9 +1195,7 @@
                 return;
             }
             const ok = confirm(
-                "⚠️ Forcer tous les utilisateurs à relire le règlement ?\n\n" +
-                "- rulesAccepted sera remis à false pour tous\n" +
-                "- les pages des utilisateurs seront rafraîchies"
+                "⚠️ Forcer tous les utilisateurs à relire le règlement ?\n"
             );
             if (!ok) return;
             socket.emit('admin:rules:resetAll');
