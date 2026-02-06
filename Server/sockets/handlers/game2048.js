@@ -8,11 +8,43 @@ function register2048Handlers({
   colors,
 }) {
   const { updateReviveContextFromScore } = require("../../services/economy");
+
+  function setRunnerProgress(score) {
+    const s = Math.floor(Number(score) || 0);
+    if (!Number.isFinite(s) || s < 0) return;
+    try {
+      if (!socket.data) socket.data = {};
+      if (!socket.data.runnerProgress) socket.data.runnerProgress = {};
+      socket.data.runnerProgress["2048"] = s;
+    } catch (e) {}
+  }
+
+  function consumeRunnerResume() {
+    try {
+      const resume = FileService.data.runnerResume;
+      if (!resume || typeof resume !== "object") return;
+      if (!resume[pseudo]) return;
+      delete resume[pseudo]["2048"];
+      const hasAny =
+        resume[pseudo].dino != null ||
+        resume[pseudo].flappy != null ||
+        resume[pseudo].snake != null ||
+        resume[pseudo]["2048"] != null ||
+        resume[pseudo].blockblast != null;
+      if (!hasAny) delete resume[pseudo];
+      FileService.save("runnerResume", resume);
+    } catch (e) {}
+  }
+
+  socket.on("2048:progress", ({ score }) => setRunnerProgress(score));
+  socket.on("2048:resumeConsumed", () => consumeRunnerResume());
+
   socket.on("2048:submit_score", (score) => {
     const s = Number(score);
     if (isNaN(s)) return;
 
     updateReviveContextFromScore(socket, "2048", s);
+    setRunnerProgress(s);
 
     if (!FileService.data.scores2048) FileService.data.scores2048 = {};
     const currentBest = FileService.data.scores2048[pseudo] || 0;
@@ -22,7 +54,7 @@ function register2048Handlers({
       FileService.save("scores2048", FileService.data.scores2048);
 
       console.log(
-        withGame(`[2048] Nouveau record pour ${pseudo} : ${s}`, colors.green)
+        withGame(`[2048] Nouveau record pour ${pseudo} : ${s}`, colors.green),
       );
 
       socket.emit("2048:best_score", s);

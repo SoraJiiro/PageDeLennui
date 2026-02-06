@@ -35,12 +35,27 @@ const { setupSockets } = require("./sockets/setupSockets");
 const { setupAdminLogBridge } = require("./logging/setupAdminLogBridge");
 const { setupAutoReload } = require("./bootstrap/setupAutoReload");
 const { setupShutdown } = require("./bootstrap/setupShutdown");
+const { registerShutdownContext } = require("./bootstrap/shutdownManager");
 
 // ------- Init -------
 const app = express();
 const server = createHttpServer(app);
 const io = createIo(server);
 const gameState = new GameStateManager();
+
+// Contexte global pour arrêt gracieux (admin + signaux)
+try {
+  const { FileService } = require("./util");
+  const { getRuntimeGames } = require("./handlers");
+  registerShutdownContext({
+    io,
+    server,
+    FileService,
+    getRuntimeGames,
+  });
+} catch (e) {
+  console.error("[Shutdown] register context error", e);
+}
 
 // ------- Middleware -------
 setupMiddleware(app, io, { expressSession, blacklistMiddleware });

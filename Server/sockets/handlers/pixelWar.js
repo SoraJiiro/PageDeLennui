@@ -42,14 +42,25 @@ function registerPixelWarHandlers({
     }
   });
 
+  // Après validation d'un dessin (mode batch côté client), on persiste
+  // immédiatement le compteur de pixels dans pixelwar_users.json.
+  socket.on("pixelwar:batch_done", () => {
+    try {
+      pixelWarGame.getUserState(pseudo);
+      pixelWarGame.saveUsers();
+    } catch (e) {
+      console.error("pixelwar:batch_done save error:", e);
+    }
+  });
+
   socket.on("pixelwar:erase", ({ x, y }) => {
     const res = pixelWarGame.erasePixel(pseudo, x, y);
     if (res.success) {
       io.emit("pixelwar:update_pixel", {
         x: res.x,
         y: res.y,
-        colorIndex: 0,
-        owner: null,
+        colorIndex: res.colorIndex,
+        owner: res.owner,
       });
 
       const user = pixelWarGame.getUserState(pseudo);

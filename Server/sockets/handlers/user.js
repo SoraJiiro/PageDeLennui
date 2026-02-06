@@ -191,8 +191,17 @@ function registerUserHandlers({
   // Fournir l'état du cap quotidien au client (sidebar / UI)
   socket.on("economy:getProfitCap", () => {
     try {
-      const { getDailyProfitCapInfo } = require("../../services/economy");
+      const {
+        getDailyProfitCapInfo,
+        freezeDailyProfitCapBaseClicks,
+      } = require("../../services/economy");
       const currentClicks = FileService.data.clicks[pseudo] || 0;
+
+      // Figer le baseClicks dès la première connexion du jour
+      try {
+        freezeDailyProfitCapBaseClicks({ FileService, pseudo, currentClicks });
+      } catch (e) {}
+
       const capInfo = getDailyProfitCapInfo({
         FileService,
         pseudo,

@@ -28,9 +28,200 @@ class PixelWarGame {
 
     this.board = new Uint8Array(this.WIDTH * this.HEIGHT);
     this.owners = {};
+    this.undoStacks = {};
     this.users = {};
 
+    this.MAX_UNDO_DEPTH_PER_PIXEL = 10;
+
     this.load();
+  }
+
+  _refreshAllUsersStates() {
+    if (!this.users || typeof this.users !== "object") return;
+    for (const pseudo of Object.keys(this.users)) {
+      // getUserState applique la régénération (par minute) + daily.
+      // Important: ça ne change rien si aucun palier n'a été franchi.
+      this.getUserState(pseudo);
+    }
+  }
+
+  _cross(o, a, b) {
+    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  }
+
+  _convexHull(points) {
+    const pts = [...points].sort((p1, p2) => p1.x - p2.x || p1.y - p2.y);
+    if (pts.length <= 1) return pts;
+
+    const lower = [];
+    for (const p of pts) {
+      while (
+        lower.length >= 2 &&
+        this._cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+      ) {
+        lower.pop();
+      }
+      lower.push(p);
+    }
+
+    const upper = [];
+    for (let i = pts.length - 1; i >= 0; i--) {
+      const p = pts[i];
+      while (
+        upper.length >= 2 &&
+        this._cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+      ) {
+        upper.pop();
+      }
+      upper.push(p);
+    }
+
+    upper.pop();
+    lower.pop();
+    return lower.concat(upper);
+  }
+
+  _pointInPolygon(px, py, polygon) {
+    // Ray casting algorithm
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].x;
+      const yi = polygon[i].y;
+      const xj = polygon[j].x;
+      const yj = polygon[j].y;
+
+      const intersect =
+        yi > py !== yj > py &&
+        px < ((xj - xi) * (py - yi)) / (yj - yi + 0.0) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  clearPolygon(points) {
+    if (!Array.isArray(points)) return 0;
+
+    const cleaned = [];
+    const seen = new Set();
+
+    for (const p of points) {
+      if (!p || typeof p !== "object") continue;
+      const x = Math.floor(Number(p.x));
+      const y = Math.floor(Number(p.y));
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT) continue;
+      const key = `${x},${y}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cleaned.push({ x, y });
+      if (cleaned.length >= 16) break; // safety
+    }
+
+    if (cleaned.length < 3) return 0;
+
+    const hull = this._convexHull(cleaned);
+    if (hull.length < 3) return 0;
+
+    let minX = this.WIDTH - 1;
+    let minY = this.HEIGHT - 1;
+    let maxX = 0;
+    let maxY = 0;
+    for (const p of hull) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+
+    let cleared = 0;
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        // test pixel center
+        if (!this._pointInPolygon(x + 0.5, y + 0.5, hull)) continue;
+        const idx = y * this.WIDTH + x;
+        if (this.board[idx] !== 0) {
+          this.board[idx] = 0;
+          cleared++;
+        } else {
+          this.board[idx] = 0;
+        }
+        delete this.owners[idx];
+        delete this.undoStacks[idx];
+      }
+    }
+
+    this.boardDirty = true;
+    return cleared;
+  }
+
+  clearSquare(points) {
+    if (!Array.isArray(points)) return 0;
+
+    const cleaned = [];
+    const seen = new Set();
+    for (const p of points) {
+      if (!p || typeof p !== "object") continue;
+      const x = Math.floor(Number(p.x));
+      const y = Math.floor(Number(p.y));
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT) continue;
+      const key = `${x},${y}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cleaned.push({ x, y });
+      if (cleaned.length >= 4) break;
+    }
+
+    if (cleaned.length < 2) return 0;
+
+    let minX = this.WIDTH - 1;
+    let minY = this.HEIGHT - 1;
+    let maxX = 0;
+    let maxY = 0;
+    for (const p of cleaned) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+
+    // Convert bounding rectangle -> bounding square (equal sides)
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const side = Math.max(width, height);
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    let sqMinX = Math.floor(cx - side / 2);
+    let sqMinY = Math.floor(cy - side / 2);
+    let sqMaxX = sqMinX + side;
+    let sqMaxY = sqMinY + side;
+
+    // Clamp while preserving square size
+    if (sqMinX < 0) {
+      sqMaxX += -sqMinX;
+      sqMinX = 0;
+    }
+    if (sqMinY < 0) {
+      sqMaxY += -sqMinY;
+      sqMinY = 0;
+    }
+    if (sqMaxX >= this.WIDTH) {
+      const d = sqMaxX - (this.WIDTH - 1);
+      sqMinX -= d;
+      sqMaxX -= d;
+    }
+    if (sqMaxY >= this.HEIGHT) {
+      const d = sqMaxY - (this.HEIGHT - 1);
+      sqMinY -= d;
+      sqMaxY -= d;
+    }
+    if (sqMinX < 0) sqMinX = 0;
+    if (sqMinY < 0) sqMinY = 0;
+
+    this.resetArea(sqMinX, sqMinY, sqMaxX, sqMaxY);
+    return (sqMaxX - sqMinX + 1) * (sqMaxY - sqMinY + 1);
   }
 
   load() {
@@ -50,10 +241,40 @@ class PixelWarGame {
           this.board = Uint8Array.from(Object.values(data.board));
         }
         this.owners = data.owners || {};
+
+        // Historique d'override (pour restaurer le pixel d'avant lors d'un undo/erase)
+        // Format attendu: { [idx:number]: Array<{ c:number, o:string|null }> }
+        this.undoStacks = {};
+        if (data.undoStacks && typeof data.undoStacks === "object") {
+          for (const [k, stack] of Object.entries(data.undoStacks)) {
+            if (!Array.isArray(stack)) continue;
+            const idx = Number(k);
+            if (
+              !Number.isInteger(idx) ||
+              idx < 0 ||
+              idx >= this.WIDTH * this.HEIGHT
+            )
+              continue;
+            const cleaned = [];
+            for (const entry of stack) {
+              if (!entry || typeof entry !== "object") continue;
+              const c = Number(entry.c);
+              const o = entry.o;
+              if (!Number.isInteger(c) || c < 0 || c >= this.COLORS.length)
+                continue;
+              if (!(o === null || typeof o === "string")) continue;
+              cleaned.push({ c, o });
+              if (cleaned.length >= this.MAX_UNDO_DEPTH_PER_PIXEL) break;
+            }
+            if (cleaned.length > 0) this.undoStacks[idx] = cleaned;
+          }
+        }
       }
     } catch (e) {
       console.error("Failed to load pixelwar board:", e);
       this.board.fill(0);
+      this.owners = {};
+      this.undoStacks = {};
     }
   }
 
@@ -70,6 +291,7 @@ class PixelWarGame {
       const data = {
         board: Array.from(this.board),
         owners: this.owners,
+        undoStacks: this.undoStacks,
       };
       fs.writeFileSync(this.boardPath, JSON.stringify(data));
     } catch (e) {
@@ -77,8 +299,30 @@ class PixelWarGame {
     }
   }
 
+  _pushUndoState(idx, colorIndex, owner) {
+    if (!this.undoStacks[idx]) this.undoStacks[idx] = [];
+    const stack = this.undoStacks[idx];
+    stack.push({ c: colorIndex, o: owner ?? null });
+    if (stack.length > this.MAX_UNDO_DEPTH_PER_PIXEL) {
+      stack.splice(0, stack.length - this.MAX_UNDO_DEPTH_PER_PIXEL);
+    }
+  }
+
+  _popUndoState(idx) {
+    const stack = this.undoStacks[idx];
+    if (!stack || stack.length === 0) return null;
+    const entry = stack.pop();
+    if (stack.length === 0) delete this.undoStacks[idx];
+    return entry;
+  }
+
   startAutoSave() {
     setInterval(() => {
+      // Sans action socket, la régénération des pixels n'est recalculée
+      // que lorsqu'on appelle getUserState. On tick donc régulièrement
+      // tous les users pour que pixelwar_users.json reflète l'état réel.
+      this._refreshAllUsersStates();
+
       if (this.boardDirty) {
         this.saveBoard();
         this.boardDirty = false;
@@ -124,7 +368,8 @@ class PixelWarGame {
 
     const today = new Date().toISOString().split("T")[0];
     if (user.lastDaily !== today) {
-      user.pixels += 10;
+      this.pixelsToGive = Math.floor(user.maxPixels * 0.75);
+      user.pixels += this.pixelsToGive;
       user.lastDaily = today;
       this.usersDirty = true;
     }
@@ -158,6 +403,13 @@ class PixelWarGame {
 
     const idx = y * this.WIDTH + x;
     const oldOwner = this.owners[idx];
+    const oldColorIndex = this.board[idx] || 0;
+
+    // Si on override le pixel de quelqu'un d'autre, enregistrer l'état précédent
+    // pour pouvoir le restaurer en cas d'undo/erase.
+    if (oldOwner && oldOwner !== pseudo) {
+      this._pushUndoState(idx, oldColorIndex, oldOwner);
+    }
 
     this.board[idx] = colorIndex;
     this.owners[idx] = pseudo;
@@ -188,8 +440,17 @@ class PixelWarGame {
       return { success: false, reason: "Tu ne peux gommer que tes pixels" };
     }
 
-    this.board[idx] = 0;
-    delete this.owners[idx];
+    // Undo sécurisé : si le pixel a été obtenu via un override, restaurer
+    // le pixel précédent (évite la suppression des dessins des autres).
+    const prev = this._popUndoState(idx);
+    if (prev) {
+      this.board[idx] = prev.c;
+      if (prev.o) this.owners[idx] = prev.o;
+      else delete this.owners[idx];
+    } else {
+      this.board[idx] = 0;
+      delete this.owners[idx];
+    }
 
     user.pixelsErased = (user.pixelsErased || 0) + 1;
 
@@ -201,7 +462,15 @@ class PixelWarGame {
     this.boardDirty = true;
     this.usersDirty = true;
 
-    return { success: true, x, y, colorIndex: 0, owner: null };
+    const finalColorIndex = this.board[idx] || 0;
+    const finalOwner = this.owners[idx] || null;
+    return {
+      success: true,
+      x,
+      y,
+      colorIndex: finalColorIndex,
+      owner: finalOwner,
+    };
   }
 
   buyUpgrade(pseudo, type) {
@@ -253,6 +522,7 @@ class PixelWarGame {
   resetBoard() {
     this.board.fill(0);
     this.owners = {};
+    this.undoStacks = {};
     this.boardDirty = true;
   }
 
@@ -267,6 +537,7 @@ class PixelWarGame {
         const idx = y * this.WIDTH + x;
         this.board[idx] = 0;
         delete this.owners[idx];
+        delete this.undoStacks[idx];
       }
     }
     this.boardDirty = true;

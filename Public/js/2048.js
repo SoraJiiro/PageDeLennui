@@ -20,6 +20,35 @@ export function init2048(socket) {
   let revivesUsed = 0;
   let uiColor = "#00ff00";
 
+  // --- Shutdown resume glue (score-only) ---
+  let resumeScore2048 = null;
+  let resumeConsumed2048 = false;
+
+  socket.on("2048:resume", ({ score }) => {
+    const s = Math.floor(Number(score) || 0);
+    if (Number.isFinite(s) && s > 0) {
+      resumeScore2048 = s;
+      // Appliquer immédiatement si une partie est déjà initialisée
+      try {
+        if (typeof window !== "undefined") {
+          // no-op
+        }
+      } catch (e) {}
+      if (!gameOver) {
+        if (typeof scoreDisplay !== "undefined") {
+          score = Math.max(score, resumeScore2048);
+          updateScoreDisplay();
+        }
+      }
+    }
+  });
+
+  socket.on("system:shutdown:collectProgress", () => {
+    try {
+      socket.emit("2048:progress", { score: score || 0 });
+    } catch (e) {}
+  });
+
   // Initialisation
   function init() {
     // Obtenir la couleur UI initiale
@@ -165,6 +194,12 @@ export function init2048(socket) {
     addRandomTile();
     addRandomTile();
     renderBoard();
+
+    // Si on a une reprise (score-only), l'appliquer après création
+    if (!resumeConsumed2048 && resumeScore2048 != null) {
+      score = Math.max(score, resumeScore2048);
+      updateScoreDisplay();
+    }
   }
 
   function addRandomTile() {
@@ -318,6 +353,15 @@ export function init2048(socket) {
 
   function move(direction) {
     if (gameOver) return;
+
+    // Consommer la reprise au premier mouvement utilisateur
+    if (!resumeConsumed2048 && resumeScore2048 != null) {
+      try {
+        socket.emit("2048:resumeConsumed");
+      } catch (e) {}
+      resumeConsumed2048 = true;
+      resumeScore2048 = null;
+    }
 
     let moved = false;
 

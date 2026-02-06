@@ -44,18 +44,37 @@
         .btn-accept {
             display: none; /* Hide accept button on this page */
         }
+
+        .rules-section-title {
+            width: 100%;
+            margin: 10px 0 -5px;
+            padding-bottom: 8px;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--primary-color);
+            font-size: 1.05rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.95;
+        }
+
+        .rules-section-title i {
+            margin-right: 8px;
+        }
     </style>
     </head>
     <body>
         <div class="container">
             <button onclick="window.location.href='/'" class="btn-back"><i
                     class="fa-solid fa-arrow-left"></i> Retour</button>
+            <br>
 
             <div class="rules-content">
                 <h2><i class="fa-solid fa-scale-balanced"></i> Règlement &
                     Informations</h2>
 
                 <div class="rules-body">
+                    <h3 class="rules-section-title"><i
+                            class="fa-solid fa-circle-info"></i> Commun</h3>
                     <div class="rule-item">
                         <i class="fa fa-info-circle"></i>
                         <p>Vous pouvez changer la couleur de l'<u>UI</u> et de
@@ -72,16 +91,6 @@
 
                     <div class="rule-item">
                         <i class="fa fa-info-circle"></i>
-                        <p>La date de naissance n'est saisissable qu'une seule
-                            fois, je vous demande donc de bien vérifier avant de
-                            la valider et bien évidement d'entrer la vraie date.
-                            Si vous vous êtes trompés ou que la date est
-                            incorrecte, demandez à l'Admin et il la
-                            modifiera.</p>
-                    </div>
-
-                    <div class="rule-item">
-                        <i class="fa fa-info-circle"></i>
                         <p>Les stats seront <u>RESET</u> à chaque départ en
                             vacances à partir du <u>5 Janvier 2026</u>.</p>
                     </div>
@@ -94,11 +103,47 @@
                             Navigation.</p>
                     </div>
 
-                    <div class="rule-item danger">
-                        <i class="fa fa-ban"></i>
-                        <p>Toute tentative de <u>TRICHE</u> entraînera un
-                            bannissement indéterminé et votre compte sera marqué
-                            comme <u>TRICHEUR</u>.</p>
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>En cas de problème (bug, comportement, contenu),
+                            signalez-le à l'Admin plutôt que de répondre par des
+                            provocations.</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-warning"></i>
+                        <p>Respectez les autres : insultes, harcèlement,
+                            discriminations (racisme, sexisme, homophobie…) et
+                            menaces sont interdits.</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-warning"></i>
+                        <p>Le spam (flood, répétitions, pub non sollicitée) et
+                            les comportements visant à dégrader l'expérience des
+                            autres joueurs sont interdits.</p>
+                    </div>
+
+                    <h3 class="rules-section-title"><i
+                            class="fa-solid fa-id-card"></i> Profils &
+                        compte</h3>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>La date de naissance n'est saisissable qu'une seule
+                            fois, je vous demande donc de bien vérifier avant de
+                            la valider et bien évidement d'entrer la vraie date.
+                            Si vous vous êtes trompés ou que la date est
+                            incorrecte, demandez à l'Admin et il la
+                            modifiera.</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-warning"></i>
+                        <p>Pseudo, photo de profil et tag doivent rester
+                            corrects : contenu offensant, provocateur, NSFW ou
+                            imitation d'un autre membre / de l'Admin
+                            interdits.</p>
                     </div>
 
                     <div class="rule-item danger">
@@ -106,6 +151,55 @@
                         <p>Jouer / Utiliser le compte d'un autre joueur est
                             complètement interdit. Si vous êtes surpris, un ban
                             sera appliqué.</p>
+                    </div>
+
+                    <div class="rule-item danger">
+                        <i class="fa fa-ban"></i>
+                        <p>Le partage de mot de passe / l'accès non autorisé à
+                            un compte est interdit. Protégez votre compte.</p>
+                    </div>
+
+                    <h3 class="rules-section-title"><i
+                            class="fa-solid fa-comments"></i> Chat</h3>
+
+                    <div class="rule-item">
+                        <i class="fa fa-circle-info"></i>
+                        <p>Soyez respectueux dans vos échanges, le Chat doit
+                            avant tout rester un espace convivial et agréable.
+                            Les insultes, menaces et tou ça seront supprimés par
+                            l'Admin. Si vous avez un soucis avec quelqu'un,
+                            portez vos couilles et faites un tête après les
+                            cours, merci.</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-warning"></i>
+                        <p>Le chat sert à échanger : pas de divulgation
+                            d'informations personnelles (dox), ni d'incitation à
+                            des pratiques dangereuses / illégales.</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-warning"></i>
+                        <p>Liens et fichiers : n'envoyez rien de suspect
+                            (malware, phishing, scam). En cas de doute,
+                            abstenez-vous.</p>
+                    </div>
+
+                    <h3 class="rules-section-title"><i
+                            class="fa-solid fa-gamepad"></i> Jeux</h3>
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>En cas de <u>shutdown</u> serveur, certains jeux
+                            peuvent proposer une reprise au score précédent si
+                            disponible (affiché au démarrage).</p>
+                    </div>
+
+                    <div class="rule-item warning">
+                        <i class="fa fa-warning"></i>
+                        <p>Macros, scripts, autoclickers, exploits et toute
+                            manipulation du client / navigateur pour obtenir un
+                            avantage sont considérés comme de la triche.</p>
                     </div>
 
                     <div class="rule-item warning">
@@ -116,16 +210,36 @@
                             sommeil...)</p>
                     </div>
 
-                    <div class="rule-item warning">
-                        <i class="fa fa-bug"></i>
-                        <p>Tous fichiers envoyé à travers le chat contenant ou
-                            montrant du contenu inapproprié / illicite sont
-                            interdits. Des sanctions seront appliquées si vous
-                            en envoyez.</p>
+                    <div class="rule-item danger">
+                        <i class="fa fa-ban"></i>
+                        <p>Toute tentative de <u>TRICHE</u> entraînera un
+                            bannissement indéterminé et votre compte sera marqué
+                            comme <u>TRICHEUR</u>.</p>
                     </div>
+
+                    <h3 class="rules-section-title"><i
+                            class="fa-solid fa-gavel"></i> Sanctions</h3>
 
                     <div class="rule-item warning">
                         <i class="fa fa-warning"></i>
+                        <p>Les sanctions dépendent de la gravité :
+                            avertissement oral (ou écrit),
+                            suppression de contenu, ban temporaire ou
+                            ban indéterminé.</p>
+                    </div>
+
+                    <div class="rule-item danger">
+                        <i class="fa fa-ban"></i>
+                        <p>Contenu clairement illégal / dangereux, triche avérée
+                            ou récidive : sanction immédiate, pouvant aller
+                            jusqu'au bannissement.</p>
+                    </div>
+
+                    <h3 class="rules-section-title"><i
+                            class="fa-solid fa-gavel"></i> Engagement</h3>
+
+                    <div class="rule-item warning">
+                        <i class="fa-solid fa-handshake"></i>
                         <p>Vous avez déjà accepté le règlement. Se fesant, vous
                             ne pouvez plus le contester et serez considéré comme
                             ayant <u>lu</u> toutes les règles ci-présentes.</p>
@@ -138,14 +252,13 @@
 
                 <p
                     style="font-size: 1rem; text-align: center; margin-top: 10px;">
-                    Dernière mise à jour du règlement : <mark
-                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">2
-                        Février 2026 - 13H31</mark></p>
+                    Dernière mise à jour du règlement : <br><br> <mark
+                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">6
+                        Février 2026 - 12H58</mark></p>
             </div>
         </div>
 
         <script>
-        // Initialize UI Color
         const socket = io({ autoConnect: false });
         if (window.initUiColor) {
             window.initUiColor(socket);

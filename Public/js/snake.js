@@ -48,12 +48,83 @@ class SnakeGame {
     this.globalBestScore = 0;
     this.revivesUsed = 0;
     this.scoreAttente = null;
+    this.resumeScore = null;
 
     this.initSettings();
     this.bindEvents();
     this.resize();
-    this.clearToBlack();
+    this.drawStartScreen();
     if (this.ui.stopBtn) this.ui.stopBtn.style.display = "none";
+  }
+
+  drawStartScreen() {
+    try {
+      this.resize();
+
+      const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
+      this.ctx.fillStyle = "#000";
+      this.ctx.fillRect(0, 0, cssSize, cssSize);
+
+      // petite grille pour éviter l'écran vide
+      this.ctx.strokeStyle = "#4e3e5e";
+      this.ctx.lineWidth = 1;
+      for (let i = 0; i <= CONSTANTS.GRID_SIZE; i++) {
+        const pos = i * this.cellSize;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pos, 0);
+        this.ctx.lineTo(pos, cssSize);
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, pos);
+        this.ctx.lineTo(cssSize, pos);
+        this.ctx.stroke();
+      }
+
+      // texte
+      this.ctx.fillStyle = this.uiColor;
+      this.ctx.textAlign = "center";
+      this.ctx.font = "bold 42px monospace";
+      this.ctx.fillText("SNAKE", cssSize / 2, Math.floor(cssSize * 0.38));
+
+      this.ctx.font = "18px monospace";
+      this.ctx.fillText(
+        "Clique sur Démarrer ou appuie sur ESPACE",
+        cssSize / 2,
+        Math.floor(cssSize * 0.56),
+      );
+
+      let hasResumeLine = false;
+      if (
+        Number.isFinite(Number(this.resumeScore)) &&
+        Number(this.resumeScore) > 0
+      ) {
+        const s = Math.floor(Number(this.resumeScore) || 0);
+        if (s > 0) {
+          this.ctx.font = "16px monospace";
+          this.ctx.fillText(
+            `Reprise au score : ${s
+              .toLocaleString("fr-FR")
+              .replace(/\s/g, "\u00a0")}`,
+            cssSize / 2,
+            Math.floor(cssSize * 0.62),
+          );
+          hasResumeLine = true;
+        }
+      }
+
+      this.ctx.font = "14px monospace";
+      this.ctx.fillText(
+        "Flèches pour diriger",
+        cssSize / 2,
+        Math.floor(cssSize * (hasResumeLine ? 0.7 : 0.66)),
+      );
+      this.ctx.fillText(
+        `Pause: ${this.pauseKeyText}`,
+        cssSize / 2,
+        Math.floor(cssSize * (hasResumeLine ? 0.78 : 0.74)),
+      );
+    } catch {}
   }
 
   initSettings() {
@@ -77,6 +148,25 @@ class SnakeGame {
     this.socket.on("snake:leaderboard", (arr) => this.handleLeaderboard(arr));
     this.socket.on("you:name", (name) => {
       this.myName = name;
+    });
+
+    this.socket.on("snake:resume", ({ score }) => {
+      const s = Math.floor(Number(score) || 0);
+      if (!Number.isFinite(s) || s <= 0) return;
+      this.resumeScore = s;
+
+      // Si le joueur n'a pas démarré, afficher l'info de reprise
+      if (!this.state.gameStarted) {
+        this.drawStartScreen();
+      }
+    });
+
+    this.socket.on("system:shutdown:collectProgress", () => {
+      try {
+        if (this.state.gameStarted && this.state.gameActive) {
+          this.socket.emit("snake:progress", { score: this.state.score || 0 });
+        }
+      } catch (e) {}
     });
 
     this.socket.on("snake:reviveSuccess", () => {
@@ -168,7 +258,13 @@ class SnakeGame {
   bindEvents() {
     window.addEventListener("resize", () => {
       clearTimeout(this._resizeTO);
-      this._resizeTO = setTimeout(() => this.resize(), 100);
+      this._resizeTO = setTimeout(() => {
+        this.resize();
+        // Le resize efface le canvas: redessiner l'écran d'accueil si aucune partie n'a commencé
+        if (!this.state.gameStarted) {
+          this.drawStartScreen();
+        }
+      }, 100);
     });
 
     this.ui.startBtn?.addEventListener("click", () => {
@@ -283,6 +379,11 @@ class SnakeGame {
   }
 
   start() {
+    const initialScore =
+      Number.isFinite(Number(this.resumeScore)) && Number(this.resumeScore) > 0
+        ? Math.floor(Number(this.resumeScore))
+        : 0;
+
     this.state = {
       ...this.state,
       snake: [
@@ -292,7 +393,7 @@ class SnakeGame {
       ],
       direction: { x: 1, y: 0 },
       nextDirection: { x: 1, y: 0 },
-      score: 0,
+      score: initialScore,
       gameActive: true,
       gameStarted: true,
       startTime: Date.now(),
@@ -303,6 +404,12 @@ class SnakeGame {
       tickAccumulator: 0,
       lastFrameTime: 0,
     };
+    if (initialScore > 0) {
+      try {
+        this.socket.emit("snake:resumeConsumed");
+      } catch (e) {}
+      this.resumeScore = null;
+    }
     this.revivesUsed = 0;
     if (this.ui.reviveOverlay) this.ui.reviveOverlay.style.display = "none";
 
@@ -334,7 +441,7 @@ class SnakeGame {
     if (this.state.rafId) cancelAnimationFrame(this.state.rafId);
 
     if (this.ui.stopBtn) this.ui.stopBtn.style.display = "none";
-    this.clearToBlack();
+    this.drawStartScreen();
     this.removeDOMGameOverOverlay();
     showNotif("# Partie stoppée.");
   }

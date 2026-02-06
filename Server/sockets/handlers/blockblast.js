@@ -20,12 +20,43 @@ function registerBlockblastHandlers({
     getReviveCostForSocket,
     incrementReviveUsed,
   } = require("../../services/economy");
+
+  function setRunnerProgress(score) {
+    const s = Math.floor(Number(score) || 0);
+    if (!Number.isFinite(s) || s < 0) return;
+    try {
+      if (!socket.data) socket.data = {};
+      if (!socket.data.runnerProgress) socket.data.runnerProgress = {};
+      socket.data.runnerProgress.blockblast = s;
+    } catch (e) {}
+  }
+
+  function consumeRunnerResume() {
+    try {
+      const resume = FileService.data.runnerResume;
+      if (!resume || typeof resume !== "object") return;
+      if (!resume[pseudo]) return;
+      delete resume[pseudo].blockblast;
+      const hasAny =
+        resume[pseudo].dino != null ||
+        resume[pseudo].flappy != null ||
+        resume[pseudo].snake != null ||
+        resume[pseudo]["2048"] != null ||
+        resume[pseudo].blockblast != null;
+      if (!hasAny) delete resume[pseudo];
+      FileService.save("runnerResume", resume);
+    } catch (e) {}
+  }
+
+  socket.on("blockblast:progress", ({ score }) => setRunnerProgress(score));
+  socket.on("blockblast:resumeConsumed", () => consumeRunnerResume());
   socket.on("blockblast:score", ({ score, elapsedMs, final }) => {
     const s = Number(score);
 
     if (isNaN(s) || s < 0) return;
 
     updateReviveContextFromScore(socket, "blockblast", s);
+    setRunnerProgress(s);
 
     const current = FileService.data.blockblastScores[pseudo] || 0;
 
@@ -39,20 +70,20 @@ function registerBlockblastHandlers({
         FileService.data.blockblastBestTimes[pseudo] = Math.max(0, elapsedMs);
         FileService.save(
           "blockblastBestTimes",
-          FileService.data.blockblastBestTimes
+          FileService.data.blockblastBestTimes,
         );
       }
       if (isAlreadyLogged_bb === false) {
         console.log(
           withGame(
             `\n🧱 Nouveau score Block Blast pour [${colors.orange}${pseudo}${colors.green}] -> ${s}\n`,
-            colors.green
-          )
+            colors.green,
+          ),
         );
         broadcastSystemMessage(
           io,
           `${pseudo} a fait un nouveau score de ${s} à Block Blast !`,
-          true
+          true,
         );
         isAlreadyLogged_bb = true;
       }
@@ -67,7 +98,7 @@ function registerBlockblastHandlers({
       FileService.data.blockblastBestTimes[pseudo] = Math.max(0, elapsedMs);
       FileService.save(
         "blockblastBestTimes",
-        FileService.data.blockblastBestTimes
+        FileService.data.blockblastBestTimes,
       );
     }
 
@@ -101,7 +132,7 @@ function registerBlockblastHandlers({
     } catch (err) {
       console.error(
         "Erreur lors de la sauvegarde du mouvement Block Blast:",
-        err
+        err,
       );
     }
   });
@@ -112,7 +143,7 @@ function registerBlockblastHandlers({
     if (!info || info.cost == null) {
       socket.emit(
         "blockblast:reviveError",
-        "Contexte de réanimation introuvable (score manquant)."
+        "Contexte de réanimation introuvable (score manquant).",
       );
       return;
     }
@@ -136,7 +167,7 @@ function registerBlockblastHandlers({
         FileService.data.clicks[pseudo],
         io,
         false,
-        true
+        true,
       );
 
       // Notifier le nouveau solde de clicks
@@ -151,8 +182,8 @@ function registerBlockblastHandlers({
       console.log(
         withGame(
           `[BlockBlast] ${pseudo} a payé ${cost} clicks pour continuer.`,
-          colors.green
-        )
+          colors.green,
+        ),
       );
     } else {
       socket.emit("blockblast:reviveError", "Pas assez de clicks !");
@@ -169,7 +200,7 @@ function registerBlockblastHandlers({
       delete FileService.data.blockblastBestTimes[pseudo];
       FileService.save(
         "blockblastBestTimes",
-        FileService.data.blockblastBestTimes
+        FileService.data.blockblastBestTimes,
       );
     }
 
@@ -184,8 +215,8 @@ function registerBlockblastHandlers({
     console.log(
       withGame(
         `\n🔄 Reset Block Blast pour [${colors.orange}${pseudo}${colors.green}]\n`,
-        colors.green
-      )
+        colors.green,
+      ),
     );
     leaderboardManager.broadcastBlockBlastLB(io);
     socket.emit("blockblast:resetConfirm", { success: true });
@@ -218,7 +249,7 @@ function registerBlockblastHandlers({
       } catch (e) {
         console.error("Erreur saveState Block Blast:", e);
       }
-    }
+    },
   );
 
   socket.on("blockblast:loadState", () => {

@@ -33,7 +33,7 @@ const {
 } = require("./sockets/handlers/blackjack");
 
 const PixelWarGame = require("./games/pixelWarGame");
-const { registerPixelWarHandlers } = require("./sockets/handlers/pixelwar");
+const { registerPixelWarHandlers } = require("./sockets/handlers/pixelWar");
 
 function broadcastSystemMessage(io, text, persist = false) {
   io.emit("system:info", text);
@@ -62,6 +62,13 @@ let blackjackGame = new BlackjackGame();
 let mashGame = null; // Will be initialized with broadcastSystemMessage wrapper
 let pixelWarGame = new PixelWarGame(FileService);
 pixelWarGame.startAutoSave();
+
+function getRuntimeGames() {
+  return {
+    blackjackGame,
+    mashGame,
+  };
+}
 
 // ------- Colors -------
 const orange = "\x1b[38;5;208m"; // pseudos
@@ -218,6 +225,37 @@ function initSocketHandlers(io, socket, gameState) {
   }
 
   const pseudo = user.pseudo;
+
+  // Permet au shutdown manager (et autres) d'identifier le joueur via socket.data
+  try {
+    if (!socket.data) socket.data = {};
+    socket.data.pseudo = pseudo;
+  } catch (e) {}
+
+  // Reprise Flappy / Dino après relance (snapshot au moment d'un shutdown admin)
+  try {
+    const resume = FileService.data.runnerResume || {};
+    const entry = resume[pseudo];
+    if (entry && entry.at) {
+      const at = Date.parse(entry.at);
+      // TTL: 1h (évite de garder des reprises éternellement)
+      if (Number.isFinite(at) && Date.now() - at <= 60 * 60 * 1000) {
+        if (entry.dino != null)
+          socket.emit("dino:resume", { score: entry.dino });
+        if (entry.flappy != null)
+          socket.emit("flappy:resume", { score: entry.flappy });
+        if (entry.snake != null)
+          socket.emit("snake:resume", { score: entry.snake });
+        if (entry["2048"] != null)
+          socket.emit("2048:resume", { score: entry["2048"] });
+        if (entry.blockblast != null)
+          socket.emit("blockblast:resume", { score: entry.blockblast });
+      } else {
+        delete resume[pseudo];
+        FileService.save("runnerResume", resume);
+      }
+    }
+  } catch (e) {}
   socket.join("user:" + pseudo);
 
   function getNormalizedMedalsFor(pseudo) {
@@ -466,6 +504,7 @@ function initSocketHandlers(io, socket, gameState) {
     socket,
     pseudo,
     FileService,
+    dbUsers,
     config,
     getIpFromSocket,
     broadcastSystemMessage,
@@ -565,4 +604,5 @@ module.exports = {
   leaderboardManager,
   motusGame,
   pixelWarGame,
+  getRuntimeGames,
 };

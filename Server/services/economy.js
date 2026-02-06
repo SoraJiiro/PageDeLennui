@@ -16,6 +16,46 @@ function ensureDailyEarningsBucket(FileService) {
 }
 
 /**
+ * Fige le "baseClicks" du jour dès qu'on voit l'utilisateur (typiquement à la 1ère connexion).
+ * Objectif: éviter que le quota baisse si le user perd des clicks avant son 1er gain casino.
+ */
+function freezeDailyProfitCapBaseClicks({
+  FileService,
+  pseudo,
+  currentClicks,
+}) {
+  if (!pseudo) return null;
+
+  const dailyEarnings = ensureDailyEarningsBucket(FileService);
+  const today = getTodayKey();
+  const existing = dailyEarnings[pseudo];
+
+  const baseClicks = Math.max(0, Math.floor(Number(currentClicks) || 0));
+
+  // Nouveau jour / pas de bucket -> snapshot immédiat
+  if (!existing || existing.date !== today) {
+    dailyEarnings[pseudo] = {
+      date: today,
+      earned: 0,
+      baseClicks,
+    };
+    FileService.save("dailyEarnings", dailyEarnings);
+    return dailyEarnings[pseudo];
+  }
+
+  // Bucket existe déjà aujourd'hui: ne pas le modifier, sauf s'il est corrompu
+  const bucket = existing;
+  const hasValidBase = Number.isFinite(Number(bucket.baseClicks));
+  if (!hasValidBase) {
+    bucket.baseClicks = baseClicks;
+    bucket.earned = Math.max(0, Math.floor(Number(bucket.earned) || 0));
+    FileService.save("dailyEarnings", dailyEarnings);
+  }
+
+  return bucket;
+}
+
+/**
  * Limite un profit (gain net) selon un cap quotidien = 55% des clicks "base" du jour.
  * - Le "baseClicks" est figé au premier gain du jour (snapshot).
  * - Ne cappe que les profits positifs; les remboursements de mise doivent rester hors cap.
@@ -171,6 +211,7 @@ function incrementReviveUsed(socket, game) {
 
 module.exports = {
   applyDailyProfitCap,
+  freezeDailyProfitCapBaseClicks,
   updateReviveContextFromScore,
   getReviveCostForSocket,
   incrementReviveUsed,

@@ -11,12 +11,43 @@ function registerSnakeHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   let isAlreadyLogged_snake = false;
 
+  function setRunnerProgress(score) {
+    const s = Math.floor(Number(score) || 0);
+    if (!Number.isFinite(s) || s < 0) return;
+    try {
+      if (!socket.data) socket.data = {};
+      if (!socket.data.runnerProgress) socket.data.runnerProgress = {};
+      socket.data.runnerProgress.snake = s;
+    } catch (e) {}
+  }
+
+  function consumeRunnerResume() {
+    try {
+      const resume = FileService.data.runnerResume;
+      if (!resume || typeof resume !== "object") return;
+      if (!resume[pseudo]) return;
+      delete resume[pseudo].snake;
+      const hasAny =
+        resume[pseudo].dino != null ||
+        resume[pseudo].flappy != null ||
+        resume[pseudo].snake != null ||
+        resume[pseudo]["2048"] != null ||
+        resume[pseudo].blockblast != null;
+      if (!hasAny) delete resume[pseudo];
+      FileService.save("runnerResume", resume);
+    } catch (e) {}
+  }
+
+  socket.on("snake:progress", ({ score }) => setRunnerProgress(score));
+  socket.on("snake:resumeConsumed", () => consumeRunnerResume());
+
   socket.on("snake:score", ({ score, elapsedMs, final }) => {
     const s = Number(score);
 
     if (isNaN(s) || s < 0) return;
 
     updateReviveContextFromScore(socket, "snake", s);
+    setRunnerProgress(s);
 
     const current = FileService.data.snakeScores[pseudo] || 0;
 
@@ -36,13 +67,13 @@ function registerSnakeHandlers({
         console.log(
           withGame(
             `\n🐍 Nouveau score Snake pour [${colors.orange}${pseudo}${colors.green}] -> ${s}\n`,
-            colors.green
-          )
+            colors.green,
+          ),
         );
         broadcastSystemMessage(
           io,
           `${pseudo} a fait un nouveau score de ${s} à Snake !`,
-          true
+          true,
         );
         isAlreadyLogged_snake = true;
       }
@@ -65,8 +96,8 @@ function registerSnakeHandlers({
     console.log(
       withGame(
         `\n🔄 Reset Snake pour [${colors.orange}${pseudo}${colors.green}]\n`,
-        colors.green
-      )
+        colors.green,
+      ),
     );
     leaderboardManager.broadcastSnakeLB(io);
     socket.emit("snake:resetConfirm", { success: true });

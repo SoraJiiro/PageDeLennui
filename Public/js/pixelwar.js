@@ -515,6 +515,10 @@ function confirmBatch() {
     socket.emit("pixelwar:place", { x: p.x, y: p.y, colorIndex: p.colorIdx });
   });
 
+  // Marque la fin de la validation du dessin (mode batch).
+  // Permet au serveur de persister immédiatement le compteur de pixels.
+  socket.emit("pixelwar:batch_done");
+
   pendingPixels.clear();
   updateBatchUI();
 }

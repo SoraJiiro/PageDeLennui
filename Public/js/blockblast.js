@@ -44,6 +44,37 @@ export function initBlockBlast(socket) {
     elapsedMs: 0,
   };
 
+  // --- Shutdown resume glue (fallback score-only) ---
+  let resumeScoreBlockblast = null;
+  let resumeConsumedBlockblast = false;
+
+  socket.on("blockblast:resume", ({ score }) => {
+    const s = Math.floor(Number(score) || 0);
+    if (Number.isFinite(s) && s > 0) resumeScoreBlockblast = s;
+  });
+
+  socket.on("system:shutdown:collectProgress", () => {
+    try {
+      // Sauvegarde complète (grille + pièces + timer) -> reprise la plus fidèle
+      socket.emit("blockblast:saveState", {
+        grid: state.grid,
+        score: state.score || 0,
+        pieces: Array.isArray(state.currentPieces)
+          ? state.currentPieces.map((p) => ({
+              shape: p.shape,
+              used: !!p.used,
+              color: p.color,
+            }))
+          : [],
+        elapsedMs: state.elapsedMs || 0,
+        gameOver: !!state.gameOver,
+      });
+
+      // Fallback score-only
+      socket.emit("blockblast:progress", { score: state.score || 0 });
+    } catch (e) {}
+  });
+
   // Timer interne
   let timerId = null;
   let lastTick = null;
@@ -233,6 +264,15 @@ export function initBlockBlast(socket) {
         renderPieces();
         updateScore();
         updateTimerDisplay();
+
+        // On a bien repris une partie (via saveState) -> consommer le resume snapshot
+        if (!resumeConsumedBlockblast) {
+          try {
+            socket.emit("blockblast:resumeConsumed");
+          } catch (e) {}
+          resumeConsumedBlockblast = true;
+          resumeScoreBlockblast = null;
+        }
       } else {
         // Pas de sauvegarde trouvée côté serveur -> tenter restauration locale
         const local = loadLocalState();
@@ -260,6 +300,17 @@ export function initBlockBlast(socket) {
         } else {
           // Aucune sauvegarde locale non plus -> nouvelle partie
           generateNewPieces();
+        }
+
+        // Si aucune sauvegarde n'existe, appliquer une reprise score-only
+        if (!resumeConsumedBlockblast && resumeScoreBlockblast != null) {
+          state.score = Math.max(state.score || 0, resumeScoreBlockblast);
+          updateScore();
+          try {
+            socket.emit("blockblast:resumeConsumed");
+          } catch (e) {}
+          resumeConsumedBlockblast = true;
+          resumeScoreBlockblast = null;
         }
       }
     } catch (e) {

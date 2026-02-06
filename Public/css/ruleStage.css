@@ -41,6 +41,22 @@
   margin-bottom: 30px;
 }
 
+.rules-section-title {
+  width: 100%;
+  margin: 10px 0 -5px;
+  padding-bottom: 8px;
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--primary-color);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.95;
+}
+
+.rules-section-title i {
+  margin-right: 8px;
+}
+
 .rule-item {
   display: flex;
   align-items: flex-start;
@@ -95,6 +111,17 @@
 .btn-accept:hover {
   background: var(--primary-hover);
   transform: translateY(-2px);
+}
+
+.btn-accept:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-accept:disabled:hover {
+  background: var(--primary-color);
+  transform: none;
 }
 
 @keyframes slideIn {

@@ -1,10 +1,9 @@
-const { exec } = require("child_process");
-
 function registerAdminHandlers({
   io,
   socket,
   pseudo,
   FileService,
+  dbUsers,
   config,
   getIpFromSocket,
   broadcastSystemMessage,
@@ -13,6 +12,51 @@ function registerAdminHandlers({
   pixelWarGame,
 }) {
   // ------- Admin Events -------
+  socket.on("admin:rules:resetAll", () => {
+    if (pseudo !== "Admin") return;
+    if (!dbUsers || typeof dbUsers.readAll !== "function") {
+      socket.emit("admin:rules:resetAll:result", {
+        success: false,
+        message: "dbUsers indisponible",
+      });
+      return;
+    }
+
+    try {
+      const db = dbUsers.readAll();
+      const users = Array.isArray(db?.users) ? db.users : [];
+
+      let changed = 0;
+      for (const u of users) {
+        if (!u || typeof u !== "object") continue;
+        if (u.rulesAccepted === false) continue;
+        u.rulesAccepted = false;
+        changed++;
+      }
+
+      dbUsers.writeAll({ ...db, users });
+
+      socket.emit("admin:rules:resetAll:result", {
+        success: true,
+        changed,
+        total: users.length,
+      });
+
+      // Refresh tous les clients (sauf admins) pour forcer la relecture
+      try {
+        io.except("admins").emit("reload", { file: "index.html" });
+      } catch (e) {
+        // Fallback si except() n'est pas dispo
+        io.emit("reload", { file: "index.html" });
+      }
+    } catch (e) {
+      socket.emit("admin:rules:resetAll:result", {
+        success: false,
+        message: "Erreur reset rulesAccepted",
+      });
+    }
+  });
+
   // Admin: blacklist management via socket (Admin only)
   socket.on("admin:blacklist:get", () => {
     if (pseudo !== "Admin") return;
@@ -165,6 +209,11 @@ function registerAdminHandlers({
     leaderboardManager.broadcastP4LB(io);
     leaderboardManager.broadcastBlockBlastLB(io);
     leaderboardManager.broadcastSnakeLB(io);
+    leaderboardManager.broadcastMotusLB(io);
+    leaderboardManager.broadcast2048LB(io);
+    leaderboardManager.broadcastMashLB(io);
+    leaderboardManager.broadcastBlackjackLB(io);
+    leaderboardManager.broadcastCoinflipLB(io);
   });
 
   socket.on("admin:chat:clear", () => {
@@ -225,13 +274,15 @@ function registerAdminHandlers({
             level: "warn",
             message: "Arrêt du serveur suite au countdown...",
           });
-          if (process.platform === "win32") {
-            exec("taskkill /IM node.exe /F /T");
-          } else {
-            exec("pkill node");
+          try {
+            const {
+              requestShutdown,
+            } = require("../../bootstrap/shutdownManager");
+            requestShutdown("admin_countdown");
+          } catch (e) {
+            // Fallback minimal
+            setTimeout(() => process.exit(0), 500);
           }
-          // Fallback
-          setTimeout(() => process.exit(0), 500);
         }, 2000);
       }, duration + 4000);
     }
@@ -276,6 +327,30 @@ function registerAdminHandlers({
     if (pixelWarGame) {
       pixelWarGame.resetArea(x1, y1, x2, y2);
       io.emit("pixelwar:init", { board: pixelWarGame.board });
+    }
+  });
+
+  socket.on("admin:pixelwar:clear_polygon", ({ points }) => {
+    if (pseudo !== "Admin") return;
+    if (!pixelWarGame) return;
+
+    try {
+      pixelWarGame.clearPolygon(points);
+      io.emit("pixelwar:init", { board: pixelWarGame.board });
+    } catch (e) {
+      console.error("admin:pixelwar:clear_polygon error:", e);
+    }
+  });
+
+  socket.on("admin:pixelwar:clear_square", ({ points }) => {
+    if (pseudo !== "Admin") return;
+    if (!pixelWarGame) return;
+
+    try {
+      pixelWarGame.clearSquare(points);
+      io.emit("pixelwar:init", { board: pixelWarGame.board });
+    } catch (e) {
+      console.error("admin:pixelwar:clear_square error:", e);
     }
   });
 }

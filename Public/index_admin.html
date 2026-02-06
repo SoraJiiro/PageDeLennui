@@ -68,6 +68,9 @@
                             autres</button>
                         <button class="logs"
                             onclick="window.open('/admin/logs', '_blank');">Logs</button>
+                        <button class="reset-rules"
+                            onclick="resetRulesForAll()">Reset
+                            règlement</button>
                         <button class="shutdown"
                             onclick="shutdownServer()">OFF</button>
                         <button class="hide"
@@ -274,12 +277,63 @@
                             War</h2>
                         <div class="transactions-container">
                             <div class="control-form">
+                                <div class="form-row"
+                                    style="gap:24px; align-items:flex-start; flex-wrap:wrap;">
+                                    <div class="form-field"
+                                        style="min-width:560px;">
+                                        <label>Board (temps réel) — cliquez 4
+                                            coins puis un 5e clic pour clear un
+                                            carré</label>
+                                        <div
+                                            style="position:relative; width:512px; height:512px; border:1px solid #444; background:#111;">
+                                            <canvas id="admin-pixelwar-canvas"
+                                                width="256" height="256"
+                                                style="width:512px; height:512px; image-rendering:pixelated; display:block;"></canvas>
+                                            <canvas id="admin-pixelwar-overlay"
+                                                width="256" height="256"
+                                                style="width:512px; height:512px; image-rendering:pixelated; position:absolute; inset:0; pointer-events:none;"></canvas>
+                                        </div>
+                                        <div
+                                            style="margin-top:8px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                            <div id="admin-pw-selection-status"
+                                                style="color:#ccc;">Clique 4
+                                                coins puis un 5e clic pour
+                                                confirmer</div>
+                                            <button
+                                                onclick="pixelWarClearSelectionCancel()"
+                                                class="btn">Annuler
+                                                sélection</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field"
+                                        style="min-width:260px;">
+                                        <label>Actions</label>
+                                        <button onclick="pixelWarResetBoard()"
+                                            class="btn btn-red"
+                                            style="width:100%;">RESET
+                                            BOARD</button>
+                                        <div style="height:10px;"></div>
+                                        <button
+                                            onclick="pixelWarClearSelection()"
+                                            class="btn btn-red"
+                                            style="width:100%;">CLEAR (5e
+                                            clic)</button>
+                                        <p
+                                            style="color:#888; margin:8px 0 0; font-size:12px;">
+                                            La zone cleared est le carré
+                                            englobant les points (ordre sans
+                                            importance).
+                                        </p>
+                                    </div>
+                                </div>
                                 <div class="form-row">
                                     <div class="form-field">
                                         <label>&nbsp;</label>
-                                        <button onclick="pixelWarResetBoard()"
-                                            class="btn btn-red">RESET
-                                            BOARD</button>
+                                        <span
+                                            style="color:#777; font-size:12px;">(Les
+                                            champs ci-dessous gardent l'ancien
+                                            reset rectangle)</span>
                                     </div>
                                 </div>
                                 <hr style="border-color:#555; width:100%;">
@@ -822,6 +876,11 @@
                                                     value="mash">Mash</option>
                                                 <option
                                                     value="2048">2048</option>
+                                                <option
+                                                    value="blackjack">Blackjack</option>
+                                                <option
+                                                    value="coinflip">Coin
+                                                    Flip</option>
                                             </select>
                                         </div>
 
@@ -1113,6 +1172,36 @@
                 renderBlacklist();
                 showNotification('✅ Blacklist mise à jour', 'success');
             });
+
+            socket.on('admin:rules:resetAll:result', (res) => {
+                if (!res) return;
+                if (!res.success) {
+                    showNotification(`❌ ${res.message || 'Erreur reset règlement'}`, 'error');
+                    return;
+                }
+                const changed = typeof res.changed === 'number' ? res.changed : null;
+                const total = typeof res.total === 'number' ? res.total : null;
+                if (changed != null && total != null) {
+                    showNotification(`✅ Règlement reset: ${changed}/${total} utilisateur(s) mis à jour`, 'success');
+                } else {
+                    showNotification('✅ Règlement reset pour tous les utilisateurs', 'success');
+                }
+            });
+        }
+
+        function resetRulesForAll() {
+            if (!socket) {
+                showNotification('❌ Socket non initialisée', 'error');
+                return;
+            }
+            const ok = confirm(
+                "⚠️ Forcer tous les utilisateurs à relire le règlement ?\n\n" +
+                "- rulesAccepted sera remis à false pour tous\n" +
+                "- les pages des utilisateurs seront rafraîchies"
+            );
+            if (!ok) return;
+            socket.emit('admin:rules:resetAll');
+            showNotification('⏳ Reset du règlement en cours...', 'info');
         }
 
         function updateLeaderboard(type, data, valueKey) {
@@ -1755,6 +1844,12 @@
                             : '<span style="color:var(--primary-color)">0</span>'
                         }
                     </div>
+                    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <button type="button" class="btn btn-red" id="resetMedalsBtn" data-pseudo="${(data.pseudo||'')}">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            Reset médailles + clicks
+                        </button>
+                    </div>
                 </div>
                 <div class="user-stat">
                     <span class="label">Tag:</span>
@@ -1826,6 +1921,42 @@
                 if (modBtn) {
                     modBtn.addEventListener('click', () => modifyMotusTries(modBtn.dataset.pseudo || data.pseudo));
                 }
+
+                const resetMedalsBtn = document.getElementById('resetMedalsBtn');
+                if (resetMedalsBtn) {
+                    resetMedalsBtn.addEventListener('click', () => resetUserMedals(resetMedalsBtn.dataset.pseudo || data.pseudo));
+                }
+        }
+
+        async function resetUserMedals(pseudo) {
+            if (!pseudo) return;
+
+            if (!confirm(`Reset les médailles de ${pseudo} et mettre ses clicks à 0 ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/reset-medals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    showNotification(`✅ ${data.message || 'OK'}`, 'success');
+                    if (socket) socket.emit('admin:refresh');
+
+                    // refresh la fiche utilisateur
+                    const s = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                    if (s.ok) {
+                        const refreshed = await s.json();
+                        displayUserInfo(refreshed);
+                    }
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur serveur', 'error');
+            }
         }
 
         async function resetMotusFoundWords(pseudo) {
@@ -2490,7 +2621,7 @@ async function modifyTries() {
                 blockblast: 'Block Blast',
                 snake: 'Snake',
                 motus: 'Motus',
-                score2048: '2048',
+                '2048': '2048',
                 blackjack: 'Blackjack',
                 coinflip: 'Coin Flip',
                 mash: 'Mash'

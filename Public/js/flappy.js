@@ -22,6 +22,8 @@ export function initFlappy(socket) {
   // ---------- Variables de jeu (échelle dynamique) (déclarées tôt pour éviter TDZ) ----------
   let gravity, jump, pipeGap, pipeWidth, pipeSpeed;
   let birdY, birdVel, pipes, score, gameRunning;
+  let gameOverScreen = false;
+  let resumeScore = null;
   let revivesUsed = 0;
   let paused = false;
   let countdown = 0;
@@ -69,6 +71,11 @@ export function initFlappy(socket) {
     } catch (e) {}
 
     updateScales();
+
+    // Le resize efface le canvas: redessiner l'écran d'accueil si aucune run active
+    if (!gameRunning && !gameOverScreen) {
+      drawStartScreen();
+    }
   }
 
   resizeCanvas();
@@ -144,6 +151,53 @@ export function initFlappy(socket) {
     },
   };
 
+  function drawStartScreen() {
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = Math.round(ui.canvas.width / dpr);
+      const cssH = Math.round(ui.canvas.height / dpr);
+      if (!cssW || !cssH) return;
+
+      ui.ctx.fillStyle = "#000";
+      ui.ctx.fillRect(0, 0, cssW, cssH);
+
+      ui.ctx.fillStyle = uiColor;
+      ui.ctx.textAlign = "center";
+      ui.ctx.font = "bold 42px monospace";
+      ui.ctx.fillText("FLAPPY", cssW / 2, Math.floor(cssH * 0.36));
+
+      ui.ctx.font = "18px monospace";
+      ui.ctx.fillText(
+        "Clique sur Démarrer ou appuie sur ESPACE",
+        cssW / 2,
+        Math.floor(cssH * 0.54),
+      );
+
+      let hasResumeLine = false;
+      if (resumeScore != null && Number(resumeScore) > 0) {
+        const s = Math.floor(Number(resumeScore) || 0);
+        if (s > 0) {
+          ui.ctx.font = "16px monospace";
+          ui.ctx.fillText(
+            `Reprise au score : ${s
+              .toLocaleString("fr-FR")
+              .replace(/\s/g, "\u00a0")}`,
+            cssW / 2,
+            Math.floor(cssH * 0.6),
+          );
+          hasResumeLine = true;
+        }
+      }
+
+      ui.ctx.font = "14px monospace";
+      ui.ctx.fillText(
+        `Pause: ${pauseKeyText}`,
+        cssW / 2,
+        Math.floor(cssH * (hasResumeLine ? 0.7 : 0.64)),
+      );
+    } catch {}
+  }
+
   function resetGame() {
     resizeCanvas();
 
@@ -152,8 +206,17 @@ export function initFlappy(socket) {
     birdY = cssH / 3.55;
     birdVel = 0;
     pipes = [];
-    score = 0;
+    if (resumeScore != null) {
+      score = Math.max(0, Math.floor(Number(resumeScore) || 0));
+      resumeScore = null;
+      try {
+        socket.emit("flappy:resumeConsumed");
+      } catch (e) {}
+    } else {
+      score = 0;
+    }
     gameRunning = true;
+    gameOverScreen = false;
     revivesUsed = 0;
     if (ui.reviveOverlay) {
       ui.reviveOverlay.style.display = "none";
@@ -306,6 +369,7 @@ export function initFlappy(socket) {
 
   function gameOver() {
     gameRunning = false;
+    gameOverScreen = true;
     ui.startBtn.style.display = "block";
     ui.startBtn.textContent = "Rejouer";
     if (ui.stopBtn) ui.stopBtn.style.display = "none";
@@ -399,6 +463,27 @@ export function initFlappy(socket) {
   });
 
   // ---------- Eventlisteners ----------
+  socket.on("flappy:resume", ({ score }) => {
+    const s = Math.floor(Number(score) || 0);
+    if (!Number.isFinite(s) || s <= 0) return;
+    resumeScore = s;
+
+    // Si on est sur l'écran d'accueil, l'actualiser
+    if (!gameRunning && !gameOverScreen) {
+      drawStartScreen();
+    }
+  });
+
+  socket.on("system:shutdown:collectProgress", () => {
+    try {
+      if (!socket) return;
+      // Si une run est active, pousser le score courant pour snapshot
+      if (gameRunning) {
+        socket.emit("flappy:progress", { score });
+      }
+    } catch (e) {}
+  });
+
   document.addEventListener("keydown", (e) => {
     // Fermer l'overlay de réanimation avec Echap
     if (e.key === "Escape") {
@@ -479,8 +564,9 @@ export function initFlappy(socket) {
     frameCount = 0;
     pipes = [];
     if (ui.stopBtn) ui.stopBtn.style.display = "none";
-    // Canvas noir comme au chargement
-    clearToBlack();
+    // Afficher l'écran d'accueil
+    gameOverScreen = false;
+    drawStartScreen();
     // Afficher le bouton pour rejouer
     ui.startBtn.style.display = "block";
     ui.startBtn.textContent = "Rejouer";
@@ -522,6 +608,12 @@ export function initFlappy(socket) {
   });
 
   // ---------- Init UI ----------
+  gameRunning = false;
+  gameOverScreen = false;
   ui.startBtn.style.display = "block";
   if (ui.stopBtn) ui.stopBtn.style.display = "none";
+
+  // Écran d'accueil au chargement
+  resizeCanvas();
+  drawStartScreen();
 }

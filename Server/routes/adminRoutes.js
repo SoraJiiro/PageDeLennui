@@ -792,6 +792,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "pixelwar",
     ];
 
     if (!validStats.includes(statType)) {
@@ -805,6 +806,44 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       return res
         .status(400)
         .json({ message: "Le champ (field) est requis pour " + statType });
+    }
+
+    if (statType === "pixelwar") {
+      if (!field || (field !== "pixels" && field !== "maxPixels")) {
+        return res.status(400).json({
+          message: "Champ invalide pour Pixel War (pixels ou maxPixels requis)",
+        });
+      }
+      if (!pixelWarGame) {
+        return res.status(500).json({ message: "PixelWarGame non disponible" });
+      }
+
+      const users = Object.keys(pixelWarGame.users || {});
+      users.forEach((p) => {
+        if (!pixelWarGame.users[p]) pixelWarGame.getUserState(p);
+        pixelWarGame.users[p][field] = value;
+        if (field === "pixels") {
+          pixelWarGame.users[p][field] = Math.max(
+            0,
+            Math.min(1000, Number(pixelWarGame.users[p][field]) || 0),
+          );
+        } else {
+          pixelWarGame.users[p][field] = Math.max(
+            0,
+            Math.floor(Number(pixelWarGame.users[p][field]) || 0),
+          );
+        }
+      });
+      pixelWarGame.usersDirty = true;
+
+      console.log({
+        level: "action",
+        message: `Modification massive PixelWar: ${field} = ${value} pour ${users.length} joueurs`,
+      });
+
+      return res.json({
+        message: `PixelWar.${field} mis à ${value} pour ${users.length} joueurs`,
+      });
     }
 
     // Si le leaderboard n'existe pas encore, on itère sur users? Non, sur FileService.data[statType?].
@@ -872,6 +911,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "pixelwar",
     ];
 
     if (!validStats.includes(statType)) {
@@ -883,6 +923,37 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       !field
     ) {
       return res.status(400).json({ message: "Field required" });
+    }
+
+    if (statType === "pixelwar") {
+      if (!field || (field !== "pixels" && field !== "maxPixels")) {
+        return res.status(400).json({
+          message: "Champ invalide pour Pixel War (pixels ou maxPixels requis)",
+        });
+      }
+      if (!pixelWarGame) {
+        return res.status(500).json({ message: "PixelWarGame non disponible" });
+      }
+
+      const users = Object.keys(pixelWarGame.users || {});
+      users.forEach((p) => {
+        if (!pixelWarGame.users[p]) pixelWarGame.getUserState(p);
+        const current = Number(pixelWarGame.users[p][field]) || 0;
+        let next = current + value;
+        if (field === "pixels") next = Math.max(0, Math.min(1000, next));
+        else next = Math.max(0, Math.floor(next));
+        pixelWarGame.users[p][field] = next;
+      });
+      pixelWarGame.usersDirty = true;
+
+      console.log({
+        level: "action",
+        message: `Ajout massif PixelWar: ${field} +${value} pour ${users.length} joueurs`,
+      });
+
+      return res.json({
+        message: `${value} ajouté à PixelWar.${field} de ${users.length} joueurs`,
+      });
     }
 
     const users = Object.keys(FileService.data[statType] || {});
@@ -949,6 +1020,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "pixelwar",
     ];
 
     if (!validStats.includes(statType)) {
@@ -960,6 +1032,37 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       !field
     ) {
       return res.status(400).json({ message: "Field required" });
+    }
+
+    if (statType === "pixelwar") {
+      if (!field || (field !== "pixels" && field !== "maxPixels")) {
+        return res.status(400).json({
+          message: "Champ invalide pour Pixel War (pixels ou maxPixels requis)",
+        });
+      }
+      if (!pixelWarGame) {
+        return res.status(500).json({ message: "PixelWarGame non disponible" });
+      }
+
+      const users = Object.keys(pixelWarGame.users || {});
+      users.forEach((p) => {
+        if (!pixelWarGame.users[p]) pixelWarGame.getUserState(p);
+        const current = Number(pixelWarGame.users[p][field]) || 0;
+        let next = current - value;
+        if (field === "pixels") next = Math.max(0, Math.min(1000, next));
+        else next = Math.max(0, Math.floor(next));
+        pixelWarGame.users[p][field] = next;
+      });
+      pixelWarGame.usersDirty = true;
+
+      console.log({
+        level: "action",
+        message: `Retrait massif PixelWar: ${field} -${value} pour ${users.length} joueurs`,
+      });
+
+      return res.json({
+        message: `${value} retiré de PixelWar.${field} de ${users.length} joueurs`,
+      });
     }
 
     const users = Object.keys(FileService.data[statType] || {});
@@ -1029,10 +1132,42 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "pixelwar",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "pixelwar") {
+      if (!field || (field !== "pixels" && field !== "maxPixels")) {
+        return res.status(400).json({
+          message: "Champ invalide pour Pixel War (pixels ou maxPixels requis)",
+        });
+      }
+      if (!pixelWarGame) {
+        return res.status(500).json({ message: "PixelWarGame non disponible" });
+      }
+      if (!pixelWarGame.users[pseudo]) {
+        pixelWarGame.getUserState(pseudo);
+      }
+
+      const current = Number(pixelWarGame.users[pseudo][field]) || 0;
+      let next = current + value;
+      if (field === "pixels") next = Math.max(0, Math.min(1000, next));
+      else next = Math.max(0, Math.floor(next));
+
+      pixelWarGame.users[pseudo][field] = next;
+      pixelWarGame.usersDirty = true;
+
+      console.log({
+        level: "action",
+        message: `Ajout PixelWar: ${pseudo} (${field} + ${value}) -> ${next}`,
+      });
+
+      return res.json({
+        message: `PixelWar.${field} de ${pseudo} augmenté de ${value} (total: ${next})`,
+      });
     }
 
     if (statType === "blackjackStats" || statType === "coinflipStats") {
@@ -1237,10 +1372,42 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "pixelwar",
     ];
 
     if (!validStats.includes(statType)) {
       return res.status(400).json({ message: "Type de statistique invalide" });
+    }
+
+    if (statType === "pixelwar") {
+      if (!field || (field !== "pixels" && field !== "maxPixels")) {
+        return res.status(400).json({
+          message: "Champ invalide pour Pixel War (pixels ou maxPixels requis)",
+        });
+      }
+      if (!pixelWarGame) {
+        return res.status(500).json({ message: "PixelWarGame non disponible" });
+      }
+      if (!pixelWarGame.users[pseudo]) {
+        pixelWarGame.getUserState(pseudo);
+      }
+
+      const current = Number(pixelWarGame.users[pseudo][field]) || 0;
+      let next = current - value;
+      if (field === "pixels") next = Math.max(0, Math.min(1000, next));
+      else next = Math.max(0, Math.floor(next));
+
+      pixelWarGame.users[pseudo][field] = next;
+      pixelWarGame.usersDirty = true;
+
+      console.log({
+        level: "action",
+        message: `Retrait PixelWar: ${pseudo} (${field} - ${value}) -> ${next}`,
+      });
+
+      return res.json({
+        message: `PixelWar.${field} de ${pseudo} diminué de ${value} (total: ${next})`,
+      });
     }
 
     if (statType === "blackjackStats" || statType === "coinflipStats") {
@@ -1336,6 +1503,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     delete FileService.data.unoWins[pseudo];
     delete FileService.data.p4Wins[pseudo];
     delete FileService.data.blockblastScores[pseudo];
+    if (FileService.data.scores2048) delete FileService.data.scores2048[pseudo];
+    if (FileService.data.mashWins) delete FileService.data.mashWins[pseudo];
+    if (FileService.data.blackjackStats)
+      delete FileService.data.blackjackStats[pseudo];
+    if (FileService.data.coinflipStats)
+      delete FileService.data.coinflipStats[pseudo];
     delete FileService.data.medals[pseudo];
     delete FileService.data.blockblastSaves[pseudo];
     if (FileService.data.motusScores)
@@ -1367,6 +1540,14 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     FileService.save("unoWins", FileService.data.unoWins);
     FileService.save("p4Wins", FileService.data.p4Wins);
     FileService.save("blockblastScores", FileService.data.blockblastScores);
+    if (FileService.data.scores2048)
+      FileService.save("scores2048", FileService.data.scores2048);
+    if (FileService.data.mashWins)
+      FileService.save("mashWins", FileService.data.mashWins);
+    if (FileService.data.blackjackStats)
+      FileService.save("blackjackStats", FileService.data.blackjackStats);
+    if (FileService.data.coinflipStats)
+      FileService.save("coinflipStats", FileService.data.coinflipStats);
     if (FileService.data.motusScores)
       FileService.save("motusScores", FileService.data.motusScores);
     if (FileService.data.motusState)
@@ -1391,6 +1572,47 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     });
 
     res.json({ message: `Utilisateur ${pseudo} supprimé avec succès` });
+  });
+
+  // Reset médailles d'un utilisateur (et clicks à 0)
+  router.post("/reset-medals", requireAdmin, (req, res) => {
+    const { pseudo } = req.body || {};
+    const p = String(pseudo || "").trim();
+    if (!p) return res.status(400).json({ message: "Pseudo manquant" });
+
+    try {
+      if (!FileService.data.clicks) FileService.data.clicks = {};
+      FileService.data.clicks[p] = 0;
+      FileService.save("clicks", FileService.data.clicks);
+
+      // strict=true pour forcer un reset total (aucune conservation)
+      recalculateMedals(p, 0, io, true, true);
+
+      // Mettre à jour le score clicker côté client si en ligne
+      if (io) {
+        io.sockets.sockets.forEach((socket) => {
+          const user = socket.handshake.session?.user;
+          if (user && user.pseudo === p) {
+            socket.emit("clicker:you", { score: 0 });
+            socket.emit("clicker:forceReset");
+          }
+        });
+      }
+
+      refreshLeaderboard("clicks");
+
+      console.log({
+        level: "action",
+        message: `Reset médailles + clicks: ${p}`,
+      });
+
+      return res.json({
+        message: `Médailles reset et clicks mis à 0 pour ${p}`,
+      });
+    } catch (e) {
+      console.error("[ADMIN] reset-medals error", e);
+      return res.status(500).json({ message: "Erreur serveur" });
+    }
   });
 
   // Remettre à 0 les entrées de leaderboard d'un utilisateur (sans supprimer le compte)
@@ -1479,6 +1701,14 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       // On pourrait aussi reset le state, mais c'est pas un leaderboard
     };
 
+    const clearBlackjack = () => {
+      clearSimple("blackjackStats", "blackjack");
+    };
+
+    const clearCoinflip = () => {
+      clearSimple("coinflipStats", "coinflip");
+    };
+
     try {
       switch (type) {
         case "clicker":
@@ -1511,6 +1741,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         case "2048":
           clearSimple("scores2048", "2048");
           break;
+        case "blackjack":
+          clearBlackjack();
+          break;
+        case "coinflip":
+          clearCoinflip();
+          break;
         case "all":
         default:
           clearClicker();
@@ -1523,8 +1759,52 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           clearBlockblast();
           clearSnake();
           clearMotus();
+          clearBlackjack();
+          clearCoinflip();
           break;
       }
+
+      // Rafraîchir les leaderboards retirés
+      removed.forEach((label) => {
+        switch (label) {
+          case "clicker":
+            refreshLeaderboard("clicks");
+            break;
+          case "dino":
+            refreshLeaderboard("dinoScores");
+            break;
+          case "flappy":
+            refreshLeaderboard("flappyScores");
+            break;
+          case "uno":
+            refreshLeaderboard("unoWins");
+            break;
+          case "p4":
+            refreshLeaderboard("p4Wins");
+            break;
+          case "blockblast":
+            refreshLeaderboard("blockblastScores");
+            break;
+          case "snake":
+            refreshLeaderboard("snakeScores");
+            break;
+          case "motus":
+            refreshLeaderboard("motusScores");
+            break;
+          case "mash":
+            refreshLeaderboard("mashWins");
+            break;
+          case "2048":
+            refreshLeaderboard("scores2048");
+            break;
+          case "blackjack":
+            refreshLeaderboard("blackjackStats");
+            break;
+          case "coinflip":
+            refreshLeaderboard("coinflipStats");
+            break;
+        }
+      });
 
       if (removed.length === 0) {
         return res.json({
@@ -1587,6 +1867,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "motus_scores.json",
         "2048_scores.json",
         "mash_wins.json",
+        "blackjack_stats.json",
+        "coinflip_stats.json",
       ];
 
       filesToBackup.forEach((file) => {
@@ -1639,6 +1921,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         FileService.data.mashWins = {};
         FileService.save("mashWins", {});
 
+        FileService.data.blackjackStats = {};
+        FileService.save("blackjackStats", {});
+
+        FileService.data.coinflipStats = {};
+        FileService.save("coinflipStats", {});
+
         // Refresh all leaderboards
         refreshLeaderboard("dinoScores");
         refreshLeaderboard("flappyScores");
@@ -1649,6 +1937,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         refreshLeaderboard("motusScores");
         refreshLeaderboard("scores2048");
         refreshLeaderboard("mashWins");
+        refreshLeaderboard("blackjackStats");
+        refreshLeaderboard("coinflipStats");
 
         message = `Tous les leaderboards (sauf clicks) ont été réinitialisés. Backup créé : ${backupId}`;
       } else {
@@ -1696,6 +1986,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "motus_scores.json",
         "2048_scores.json",
         "mash_wins.json",
+        "blackjack_stats.json",
+        "coinflip_stats.json",
       ];
 
       filesToBackup.forEach((file) => {
@@ -1801,7 +2093,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
   // Route pour éteindre le serveur
   router.post("/shutdown", requireAdmin, (req, res) => {
-    io.emit("system:redirect", "/ferme.html");
+    const { requestShutdown } = require("../bootstrap/shutdownManager");
+
     console.log({
       level: "warn",
       message: "Arrêt du serveur demandé par l'admin...",
@@ -1810,11 +2103,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     // On renvoie d'abord la redirection pour que le client puisse naviguer
     res.json({ redirect: "/ferme.html" });
 
-    // On attend un peu que la réponse parte avant de tuer le processus
-    setTimeout(() => {
-      // Arrêt propre du process courant (évite de tuer d'autres Node sur la machine)
-      process.exit(0);
-    }, 1000);
+    // L'arrêt gracieux s'occupe de: collect progress, refunds, redirect, close
+    setTimeout(() => requestShutdown("admin_http"), 150);
   });
 
   // Définir un tag pour un utilisateur

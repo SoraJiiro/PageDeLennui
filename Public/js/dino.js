@@ -79,6 +79,7 @@ export function initDino(socket) {
   let myBest = 0;
   let globalBestScore = 0;
   let scoreAttente = null;
+  let resumeScore = null;
   socket.on("you:name", (name) => {
     myName = name;
   });
@@ -103,6 +104,62 @@ export function initDino(socket) {
   // ---------- Canvas sizing (responsive) ----------
   let CLIENT_W = 800;
   let CLIENT_H = 450;
+
+  function drawStartScreen() {
+    try {
+      // fond
+      c.fillStyle = "#000";
+      c.fillRect(0, 0, CLIENT_W, CLIENT_H);
+
+      // sol
+      c.fillStyle = uiColor;
+      const groundH = 10;
+      const groundY = CLIENT_H - groundH;
+      c.fillRect(0, groundY, CLIENT_W, groundH);
+
+      // petit dino (placeholder)
+      const dW = Math.max(14, Math.floor(CLIENT_W * 0.055));
+      const dH = Math.max(22, Math.floor(CLIENT_H * 0.12));
+      const dX = Math.floor(CLIENT_W * 0.12);
+      const dY = groundY - dH;
+      c.fillRect(dX, dY, dW, dH);
+
+      // texte
+      c.textAlign = "center";
+      c.fillStyle = uiColor;
+      c.font = "bold 42px monospace";
+      c.fillText("DINO", CLIENT_W / 2, Math.floor(CLIENT_H * 0.34));
+
+      c.font = "18px monospace";
+      c.fillText(
+        "Clique sur Démarrer ou appuie sur ESPACE",
+        CLIENT_W / 2,
+        Math.floor(CLIENT_H * 0.52),
+      );
+
+      let hasResumeLine = false;
+      if (resumeScore != null && Number(resumeScore) > 0) {
+        const s = Math.floor(Number(resumeScore) || 0);
+        if (s > 0) {
+          c.font = "16px monospace";
+          c.fillText(
+            `Reprise au score : ${s
+              .toLocaleString("fr-FR")
+              .replace(/\s/g, "\u00a0")}`,
+            CLIENT_W / 2,
+            Math.floor(CLIENT_H * 0.58),
+          );
+          hasResumeLine = true;
+        }
+      }
+      c.font = "14px monospace";
+      c.fillText(
+        `Pause: ${pauseKeyText}`,
+        CLIENT_W / 2,
+        Math.floor(CLIENT_H * (hasResumeLine ? 0.68 : 0.62)),
+      );
+    } catch {}
+  }
 
   function resizeCanvas() {
     try {
@@ -136,11 +193,20 @@ export function initDino(socket) {
       dino.x = Math.floor(CLIENT_W * 0.1);
       dino.width = Math.max(8, Math.floor(CLIENT_W * 0.05));
       dino.height = Math.max(8, Math.floor(CLIENT_H * 0.09));
+
+      // Le resize efface le canvas: redessiner l'écran d'accueil si aucune run active
+      if (state.isFirstStart) {
+        drawStartScreen();
+      }
     } catch (e) {}
   }
 
   // appel initial
   resizeCanvas();
+  // Écran d'accueil au chargement
+  if (state.isFirstStart) {
+    drawStartScreen();
+  }
   let _dinoResizeTO = null;
   window.addEventListener("resize", () => {
     try {
@@ -529,6 +595,27 @@ export function initDino(socket) {
     showNotif(msg || "Erreur lors du paiement");
   });
 
+  socket.on("dino:resume", ({ score }) => {
+    const s = Math.floor(Number(score) || 0);
+    if (!Number.isFinite(s) || s <= 0) return;
+    resumeScore = s;
+
+    // Si on est encore sur l'écran d'accueil, le mettre à jour
+    if (state.isFirstStart) {
+      drawStartScreen();
+    }
+  });
+
+  socket.on("system:shutdown:collectProgress", () => {
+    try {
+      if (!socket) return;
+      // Run active si pas firstStart et pas gameOver
+      if (!state.isFirstStart && !state.gameOver) {
+        socket.emit("dino:progress", { score: Math.floor(state.score) });
+      }
+    } catch (e) {}
+  });
+
   function startGame() {
     resizeCanvas();
 
@@ -539,7 +626,16 @@ export function initDino(socket) {
       toggleScrollLock(false);
     }
     state.isFirstStart = false;
-    state.score = 0;
+    // Reprise après shutdown: démarrer au score snapshot (1x)
+    if (resumeScore != null) {
+      state.score = Math.max(0, Math.floor(Number(resumeScore) || 0));
+      resumeScore = null;
+      try {
+        socket.emit("dino:resumeConsumed");
+      } catch (e) {}
+    } else {
+      state.score = 0;
+    }
     state.obstaclesPassed = 0;
     state.gameSpeed = INITIAL_SPEED;
     state.frameCount = 0;
@@ -574,8 +670,8 @@ export function initDino(socket) {
     state.clouds = [];
     dino.reset();
     if (ui.stopBtn) ui.stopBtn.style.display = "none";
-    // Rendre le canvas noir comme au chargement
-    clearToBlack();
+    // Afficher l'écran d'accueil
+    drawStartScreen();
     showNotif(`# Partie stoppée.`);
   }
 
