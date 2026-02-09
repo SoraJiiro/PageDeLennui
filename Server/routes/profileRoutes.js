@@ -56,7 +56,12 @@ function getStatsFor(pseudo) {
 }
 
 function getChatProfile(pseudo) {
-  const pfpUrl = FileService.data.pfps ? FileService.data.pfps[pseudo] : null;
+  const pfpUrl =
+    FileService && typeof FileService.getPfpUrl === "function"
+      ? FileService.getPfpUrl(pseudo)
+      : FileService.data.pfps
+        ? FileService.data.pfps[pseudo]
+        : null;
 
   const badgesData = FileService.data.chatBadges || { catalog: {}, users: {} };
   const bucket = (badgesData.users && badgesData.users[pseudo]) || {
@@ -81,7 +86,10 @@ function getChatProfile(pseudo) {
   const selectedResolved = selected.slice(0, 3).map(resolve).filter(Boolean);
 
   return {
-    pfpUrl: typeof pfpUrl === "string" && pfpUrl ? pfpUrl : null,
+    pfpUrl:
+      typeof pfpUrl === "string" && pfpUrl
+        ? pfpUrl
+        : "/Public/imgs/defaultProfile.png",
     badges: {
       assigned: assignedResolved,
       selected: selectedResolved,

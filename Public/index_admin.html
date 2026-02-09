@@ -60,31 +60,32 @@
 
                     <h1><i class="fa-solid fa-wrench"></i> PANEL
                         ADMIN</h1><div class="header-btns">
-                        <button class="deco"
-                            onclick="localStorage.removeItem('uiColor'); window.location.replace('/login');">Se
-                            déconnecter</button>
-                        <button class="del-other-admins"
-                            onclick="disconnectOtherAdmins()">Déco
-                            autres</button>
-                        <button class="logs"
-                            onclick="window.open('/admin/logs', '_blank');">Logs</button>
-                        <button class="reset-rules"
-                            onclick="resetRulesForAll()">Reset
-                            règlement</button>
-                        <button class="shutdown"
-                            onclick="shutdownServer()">OFF</button>
                         <button class="hide"
                             onclick="toggleAdminPanel()">Cacher</button>
+                        <button class="logs"
+                            onclick="window.open('/admin/logs', '_blank');">Logs</button>
                         <button class="go-to-sondages"
                             onclick="window.open('./sondages.html');">Sondages</button>
                         <button class="tag-admin"
                             onclick="window.open('./demande-tag.html');">Tag</button>
+
+                        <button class="reset-rules"
+                            onclick="resetRulesForAll()">Reset
+                            règlement</button>
+                        <button class="del-other-admins"
+                            onclick="disconnectOtherAdmins()">Déco
+                            autres</button>
+                        <button class="deco"
+                            onclick="localStorage.removeItem('uiColor'); window.location.replace('/login');">Se
+                            déconnecter</button>
+                        <button class="shutdown"
+                            onclick="shutdownServer()">OFF</button>
                     </div>
                 </div>
 
                 <div class="admin-sections">
                     <!-- TRANSACTIONS -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 4;">
                         <h2><i class="fa-solid fa-money-bill-transfer"></i>
                             /Transactions en attente</h2>
                         <div class="transactions-container">
@@ -112,7 +113,7 @@
                     </section>
 
                     <!-- PASSWORD REQUESTS -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 2;">
                         <h2><i class="fa-solid fa-key"></i> /Demandes de Mot de
                             Passe</h2>
                         <div class="transactions-container">
@@ -139,7 +140,7 @@
                     </section>
 
                     <!-- PFP REQUESTS -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 3;">
                         <h2><i class="fa-solid fa-image"></i> /Demandes de
                             PFP</h2>
                         <div class="transactions-container">
@@ -166,7 +167,7 @@
                     <!-- Sections "Fichiers partagés" et "Logs actions fichiers" supprimées -->
 
                     <!-- BADGES CHAT -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 9;">
                         <h2><i class="fa-solid fa-tags"></i> /Badges (chat)</h2>
                         <div class="transactions-container">
                             <div class="control-form">
@@ -244,7 +245,7 @@
                     </section>
 
                     <!-- ECONOMY DAILY CAP -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 12;">
                         <h2><i class="fa-solid fa-coins"></i> /Cap quotidien
                             (casino)</h2>
                         <div class="transactions-container">
@@ -272,7 +273,7 @@
                         </div>
                     </section>
 
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 13;">
                         <h2><i class="fa-solid fa-paintbrush"></i> /Pixel
                             War</h2>
                         <div class="transactions-container">
@@ -281,9 +282,9 @@
                                     style="gap:24px; align-items:flex-start; flex-wrap:wrap;">
                                     <div class="form-field"
                                         style="min-width:560px;">
-                                        <label>Board (temps réel) — cliquez 4
-                                            coins puis un 5e clic pour clear un
-                                            carré</label>
+                                        <label>Board (temps réel) — cliquez 2
+                                            coins opposés puis “Clear
+                                            sélection”</label>
                                         <div
                                             style="position:relative; width:512px; height:512px; border:1px solid #444; background:#111;">
                                             <canvas id="admin-pixelwar-canvas"
@@ -296,9 +297,8 @@
                                         <div
                                             style="margin-top:8px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                                             <div id="admin-pw-selection-status"
-                                                style="color:#ccc;">Clique 4
-                                                coins puis un 5e clic pour
-                                                confirmer</div>
+                                                style="color:#ccc;">Clique 2
+                                                coins opposés (1/2)</div>
                                             <button
                                                 onclick="pixelWarClearSelectionCancel()"
                                                 class="btn">Annuler
@@ -317,52 +317,13 @@
                                         <button
                                             onclick="pixelWarClearSelection()"
                                             class="btn btn-red"
-                                            style="width:100%;">CLEAR (5e
-                                            clic)</button>
+                                            style="width:100%;">CLEAR
+                                            SÉLECTION</button>
                                         <p
                                             style="color:#888; margin:8px 0 0; font-size:12px;">
                                             La zone cleared est le carré
-                                            englobant les points (ordre sans
-                                            importance).
+                                            englobant les 2 coins.
                                         </p>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-field">
-                                        <label>&nbsp;</label>
-                                        <span
-                                            style="color:#777; font-size:12px;">(Les
-                                            champs ci-dessous gardent l'ancien
-                                            reset rectangle)</span>
-                                    </div>
-                                </div>
-                                <hr style="border-color:#555; width:100%;">
-                                <div class="form-row">
-                                    <div class="form-field">
-                                        <label for="pw-x1">X1</label>
-                                        <input id="pw-x1" type="number"
-                                            placeholder="0">
-                                    </div>
-                                    <div class="form-field">
-                                        <label for="pw-y1">Y1</label>
-                                        <input id="pw-y1" type="number"
-                                            placeholder="0">
-                                    </div>
-                                    <div class="form-field">
-                                        <label for="pw-x2">X2</label>
-                                        <input id="pw-x2" type="number"
-                                            placeholder="200">
-                                    </div>
-                                    <div class="form-field">
-                                        <label for="pw-y2">Y2</label>
-                                        <input id="pw-y2" type="number"
-                                            placeholder="200">
-                                    </div>
-                                    <div class="form-field">
-                                        <label>&nbsp;</label>
-                                        <button onclick="pixelWarResetArea()"
-                                            class="btn btn-red">RESET
-                                            AREA</button>
                                     </div>
                                 </div>
                             </div>
@@ -370,7 +331,7 @@
                     </section>
 
                     <!-- LEADERBOARDS -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 14;">
                         <h2><i class="fa-solid fa-trophy"></i>
                             /Leaderboards</h2>
                         <center>
@@ -574,7 +535,7 @@
                     </section>
 
                     <!-- GESTION TRICHEURS -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 5;">
                         <h2><i class="fa-solid fa-ban"></i> /Gestion
                             Tricheurs</h2>
                         <div class="admin-card">
@@ -608,7 +569,7 @@
                     </section>
 
                     <!-- CHAT LAN -->
-                    <section class="admin-section" id="chat">
+                    <section class="admin-section" id="chat" style="order: 11;">
                         <h2><i class="fa-solid fa-comments"
                                 style="margin-right:10px"></i>/Chat LAN</h2>
                         <div class="chat-card" role="region"
@@ -638,7 +599,7 @@
                     </section>
 
                     <!-- USER INFO -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 1;">
                         <h2><i class="fa-solid fa-user"
                                 style="margin-right: 10px;"></i>/Infos
                             Utilisateur</h2>
@@ -659,7 +620,7 @@
                     </section>
 
                     <!-- ADMINISTRATION -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 8;">
                         <h2><i class="fa-solid fa-gear"></i> /Commandes</h2>
 
                         <div class="admin-controls">
@@ -977,7 +938,7 @@
                         </div>
                     </section>
                     <!-- BLACKLIST -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 6;">
                         <h2><i class="fa-solid fa-ban"></i> /Blacklist</h2>
                         <div class="control-form">
                             <div style="margin-bottom:8px">IP(s) blacklistées:
@@ -1009,7 +970,7 @@
                     </section>
 
                     <!-- SONDAGES -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 10;">
                         <h2><i class="fa-solid fa-poll"></i> /Sondages</h2>
                         <div class="admin-card">
                             <h3>Créer un sondage</h3>
@@ -1033,8 +994,57 @@
                         </div>
                     </section>
 
+                    <!-- DMs ENTRE 2 USERS -->
+                    <section class="admin-section" style="order: 7;">
+                        <h2><i class="fa-solid fa-comments"></i> /DMs entre 2
+                            users</h2>
+                        <div class="transactions-container">
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="dmUser1">User 1</label>
+                                        <input id="dmUser1"
+                                            placeholder="Pseudo" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="dmUser2">User 2</label>
+                                        <input id="dmUser2"
+                                            placeholder="Pseudo" />
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="fetchDmsBetweenUsers()"
+                                            class="btn"><i
+                                                class="fa-solid fa-magnifying-glass"></i>
+                                            Afficher</button>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <div id="dms-between-meta"
+                                            style="color:#aaa; font-size:0.9rem; min-height: 22px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>De</th>
+                                        <th>À</th>
+                                        <th>Message</th>
+                                        <th>Livré</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dms-between-list"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
                     <!-- LOGS -->
-                    <section class="admin-section">
+                    <section class="admin-section" style="order: 15;">
                         <h2><i class="fa-solid fa-database"></i> /Logs</h2>
                         <center>
                             <iframe src="logs.html"
@@ -1753,6 +1763,24 @@
                     <span class="value">${data.clicks || 0}</span>
                 </div>
                 <div class="user-stat">
+                    <span class="label">CPS auto (bonus admin):</span>
+                    <span class="value" id="adminAutoCpsValue">${Number.isFinite(Number(data.adminAutoCps)) ? Math.max(0, Math.floor(Number(data.adminAutoCps))) : 0}</span>
+                    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.9rem;margin-right:6px;">Montant:</label>
+                            <input type="number" id="adminAutoCpsInput" min="1" step="1" value="1" style="width:90px;padding:6px;background:var(--bg-color);border:1px solid #444;color:var(--fg-color);" />
+                        </div>
+                        <button type="button" class="btn" id="addAdminAutoCpsBtn" data-pseudo="${(data.pseudo||'')}">
+                            <i class="fa-solid fa-plus"></i>
+                            Ajouter
+                        </button>
+                        <button type="button" class="btn btn-red" id="resetAdminAutoCpsBtn" data-pseudo="${(data.pseudo||'')}">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+                <div class="user-stat">
                     <span class="label">Score Dino:</span>
                     <span class="value">${data.dinoScore || 0}</span>
                 </div>
@@ -1924,6 +1952,79 @@
                 if (resetMedalsBtn) {
                     resetMedalsBtn.addEventListener('click', () => resetUserMedals(resetMedalsBtn.dataset.pseudo || data.pseudo));
                 }
+
+                const addCpsBtn = document.getElementById('addAdminAutoCpsBtn');
+                if (addCpsBtn) {
+                    addCpsBtn.addEventListener('click', () => addAdminAutoCps(addCpsBtn.dataset.pseudo || data.pseudo));
+                }
+                const resetCpsBtn = document.getElementById('resetAdminAutoCpsBtn');
+                if (resetCpsBtn) {
+                    resetCpsBtn.addEventListener('click', () => resetAdminAutoCps(resetCpsBtn.dataset.pseudo || data.pseudo));
+                }
+        }
+
+        async function addAdminAutoCps(pseudo) {
+            if (!pseudo) return;
+            const input = document.getElementById('adminAutoCpsInput');
+            const amount = input ? parseInt(input.value, 10) : 0;
+            if (!Number.isFinite(amount) || amount <= 0) {
+                showNotification('⚠️ Montant invalide', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/clicker/admin-auto-cps/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, amount })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.success) {
+                    showNotification(`✅ Bonus CPS admin mis à ${data.adminAutoCps} pour ${pseudo}`, 'success');
+
+                    // refresh la fiche utilisateur
+                    const s = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                    if (s.ok) {
+                        const refreshed = await s.json();
+                        displayUserInfo(refreshed);
+                    }
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur serveur', 'error');
+            }
+        }
+
+        async function resetAdminAutoCps(pseudo) {
+            if (!pseudo) return;
+
+            if (!confirm(`Reset le bonus CPS admin de ${pseudo} (remise à 0) ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/clicker/admin-auto-cps/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.success) {
+                    showNotification(`✅ Bonus CPS admin reset pour ${pseudo}`, 'success');
+
+                    // refresh la fiche utilisateur
+                    const s = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                    if (s.ok) {
+                        const refreshed = await s.json();
+                        displayUserInfo(refreshed);
+                    }
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur serveur', 'error');
+            }
         }
 
         async function resetUserMedals(pseudo) {
@@ -3206,6 +3307,70 @@ async function modifyTries() {
             } catch (e) {
                 console.error(e);
                 showNotification('❌ Erreur restauration', 'error');
+            }
+        }
+
+        // --- DMs ---
+        async function fetchDmsBetweenUsers() {
+            const u1 = (document.getElementById('dmUser1')?.value || '').trim();
+            const u2 = (document.getElementById('dmUser2')?.value || '').trim();
+            const tbody = document.getElementById('dms-between-list');
+            const meta = document.getElementById('dms-between-meta');
+
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (meta) meta.textContent = '';
+
+            if (!u1 || !u2) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Renseigne 2 pseudos</td></tr>';
+                return;
+            }
+
+            try {
+                if (meta) meta.textContent = 'Chargement...';
+                const res = await fetch(`/api/admin/dms/between?u1=${encodeURIComponent(u1)}&u2=${encodeURIComponent(u2)}`);
+                if (!res.ok) {
+                    if (meta) meta.textContent = '';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Erreur récupération</td></tr>';
+                    return;
+                }
+                const list = await res.json();
+                const dms = Array.isArray(list) ? list : [];
+
+                if (meta) meta.textContent = `${dms.length} message(s)`;
+
+                if (dms.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucun DM</td></tr>';
+                    return;
+                }
+
+                dms.forEach(m => {
+                    const tr = document.createElement('tr');
+
+                    const tdDate = document.createElement('td');
+                    const tdFrom = document.createElement('td');
+                    const tdTo = document.createElement('td');
+                    const tdText = document.createElement('td');
+                    const tdDelivered = document.createElement('td');
+
+                    const at = m?.at ? new Date(m.at) : null;
+                    tdDate.textContent = at && !isNaN(at.getTime()) ? at.toLocaleString() : '';
+                    tdFrom.textContent = m?.from || '';
+                    tdTo.textContent = m?.to || '';
+                    tdText.textContent = m?.text || '';
+                    tdDelivered.textContent = m?.delivered ? 'oui' : 'non';
+
+                    tr.appendChild(tdDate);
+                    tr.appendChild(tdFrom);
+                    tr.appendChild(tdTo);
+                    tr.appendChild(tdText);
+                    tr.appendChild(tdDelivered);
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+                if (meta) meta.textContent = '';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Erreur serveur</td></tr>';
             }
         }
 

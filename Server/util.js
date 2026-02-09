@@ -3,6 +3,8 @@ const path = require("path");
 const session = require("express-session");
 const config = require("./config");
 
+const DEFAULT_PFP_URL = "/Public/imgs/defaultProfile.png";
+
 const BLACKLIST_PATH = path.join(__dirname, "..", "blacklist.json");
 
 function getIpFromSocket(s) {
@@ -118,6 +120,7 @@ class FileService {
       coinflipStats: path.join(config.DATA, "coinflip_stats.json"),
       dailyEarnings: path.join(config.DATA, "daily_earnings.json"),
       annonces: path.join(config.DATA, "annonces.json"),
+      dms: path.join(config.DATA, "dms.json"),
       sharedFiles: path.join(config.DATA, "shared_files.json"),
       fileActions: path.join(config.DATA, "file_actions.log"),
     };
@@ -127,6 +130,13 @@ class FileService {
     this.migrateMedals();
     // Migration silencieuse des badges chat (ancien format -> nouveau)
     this.migrateChatBadges();
+  }
+
+  getPfpUrl(pseudo) {
+    const p = String(pseudo || "").trim();
+    if (!p) return DEFAULT_PFP_URL;
+    const url = this.data.pfps ? this.data.pfps[p] : null;
+    return typeof url === "string" && url.trim() ? url : DEFAULT_PFP_URL;
   }
 
   readJSON(file, fallback) {
@@ -179,6 +189,7 @@ class FileService {
       coinflipStats: this.readJSON(this.files.coinflipStats, {}),
       dailyEarnings: this.readJSON(this.files.dailyEarnings, {}),
       annonces: this.readJSON(this.files.annonces, []),
+      dms: this.readJSON(this.files.dms, []),
       sharedFiles: this.readJSON(this.files.sharedFiles, {}),
       // fileActions is an append-only log, don't try to parse as JSON here
     };
@@ -286,6 +297,7 @@ class FileService {
       coinflipStats: this.files.coinflipStats,
       dailyEarnings: this.files.dailyEarnings,
       annonces: this.files.annonces,
+      dms: this.files.dms,
       sharedFiles: this.files.sharedFiles,
     };
     if (fileMap[key]) {

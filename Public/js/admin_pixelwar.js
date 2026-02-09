@@ -9,19 +9,6 @@ function pixelWarResetBoard() {
   showNotification("✅ Reset board command sent", "success");
 }
 
-function pixelWarResetArea() {
-  const socket = window.adminSocket;
-  const x1 = parseInt(document.getElementById("pw-x1").value) || 0;
-  const y1 = parseInt(document.getElementById("pw-y1").value) || 0;
-  const x2 = parseInt(document.getElementById("pw-x2").value) || 0;
-  const y2 = parseInt(document.getElementById("pw-y2").value) || 0;
-
-  if (!confirm(`⚠️ Reset area (${x1},${y1}) to (${x2},${y2})?`)) return;
-
-  socket.emit("admin:pixelwar:reset_area", { x1, y1, x2, y2 });
-  showNotification("✅ Reset area command sent", "success");
-}
-
 // -----------------------------
 // Admin realtime viewer + 4-point clear
 // -----------------------------
@@ -48,6 +35,57 @@ let adminPwOverlay = null;
 let adminPwOverlayCtx = null;
 let adminPwSelectionPoints = [];
 let adminPwAttached = false;
+
+function adminPwComputeBoundingSquare(points) {
+  if (!Array.isArray(points) || points.length < 2) return null;
+
+  let minX = ADMIN_PW_BOARD_SIZE - 1;
+  let minY = ADMIN_PW_BOARD_SIZE - 1;
+  let maxX = 0;
+  let maxY = 0;
+
+  for (const p of points) {
+    if (!p) continue;
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const side = Math.max(width, height);
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+
+  let sqMinX = Math.floor(cx - side / 2);
+  let sqMinY = Math.floor(cy - side / 2);
+  let sqMaxX = sqMinX + side;
+  let sqMaxY = sqMinY + side;
+
+  if (sqMinX < 0) {
+    sqMaxX += -sqMinX;
+    sqMinX = 0;
+  }
+  if (sqMinY < 0) {
+    sqMaxY += -sqMinY;
+    sqMinY = 0;
+  }
+  if (sqMaxX >= ADMIN_PW_BOARD_SIZE) {
+    const d = sqMaxX - (ADMIN_PW_BOARD_SIZE - 1);
+    sqMinX -= d;
+    sqMaxX -= d;
+  }
+  if (sqMaxY >= ADMIN_PW_BOARD_SIZE) {
+    const d = sqMaxY - (ADMIN_PW_BOARD_SIZE - 1);
+    sqMinY -= d;
+    sqMaxY -= d;
+  }
+  if (sqMinX < 0) sqMinX = 0;
+  if (sqMinY < 0) sqMinY = 0;
+
+  return { sqMinX, sqMinY, sqMaxX, sqMaxY };
+}
 
 function adminPwSetStatus(text) {
   const el = document.getElementById("admin-pw-selection-status");
@@ -93,63 +131,21 @@ function adminPwRedrawOverlay() {
 
   // Draw bounding square based on selected points
   if (adminPwSelectionPoints.length >= 2) {
-    let minX = ADMIN_PW_BOARD_SIZE - 1;
-    let minY = ADMIN_PW_BOARD_SIZE - 1;
-    let maxX = 0;
-    let maxY = 0;
-    for (const p of adminPwSelectionPoints) {
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
-    }
+    const sq = adminPwComputeBoundingSquare(adminPwSelectionPoints);
+    if (sq) {
+      const w = sq.sqMaxX - sq.sqMinX + 1;
+      const h = sq.sqMaxY - sq.sqMinY + 1;
 
-    const width = maxX - minX;
-    const height = maxY - minY;
-    const side = Math.max(width, height);
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
+      adminPwOverlayCtx.strokeRect(
+        sq.sqMinX + 0.5,
+        sq.sqMinY + 0.5,
+        w - 1,
+        h - 1,
+      );
 
-    let sqMinX = Math.floor(cx - side / 2);
-    let sqMinY = Math.floor(cy - side / 2);
-    let sqMaxX = sqMinX + side;
-    let sqMaxY = sqMinY + side;
-
-    if (sqMinX < 0) {
-      sqMaxX += -sqMinX;
-      sqMinX = 0;
+      adminPwOverlayCtx.fillStyle = "rgba(255, 64, 64, 0.12)";
+      adminPwOverlayCtx.fillRect(sq.sqMinX, sq.sqMinY, w, h);
     }
-    if (sqMinY < 0) {
-      sqMaxY += -sqMinY;
-      sqMinY = 0;
-    }
-    if (sqMaxX >= ADMIN_PW_BOARD_SIZE) {
-      const d = sqMaxX - (ADMIN_PW_BOARD_SIZE - 1);
-      sqMinX -= d;
-      sqMaxX -= d;
-    }
-    if (sqMaxY >= ADMIN_PW_BOARD_SIZE) {
-      const d = sqMaxY - (ADMIN_PW_BOARD_SIZE - 1);
-      sqMinY -= d;
-      sqMaxY -= d;
-    }
-    if (sqMinX < 0) sqMinX = 0;
-    if (sqMinY < 0) sqMinY = 0;
-
-    adminPwOverlayCtx.strokeRect(
-      sqMinX + 0.5,
-      sqMinY + 0.5,
-      (sqMaxX - sqMinX + 1) - 1,
-      (sqMaxY - sqMinY + 1) - 1
-    );
-
-    adminPwOverlayCtx.fillStyle = "rgba(255, 64, 64, 0.12)";
-    adminPwOverlayCtx.fillRect(
-      sqMinX,
-      sqMinY,
-      sqMaxX - sqMinX + 1,
-      sqMaxY - sqMinY + 1
-    );
   }
 
   // Draw points
@@ -172,7 +168,7 @@ function adminPwCanvasToBoardCoords(evt) {
 
 function pixelWarClearSelectionCancel() {
   adminPwSelectionPoints = [];
-  adminPwSetStatus("Clique 4 coins puis un 5e clic pour confirmer");
+  adminPwSetStatus("Clique 2 coins opposés (1/2)");
   adminPwRedrawOverlay();
 }
 
@@ -180,14 +176,31 @@ function pixelWarClearSelection() {
   const socket = window.adminSocket;
   if (!socket) return alert("Socket not ready");
 
-  if (adminPwSelectionPoints.length !== 4) {
-    return alert("Il faut 4 points (coins) avant de confirmer.");
+  if (adminPwSelectionPoints.length !== 2) {
+    return alert("Clique 2 coins opposés avant de clear.");
   }
 
   const pts = adminPwSelectionPoints.map((p) => ({ x: p.x, y: p.y }));
-  if (!confirm(`⚠️ Clear le carré/rectangle englobant ces points ?`)) return;
+
+  const sq = adminPwComputeBoundingSquare(adminPwSelectionPoints);
+  if (!sq) return alert("Sélection invalide.");
+  const w = sq.sqMaxX - sq.sqMinX + 1;
+  const h = sq.sqMaxY - sq.sqMinY + 1;
+  if (
+    !confirm(
+      `⚠️ Clear le carré sélectionné ?\nDe (${sq.sqMinX},${sq.sqMinY}) à (${sq.sqMaxX},${sq.sqMaxY}) — ${w}x${h}`,
+    )
+  )
+    return;
 
   socket.emit("admin:pixelwar:clear_square", { points: pts });
+
+  // Mise à jour immédiate côté admin (optimiste)
+  if (adminPwCtx) {
+    adminPwCtx.fillStyle = ADMIN_PW_COLORS[0] || "#FFFFFF";
+    adminPwCtx.fillRect(sq.sqMinX, sq.sqMinY, w, h);
+  }
+
   showNotification("✅ Clear zone command sent", "success");
   pixelWarClearSelectionCancel();
 }
@@ -247,21 +260,29 @@ function initAdminPixelWarUI() {
     const pt = adminPwCanvasToBoardCoords(evt);
     if (!pt) return;
 
-    if (adminPwSelectionPoints.length === 4) {
-      // 5e clic = confirmation
-      pixelWarClearSelection();
+    // UX plus simple : 2 clics opposés.
+    // Si déjà 2 points, un nouveau clic redémarre la sélection.
+    if (adminPwSelectionPoints.length >= 2) {
+      adminPwSelectionPoints = [pt];
+      adminPwSetStatus(`Coin 1/2: (${pt.x},${pt.y}) — clique le coin opposé`);
+      adminPwRedrawOverlay();
       return;
     }
 
     adminPwSelectionPoints.push(pt);
-    if (adminPwSelectionPoints.length < 4) {
-      adminPwSetStatus(
-        `Coins: ${adminPwSelectionPoints.length}/4 (dernier: ${pt.x},${pt.y})`
-      );
+    if (adminPwSelectionPoints.length === 1) {
+      adminPwSetStatus(`Coin 1/2: (${pt.x},${pt.y}) — clique le coin opposé`);
     } else {
-      adminPwSetStatus(
-        `Coins: 4/4 — clique une 5e fois pour confirmer (${pt.x},${pt.y})`
-      );
+      const sq = adminPwComputeBoundingSquare(adminPwSelectionPoints);
+      if (sq) {
+        const w = sq.sqMaxX - sq.sqMinX + 1;
+        const h = sq.sqMaxY - sq.sqMinY + 1;
+        adminPwSetStatus(
+          `Coin 2/2: (${pt.x},${pt.y}) — carré: (${sq.sqMinX},${sq.sqMinY})→(${sq.sqMaxX},${sq.sqMaxY}) ${w}x${h}`,
+        );
+      } else {
+        adminPwSetStatus(`Coin 2/2: (${pt.x},${pt.y})`);
+      }
     }
 
     adminPwRedrawOverlay();

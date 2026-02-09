@@ -712,3 +712,7 @@ audio::-webkit-media-controls-panel {
     box-shadow: 0 0 32px var(--primary-color);
   }
 }
+
+#x::selection {
+  background-color: rgb(38, 38, 40);
+}

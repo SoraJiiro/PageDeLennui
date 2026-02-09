@@ -616,6 +616,24 @@ export function initDino(socket) {
     } catch (e) {}
   });
 
+  // Même logique qu'au shutdown, mais pour un refresh/fermeture onglet (best-effort)
+  function pushProgressOnLeave() {
+    try {
+      if (!socket) return;
+      if (!state.isFirstStart && !state.gameOver) {
+        socket.emit("dino:progress", { score: Math.floor(state.score) });
+      }
+    } catch (e) {}
+  }
+
+  try {
+    window.addEventListener("pagehide", pushProgressOnLeave);
+    window.addEventListener("beforeunload", pushProgressOnLeave);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") pushProgressOnLeave();
+    });
+  } catch (e) {}
+
   function startGame() {
     resizeCanvas();
 

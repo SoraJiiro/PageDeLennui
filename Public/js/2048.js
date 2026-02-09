@@ -49,6 +49,14 @@ export function init2048(socket) {
     } catch (e) {}
   });
 
+  // Refresh / fermeture onglet: pousser un snapshot (best-effort)
+  let leaveProgressBound = false;
+  function pushProgressOnLeave() {
+    try {
+      socket.emit("2048:progress", { score: score || 0 });
+    } catch (e) {}
+  }
+
   // Initialisation
   function init() {
     // Obtenir la couleur UI initiale
@@ -68,6 +76,17 @@ export function init2048(socket) {
     createGrid();
     setupInput();
     socket.emit("2048:get_best_score");
+
+    if (!leaveProgressBound) {
+      leaveProgressBound = true;
+      try {
+        window.addEventListener("pagehide", pushProgressOnLeave);
+        window.addEventListener("beforeunload", pushProgressOnLeave);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") pushProgressOnLeave();
+        });
+      } catch (e) {}
+    }
   }
 
   socket.on("2048:best_score", (score) => {

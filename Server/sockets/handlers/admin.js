@@ -318,7 +318,7 @@ function registerAdminHandlers({
     if (pseudo !== "Admin") return;
     if (pixelWarGame) {
       pixelWarGame.resetBoard();
-      io.emit("pixelwar:init", { board: pixelWarGame.board });
+      io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
     }
   });
 
@@ -326,7 +326,7 @@ function registerAdminHandlers({
     if (pseudo !== "Admin") return;
     if (pixelWarGame) {
       pixelWarGame.resetArea(x1, y1, x2, y2);
-      io.emit("pixelwar:init", { board: pixelWarGame.board });
+      io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
     }
   });
 
@@ -336,7 +336,7 @@ function registerAdminHandlers({
 
     try {
       pixelWarGame.clearPolygon(points);
-      io.emit("pixelwar:init", { board: pixelWarGame.board });
+      io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
     } catch (e) {
       console.error("admin:pixelwar:clear_polygon error:", e);
     }
@@ -348,7 +348,7 @@ function registerAdminHandlers({
 
     try {
       pixelWarGame.clearSquare(points);
-      io.emit("pixelwar:init", { board: pixelWarGame.board });
+      io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
     } catch (e) {
       console.error("admin:pixelwar:clear_square error:", e);
     }

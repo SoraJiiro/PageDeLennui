@@ -9,11 +9,21 @@ function registerChatHandlers({
   socket,
   pseudo,
   FileService,
+  dbUsers,
   getMotusState,
 }) {
   const getPfpFor = (p) => {
-    const url = FileService.data.pfps ? FileService.data.pfps[p] : null;
-    return typeof url === "string" && url ? url : null;
+    if (FileService && typeof FileService.getPfpUrl === "function") {
+      return FileService.getPfpUrl(p);
+    }
+    // Fallback de sécurité si getPfpUrl n'existe pas
+    const url =
+      FileService && FileService.data && FileService.data.pfps
+        ? FileService.data.pfps[p]
+        : null;
+    return typeof url === "string" && url
+      ? url
+      : "/Public/imgs/defaultProfile.png";
   };
 
   const getSelectedBadgesFor = (p) => {
@@ -37,6 +47,150 @@ function registerChatHandlers({
     }
     return out;
   };
+
+  // --- MPs ---
+  function normalizePseudoLikeRoom(input) {
+    const raw = String(input || "").trim();
+    if (!raw) return null;
+    if (dbUsers && typeof dbUsers.findBypseudo === "function") {
+      const u = dbUsers.findBypseudo(raw);
+      return u && u.pseudo ? u.pseudo : null;
+    }
+    return raw;
+  }
+
+  function isUserOnline(targetPseudo) {
+    try {
+      const room = io.sockets.adapter.rooms.get("user:" + targetPseudo);
+      return !!(room && room.size > 0);
+    } catch {
+      return false;
+    }
+  }
+
+  function safeTrimMessage(text) {
+    const msg = String(text || "").trim();
+    // garde-fou anti-spam / payload trop gros
+    return msg.length > 2000 ? msg.slice(0, 2000) : msg;
+  }
+
+  function flushPendingDms() {
+    try {
+      const list = Array.isArray(FileService.data.dms)
+        ? FileService.data.dms
+        : [];
+      if (!list.length) return;
+
+      let changed = false;
+      const now = new Date().toISOString();
+
+      for (const dm of list) {
+        if (!dm || typeof dm !== "object") continue;
+        if (dm.to !== pseudo) continue;
+        if (dm.delivered) continue;
+
+        socket.emit("chat:dm", {
+          id: dm.id,
+          from: dm.from,
+          to: dm.to,
+          text: dm.text,
+          at: dm.at,
+          pfp: getPfpFor(dm.from),
+          tag: FileService.data.tags ? FileService.data.tags[dm.from] : null,
+          badges: getSelectedBadgesFor(dm.from),
+        });
+
+        dm.delivered = true;
+        dm.deliveredAt = now;
+        changed = true;
+      }
+
+      if (changed) {
+        FileService.save("dms", list);
+      }
+    } catch (e) {
+      console.error("[DM] flush error", e);
+    }
+  }
+
+  // Flush dès l'arrivée dans le chat
+  flushPendingDms();
+
+  socket.on("chat:dm:send", ({ to, text }) => {
+    const resolvedTo = normalizePseudoLikeRoom(to);
+    const msg = safeTrimMessage(text);
+
+    if (!resolvedTo) {
+      socket.emit("chat:dm:error", "Pseudo destinataire invalide");
+      return;
+    }
+    if (!msg) {
+      socket.emit("chat:dm:error", "Message vide");
+      return;
+    }
+    if (resolvedTo === pseudo) {
+      socket.emit("chat:dm:error", "Vous ne pouvez pas vous envoyer un MP");
+      return;
+    }
+    // Si dbUsers est dispo, on refuse les pseudos inconnus
+    if (dbUsers && typeof dbUsers.findBypseudo === "function") {
+      const exists = dbUsers.findBypseudo(resolvedTo);
+      if (!exists) {
+        socket.emit("chat:dm:error", `Utilisateur introuvable: ${resolvedTo}`);
+        return;
+      }
+    }
+
+    const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    const at = new Date().toISOString();
+
+    const tagData = FileService.data.tags
+      ? FileService.data.tags[pseudo]
+      : null;
+    let tagPayload = null;
+    if (tagData) {
+      if (typeof tagData === "string")
+        tagPayload = { text: tagData, color: null };
+      else if (typeof tagData === "object") tagPayload = tagData;
+    }
+
+    const dmPayload = {
+      id,
+      from: pseudo,
+      to: resolvedTo,
+      text: msg,
+      at,
+      tag: tagPayload,
+      pfp: getPfpFor(pseudo),
+      badges: getSelectedBadgesFor(pseudo),
+    };
+
+    // Persist (avec état de livraison)
+    const dms = Array.isArray(FileService.data.dms) ? FileService.data.dms : [];
+    const online = isUserOnline(resolvedTo);
+    const record = {
+      id,
+      from: pseudo,
+      to: resolvedTo,
+      text: msg,
+      at,
+      delivered: online,
+      deliveredAt: online ? at : null,
+    };
+    dms.push(record);
+    // Cap simple pour éviter croissance infinie
+    if (dms.length > 5000) dms.splice(0, dms.length - 5000);
+    FileService.save("dms", dms);
+
+    // Echo à l'expéditeur + livraison au destinataire si en ligne
+    socket.emit("chat:dm", dmPayload);
+    io.to("user:" + resolvedTo).emit("chat:dm", {
+      ...dmPayload,
+      pfp: getPfpFor(pseudo),
+      tag: tagPayload,
+      badges: getSelectedBadgesFor(pseudo),
+    });
+  });
 
   socket.on("chat:message", ({ text }) => {
     let msg = String(text || "").trim();
@@ -202,6 +356,14 @@ function registerChatHandlers({
         ".go",
         ".c",
         ".xhtml",
+        ".tsx",
+        ".jsx",
+        ".pkt",
+        ".sql",
+        ".iso",
+        ".vbs",
+        ".lua",
+        ".cpkt",
       ]);
 
       const allowedExact = new Set([
@@ -228,8 +390,6 @@ function registerChatHandlers({
         "binary/octet-stream",
       ]);
 
-      // Accept if MIME starts with image/, video/ or audio/
-      // or if fileType matches an allowedExact entry (supporting wildcards like "audio/*")
       const isAllowedMime =
         typeof fileType === "string" &&
         (fileType.startsWith("image/") ||

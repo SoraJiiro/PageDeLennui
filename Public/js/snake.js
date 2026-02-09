@@ -169,6 +169,28 @@ class SnakeGame {
       } catch (e) {}
     });
 
+    // Refresh / fermeture onglet: pousser un snapshot (best-effort)
+    if (!this._leaveProgressBound) {
+      this._leaveProgressBound = true;
+      const pushProgressOnLeave = () => {
+        try {
+          if (this.state.gameStarted && this.state.gameActive) {
+            this.socket.emit("snake:progress", {
+              score: this.state.score || 0,
+            });
+          }
+        } catch (e) {}
+      };
+
+      try {
+        window.addEventListener("pagehide", pushProgressOnLeave);
+        window.addEventListener("beforeunload", pushProgressOnLeave);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") pushProgressOnLeave();
+        });
+      } catch (e) {}
+    }
+
     this.socket.on("snake:reviveSuccess", () => {
       this.state.gameActive = true;
       this.revivesUsed++;

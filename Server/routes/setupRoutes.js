@@ -139,6 +139,8 @@ function setupRoutes(
   app.use("/css", express.static(path.join(config.PUBLIC, "css")));
   app.use("/js", express.static(path.join(config.PUBLIC, "js")));
   app.use("/imgs", express.static(path.join(config.PUBLIC, "imgs")));
+  // Alias legacy (certaines URLs utilisent encore /Public/imgs/...)
+  app.use("/Public/imgs", express.static(path.join(config.PUBLIC, "imgs")));
 
   // Le reste du site est protégé
   app.use(requireAuth);

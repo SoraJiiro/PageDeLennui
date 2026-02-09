@@ -24,6 +24,7 @@ export function initClicker(socket) {
     timerHumain: null,
     myPseudo: null,
     medalsInitialized: false,
+    adminAutoCps: 0,
   };
 
   // ---------- Global Functions for Donation Modal ----------
@@ -316,6 +317,18 @@ export function initClicker(socket) {
     if (ui.acpsEl) ui.acpsEl.textContent = "";
   }
 
+  function computeDesiredAutoCps() {
+    const unlocked = state.medalsDebloquees || new Set();
+    const bestMedal = medalsList
+      .filter((m) => unlocked.has(m.nom))
+      .sort((a, b) => b.pallier - a.pallier)[0];
+
+    let cpsToUse = bestMedal ? bestMedal.cps : 0;
+    cpsToUse += getPrestigeBonusCPS();
+    cpsToUse += Number.isFinite(state.adminAutoCps) ? state.adminAutoCps : 0;
+    return Math.max(0, Math.floor(cpsToUse));
+  }
+
   // ---------- Animations et notifications ----------
   function bumpZone() {
     ui.zone?.classList.add("temp");
@@ -401,7 +414,10 @@ export function initClicker(socket) {
       let cpsToUse = bestMedal ? bestMedal.cps : 0;
       // Ajouter bonus Prestige
       cpsToUse += getPrestigeBonusCPS();
+      // Bonus CPS admin (distinct des médailles)
+      cpsToUse += Number.isFinite(state.adminAutoCps) ? state.adminAutoCps : 0;
 
+      cpsToUse = Math.max(0, Math.floor(cpsToUse));
       if (cpsToUse !== state.cpsActuel) setAutoClick(cpsToUse);
     }
   }
@@ -625,10 +641,24 @@ export function initClicker(socket) {
     let highestCps = medaillePlusHaute ? medaillePlusHaute.cps : 0;
     // Ajout du bonus prestige si full black/white
     highestCps += getPrestigeBonusCPS();
+    // Bonus CPS admin (distinct des médailles)
+    highestCps += Number.isFinite(state.adminAutoCps) ? state.adminAutoCps : 0;
+    highestCps = Math.max(0, Math.floor(highestCps));
 
     // Vérifier si le score actuel mérite d'autres médailles (sync)
     verifMedals(state.scoreActuel);
     setAutoClick(highestCps);
+  });
+
+  // Bonus CPS auto ajouté par l'admin (côté serveur)
+  socket.on("clicker:adminAutoCps", ({ value }) => {
+    const n = Number(value);
+    state.adminAutoCps = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+    // Resync du CPS effectif sans toucher aux médailles
+    if (state.medalsInitialized) {
+      const desired = computeDesiredAutoCps();
+      if (desired !== state.cpsActuel) setAutoClick(desired);
+    }
   });
 
   // Événement forcé par l'admin pour nettoyer le localStorage

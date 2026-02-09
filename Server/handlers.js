@@ -54,6 +54,83 @@ function broadcastSystemMessage(io, text, persist = false) {
   }
 }
 
+function safeNumber(n) {
+  const v = Math.floor(Number(n) || 0);
+  return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
+function cleanupResumeExpired(existing, maxAgeMs) {
+  const now = Date.now();
+  const out = {};
+  for (const [pseudo, entry] of Object.entries(existing || {})) {
+    const at = Date.parse(entry?.at || "");
+    if (!Number.isFinite(at)) continue;
+    if (now - at > maxAgeMs) continue;
+    out[pseudo] = entry;
+  }
+  return out;
+}
+
+function mergeProgressIntoResume(resume, pseudo, game, score) {
+  const s = safeNumber(score);
+  if (!pseudo || !game || s <= 0) return;
+
+  if (!resume[pseudo]) resume[pseudo] = { at: new Date().toISOString() };
+  resume[pseudo].at = new Date().toISOString();
+  const prev = safeNumber(resume[pseudo][game]);
+  if (s > prev) resume[pseudo][game] = s;
+}
+
+function persistRunnerResumeFromSocket(socket, pseudo) {
+  try {
+    if (!pseudo || !socket?.data) return;
+
+    const rp = socket.data.runnerProgress || {};
+    const rc = socket.data.reviveContext || {};
+
+    const hasAnyProgress =
+      safeNumber(rp?.dino) > 0 ||
+      safeNumber(rp?.flappy) > 0 ||
+      safeNumber(rp?.snake) > 0 ||
+      safeNumber(rp?.["2048"]) > 0 ||
+      safeNumber(rp?.blockblast) > 0 ||
+      safeNumber(rc?.dino?.lastScore) > 0 ||
+      safeNumber(rc?.flappy?.lastScore) > 0 ||
+      safeNumber(rc?.snake?.lastScore) > 0 ||
+      safeNumber(rc?.["2048"]?.lastScore) > 0 ||
+      safeNumber(rc?.blockblast?.lastScore) > 0;
+
+    if (!hasAnyProgress) return;
+
+    const existing = cleanupResumeExpired(
+      FileService.data.runnerResume || {},
+      60 * 60 * 1000,
+    );
+
+    mergeProgressIntoResume(existing, pseudo, "dino", rp?.dino);
+    mergeProgressIntoResume(existing, pseudo, "flappy", rp?.flappy);
+    mergeProgressIntoResume(existing, pseudo, "snake", rp?.snake);
+    mergeProgressIntoResume(existing, pseudo, "2048", rp?.["2048"]);
+    mergeProgressIntoResume(existing, pseudo, "blockblast", rp?.blockblast);
+
+    // Fallback: reviveContext (au moins le dernier score validé)
+    mergeProgressIntoResume(existing, pseudo, "dino", rc?.dino?.lastScore);
+    mergeProgressIntoResume(existing, pseudo, "flappy", rc?.flappy?.lastScore);
+    mergeProgressIntoResume(existing, pseudo, "snake", rc?.snake?.lastScore);
+    mergeProgressIntoResume(existing, pseudo, "2048", rc?.["2048"]?.lastScore);
+    mergeProgressIntoResume(
+      existing,
+      pseudo,
+      "blockblast",
+      rc?.blockblast?.lastScore,
+    );
+
+    FileService.save("runnerResume", existing);
+  } catch (e) {
+    // best-effort
+  }
+}
+
 // ------- Games -------
 let gameActuelle = new UnoGame();
 let p4Game = new Puissance4Game();
@@ -300,17 +377,132 @@ function initSocketHandlers(io, socket, gameState) {
 
   // Envoi dada initiales
   socket.emit("you:name", pseudo);
-  socket.emit("chat:history", FileService.data.historique);
+
+  const getSelectedBadgesForChat = (p) => {
+    try {
+      const badgesData = FileService.data.chatBadges || {
+        catalog: {},
+        users: {},
+      };
+      const userBucket = (badgesData.users && badgesData.users[p]) || null;
+      const selectedIds = Array.isArray(userBucket && userBucket.selected)
+        ? userBucket.selected.slice(0, 3)
+        : [];
+      const out = [];
+      for (const id of selectedIds) {
+        const def = badgesData.catalog ? badgesData.catalog[id] : null;
+        if (!def) continue;
+        out.push({
+          id,
+          emoji: String(def.emoji || "🏷️"),
+          name: String(def.name || id),
+        });
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  };
+
+  const getTagPayloadForChat = (p) => {
+    try {
+      const tagData = FileService.data.tags ? FileService.data.tags[p] : null;
+      if (!tagData) return null;
+      if (typeof tagData === "string") return { text: tagData, color: null };
+      if (typeof tagData === "object") return tagData;
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const getDmHistoryFor = (p) => {
+    const list = Array.isArray(FileService.data.dms)
+      ? FileService.data.dms
+      : [];
+    const relevant = list
+      .filter(
+        (dm) =>
+          dm &&
+          typeof dm === "object" &&
+          (dm.from === p || dm.to === p) &&
+          // Éviter doublons: si c'est un MP reçu non livré, il sera envoyé par flushPendingDms
+          !(dm.to === p && dm.delivered === false),
+      )
+      .slice(-120);
+
+    // Tri chronologique (best-effort)
+    relevant.sort((a, b) => {
+      const ta = Date.parse(a.at || "") || 0;
+      const tb = Date.parse(b.at || "") || 0;
+      return ta - tb;
+    });
+
+    return relevant.map((dm) => {
+      const from = dm.from;
+      return {
+        id: dm.id,
+        from: dm.from,
+        to: dm.to,
+        text: dm.text,
+        at: dm.at,
+        tag: getTagPayloadForChat(from),
+        pfp:
+          FileService && typeof FileService.getPfpUrl === "function"
+            ? FileService.getPfpUrl(from)
+            : "/Public/imgs/defaultProfile.png",
+        badges: getSelectedBadgesForChat(from),
+      };
+    });
+  };
+
+  socket.emit(
+    "chat:history",
+    (FileService.data.historique || []).map((m) => {
+      if (!m || typeof m !== "object") return m;
+      if (m.pfp) return m;
+      const author = m.name;
+      if (FileService && typeof FileService.getPfpUrl === "function") {
+        return { ...m, pfp: FileService.getPfpUrl(author) };
+      }
+      return { ...m, pfp: "/Public/imgs/defaultProfile.png" };
+    }),
+  );
+  socket.emit("chat:dm:history", getDmHistoryFor(pseudo));
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
 
   // Resync à la demande (utile si le client a raté un event init)
   socket.on("chat:sync", () => {
-    socket.emit("chat:history", FileService.data.historique || []);
+    socket.emit(
+      "chat:history",
+      (FileService.data.historique || []).map((m) => {
+        if (!m || typeof m !== "object") return m;
+        if (m.pfp) return m;
+        const author = m.name;
+        if (FileService && typeof FileService.getPfpUrl === "function") {
+          return { ...m, pfp: FileService.getPfpUrl(author) };
+        }
+        return { ...m, pfp: "/Public/imgs/defaultProfile.png" };
+      }),
+    );
+    socket.emit("chat:dm:history", getDmHistoryFor(pseudo));
   });
 
   socket.on("clicker:sync", () => {
     socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
     socket.emit("clicker:medals", getNormalizedMedalsFor(pseudo));
+
+    // Bonus CPS auto ajouté par l'admin (distinct du CPS des médailles)
+    try {
+      const u = dbUsers.findBypseudo ? dbUsers.findBypseudo(pseudo) : null;
+      const raw = u && u.adminAutoCps != null ? u.adminAutoCps : 0;
+      const val = Number.isFinite(Number(raw))
+        ? Math.max(0, Math.floor(Number(raw)))
+        : 0;
+      socket.emit("clicker:adminAutoCps", { value: val });
+    } catch (e) {
+      socket.emit("clicker:adminAutoCps", { value: 0 });
+    }
   });
 
   // Init Mash Key
@@ -374,6 +566,7 @@ function initSocketHandlers(io, socket, gameState) {
     socket,
     pseudo,
     FileService,
+    dbUsers,
     getMotusState: getMotusStateForChat,
   });
 
@@ -566,6 +759,9 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   socket.on("disconnect", () => {
+    // Permet la reprise après un refresh / fermeture onglet (best-effort)
+    persistRunnerResumeFromSocket(socket, pseudo);
+
     const fullyDisconnected = gameState.removeUser(socket.id, pseudo);
 
     if (fullyDisconnected && pseudo !== "Admin") {

@@ -8,6 +8,15 @@ export function initChat(socket) {
   const submit = document.querySelector(".submit");
   let myPseudo = null;
   let onlineUsers = [];
+  let lastDmFrom = null;
+  let dmSuggestState = { matches: [], index: -1, needle: "" };
+
+  // Historiques init (public + MPs)
+  let initialPublicHistory = null;
+  let initialDmHistory = null;
+  let gotPublicHistory = false;
+  let gotDmHistory = false;
+  let initialRendered = false;
 
   // Bouton d'upload de fichier (HTML statique)
   const fileButton = document.getElementById("file-upload-btn");
@@ -175,11 +184,30 @@ export function initChat(socket) {
     let lastIndex = 0;
     let formatted = "";
 
-    normalized.replace(linkPattern, (match, offset) => {
+    // URLs (http(s):// ou www.) ou mentions @Pseudo (au début ou après un espace)
+    const tokenPattern = new RegExp(
+      `${linkPattern.source}|(^|\\s)@([A-Za-z0-9_À-ÖØ-öø-ÿ-]+)`,
+      "gi",
+    );
+
+    normalized.replace(tokenPattern, (match, prefix, mentionName, offset) => {
       formatted += escapeHtml(normalized.slice(lastIndex, offset));
-      const hasProtocol = /^https?:\/\//i.test(match);
-      const href = hasProtocol ? match : `https://${match}`;
-      formatted += `<a class="chat-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(match)}</a>`;
+
+      // Mention
+      if (typeof mentionName === "string" && mentionName.length) {
+        const safePrefix = escapeHtml(prefix || "");
+        const safeName = escapeHtml(mentionName);
+        const href = `/profil.html?pseudo=${encodeURIComponent(mentionName)}`;
+        formatted += `${safePrefix}<a class="mention-link" href="${href}">@${safeName}</a>`;
+        lastIndex = offset + match.length;
+        return match;
+      }
+
+      // URL
+      const url = match;
+      const hasProtocol = /^https?:\/\//i.test(url);
+      const href = hasProtocol ? url : `https://${url}`;
+      formatted += `<a class="chat-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
       lastIndex = offset + match.length;
       return match;
     });
@@ -590,22 +618,105 @@ export function initChat(socket) {
     myPseudo = name;
   });
 
+  const renderDmMessage = (payload, { notify = true } = {}) => {
+    if (!payload || typeof payload !== "object") return;
+
+    const from = String(payload.from || "").trim();
+    const to = String(payload.to || "").trim();
+    const msg = String(payload.text || "");
+    if (!from || !to || !msg) return;
+
+    if (payload.id) {
+      const existing = messages.querySelector(`.msg[data-id="${payload.id}"]`);
+      if (existing) return;
+    }
+
+    const isMine = myPseudo && from === myPseudo;
+    const directionType = isMine ? "dm-out" : "dm-in";
+
+    // Mettre à jour le /rep sur le dernier MP reçu
+    if (!isMine && to === myPseudo) {
+      lastDmFrom = from;
+    }
+
+    addMessage({
+      id: payload.id,
+      auteur: from,
+      text: msg,
+      at: payload.at,
+      tag: payload.tag,
+      pfp: payload.pfp,
+      badges: payload.badges,
+      type: directionType,
+    });
+
+    if (notify && !isMine && from && from !== myPseudo) {
+      showNotif(`📩 Nouveau MP de ${from}`);
+    }
+  };
+
+  const tryRenderInitialTimeline = () => {
+    if (initialRendered) return;
+    if (!gotPublicHistory) return;
+    if (!gotDmHistory) return;
+
+    initialRendered = true;
+
+    const publicItems = Array.isArray(initialPublicHistory)
+      ? initialPublicHistory.map((m) => ({ kind: "public", ...m }))
+      : [];
+    const dmItems = Array.isArray(initialDmHistory)
+      ? initialDmHistory.map((m) => ({ kind: "dm", ...m }))
+      : [];
+
+    const merged = publicItems.concat(dmItems);
+    merged.sort((a, b) => {
+      const ta = Date.parse(a.at || "") || 0;
+      const tb = Date.parse(b.at || "") || 0;
+      return ta - tb;
+    });
+
+    messages.innerHTML = "";
+    merged.forEach((item) => {
+      if (item.kind === "dm") {
+        renderDmMessage(item, { notify: false });
+        return;
+      }
+
+      addMessage({
+        id: item.id,
+        auteur: item.name,
+        text: item.text,
+        at: item.at,
+        tag: item.tag,
+        pfp: item.pfp,
+        badges: item.badges,
+        file: item.file,
+        type: item.name === "Système" ? "system" : "user",
+      });
+    });
+  };
+
   socket.on("chat:history", (history) => {
     if (!Array.isArray(history)) return;
-    messages.innerHTML = "";
-    history.forEach((msg) =>
-      addMessage({
-        id: msg.id,
-        auteur: msg.name,
-        text: msg.text,
-        at: msg.at,
-        tag: msg.tag,
-        pfp: msg.pfp,
-        badges: msg.badges,
-        file: msg.file,
-        type: msg.name === "Système" ? "system" : "user",
-      }),
-    );
+    initialPublicHistory = history;
+    gotPublicHistory = true;
+    // Si le serveur n'envoie pas de MPs, on rend quand même au bout d'un court délai
+    setTimeout(() => {
+      if (!gotDmHistory) {
+        initialDmHistory = [];
+        gotDmHistory = true;
+      }
+      tryRenderInitialTimeline();
+    }, 150);
+    tryRenderInitialTimeline();
+  });
+
+  socket.on("chat:dm:history", (history) => {
+    if (!Array.isArray(history)) history = [];
+    initialDmHistory = history;
+    gotDmHistory = true;
+    tryRenderInitialTimeline();
   });
 
   socket.on("system:info", (text) =>
@@ -621,6 +732,10 @@ export function initChat(socket) {
   });
 
   socket.on("chat:message", (payload) => {
+    if (payload && payload.id) {
+      const existing = messages.querySelector(`.msg[data-id="${payload.id}"]`);
+      if (existing) return;
+    }
     addMessage({
       id: payload.id,
       auteur: payload.name,
@@ -640,6 +755,19 @@ export function initChat(socket) {
     }
   });
 
+  // --- MPs ---
+  socket.on("chat:dm", (payload) => {
+    renderDmMessage(payload, { notify: true });
+  });
+
+  socket.on("chat:dm:error", (text) => {
+    addMessage({
+      auteur: "Système",
+      text: String(text || "Erreur MP"),
+      type: "system",
+    });
+  });
+
   socket.on("chat:delete", ({ id }) => {
     const el = messages.querySelector(`.msg[data-id="${id}"]`);
     if (el) {
@@ -656,6 +784,133 @@ export function initChat(socket) {
       const autoResize = () => {
         input.style.height = "auto";
         input.style.height = input.scrollHeight + "px";
+      };
+
+      const removeDmBox = () => {
+        const box = document.getElementById("dm-suggestions");
+        if (box) box.remove();
+        dmSuggestState = { matches: [], index: -1, needle: "" };
+      };
+
+      const renderDmBox = (matches, activeIndex) => {
+        let suggestionBox = document.getElementById("dm-suggestions");
+        if (!suggestionBox) {
+          suggestionBox = document.createElement("div");
+          suggestionBox.id = "dm-suggestions";
+          suggestionBox.style.position = "absolute";
+          suggestionBox.style.bottom = "100%";
+          suggestionBox.style.left = "15px";
+          suggestionBox.style.background = "var(--bg-color)";
+          suggestionBox.style.border = "1px solid var(--primary-color)";
+          suggestionBox.style.zIndex = "1000";
+          suggestionBox.style.maxHeight = "140px";
+          suggestionBox.style.overflowY = "auto";
+          suggestionBox.style.padding = "4px";
+          suggestionBox.style.borderRadius = "5px";
+          suggestionBox.style.minWidth = "160px";
+          suggestionBox.style.fontSize = "12px";
+          suggestionBox.style.pointerEvents = "auto";
+
+          if (getComputedStyle(input.parentNode).position === "static") {
+            input.parentNode.style.position = "relative";
+          }
+          input.parentNode.appendChild(suggestionBox);
+        }
+
+        suggestionBox.innerHTML = "";
+
+        const applyActiveStyle = (idx) => {
+          const children = Array.from(suggestionBox.children);
+          children.forEach((child, i) => {
+            if (!(child instanceof HTMLElement)) return;
+            child.style.background =
+              i === idx ? "rgba(255,255,255,0.12)" : "transparent";
+          });
+        };
+
+        if (!matches.length) {
+          const item = document.createElement("div");
+          item.textContent = "Aucune suggestion";
+          item.style.padding = "2px 6px";
+          item.style.opacity = "0.7";
+          suggestionBox.appendChild(item);
+          return;
+        }
+
+        matches.slice(0, 6).forEach((name, i) => {
+          const item = document.createElement("div");
+          item.textContent = name;
+          item.style.padding = "4px 8px";
+          item.style.cursor = "pointer";
+          item.style.borderRadius = "4px";
+          item.style.background =
+            i === activeIndex ? "rgba(255,255,255,0.12)" : "transparent";
+
+          item.onmouseover = () => {
+            dmSuggestState.index = i;
+            applyActiveStyle(i);
+          };
+          item.onmouseout = () => {};
+
+          const accept = (ev) => {
+            try {
+              ev?.preventDefault?.();
+              ev?.stopPropagation?.();
+            } catch {}
+            input.value = `/msg ${name} `;
+            input.focus();
+            autoResize();
+            removeDmBox();
+          };
+
+          // mousedown plutôt que click: évite de perdre le focus
+          item.onmousedown = accept;
+          // fallback click (certains navigateurs / devices)
+          item.onclick = accept;
+
+          suggestionBox.appendChild(item);
+        });
+
+        applyActiveStyle(activeIndex);
+      };
+
+      const getDmNeedle = (text) => {
+        const raw = String(text || "");
+        const m = raw.match(/^\/msg\s+(\S*)$/i);
+        if (!m) return null;
+        return String(m[1] || "");
+      };
+
+      const updateDmSuggestions = (text) => {
+        const needle = getDmNeedle(text);
+        if (needle === null) {
+          removeDmBox();
+          return;
+        }
+
+        const pool = onlineUsers.filter((u) => u && u !== myPseudo);
+        const lowerNeedle = needle.toLowerCase();
+        const matches = pool.filter((u) =>
+          u.toLowerCase().startsWith(lowerNeedle),
+        );
+
+        if (needle !== dmSuggestState.needle) {
+          dmSuggestState.index = -1;
+          dmSuggestState.needle = needle;
+        }
+
+        dmSuggestState.matches = matches;
+
+        if (!matches.length) {
+          renderDmBox([], -1);
+          return;
+        }
+
+        // Sélection par défaut: première suggestion
+        if (dmSuggestState.index < 0) dmSuggestState.index = 0;
+        if (dmSuggestState.index >= matches.length) dmSuggestState.index = 0;
+
+        renderDmBox(matches, dmSuggestState.index);
       };
       const suggestMentions = (text) => {
         const removeBox = () => {
@@ -739,8 +994,79 @@ export function initChat(socket) {
       input.addEventListener("input", () => {
         autoResize();
         suggestMentions(input.value);
+        updateDmSuggestions(input.value);
       });
       autoResize();
+
+      window.addEventListener("keydown", (event) => {
+        if (document.activeElement === input) {
+          // Suggestion /msg : flèches pour naviguer, Tab pour valider
+          const dmNeedle = getDmNeedle(input.value);
+          const dmMatches = Array.isArray(dmSuggestState.matches)
+            ? dmSuggestState.matches
+            : [];
+
+          if (dmNeedle !== null && dmMatches.length) {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              dmSuggestState.index =
+                dmSuggestState.index < 0
+                  ? 0
+                  : (dmSuggestState.index + 1) % dmMatches.length;
+              renderDmBox(dmMatches, dmSuggestState.index);
+              return;
+            }
+
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              if (dmSuggestState.index < 0) dmSuggestState.index = 0;
+              dmSuggestState.index =
+                (dmSuggestState.index - 1 + dmMatches.length) %
+                dmMatches.length;
+              renderDmBox(dmMatches, dmSuggestState.index);
+              return;
+            }
+
+            if (event.key === "Tab" && !event.shiftKey) {
+              event.preventDefault();
+              const idx = dmSuggestState.index >= 0 ? dmSuggestState.index : 0;
+              const chosen = dmMatches[idx] || dmMatches[0];
+              if (!chosen) return;
+              input.value = `/msg ${chosen} `;
+              autoResize();
+              removeDmBox();
+              return;
+            }
+          }
+
+          const suggestionBox = document.getElementById("mention-suggestions");
+          if (suggestionBox && event.key === "Enter" && !event.shiftKey) {
+            const firstItem = suggestionBox.querySelector("div");
+            if (firstItem && firstItem.textContent !== "Aucune suggestion") {
+              event.preventDefault();
+              firstItem.click();
+              return;
+            }
+          }
+
+          if (suggestionBox && event.key === "Tab" && !event.shiftKey) {
+            const items = Array.from(suggestionBox.querySelectorAll("div"));
+            if (
+              items.length === 1 &&
+              items[0].textContent !== "Aucune suggestion"
+            ) {
+              event.preventDefault();
+              items[0].click();
+              return;
+            }
+          }
+
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            submit.click();
+          }
+        }
+      });
     }
 
     form.addEventListener("submit", (event) => {
@@ -758,29 +1084,82 @@ export function initChat(socket) {
         return;
       }
 
+      // Commande réponse MP: /rep message...
+      const repMatch = text.match(/^\/rep\s+([\s\S]+)$/i);
+      if (repMatch) {
+        const msg = String(repMatch[1] || "").trim();
+        if (!lastDmFrom) {
+          addMessage({
+            auteur: "Système",
+            text: "Aucun MP récent à qui répondre.",
+            type: "system",
+          });
+        } else if (!msg) {
+          addMessage({
+            auteur: "Système",
+            text: "Usage: /rep [message...]",
+            type: "system",
+          });
+        } else {
+          socket.emit("chat:dm:send", { to: lastDmFrom, text: msg });
+        }
+
+        input.value = "";
+        input.style.height = "auto";
+        input.focus();
+        return;
+      }
+
+      if (/^\/rep\b/i.test(text)) {
+        addMessage({
+          auteur: "Système",
+          text: "Usage: /rep [message...]",
+          type: "system",
+        });
+        input.value = "";
+        input.style.height = "auto";
+        input.focus();
+        return;
+      }
+
+      // Commande MP: /msg Pseudo message...
+      const dmMatch = text.match(/^\/msg\s+(\S+)\s+([\s\S]+)$/i);
+      if (dmMatch) {
+        const to = String(dmMatch[1] || "").trim();
+        const msg = String(dmMatch[2] || "").trim();
+
+        if (!to || !msg) {
+          addMessage({
+            auteur: "Système",
+            text: "Usage: /msg [pseudoUser] [message...]",
+            type: "system",
+          });
+        } else {
+          socket.emit("chat:dm:send", { to, text: msg });
+        }
+
+        input.value = "";
+        input.style.height = "auto";
+        input.focus();
+        return;
+      }
+
+      if (/^\/msg\b/i.test(text)) {
+        addMessage({
+          auteur: "Système",
+          text: "Usage: /msg [pseudoUser] [message...]",
+          type: "system",
+        });
+        input.value = "";
+        input.style.height = "auto";
+        input.focus();
+        return;
+      }
+
       socket.emit("chat:message", { text });
       input.value = "";
       input.style.height = "auto";
       input.focus();
-    });
-
-    window.addEventListener("keydown", (event) => {
-      if (document.activeElement === input) {
-        const suggestionBox = document.getElementById("mention-suggestions");
-        if (suggestionBox && event.key === "Enter" && !event.shiftKey) {
-          const firstItem = suggestionBox.querySelector("div");
-          if (firstItem && firstItem.textContent !== "Aucune suggestion") {
-            event.preventDefault();
-            firstItem.click();
-            return;
-          }
-        }
-
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          submit.click();
-        }
-      }
     });
   }
 }

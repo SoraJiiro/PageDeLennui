@@ -31,9 +31,38 @@ class PixelWarGame {
     this.undoStacks = {};
     this.users = {};
 
+    this.UNIVERSAL_STORAGE_LIMIT = 250;
+
     this.MAX_UNDO_DEPTH_PER_PIXEL = 10;
 
     this.load();
+  }
+
+  _clampUserToUniversalLimits(user) {
+    if (!user || typeof user !== "object") return false;
+    let changed = false;
+
+    const limit = this.UNIVERSAL_STORAGE_LIMIT;
+
+    const maxPixels = Number(user.maxPixels);
+    if (!Number.isFinite(maxPixels)) {
+      user.maxPixels = 30;
+      changed = true;
+    } else if (maxPixels > limit) {
+      user.maxPixels = limit;
+      changed = true;
+    }
+
+    const pixels = Number(user.pixels);
+    if (!Number.isFinite(pixels)) {
+      user.pixels = 0;
+      changed = true;
+    } else if (pixels > limit) {
+      user.pixels = limit;
+      changed = true;
+    }
+
+    return changed;
   }
 
   _refreshAllUsersStates() {
@@ -229,6 +258,16 @@ class PixelWarGame {
       if (fs.existsSync(this.usersPath)) {
         this.users = JSON.parse(fs.readFileSync(this.usersPath, "utf8"));
       }
+
+      if (this.users && typeof this.users === "object") {
+        let changed = false;
+        for (const pseudo of Object.keys(this.users)) {
+          if (this._clampUserToUniversalLimits(this.users[pseudo])) {
+            changed = true;
+          }
+        }
+        if (changed) this.usersDirty = true;
+      }
     } catch (e) {
       console.error("Failed to load pixelwar users:", e);
       this.users = {};
@@ -350,6 +389,10 @@ class PixelWarGame {
 
     const user = this.users[pseudo];
 
+    if (this._clampUserToUniversalLimits(user)) {
+      this.usersDirty = true;
+    }
+
     const now = Date.now();
     const diff = now - user.lastPixelGeneration;
     const generated = Math.floor(diff / 60000);
@@ -373,7 +416,10 @@ class PixelWarGame {
       user.lastDaily = today;
       this.usersDirty = true;
     }
-    if (user.pixels > 1000) user.pixels = 1000;
+    if (user.pixels > this.UNIVERSAL_STORAGE_LIMIT) {
+      user.pixels = this.UNIVERSAL_STORAGE_LIMIT;
+      this.usersDirty = true;
+    }
 
     return user;
   }
@@ -494,15 +540,20 @@ class PixelWarGame {
     const user = this.getUserState(pseudo);
 
     if (type === "storage_10") {
-      if (user.maxPixels >= 1000)
-        return { success: false, reason: "Limite de stockage atteinte (1000)" };
+      if (user.maxPixels >= this.UNIVERSAL_STORAGE_LIMIT)
+        return {
+          success: false,
+          reason: `Limite de stockage atteinte (${this.UNIVERSAL_STORAGE_LIMIT})`,
+        };
       user.maxPixels += 10;
-      if (user.maxPixels > 1000) user.maxPixels = 1000;
+      if (user.maxPixels > this.UNIVERSAL_STORAGE_LIMIT)
+        user.maxPixels = this.UNIVERSAL_STORAGE_LIMIT;
     } else if (type === "pixel_1") {
       user.pixels += 1;
     } else if (type === "pixel_15") {
       user.pixels += 15;
-      if (user.pixels > 1000) user.pixels = 1000;
+      if (user.pixels > this.UNIVERSAL_STORAGE_LIMIT)
+        user.pixels = this.UNIVERSAL_STORAGE_LIMIT;
     }
 
     this.fileService.data.clicks[pseudo] = currentClicks - cost;

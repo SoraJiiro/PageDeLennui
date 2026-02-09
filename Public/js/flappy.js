@@ -484,6 +484,22 @@ export function initFlappy(socket) {
     } catch (e) {}
   });
 
+  // Même logique qu'au shutdown, mais pour un refresh/fermeture onglet (best-effort)
+  function pushProgressOnLeave() {
+    try {
+      if (!socket) return;
+      if (gameRunning) socket.emit("flappy:progress", { score });
+    } catch (e) {}
+  }
+
+  try {
+    window.addEventListener("pagehide", pushProgressOnLeave);
+    window.addEventListener("beforeunload", pushProgressOnLeave);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") pushProgressOnLeave();
+    });
+  } catch (e) {}
+
   document.addEventListener("keydown", (e) => {
     // Fermer l'overlay de réanimation avec Echap
     if (e.key === "Escape") {

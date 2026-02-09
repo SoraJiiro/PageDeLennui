@@ -19,7 +19,7 @@ function initRules(socket, rulesAccepted) {
 
   if (!rulesOverlay || !acceptBtn) return;
 
-  const READ_TIMER_SECONDS = 70; // 1 minute 10
+  const READ_TIMER_SECONDS = 30; // 30 secondes
   let countdownInterval = null;
 
   function formatCountdown(totalSeconds) {

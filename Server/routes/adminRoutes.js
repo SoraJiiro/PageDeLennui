@@ -150,6 +150,29 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     res.json({ success: true });
   });
 
+  // --- DMs ---
+  router.get("/dms/between", requireAdmin, (req, res) => {
+    const u1 = String(req.query.u1 || "").trim();
+    const u2 = String(req.query.u2 || "").trim();
+    if (!u1 || !u2) {
+      return res.status(400).json({ message: "u1 et u2 requis" });
+    }
+
+    const all = Array.isArray(FileService.data.dms) ? FileService.data.dms : [];
+    const filtered = all.filter(
+      (m) =>
+        m && ((m.from === u1 && m.to === u2) || (m.from === u2 && m.to === u1)),
+    );
+
+    filtered.sort((a, b) => {
+      const da = new Date(a && a.at ? a.at : 0).getTime();
+      const db = new Date(b && b.at ? b.at : 0).getTime();
+      return da - db;
+    });
+
+    res.json(filtered);
+  });
+
   // --- Profils: Badges (catalog + assignation) ---
   function ensureBadgesData() {
     if (
@@ -456,6 +479,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         data.password = userRec.password || null;
         data.passwordHash =
           userRec["passwordHashé"] || userRec.passwordHash || null;
+
+        const rawAdminCps = userRec.adminAutoCps;
+        const n = Number(rawAdminCps);
+        data.adminAutoCps = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+      } else {
+        data.adminAutoCps = 0;
       }
 
       res.json(data);
@@ -464,6 +493,139 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       res
         .status(500)
         .json({ message: "Erreur serveur lors de la récupération des infos" });
+    }
+  });
+
+  // --- Clicker: bonus CPS auto admin (distinct des médailles) ---
+  // Ajouter un bonus CPS auto à un utilisateur
+  router.post("/clicker/admin-auto-cps/add", requireAdmin, (req, res) => {
+    const { pseudo, amount } = req.body || {};
+    const p = String(pseudo || "").trim();
+    const a = Number(amount);
+
+    if (!p) return res.status(400).json({ message: "Pseudo manquant" });
+    if (!Number.isFinite(a) || a <= 0)
+      return res.status(400).json({ message: "Montant invalide" });
+
+    try {
+      const userRec = dbUsers.findByPseudoExact
+        ? dbUsers.findByPseudoExact(p)
+        : dbUsers.findBypseudo(p);
+      if (!userRec)
+        return res.status(404).json({ message: "Utilisateur introuvable" });
+
+      const current = Number(userRec.adminAutoCps) || 0;
+      const next = Math.max(0, Math.floor(current + a));
+
+      if (!dbUsers.updateUserFields)
+        return res.status(500).json({ message: "DB indisponible" });
+
+      dbUsers.updateUserFields(p, { adminAutoCps: next });
+
+      if (io) {
+        io.sockets.sockets.forEach((s) => {
+          const u = s.handshake.session?.user;
+          if (u && u.pseudo === p) {
+            s.emit("clicker:adminAutoCps", { value: next });
+          }
+        });
+      }
+
+      console.log({
+        level: "action",
+        message: `AdminAutoCps +${Math.floor(a)} pour ${p} (=> ${next})`,
+      });
+
+      return res.json({ success: true, pseudo: p, adminAutoCps: next });
+    } catch (e) {
+      console.error("[ADMIN] add admin-auto-cps error", e);
+      return res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  // Retirer du bonus CPS auto admin d'un utilisateur (sans impacter le CPS des médailles)
+  router.post("/clicker/admin-auto-cps/remove", requireAdmin, (req, res) => {
+    const { pseudo, amount } = req.body || {};
+    const p = String(pseudo || "").trim();
+    const a = Number(amount);
+
+    if (!p) return res.status(400).json({ message: "Pseudo manquant" });
+    if (!Number.isFinite(a) || a <= 0)
+      return res.status(400).json({ message: "Montant invalide" });
+
+    try {
+      const userRec = dbUsers.findByPseudoExact
+        ? dbUsers.findByPseudoExact(p)
+        : dbUsers.findBypseudo(p);
+      if (!userRec)
+        return res.status(404).json({ message: "Utilisateur introuvable" });
+
+      const current = Number(userRec.adminAutoCps) || 0;
+      const next = Math.max(0, Math.floor(current - a));
+
+      if (!dbUsers.updateUserFields)
+        return res.status(500).json({ message: "DB indisponible" });
+
+      dbUsers.updateUserFields(p, { adminAutoCps: next });
+
+      if (io) {
+        io.sockets.sockets.forEach((s) => {
+          const u = s.handshake.session?.user;
+          if (u && u.pseudo === p) {
+            s.emit("clicker:adminAutoCps", { value: next });
+          }
+        });
+      }
+
+      console.log({
+        level: "action",
+        message: `AdminAutoCps -${Math.floor(a)} pour ${p} (=> ${next})`,
+      });
+
+      return res.json({ success: true, pseudo: p, adminAutoCps: next });
+    } catch (e) {
+      console.error("[ADMIN] remove admin-auto-cps error", e);
+      return res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  // Reset du bonus CPS auto admin d'un utilisateur (mise à 0)
+  router.post("/clicker/admin-auto-cps/reset", requireAdmin, (req, res) => {
+    const { pseudo } = req.body || {};
+    const p = String(pseudo || "").trim();
+
+    if (!p) return res.status(400).json({ message: "Pseudo manquant" });
+
+    try {
+      const userRec = dbUsers.findByPseudoExact
+        ? dbUsers.findByPseudoExact(p)
+        : dbUsers.findBypseudo(p);
+      if (!userRec)
+        return res.status(404).json({ message: "Utilisateur introuvable" });
+
+      if (!dbUsers.updateUserFields)
+        return res.status(500).json({ message: "DB indisponible" });
+
+      dbUsers.updateUserFields(p, { adminAutoCps: 0 });
+
+      if (io) {
+        io.sockets.sockets.forEach((s) => {
+          const u = s.handshake.session?.user;
+          if (u && u.pseudo === p) {
+            s.emit("clicker:adminAutoCps", { value: 0 });
+          }
+        });
+      }
+
+      console.log({
+        level: "action",
+        message: `AdminAutoCps reset pour ${p} (=> 0)`,
+      });
+
+      return res.json({ success: true, pseudo: p, adminAutoCps: 0 });
+    } catch (e) {
+      console.error("[ADMIN] reset admin-auto-cps error", e);
+      return res.status(500).json({ message: "Erreur serveur" });
     }
   });
 

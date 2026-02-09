@@ -18,6 +18,114 @@ function safeNumber(n) {
   return Number.isFinite(v) && v > 0 ? v : 0;
 }
 
+function getTopPseudoSimpleScore(scoreMap) {
+  try {
+    const arr = Object.entries(scoreMap || {})
+      .map(([pseudo, score]) => ({ pseudo, score: safeNumber(score) }))
+      .filter((x) => x.pseudo && x.score > 0)
+      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    return arr[0]?.pseudo || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getTopPseudoMotus(motusScores) {
+  try {
+    const arr = Object.entries(motusScores || {})
+      .map(([pseudo, s]) => ({
+        pseudo,
+        words: safeNumber(s?.words),
+        tries: Math.floor(Number(s?.tries) || 0),
+      }))
+      .filter((x) => x.pseudo)
+      .sort(
+        (a, b) =>
+          b.words - a.words ||
+          a.tries - b.tries ||
+          a.pseudo.localeCompare(b.pseudo),
+      );
+    return arr[0]?.pseudo || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function awardDailyShutdownLeaderboardClicks({ FileService, io }) {
+  // +2500 clicks au 1er de chaque leaderboard (Dino, Flappy, Snake, Motus, 2048)
+  const REWARD = 2500;
+
+  try {
+    const winners = [
+      {
+        game: "dino",
+        pseudo: getTopPseudoSimpleScore(FileService.data.dinoScores),
+      },
+      {
+        game: "flappy",
+        pseudo: getTopPseudoSimpleScore(FileService.data.flappyScores),
+      },
+      {
+        game: "snake",
+        pseudo: getTopPseudoSimpleScore(FileService.data.snakeScores),
+      },
+      {
+        game: "motus",
+        pseudo: getTopPseudoMotus(FileService.data.motusScores),
+      },
+      {
+        game: "2048",
+        pseudo: getTopPseudoSimpleScore(FileService.data.scores2048),
+      },
+    ].filter((w) => w.pseudo);
+
+    if (winners.length === 0) return { rewarded: 0, winners: [] };
+
+    if (
+      !FileService.data.clicks ||
+      typeof FileService.data.clicks !== "object"
+    ) {
+      FileService.data.clicks = {};
+    }
+
+    let rewarded = 0;
+    for (const { game, pseudo } of winners) {
+      FileService.data.clicks[pseudo] = safeNumber(
+        FileService.data.clicks[pseudo],
+      );
+      FileService.data.clicks[pseudo] += REWARD;
+      rewarded += REWARD;
+
+      // best-effort: push update aux sockets (peut ne pas arriver avant fermeture)
+      try {
+        io.to("user:" + pseudo).emit("clicker:you", {
+          score: FileService.data.clicks[pseudo],
+        });
+      } catch (e) {}
+
+      try {
+        io.to("user:" + pseudo).emit("system:notification", {
+          message: `🏆 Bonus leaderboard ${game}: +${REWARD.toLocaleString("fr-FR")} clicks (fin de session)`,
+          duration: 8000,
+        });
+      } catch (e) {}
+    }
+
+    FileService.save("clicks", FileService.data.clicks);
+    console.log({
+      level: "action",
+      message: `[Shutdown] Bonus leaderboards: ${winners
+        .map((w) => `${w.game}=>${w.pseudo}`)
+        .join(", ")}`,
+    });
+
+    return { rewarded, winners };
+  } catch (e) {
+    console.error("[Shutdown] leaderboard bonus error", e);
+    return { rewarded: 0, winners: [] };
+  }
+}
+
 function mergeProgressIntoResume(resume, pseudo, game, score) {
   const s = safeNumber(score);
   if (!pseudo || !game || s <= 0) return;
@@ -243,6 +351,13 @@ async function requestShutdown(reason = "unknown") {
     refundMashIfNeeded({ mashGame: games.mashGame });
   } catch (e) {
     console.error("[Shutdown] refund error", e);
+  }
+
+  // 4.5) Bonus de fin de session: leaderboards -> clicks
+  try {
+    awardDailyShutdownLeaderboardClicks({ FileService, io });
+  } catch (e) {
+    // best-effort
   }
 
   // 5) Rediriger tout le monde vers la page fermée
