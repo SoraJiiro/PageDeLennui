@@ -26,6 +26,9 @@ module.exports = {
   SAVE_BLOCKBLAST_HISTORY:
     (process.env.SAVE_BLOCKBLAST_HISTORY || "false") === "true",
 
+  // Logs des connexions sockets (LOG_SOCKET_EVENTS=true pour activer)
+  LOG_SOCKET_EVENTS: (process.env.LOG_SOCKET_EVENTS || "false") === "true",
+
   // Charger la blacklist selon la config (R, K ou S)
   loadBlacklist(config) {
     // Simplifié : ne garder que la liste alwaysBlocked (fusionnée avec les IP forcées).
@@ -36,7 +39,7 @@ module.exports = {
         fs.writeFileSync(
           blacklistPath,
           JSON.stringify(defaultData, null, 2),
-          "utf8"
+          "utf8",
         );
       }
 
@@ -59,7 +62,7 @@ module.exports = {
           fs.writeFileSync(
             blacklistPath,
             JSON.stringify(data, null, 2),
-            "utf8"
+            "utf8",
           );
         }
       } catch (e) {

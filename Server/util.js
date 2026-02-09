@@ -122,6 +122,7 @@ class FileService {
       annonces: path.join(config.DATA, "annonces.json"),
       dms: path.join(config.DATA, "dms.json"),
       sharedFiles: path.join(config.DATA, "shared_files.json"),
+      easterEggTracking: path.join(config.DATA, "easter_egg_tracking.json"),
       fileActions: path.join(config.DATA, "file_actions.log"),
     };
 
@@ -191,6 +192,7 @@ class FileService {
       annonces: this.readJSON(this.files.annonces, []),
       dms: this.readJSON(this.files.dms, []),
       sharedFiles: this.readJSON(this.files.sharedFiles, {}),
+      easterEggs: this.readJSON(this.files.easterEggTracking, { users: {} }),
       // fileActions is an append-only log, don't try to parse as JSON here
     };
   }
@@ -299,6 +301,7 @@ class FileService {
       annonces: this.files.annonces,
       dms: this.files.dms,
       sharedFiles: this.files.sharedFiles,
+      easterEggs: this.files.easterEggTracking,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);
@@ -348,7 +351,9 @@ class GameStateManager {
           if (oldId !== socketId) {
             const oldSocket = io.sockets.sockets.get(oldId);
             if (oldSocket) {
-              console.log(`\n🔄 Reset socket ${oldId} -> ${pseudo}\n`);
+              if (config.LOG_SOCKET_EVENTS) {
+                console.log(`\n🔄 Reset socket ${oldId} -> ${pseudo}\n`);
+              }
               oldSocket.disconnect(true);
             }
           }

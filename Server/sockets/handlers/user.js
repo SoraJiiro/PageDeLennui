@@ -82,7 +82,6 @@ function registerUserHandlers({
       currentTag = { text: currentTag, color: color };
     } else if (typeof currentTag === "object") {
       currentTag.color = color;
-      // If multi-colored, update all colors to the new single color
       if (currentTag.colors && Array.isArray(currentTag.colors)) {
         currentTag.colors = currentTag.colors.map(() => color);
       }

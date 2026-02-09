@@ -126,7 +126,7 @@ router.post("/login", async (req, res) => {
   const users = readUsers();
 
   const user = users.find(
-    (u) => u.pseudo.toLowerCase() === pseudo.toLowerCase()
+    (u) => u.pseudo.toLowerCase() === pseudo.toLowerCase(),
   );
 
   if (!user) {
@@ -136,7 +136,7 @@ router.post("/login", async (req, res) => {
   var match = await bcrypt.compare(password, user.passwordHashé);
   if (!match) {
     console.log(
-      `[ECHEC_CONNEXION] Tentative de connexion échouée pour ${pseudo} depuis ${ip}`
+      `[ECHEC_CONNEXION] Tentative de connexion échouée pour ${pseudo} depuis ${ip}`,
     );
     return res.status(401).json({ message: "Mot de passe incorrect." });
   }
@@ -144,7 +144,7 @@ router.post("/login", async (req, res) => {
   req.session.user = { id: user.id, pseudo: user.pseudo };
 
   console.log(
-    `[CONNEXION] L'utilisateur ${user.pseudo} s'est connecté depuis l'IP : ${ip}`
+    `[CONNEXION] L'utilisateur ${user.pseudo} s'est connecté depuis l'IP : ${ip}`,
   );
   FileService.appendLog({
     type: "LOGIN",
@@ -163,7 +163,7 @@ router.get("/session", (req, res) => {
   if (req.session && req.session.user && req.session.user.pseudo) {
     const users = readUsers();
     const user = users.find(
-      (u) => u.pseudo.toLowerCase() === req.session.user.pseudo.toLowerCase()
+      (u) => u.pseudo.toLowerCase() === req.session.user.pseudo.toLowerCase(),
     );
     res.json({
       pseudo: req.session.user.pseudo,
@@ -195,7 +195,7 @@ router.post("/verify-password", async (req, res) => {
 
   const users = readUsers();
   const user = users.find(
-    (u) => u.pseudo.toLowerCase() === req.session.user.pseudo.toLowerCase()
+    (u) => u.pseudo.toLowerCase() === req.session.user.pseudo.toLowerCase(),
   );
 
   if (!user) {
@@ -230,7 +230,7 @@ router.post("/request-password-change", (req, res) => {
     "..",
     "..",
     "data",
-    "password_requests.json"
+    "password_requests.json",
   );
   let requests = [];
   try {
@@ -243,7 +243,7 @@ router.post("/request-password-change", (req, res) => {
 
   // Vérifier si une demande existe déjà
   const existing = requests.find(
-    (r) => r.pseudo === pseudo && r.status === "pending"
+    (r) => r.pseudo === pseudo && r.status === "pending",
   );
   if (existing) {
     return res.status(400).json({ message: "Une demande est déjà en cours." });
@@ -253,9 +253,7 @@ router.post("/request-password-change", (req, res) => {
     id: Date.now().toString(36),
     pseudo,
     ip,
-    newPassword, // Note: Storing plain text pending hash, or hash it now? Better hash it now for safety if compromised?
-    // Usually admin just resets it. But user requested "change".
-    // I'll store it but really it should be hashed. I'll hash it here.
+    newPassword,
     status: "pending",
     date: new Date().toISOString(),
   };

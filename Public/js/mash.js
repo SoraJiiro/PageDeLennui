@@ -17,11 +17,8 @@ export function initMash(socket) {
 
   let isPlaying = false;
   let myKey = "k";
-  let currentPlayers = []; // Store players for betting mapping
+  let currentPlayers = [];
 
-  // mashKey is managed server-side; do not persist client-side
-
-  // Key Config
   const btnKeySubmit = document.getElementById("mash-key-submit");
   if (inputKey && btnKeySubmit) {
     btnKeySubmit.addEventListener("click", () => {
@@ -41,7 +38,6 @@ export function initMash(socket) {
     });
   }
 
-  // Buttons
   let currentScore = 0;
 
   if (joinBtn)
@@ -49,9 +45,7 @@ export function initMash(socket) {
   if (leaveBtn)
     leaveBtn.addEventListener("click", () => socket.emit("mash:leave"));
 
-  // Mash Event
   document.addEventListener("keyup", (e) => {
-    // Prevent scrolling if space is used
     if (e.key === " " && isPlaying) e.preventDefault();
 
     if (isPlaying && e.key.toLowerCase() === myKey.toLowerCase()) {
@@ -59,7 +53,6 @@ export function initMash(socket) {
     }
   });
 
-  // Socket listeners
   socket.on("mash:init_key", (key) => {
     if (key) {
       myKey = key;
@@ -73,11 +66,9 @@ export function initMash(socket) {
   });
 
   socket.on("mash:state", (state) => {
-    //console.log("[MASH] State received:", state);
     syncState(state);
   });
   socket.on("mash:update", (data) => {
-    // console.log("[MASH] Update:", data);
     updateBars(data.scores);
   });
 
@@ -87,7 +78,6 @@ export function initMash(socket) {
       document.querySelector(".sb-username")?.textContent?.trim() ||
       "";
 
-    // Update players
     currentPlayers = state.players;
     const p1 = state.players.find((p) => p.team === "red");
     const p2 = state.players.find((p) => p.team === "blue");
@@ -107,7 +97,6 @@ export function initMash(socket) {
     const me = state.players.find((p) => p.pseudo === username);
     isPlaying = !!(me && state.gameState === "playing");
 
-    // Spectators logic: Hide number, only show status if spectator
     if (specCount) {
       if (!me) {
         specCount.innerText = "Spectateur";
@@ -117,13 +106,11 @@ export function initMash(socket) {
       }
     }
 
-    // Controls visibility
     if (me) {
       joinBtn.style.display = "none";
       leaveBtn.style.display = "inline-block";
     } else {
       leaveBtn.style.display = "none";
-      // Allow join if space available and waiting
       if (state.players.length < 2 && state.gameState === "waiting") {
         joinBtn.style.display = "inline-block";
       } else {
@@ -131,20 +118,10 @@ export function initMash(socket) {
       }
     }
 
-    let countdownInterval = null;
-
-    if (window.mashCountdownInterval) {
-      clearInterval(window.mashCountdownInterval);
-      window.mashCountdownInterval = null;
-    }
-
     const gameArea = document.querySelector(".mash-game-area");
-    const infoSection = document.querySelector(".mash-header"); // Contains title and infoText. Actually maybe hide game area only.
-
-    // Default show game area
+    const infoSection = document.querySelector(".mash-header");
     if (gameArea) gameArea.style.display = "flex";
 
-    // Info text updates
     if (state.gameState === "waiting") {
       infoText.innerText =
         state.players.length < 2
@@ -166,22 +143,13 @@ export function initMash(socket) {
       updateCountdown();
       window.mashCountdownInterval = setInterval(updateCountdown, 500);
     } else if (state.gameState === "playing") {
-      // Ne pas afficher le message d'action aux spectateurs
       if (me) {
         infoText.innerText = `SPAMMEZ LA TOUCHE [${myKey.toUpperCase()}] !`;
       } else {
         infoText.innerText = "Match en cours...";
       }
     } else if (state.gameState === "finished") {
-      // Hide game area on finish and show large message
       if (gameArea) gameArea.style.display = "none";
-      // We can use infoText or create a new element, but user asked to hide game.
-      // Server broadcasts system msg "VICTOIRE DE...", which appears in chat?
-      // But user likely wants visual feedback in place of game.
-
-      // Let's rely on updateBars seeing 100% to know who won or scores logic
-      // But actually server sets gameState=finished.
-      // We can check scores to see winner or just wait for reset.
 
       const winnerTeam =
         state.scores.red >= 100
@@ -202,7 +170,6 @@ export function initMash(socket) {
 
   function updateBars(scores) {
     if (!scores) return;
-    // Assuming max score 100
     const p1Pct = Math.min(scores.red, 100);
     const p2Pct = Math.min(scores.blue, 100);
 

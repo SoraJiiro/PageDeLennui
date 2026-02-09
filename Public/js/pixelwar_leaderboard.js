@@ -11,6 +11,10 @@ const COLORS = [
   "#A52A2A",
   "#FFC0CB",
   "#808080",
+  "#00FFFF",
+  "#7FFF00",
+  "#FF00FF",
+  "#1E90FF",
 ];
 
 export function initPixelwarLeaderboard(socket) {

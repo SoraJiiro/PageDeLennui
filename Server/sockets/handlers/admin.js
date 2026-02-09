@@ -61,7 +61,6 @@ function registerAdminHandlers({
   socket.on("admin:blacklist:get", () => {
     if (pseudo !== "Admin") return;
     try {
-      // Return the runtime blacklist and the forced list. Do not expose or rely on file writes here.
       const data = {
         alwaysBlocked: Array.isArray(config.BLACKLIST)
           ? config.BLACKLIST.slice()
@@ -87,12 +86,10 @@ function registerAdminHandlers({
         message: "IP manquante",
       });
     try {
-      // Do not persist admin-added IPs to disk. Keep them runtime-only in config.BLACKLIST.
       if (!Array.isArray(config.BLACKLIST)) config.BLACKLIST = [];
       if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
       const data = { alwaysBlocked: config.BLACKLIST.slice() };
 
-      // disconnect any currently connected sockets from that IP
       try {
         io.sockets.sockets.forEach((s) => {
           try {
@@ -112,7 +109,6 @@ function registerAdminHandlers({
         });
       } catch (e) {}
 
-      // notify all admins of updated runtime list
       io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
       socket.emit("admin:blacklist:result", { success: true, data });
     } catch (e) {
@@ -131,7 +127,6 @@ function registerAdminHandlers({
         message: "IP manquante",
       });
     try {
-      // Prevent removing forced IPs
       const forcedList = Array.isArray(config.FORCED_ALWAYS_BLOCKED)
         ? config.FORCED_ALWAYS_BLOCKED
         : [];
@@ -142,12 +137,10 @@ function registerAdminHandlers({
         });
       }
 
-      // Remove from runtime-only blacklist (do not touch blacklist.json)
       if (!Array.isArray(config.BLACKLIST)) config.BLACKLIST = [];
       config.BLACKLIST = config.BLACKLIST.filter((v) => v !== ip);
       const data = { alwaysBlocked: config.BLACKLIST.slice() };
 
-      // notify admins
       io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
       socket.emit("admin:blacklist:result", { success: true, data });
     } catch (e) {
@@ -161,7 +154,6 @@ function registerAdminHandlers({
   socket.on("admin:blacklist:set", ({ alwaysBlocked }) => {
     if (pseudo !== "Admin") return;
     try {
-      // Replace the runtime blacklist only. Forced IPs are merged but we DO NOT persist admin changes to disk.
       const forcedList = Array.isArray(config.FORCED_ALWAYS_BLOCKED)
         ? config.FORCED_ALWAYS_BLOCKED
         : [];
@@ -170,7 +162,6 @@ function registerAdminHandlers({
       const data = { alwaysBlocked: merged };
       config.BLACKLIST = data.alwaysBlocked.slice();
 
-      // disconnect any currently connected sockets that are now blacklisted
       try {
         io.sockets.sockets.forEach((s) => {
           try {

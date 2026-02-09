@@ -1,7 +1,6 @@
 import { showNotif, requestPassword } from "./util.js";
 
 export function initClicker(socket) {
-  // ---------- Cache UI ----------
   const ui = {
     zone: document.querySelector(".zone"),
     acpsEl: document.querySelector(".acps"),
@@ -13,7 +12,6 @@ export function initClicker(socket) {
     sidebarMoneyEl: document.querySelector("h3.money"),
   };
 
-  // ---------- Etat local ----------
   const state = {
     scoreActuel: 0,
     cpsActuel: 0,
@@ -27,7 +25,6 @@ export function initClicker(socket) {
     adminAutoCps: 0,
   };
 
-  // ---------- Global Functions for Donation Modal ----------
   window.openDonateModal = () => {
     document.getElementById("donate-modal").style.display = "flex";
     document.getElementById("donate-recipient").focus();
@@ -56,7 +53,6 @@ export function initClicker(socket) {
     window.closeDonateModal();
   };
 
-  // ---------- Storage manager (Désactivé / Nettoyage) ----------
   function cleanupStorage() {
     if (state.myPseudo) {
       localStorage.removeItem(`autoCPS_${state.myPseudo}`);

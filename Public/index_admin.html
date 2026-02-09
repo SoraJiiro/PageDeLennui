@@ -244,6 +244,55 @@
                         </div>
                     </section>
 
+                    <!-- EASTER EGGS COMPLETIONS -->
+                    <section class="admin-section" style="order: 11;">
+                        <h2><i class="fa-solid fa-egg"></i> /Easter Eggs
+                            (classement)</h2>
+                        <div class="transactions-container">
+                            <div class="control-form"
+                                style="margin-bottom:16px;">
+                                <div class="form-row"
+                                    style="grid-template-columns: 1fr 1fr auto;">
+                                    <div class="form-field">
+                                        <label
+                                            for="ee-reset-pseudo">Pseudo</label>
+                                        <input id="ee-reset-pseudo"
+                                            placeholder="Pseudo" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="ee-reset-id">EE</label>
+                                        <input id="ee-reset-id"
+                                            placeholder="ex: S1" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="resetEeProgress()"
+                                            class="btn btn-red"><i
+                                                class="fa-solid fa-rotate-left"></i>
+                                            Reset EE</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>EE</th>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ee-completions-list"></tbody>
+                            </table>
+                            <center>
+                                <button onclick="refreshEeCompletions()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
+                        </div>
+                    </section>
+
                     <!-- ECONOMY DAILY CAP -->
                     <section class="admin-section" style="order: 12;">
                         <h2><i class="fa-solid fa-coins"></i> /Cap quotidien
@@ -1258,7 +1307,7 @@
                     const dbl = item.doubles || 0;
                     const bj = item.bjs || 0;
 
-                    val = hands; // Override val used for main column if needed, or structured differently
+                    val = hands;
                     
                     // Reconstruction complète pour blackjack car colonnes spécifiques
                     tr.innerHTML = `
@@ -1679,6 +1728,108 @@
             }
         }
 
+        // --- Easter Eggs completions ---
+        async function refreshEeCompletions() {
+            try {
+                const tbody = document.getElementById('ee-completions-list');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Chargement...</td></tr>';
+
+                const res = await fetch('/api/admin/ee/completions');
+                if (!res.ok) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Erreur chargement</td></tr>';
+                    return;
+                }
+
+                const data = await res.json();
+                const eggs = Array.isArray(data.eggs) ? data.eggs : [];
+
+                tbody.innerHTML = '';
+                if (eggs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Aucun Easter Egg</td></tr>';
+                    return;
+                }
+
+                eggs.forEach((egg) => {
+                    const completions = Array.isArray(egg.completions) ? egg.completions : [];
+                    const groupRow = document.createElement('tr');
+                    const groupCell = document.createElement('td');
+                    groupCell.colSpan = 4;
+                    groupCell.style.fontWeight = 'bold';
+                    groupCell.style.background = 'rgba(0, 255, 0, 0.08)';
+                    groupCell.textContent = `${egg.label} — ${completions.length} trouve(s)`;
+                    groupRow.appendChild(groupCell);
+                    tbody.appendChild(groupRow);
+
+                    if (completions.length === 0) {
+                        const emptyRow = document.createElement('tr');
+                        const emptyCell = document.createElement('td');
+                        emptyCell.colSpan = 4;
+                        emptyCell.style.textAlign = 'center';
+                        emptyCell.textContent = 'Aucun trouve';
+                        emptyRow.appendChild(emptyCell);
+                        tbody.appendChild(emptyRow);
+                        return;
+                    }
+
+                    completions.forEach((entry, idx) => {
+                        const tr = document.createElement('tr');
+                        const tdEgg = document.createElement('td');
+                        const tdRank = document.createElement('td');
+                        const tdPseudo = document.createElement('td');
+                        const tdDate = document.createElement('td');
+
+                        const dt = entry.completedAt ? new Date(entry.completedAt) : null;
+                        const dateText = dt && !isNaN(dt.getTime()) ? dt.toLocaleString('fr-FR') : '—';
+
+                        tdEgg.textContent = egg.id;
+                        tdRank.textContent = String(idx + 1);
+                        tdPseudo.textContent = entry.pseudo || '';
+                        tdDate.textContent = dateText;
+
+                        tr.appendChild(tdEgg);
+                        tr.appendChild(tdRank);
+                        tr.appendChild(tdPseudo);
+                        tr.appendChild(tdDate);
+                        tbody.appendChild(tr);
+                    });
+                });
+            } catch (e) {
+                console.error('Erreur refreshEeCompletions', e);
+            }
+        }
+
+        async function resetEeProgress() {
+            const pseudo = (document.getElementById('ee-reset-pseudo')?.value || '').trim();
+            const eggId = (document.getElementById('ee-reset-id')?.value || '').trim();
+
+            if (!pseudo || !eggId) {
+                showNotification('Pseudo/EE manquants', 'error');
+                return;
+            }
+
+            if (!confirm(`Reset EE ${eggId} pour ${pseudo} ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/ee/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo, eggId })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    showNotification('EE reset OK', 'success');
+                    refreshEeCompletions();
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error('Erreur resetEeProgress', e);
+                showNotification('Erreur serveur', 'error');
+            }
+        }
+
         async function handlePasswordRequest(requestId, approve) {
             const action = approve ? "approuver" : "rejeter";
             if (!confirm(`Voulez-vous vraiment ${action} cette demande de changement de mot de passe ?`)) return;
@@ -1709,6 +1860,7 @@
         refreshPfpRequests();
         refreshBadges();
         refreshDailyCap();
+        refreshEeCompletions();
 
         // Recherche utilisateur
         document.getElementById('userSearchInput').addEventListener('input', async (e) => {
@@ -2094,7 +2246,6 @@
 
         // Modifier le nombre d'essais Motus pour un joueur
         async function modifyMotusTries(pseudo) {
-            // Normalize pseudo: remove surrounding quotes if present
             try {
                 if (typeof pseudo === 'string') {
                     pseudo = pseudo.trim();
@@ -2104,11 +2255,9 @@
                 }
             } catch (e) { /* ignore */ }
 
-            // Fallback: try to read pseudo from displayed user info
             if (!pseudo) {
                 const pEl = document.getElementById('userInfoPseudo');
                 if (pEl) {
-                    // remove icon if present
                     const txt = pEl.textContent || '';
                     pseudo = txt.replace(/^[^\s]+\s*/, '').trim();
                 }
@@ -2204,13 +2353,10 @@
                     const statType = document.getElementById('modifyStatType').value;
                     let field = null;
                     let value = parseInt(document.getElementById('modifyStatValue').value);
-                    // support for Motus tries: if statType is motusScores and modifyStatValue is empty,
-                    // fallback to the "Nouveaux essais" input
                     if ((isNaN(value) || value === null) && statType === 'motusScores') {
                         const triesVal = parseInt(document.getElementById('modifyStatTries').value, 10);
                         if (!isNaN(triesVal)) {
                             value = triesVal;
-                            // indicate we are changing the 'tries' field
                             field = 'tries';
                         }
                     }
@@ -2240,7 +2386,6 @@
                         if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats ${targetAll ? 'de ALL LES JOUEURS' : 'de ' + pseudo} à ${value} ! Confirmer ?`)) return;
                     }
 
-                    // Special handling for Motus tries: use /modify-tries endpoint
                     if (statType === 'motusScores' && field === 'tries') {
                         if (targetAll) {
                             showNotification('⚠️ Modification des essais pour ALL non supportée', 'error');
@@ -2334,14 +2479,12 @@ async function addStat() {
   if (!confirm(confirmMsg)) return;
 
   try {
-        // If adding to Motus tries, compute new tries and call modify-tries
         if (statType === 'motusScores' && field === 'tries') {
             if (targetAll) {
                 showNotification('⚠️ Ajout d\'essais pour ALL non supporté', 'error');
                 return;
             }
 
-            // fetch current user info to get current tries
             const curRes = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
             if (!curRes.ok) return showNotification('❌ Utilisateur introuvable', 'error');
             const cur = await curRes.json().catch(()=>({}));
@@ -2429,7 +2572,6 @@ async function removeStat() {
   if (!confirm(confirmMsg)) return;
 
   try {
-                // If removing from Motus tries, compute new tries and call modify-tries
                 if (statType === 'motusScores' && field === 'tries') {
                         if (targetAll) {
                                 showNotification('⚠️ Retrait d\'essais pour ALL non supporté', 'error');
@@ -2813,7 +2955,6 @@ async function modifyTries() {
             socket.emit('admin:disconnect-others');
         }
 
-        // load initial list when admin page connects
         (function waitForSocketThenLoad() {
             const attempt = () => {
                 if (socket && socket.connected) {
@@ -3154,7 +3295,6 @@ async function modifyTries() {
             }
 
             if (panel.classList.contains("admin-hidden")) {
-                // Should use requestUnlock to show
                 requestUnlock();
             } else {
                 // Lock on server
@@ -3169,7 +3309,6 @@ async function modifyTries() {
         }
 
         async function requestUnlock() {
-            // Dynamic import to use the modal utility
             const { requestPassword } = await import('/js/util.js');
             const password = await requestPassword();
             

@@ -24,6 +24,10 @@ class PixelWarGame {
       "#A52A2A",
       "#FFC0CB",
       "#808080",
+      "#00FFFF",
+      "#7FFF00",
+      "#FF00FF",
+      "#1E90FF",
     ];
 
     this.board = new Uint8Array(this.WIDTH * this.HEIGHT);
@@ -412,7 +416,12 @@ class PixelWarGame {
     const today = new Date().toISOString().split("T")[0];
     if (user.lastDaily !== today) {
       this.pixelsToGive = Math.floor(user.maxPixels * 0.75);
-      user.pixels += this.pixelsToGive;
+      const capacity = Math.min(user.maxPixels, this.UNIVERSAL_STORAGE_LIMIT);
+      const spaceLeft = Math.max(0, capacity - user.pixels);
+      if (spaceLeft > 0) {
+        const toAdd = Math.min(this.pixelsToGive, spaceLeft);
+        user.pixels += toAdd;
+      }
       user.lastDaily = today;
       this.usersDirty = true;
     }

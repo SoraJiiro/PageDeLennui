@@ -297,7 +297,6 @@ function initSocketHandlers(io, socket, gameState) {
 
   const user = socket.handshake.session?.user;
   if (!user || !user.pseudo) {
-    // Allow connection for auto-reload (public pages), but do not init game handlers
     return;
   }
 
@@ -372,7 +371,9 @@ function initSocketHandlers(io, socket, gameState) {
 
   gameState.addUser(socket.id, pseudo, io);
   if (pseudo !== "Admin") {
-    console.log(`>> [${colorize(pseudo, orange)}] connecté`);
+    if (config.LOG_SOCKET_EVENTS) {
+      console.log(`>> [${colorize(pseudo, orange)}] connecté`);
+    }
   }
 
   // Envoi dada initiales
@@ -766,31 +767,36 @@ function initSocketHandlers(io, socket, gameState) {
 
     if (fullyDisconnected && pseudo !== "Admin") {
       // io.emit("system:info", `${pseudo} a quitté le chat`);
-      console.log(`>> [${colorize(pseudo, orange)}] déconnecté`);
+      if (config.LOG_SOCKET_EVENTS) {
+        console.log(`>> [${colorize(pseudo, orange)}] déconnecté`);
+      }
     }
 
     io.emit("users:list", gameState.getUniqueUsers());
 
-    // UNO / PUISSANCE 4 (externalisés)
-    try {
-      unoHooks?.onDisconnect?.();
-    } catch {}
-    try {
-      p4Hooks?.onDisconnect?.();
-    } catch {}
-    // BLACKJACK
-    if (blackjackGame) {
-      const wasPlayer = blackjackGame.removePlayer(pseudo);
-      const wasSpectator = blackjackGame.removeSpectator(pseudo);
+    if (fullyDisconnected) {
+      // UNO / PUISSANCE 4 (externalisés)
+      try {
+        unoHooks?.onDisconnect?.();
+      } catch {}
+      try {
+        p4Hooks?.onDisconnect?.();
+      } catch {}
 
-      if (wasPlayer || wasSpectator) {
-        io.emit("blackjack:state", blackjackGame.getState());
+      // BLACKJACK
+      if (blackjackGame) {
+        const wasPlayer = blackjackGame.removePlayer(pseudo);
+        const wasSpectator = blackjackGame.removeSpectator(pseudo);
+
+        if (wasPlayer || wasSpectator) {
+          io.emit("blackjack:state", blackjackGame.getState());
+        }
       }
-    }
 
-    // MASH
-    if (mashGame) {
-      mashGame.leave(socket, pseudo);
+      // MASH
+      if (mashGame) {
+        mashGame.leave(socket, pseudo);
+      }
     }
   });
 }

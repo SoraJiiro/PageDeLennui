@@ -57,7 +57,6 @@
 
         async function init() {
             try {
-                // Get session to retrieve username for socket auth/identification
                 const res = await fetch('/api/session');
                 if (res.status === 401 || !res.ok) {
                     window.location.href = '/login';
@@ -66,7 +65,6 @@
                 const sessionData = await res.json();
                 const currentUser = sessionData.pseudo;
 
-                // Init socket with username
                 socket = io({
                     query: { username: currentUser }
                 });
@@ -75,7 +73,6 @@
                     window.initUiColor(socket);
                 }
 
-                // Listen for response
                 socket.on('tag:response', (data) => {
                     const statusDisplay = document.getElementById('statusDisplay');
                     const form = document.getElementById('requestForm');
@@ -89,9 +86,8 @@
                             <h3>✅ Demande Acceptée !</h3>
                             <p>Votre tag <strong>${data.tag}</strong> a été validé.</p>
                         `;
-                        setTimeout(() => {
-                             // Optional: redirect or reset
-                        }, 5000);
+                            setTimeout(() => {
+                            }, 5000);
                     } else {
                         statusDisplay.className = 'status-message status-rejected';
                         statusDisplay.innerHTML = `
@@ -154,7 +150,6 @@
             if (!tag) return alert('Veuillez entrer un tag');
             if (tag.length > 32) return alert('Tag trop long');
 
-            // Collect colors
             const words = tag.split(/\s+/);
             const colors = [];
             for (let i = 0; i < words.length; i++) {
@@ -196,7 +191,6 @@
 
             const words = text.split(/\s+/);
             
-            // Preserve existing colors if possible
             const existingColors = [];
             const existingPickers = container.querySelectorAll('input[type="color"]');
             existingPickers.forEach(p => existingColors.push(p.value));
@@ -205,13 +199,10 @@
             preview.innerHTML = '';
 
             words.forEach((word, index) => {
-                // Create picker wrapper
                 const wrapper = document.createElement('div');
                 wrapper.style.display = 'flex';
                 wrapper.style.flexDirection = 'column';
                 wrapper.style.alignItems = 'center';
-                
-                // Label (word)
                 const label = document.createElement('span');
                 label.textContent = word;
                 label.style.fontSize = '0.8rem';

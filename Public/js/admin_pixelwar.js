@@ -27,6 +27,10 @@ const ADMIN_PW_COLORS = [
   "#A52A2A",
   "#FFC0CB",
   "#808080",
+  "#00FFFF",
+  "#7FFF00",
+  "#FF00FF",
+  "#1E90FF",
 ];
 
 let adminPwCanvas = null;
@@ -234,7 +238,6 @@ function adminPwAttachSocketHandlers(sock) {
     adminPwDrawPixel(x, y, data.colorIndex);
   });
 
-  // If socket already connected, join immediately
   if (sock.connected) {
     try {
       sock.emit("pixelwar:join");
@@ -288,7 +291,6 @@ function initAdminPixelWarUI() {
     adminPwRedrawOverlay();
   });
 
-  // wait for socket
   const tryAttach = () => {
     if (window.adminSocket) {
       adminPwAttachSocketHandlers(window.adminSocket);

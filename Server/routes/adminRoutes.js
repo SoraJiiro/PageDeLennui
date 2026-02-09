@@ -6,6 +6,7 @@ const { FileService } = require("../util");
 const dbUsers = require("../db/dbUsers");
 const { exec } = require("child_process");
 const { recalculateMedals } = require("../moduleGetter");
+const { EGG_DEFS } = require("../services/easterEggs");
 const words = require("../constants/words");
 
 // Fonction pour créer le router avec accès à io
@@ -332,6 +333,76 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     res.json({ today, rows });
   });
 
+  // --- Easter Egg completions (sorted by completion date) ---
+  router.get("/ee/completions", requireAdmin, (req, res) => {
+    const data = FileService.data.easterEggs || { users: {} };
+    const users = data.users || {};
+
+    const eggs = (Array.isArray(EGG_DEFS) ? EGG_DEFS : []).map((egg) => {
+      const completions = Object.entries(users)
+        .map(([pseudo, userEggs]) => {
+          const progress = userEggs && userEggs[egg.id];
+          if (!progress || !progress.completed) return null;
+          const completedAt =
+            progress.completedAt || progress.updatedAt || null;
+          return { pseudo, completedAt };
+        })
+        .filter(Boolean);
+
+      completions.sort((a, b) => {
+        const da = new Date(a.completedAt || 0).getTime();
+        const db = new Date(b.completedAt || 0).getTime();
+        return da - db || a.pseudo.localeCompare(b.pseudo);
+      });
+
+      return { id: egg.id, label: egg.label, completions };
+    });
+
+    res.json({ eggs });
+  });
+
+  // --- Easter Egg reset (per user) ---
+  router.post("/ee/reset", requireAdmin, (req, res) => {
+    const pseudo = String(
+      req.body && req.body.pseudo ? req.body.pseudo : "",
+    ).trim();
+    const eggId = String(
+      req.body && req.body.eggId ? req.body.eggId : "",
+    ).trim();
+
+    if (!pseudo || !eggId) {
+      return res.status(400).json({ message: "pseudo/eggId manquants" });
+    }
+
+    const eggDef = (Array.isArray(EGG_DEFS) ? EGG_DEFS : []).find(
+      (egg) => egg.id === eggId,
+    );
+    if (!eggDef) {
+      return res.status(404).json({ message: "EE introuvable" });
+    }
+
+    if (!FileService.data.easterEggs) {
+      FileService.data.easterEggs = { users: {} };
+    }
+    if (!FileService.data.easterEggs.users) {
+      FileService.data.easterEggs.users = {};
+    }
+
+    if (!FileService.data.easterEggs.users[pseudo]) {
+      FileService.data.easterEggs.users[pseudo] = {};
+    }
+
+    FileService.data.easterEggs.users[pseudo][eggId] = {
+      steps: {},
+      completed: false,
+      completedAt: null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    FileService.save("easterEggs", FileService.data.easterEggs);
+    res.json({ ok: true });
+  });
+
   // --- Transactions ---
   router.get("/transactions", requireAdmin, (req, res) => {
     const transactions = FileService.data.transactions || [];
@@ -371,8 +442,6 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     );
 
     // Update destinataire si connecté
-    // Note: On n'a pas accès facile aux sockets ici sans passer par io.sockets...
-    // On va broadcast le leaderboard, ça suffira pour la mise à jour visuelle globale
     refreshLeaderboard("clicks");
 
     res.json({ success: true });
@@ -1007,12 +1076,6 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         message: `PixelWar.${field} mis à ${value} pour ${users.length} joueurs`,
       });
     }
-
-    // Si le leaderboard n'existe pas encore, on itère sur users? Non, sur FileService.data[statType?].
-    // Note: Si le leaderboard blackjackStats est vide, Object.keys renvoie vide.
-    // L'admin veut peut-être initialiser pour tout le monde?
-    // Mais le code original itère sur `Object.keys(FileService.data[statType])`.
-    // Donc ça modifie seulement ceux qui ont DÉJÀ une entrée.
 
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
@@ -1722,7 +1785,6 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         FileService.data.blockblastBestTimes,
       );
     }
-    // Save snake data if existed
     if (FileService.data.snakeScores)
       FileService.save("snakeScores", FileService.data.snakeScores);
     if (FileService.data.snakeBestTimes)
@@ -2386,7 +2448,6 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         dbUsers.writeAll(db);
       }
 
-      // Update user tag in FileService (for chat)
       if (!FileService.data.tags) FileService.data.tags = {};
       FileService.data.tags[request.pseudo] = tagObject;
       FileService.save("tags", FileService.data.tags);
@@ -2413,7 +2474,6 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
   // --- Admin Panel Lock/Unlock ---
   router.get("/panel/state", (req, res) => {
-    // Default to false (visible) if not set
     const hidden = !!req.session.adminPanelHidden;
     res.json({ hidden });
   });
@@ -2442,8 +2502,6 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           .status(404)
           .json({ success: false, message: "Utilisateur introuvable" });
 
-      // Check password
-      // Note: dbUsers stores 'passwordHashé' or 'passHash' depending on version/creation
       const hash = user.passwordHashé || user.passHash;
       if (!hash)
         return res
@@ -2561,8 +2619,6 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         refreshLeaderboard("mashWins");
         msg = `Score Mash de ${pseudo} défini à ${val}`;
       } else {
-        // Fallback for others if needed manually (not explicitly requested but good for "modif")
-        // For now restrict to mash as per context of "new game"
         return res
           .status(400)
           .json({ message: "Type non supporté par /set-score pour l'instant" });

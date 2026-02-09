@@ -4,6 +4,7 @@ const router = express.Router();
 const nodemailer = require("nodemailer");
 const { requireAuth } = require("../middlewareGetter");
 const { readAll, writeAll } = require("../db/dbUsers");
+const { markStepByCode } = require("../services/easterEggs");
 
 // Configure transporter
 const transporter = nodemailer.createTransport({
@@ -20,7 +21,7 @@ transporter.verify(function (error, success) {
     console.log("Erreur de configuration Nodemailer:", error);
     if (!process.env.APP_PSWD) {
       console.log(
-        "ATTENTION: Aucun mot de passe d'application trouvé dans les variables d'environnement (APP_PSWD)."
+        "ATTENTION: Aucun mot de passe d'application trouvé dans les variables d'environnement (APP_PSWD).",
       );
     }
   } else {
@@ -31,8 +32,9 @@ transporter.verify(function (error, success) {
 router.post("/", requireAuth, async (req, res) => {
   const { content } = req.body;
   const user = req.session.user;
+  const trimmedContent = String(content || "").trim();
 
-  if (!content) {
+  if (!trimmedContent) {
     return res
       .status(400)
       .json({ message: "Le contenu de la suggestion est requis." });
@@ -68,11 +70,15 @@ router.post("/", requireAuth, async (req, res) => {
     from: process.env.GMAIL_USER || "pde.suggestions@gmail.com",
     to: "pde.suggestions@gmail.com",
     subject: `Nouvelle suggestion de ${user.pseudo}`,
-    text: `Suggestion de l'utilisateur: ${user.pseudo}\n\n${content}`,
+    text: `Suggestion de l'utilisateur: ${user.pseudo}\n\n${trimmedContent}`,
   };
 
   try {
     await transporter.sendMail(mailOptions);
+
+    if (trimmedContent === "83238") {
+      markStepByCode(user.pseudo, "g1");
+    }
 
     // Mise à jour du quota après envoi réussi
     userRecord.suggestionQuota.count++;

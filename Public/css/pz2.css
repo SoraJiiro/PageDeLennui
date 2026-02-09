@@ -1,0 +1,138 @@
+:root {
+  --ee-card-border: 3px solid var(--primary-color);
+  --ee-muted: #6f6f6f;
+  --ee-done: #2dd936;
+  --ee-pending: #8b8b8b;
+  --ee-ko: #e53935;
+}
+
+.ee-container {
+  padding: 40px 16px 80px;
+}
+
+.page-title {
+  text-align: center;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  border: 2px solid var(--primary-color);
+  background: transparent;
+  color: var(--primary-color);
+  padding: 8px 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.16rem;
+}
+
+.btn-back:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.ee-status {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--ee-muted);
+}
+
+.ee-status--error {
+  color: var(--red-color);
+}
+
+.ee-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.ee-card {
+  border: var(--ee-card-border);
+  padding: 18px;
+  background: var(--bg-color);
+  box-shadow: none;
+}
+
+.ee-card__title {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  font-weight: 700;
+  color: #fff;
+  width: 100%;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 6px;
+}
+
+.ee-flow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 6px 2px 2px;
+}
+
+.ee-node {
+  min-width: 125px;
+  min-height: 125px;
+  border: 6px solid #000;
+  background: #a0a0a0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #000;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0.02rem;
+}
+
+.ee-node.ee-facultatif {
+  font-style: italic;
+  border-radius: 50%;
+}
+
+.ee-node__title {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.ee-node__status {
+  font-size: 0.85rem;
+}
+
+.ee-node--done {
+  background: var(--primary-color);
+  color: #f6f6f6;
+}
+
+.ee-node--done:last-child {
+  background: var(--ee-done);
+}
+
+.ee-node--pending {
+  background: var(--ee-pending);
+  color: #f6f6f6;
+}
+
+.ee-node--final-ok {
+  background: var(--ee-done);
+}
+
+.ee-node--final-ko {
+  background: var(--ee-ko);
+  color: #fff;
+}
+
+.ee-connector {
+  flex: 1;
+  height: 8px;
+  min-width: 28px;
+  background: var(--primary-color);
+}

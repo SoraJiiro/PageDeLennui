@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/search.css">
     <script defer src="/socket.io/socket.io.js"></script>
     <script defer src="/js/auto_reload.js"></script>
+    <script defer src="/js/pz1.js"></script>
   </head>
   <body>
     <div class="page">
@@ -39,11 +40,12 @@
         </div>
         <br><br>
         <center>
-          <i style="font-size: 1px;text-decoration-thickness: .3px">That
+          <p id="x" class="x" data-ee-code="s1"
+            style="font-size: 1px;text-decoration-thickness: .3px">That
             <u>final
               score</u>
             would be nice
-            in the suggestions.</i>
+            in the suggestions.</p>
         </center>
       </section>
 
@@ -58,36 +60,29 @@
     </div>
 
     <script type="text/javascript">
-    // JavaScript for search functionality
 const searchInput = document.querySelector('.search input[type="text"]');
 const searchIcon = document.querySelector('.search .icon');
 
 function performSearch() {
     const query = searchInput.value.trim();
     if (query) {
-        // Check if the query is a URL
         if (isURL(query)) {
-            // Redirect directly to the URL
             window.location.href = query.startsWith('http') ? query : `https://${query}`;
         } else {
-            // Perform a Google search
             window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
         }
     }
 }
 
 function isURL(string) {
-    // Check if the string is a valid URL
     const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
     return urlPattern.test(string);
 }
 
-// Event listener for clicking the search icon
 if (searchIcon) {
     searchIcon.addEventListener('click', performSearch);
 }
 
-// Event listener for pressing Enter in the search input
 if (searchInput) {
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {

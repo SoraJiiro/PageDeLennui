@@ -18,22 +18,25 @@ function defineLazyExport(name, getter) {
 // ------- Routing helpers -------
 defineLazyExport(
   "setupRoutes",
-  () => requireCached("setupRoutesModule", "./routes/setupRoutes").setupRoutes
+  () => requireCached("setupRoutesModule", "./routes/setupRoutes").setupRoutes,
 );
 
 // ------- Routes -------
 defineLazyExport("authRoutes", () =>
-  requireCached("authRoutes", "./routes/authRoutes")
+  requireCached("authRoutes", "./routes/authRoutes"),
 );
 defineLazyExport("createAdminRouter", () =>
-  requireCached("createAdminRouter", "./routes/adminRoutes")
+  requireCached("createAdminRouter", "./routes/adminRoutes"),
 );
 defineLazyExport("tagRoutes", () =>
-  requireCached("tagRoutes", "./routes/tagRoutes")
+  requireCached("tagRoutes", "./routes/tagRoutes"),
 );
 defineLazyExport("surveyRoutesFactory", () =>
-  requireCached("surveyRoutesFactory", "./routes/surveyRoutes")
+  requireCached("surveyRoutesFactory", "./routes/surveyRoutes"),
 );
 defineLazyExport("suggestionRoutes", () =>
-  requireCached("suggestionRoutes", "./routes/suggestionRoutes")
+  requireCached("suggestionRoutes", "./routes/suggestionRoutes"),
+);
+defineLazyExport("easterEggRoutes", () =>
+  requireCached("easterEggRoutes", "./routes/easterEggRoutes"),
 );

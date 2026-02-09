@@ -51,12 +51,10 @@
       const deleteBtn = tr.querySelector(".delete-btn");
 
       previewBtn.addEventListener("click", () => {
-        // If server provides a direct URL, preview directly; otherwise request base64 via socket
         if (f.url) {
           showPreviewForFileUrl(f.url, f.name, f.type);
         } else {
           socket.emit("chat:downloadFile", { fileId: f.id });
-          // show loading state
           previewBtn.disabled = true;
           previewBtn.textContent = "Chargement...";
           setTimeout(() => {
@@ -86,7 +84,6 @@
 
       tbody.appendChild(tr);
     });
-    // update page info
     const info = document.getElementById("shared-files-page-info");
     if (info) {
       const start = (sf_state.page - 1) * sf_state.pageSize + 1;
@@ -99,7 +96,6 @@
   }
 
   function showPreviewForFileData(obj) {
-    // obj: { id, name, type, data }
     const modal = document.getElementById("file-preview-modal");
     const container = document.getElementById("file-preview-content");
     if (!modal || !container) return;
@@ -173,11 +169,9 @@
 
     modal.style.display = "flex";
 
-    // cleanup URL when modal closed
     modal.dataset.currentUrl = url;
   }
 
-  // Preview using a public URL (no base64 transfer)
   function showPreviewForFileUrl(url, name, type) {
     const modal = document.getElementById("file-preview-modal");
     const container = document.getElementById("file-preview-content");
@@ -238,9 +232,7 @@
     modal.style.display = "none";
   }
 
-  // listen server responses
   socket.on("admin:sharedFiles", (payload) => {
-    // payload: { items, total, page, pageSize }
     if (!payload) return;
     const { items = [], total = 0, page = 1, pageSize = 50 } = payload;
     sf_state.page = page;
@@ -250,9 +242,7 @@
   });
   socket.on("chat:fileData", (obj) => {
     if (!obj || !obj.id) return;
-    // show preview only if admin modal exists
     showPreviewForFileData(obj);
-    // refresh list
     socket.emit("admin:getSharedFiles");
   });
 
@@ -272,7 +262,6 @@
     renderLogs(items);
   });
 
-  // helpers to fetch
   function fetchSharedFiles() {
     socket.emit("admin:getSharedFiles", {
       page: sf_state.page,

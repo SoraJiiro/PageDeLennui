@@ -9,7 +9,6 @@ export function setupPasswordChange(socket) {
   const btnConfirm = document.getElementById("password-change-confirm");
 
   if (!modal) {
-    // Fallback if modal not present (should not happen if HTML is updated)
     btn.addEventListener("click", () => {
       const newPass = prompt("Entrez votre nouveau mot de passe désiré :");
       if (!newPass) return;

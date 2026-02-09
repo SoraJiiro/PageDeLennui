@@ -113,10 +113,9 @@ export function initBlackjack(socket, username) {
   // Bet Logic
   if (betInput) {
     betInput.addEventListener("input", (e) => {
-      if (e.target.value === "") return; // Allow clearing functionality
+      if (e.target.value === "") return;
 
       const val = parseInt(e.target.value);
-      // If currentScore is not loaded yet, default to 0 to prevent over-betting
       const max = Math.floor((currentScore || 0) * 0.5);
 
       if (!isNaN(val) && val > max) {
@@ -358,7 +357,6 @@ export function initBlackjack(socket, username) {
           // Animations spécifiques à la main (même si unique)
           if (hand.status === "blackjack") {
             handDiv.classList.add("bj-anim-blackjack");
-            // Force border display for animation
             handDiv.style.border = "2px solid gold";
             handDiv.style.padding = "5px";
             handDiv.style.borderRadius = "10px";
@@ -392,10 +390,8 @@ export function initBlackjack(socket, username) {
         infoMin.innerHTML = `Mise: ${hand.bet} <br> Score: ${hand.score}`;
         handDiv.appendChild(infoMin);
 
-        // Cards
         const cardsDiv = document.createElement("div");
         cardsDiv.className = "player-hand";
-        // Note: CSS .player-hand expects display flex usually.
         cardsDiv.style.display = "flex";
         cardsDiv.style.minHeight = "60px";
 
@@ -444,8 +440,6 @@ export function initBlackjack(socket, username) {
       state.phase === "playing" &&
       state.joueurs[state.currentPlayerIndex]?.pseudo === currentPseudo;
 
-    // Controls display logic
-    // If player is playing OR in queue, consider them "inside" (hide Join, show Leave)
     if (!me && !inQueue) {
       if (joinBtn) joinBtn.style.display = "block";
       if (leaveBtn) leaveBtn.style.display = "none";
@@ -454,7 +448,6 @@ export function initBlackjack(socket, username) {
       if (joinBtn) joinBtn.style.display = "none";
       if (leaveBtn) leaveBtn.style.display = "block";
       if (startBtn) {
-        // Start button visible only if playing (not in queue) and game not started
         startBtn.style.display =
           state.gameStarted || inQueue ? "none" : "block";
       }
@@ -474,7 +467,6 @@ export function initBlackjack(socket, username) {
       const activeHand = me.hands[me.activeHandIndex];
       // Double: 2 cards only
       const canDouble = activeHand && activeHand.cards.length === 2;
-      // Split: 2 cards, same rank, and only if hands.length < 2 (as per server rule)
       const canSplit =
         activeHand &&
         activeHand.cards.length === 2 &&

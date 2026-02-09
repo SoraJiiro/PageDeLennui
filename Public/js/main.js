@@ -231,7 +231,6 @@ import { initCanvasResizer } from "./canvas_resize.js";
       } catch (e) {}
     });
 
-    // Listen for profit cap updates and update sidebar
     socket.on("economy:profitCap", (capInfo) => {
       try {
         const el = document.getElementById("sb-cap-info");

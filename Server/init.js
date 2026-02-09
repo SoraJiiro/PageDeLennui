@@ -17,6 +17,7 @@ const {
   tagRoutes,
   surveyRoutesFactory,
   suggestionRoutes,
+  easterEggRoutes,
 } = require("./routeGetter");
 const {
   initSocketHandlers,
@@ -73,6 +74,7 @@ setupRoutes(app, {
   tagRoutes,
   surveyRoutesFactory,
   suggestionRoutes,
+  easterEggRoutes,
 });
 
 // ------- Sockets -------

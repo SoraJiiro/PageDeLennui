@@ -50,12 +50,10 @@
                     query: { username: currentUser }
                 });
 
-                // Initialize nav socket for color updates
                 if (window.initUiColor) {
                     window.initUiColor(socket);
                 }
 
-                // Listen for updates
                 socket.on('survey:new', (survey) => {
                     addSurveyToList(survey);
                 });
@@ -83,7 +81,6 @@
                 const res = await fetch('/api/surveys/list');
                 const surveys = await res.json();
 
-                // Mark all active surveys as seen locally
                 let seenKey = "seenSurveys";
                 if (currentUser) seenKey = "seenSurveys_" + currentUser;
 
@@ -92,7 +89,6 @@
                 const newSeen = [...new Set([...seenIds, ...activeIds])];
                 localStorage.setItem(seenKey, JSON.stringify(newSeen));
                 
-                // Hide badge immediately if visible (badge logic is in nav.js, checking surveys again would clear it)
                 const badge = document.querySelector('.notification-badge');
                 if(badge) badge.style.display = 'none';
 
@@ -121,12 +117,10 @@
         }
 
         function addSurveyToList(survey) {
-            // Remove empty msg if exists
             const listId = survey.status === 'active' ? 'activeList' : 'pastList';
             const list = document.getElementById(listId);
             if (list.querySelector('.empty-msg')) list.innerHTML = '';
 
-            // Check if already exists
             if (document.getElementById(`survey-${survey.id}`)) return;
 
             const card = document.createElement('div');
@@ -135,7 +129,6 @@
             
             renderSurveyContent(card, survey);
             
-            // Prepend to show newest first
             list.insertBefore(card, list.firstChild);
         }
 
@@ -213,18 +206,6 @@
                 
                 const data = await res.json();
                 if (res.ok) {
-                    // Update local UI immediately
-                    const card = document.getElementById(`survey-${surveyId}`);
-                    // We need to fetch the survey again or update local state to render results
-                    // For simplicity, let's just reload the list or update this specific card
-                    // But we need the full survey object to re-render.
-                    // Let's just reload for now or wait for socket update?
-                    // Socket update sends results, but we need to know we voted.
-                    
-                    // Ideally we update the card to show results
-                    // We can construct a temporary survey object
-                    // But simpler to just reload or fetch this survey.
-                    // Let's just reload the list for now to be safe
                     loadSurveys(); 
                 } else {
                     alert(data.message);
@@ -238,22 +219,8 @@
         function updateSurveyResults(id, results) {
             const card = document.getElementById(`survey-${id}`);
             if (!card) return;
-            
-            // If we are currently viewing choices (haven't voted), we don't want to switch to results view automatically
-            // unless we just voted (handled by vote function) or if we want to show live results even before voting?
-            // Usually surveys hide results until you vote.
-            // So if I haven't voted, I shouldn't see results.
-            // But the socket event comes to everyone.
-            
-            // We need to know if WE voted to decide whether to show results.
-            // The socket event doesn't tell us if WE voted.
-            // But if we are in "choices" mode, we ignore the results update visually, 
-            // unless we want to show a "total votes" counter?
-            
-            // If we are already showing results (because we voted or it's closed), update the bars.
             const resultsContainer = card.querySelector('.survey-results');
             if (resultsContainer) {
-                // Update bars
                 const total = results.total || 0;
                 const bars = resultsContainer.querySelectorAll('.result-bar-fill');
                 const labels = resultsContainer.querySelectorAll('.result-label span:last-child');
@@ -274,16 +241,11 @@
             const pastList = document.getElementById('pastList');
             const activeList = document.getElementById('activeList');
             
-            // Update status badge
             const badge = card.querySelector('.status-badge');
             if (badge) {
                 badge.className = 'status-badge status-closed';
                 badge.textContent = 'Terminé';
             }
-            
-            // Force render results if not already (because closed surveys show results to everyone)
-            // We need the survey data for this. 
-            // Simplest is to reload list.
             loadSurveys();
         }
         

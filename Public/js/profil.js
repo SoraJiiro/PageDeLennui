@@ -153,7 +153,6 @@ function renderMedals(container, medals) {
       if (m.name === "Légendaire") {
         innerContent = '<div class="medal-index">7</div>';
       } else if (m.name && /^Médaille\s+Prestige/i.test(m.name)) {
-        // Extract only the prestige number (e.g. "Médaille Prestige - 3" -> "3")
         const match = m.name.match(/Médaille\s+Prestige\s*[-–:]?\s*(\d+)/i);
         const num = match
           ? match[1]
@@ -337,7 +336,6 @@ async function main() {
       picker.addEventListener("change", () => {
         const ids = getPickerSelectedIds();
         if (ids.length > 3) {
-          // undo last change by unchecking the last checked
           const boxes = Array.from(
             picker.querySelectorAll('input[type="checkbox"]'),
           );

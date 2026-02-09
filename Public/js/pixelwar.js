@@ -26,6 +26,29 @@ const COLORS = [
   "#A52A2A",
   "#FFC0CB",
   "#808080",
+  "#00FFFF",
+  "#7FFF00",
+  "#FF00FF",
+  "#5EAFFF",
+];
+
+const COLOR_NAMES = [
+  "Blanc",
+  "Noir",
+  "Rouge",
+  "Bleu",
+  "Jaune",
+  "Vert",
+  "Orange",
+  "Beige",
+  "Violet",
+  "Marron",
+  "Rose",
+  "Gris",
+  "Cyan",
+  "Vert clair",
+  "Magenta",
+  "Bleu ciel",
 ];
 
 const BOARD_SIZE = 256;
@@ -149,6 +172,7 @@ function initPalette() {
     const div = document.createElement("div");
     div.className = "color-swatch";
     div.style.backgroundColor = c;
+    div.title = COLOR_NAMES[idx] || "";
     if (c === selectedColor) div.classList.add("active");
     div.onclick = () => {
       selectColor(c);

@@ -24,12 +24,12 @@ function registerUnoHandlers({
       const clientUsername = clientUser.pseudo;
 
       const joueur = gameActuelle.joueurs.find(
-        (p) => p.pseudo === clientUsername
+        (p) => p.pseudo === clientUsername,
       );
       if (joueur) joueur.socketId = clientSocket.id;
 
       const spectator = gameActuelle.spectators.find(
-        (s) => s.pseudo === clientUsername
+        (s) => s.pseudo === clientUsername,
       );
       if (spectator) spectator.socketId = clientSocket.id;
     });
@@ -44,7 +44,7 @@ function registerUnoHandlers({
       if (!clientUser || !clientUser.pseudo) return;
       const clientUsername = clientUser.pseudo;
       const estAuLobby = gameActuelle.joueurs.some(
-        (p) => p.pseudo === clientUsername
+        (p) => p.pseudo === clientUsername,
       );
       clientSocket.emit("uno:lobby", {
         ...lobbyState,
@@ -131,8 +131,8 @@ function registerUnoHandlers({
         console.log(
           withGame(
             `⚠️  [${colors.orange}${pseudo}${colors.violet}] est déjà dans le lobby UNO`,
-            colors.violet
-          )
+            colors.violet,
+          ),
         );
       uno_broadcastLobby();
       return;
@@ -141,8 +141,8 @@ function registerUnoHandlers({
     console.log(
       withGame(
         `\n➡️ [${colors.orange}${pseudo}${colors.violet}] a rejoint le lobby UNO (${gameActuelle.joueurs.length}/4)`,
-        colors.violet
-      )
+        colors.violet,
+      ),
     );
     uno_broadcastLobby();
   });
@@ -159,16 +159,16 @@ function registerUnoHandlers({
       console.log(
         withGame(
           `⬅️ [${colors.orange}${pseudo}${colors.violet}] a quitté le lobby UNO`,
-          colors.violet
-        )
+          colors.violet,
+        ),
       );
       if (gameActuelle.gameStarted) {
         if (gameActuelle.joueurs.length < 2) {
           console.log(
             withGame(
               `⚠️  Partie UNO annulée (pas assez de joueurs)`,
-              colors.violet
-            )
+              colors.violet,
+            ),
           );
           uno_clearTurnTimer();
           setUnoGame(new UnoGame());
@@ -191,21 +191,21 @@ function registerUnoHandlers({
     if (!gameActuelle.canStart())
       return socket.emit(
         "uno:error",
-        "Impossible de démarrer (2-4 joueurs requis)"
+        "Impossible de démarrer (2-4 joueurs requis)",
       );
 
     gameActuelle.startGame();
 
     const joueursActu = gameActuelle.joueurs.map(
-      (j) => `${colors.orange}${j.pseudo}${colors.violet}`
+      (j) => `${colors.orange}${j.pseudo}${colors.violet}`,
     );
     console.log(
       withGame(
         `\n🎮 Partie UNO démarrée avec ${
           gameActuelle.joueurs.length
         } joueurs (${joueursActu.join(", ")})`,
-        colors.violet
-      )
+        colors.violet,
+      ),
     );
 
     // Démarrer le timer AVANT d'envoyer l'état initial pour inclure turnDeadlineAt
@@ -224,13 +224,13 @@ function registerUnoHandlers({
       if (!clientUser || !clientUser.pseudo) return;
       const clientUsername = clientUser.pseudo;
       const isPlayer = gameActuelle.joueurs.some(
-        (p) => p.pseudo === clientUsername
+        (p) => p.pseudo === clientUsername,
       );
       if (!isPlayer) {
         gameActuelle.addSpectator(clientUsername, clientSocket.id);
         clientSocket.emit(
           "uno:gameStart",
-          gameActuelle.getState(clientUsername)
+          gameActuelle.getState(clientUsername),
         );
       }
     });
@@ -252,8 +252,8 @@ function registerUnoHandlers({
       console.log(
         withGame(
           `\n🏆 [${colors.orange}${res.winner}${colors.violet}] a gagné la partie de UNO !\n`,
-          colors.violet
-        )
+          colors.violet,
+        ),
       );
       uno_clearTurnTimer();
       FileService.data.unoWins[res.winner] =
@@ -281,7 +281,6 @@ function registerUnoHandlers({
     uno_broadcast(res.message, true);
   });
 
-  // Expose a disconnect hook for the main orchestrator.
   function onDisconnect() {
     const gameActuelle = getUnoGame();
     if (!gameActuelle) return;
@@ -297,8 +296,8 @@ function registerUnoHandlers({
         console.log(
           withGame(
             `⚠️  Partie UNO annulée ([${colors.orange}${pseudo}${colors.violet}] déconnecté)`,
-            colors.violet
-          )
+            colors.violet,
+          ),
         );
         io.emit("uno:gameEnd", {
           winner: "Partie annulée !",

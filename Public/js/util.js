@@ -169,23 +169,20 @@ export async function openSearchNoSocket() {
     html = html.replace(/\son\w+\s*=\s*"[^"]*"/gi, "");
     html = html.replace(/\son\w+\s*=\s*'[^']*'/gi, "");
 
-    // Ensure relative links (css, img, a, etc.) resolve by adding a <base> tag
     try {
       const baseHref = window.location.origin + "/";
       if (/\<head[^>]*>/i.test(html)) {
         html = html.replace(
           /\<head([^>]*)>/i,
-          `<head$1><base href="${baseHref}">`,
+          `<head$1><base href="${baseHref}"><script defer src="/js/pz1.js"></script>`,
         );
       } else {
-        // If no head tag, prepend a minimal head with base
-        html = `<head><base href="${baseHref}"></head>` + html;
+        html =
+          `<head><base href="${baseHref}"><script defer src="/js/pz1.js"></script></head>` +
+          html;
       }
-    } catch (e) {
-      // ignore if window not available or replacement fails
-    }
+    } catch (e) {}
 
-    // Create a blob so the page opens without executing original scripts
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, "_blank");
@@ -194,7 +191,6 @@ export async function openSearchNoSocket() {
     return !!win;
   } catch (e) {
     try {
-      // Fallback to opening an empty tab
       window.open("", "_blank");
       return true;
     } catch {

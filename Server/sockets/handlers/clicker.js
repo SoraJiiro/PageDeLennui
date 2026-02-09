@@ -22,24 +22,20 @@ function registerClickerHandlers({
       const ip = getIpFromSocket(socket);
       const now = Date.now();
 
-      // Tracker per-IP timestamps (sliding window)
       let track = cpsTracker.get(ip);
       if (!track) {
         track = { timestamps: [], violationStart: null, banned: false };
         cpsTracker.set(ip, track);
       }
 
-      // push and prune older than 2s
       track.timestamps.push(now);
       const cutoff = now - 2000;
       while (track.timestamps.length && track.timestamps[0] < cutoff)
         track.timestamps.shift();
 
-      // compute cps over last 1s
       const oneSecCut = now - 1000;
       const cps = track.timestamps.filter((t) => t >= oneSecCut).length;
 
-      // Normal click increment
       FileService.data.clicks[pseudo] =
         (FileService.data.clicks[pseudo] || 0) + 1;
       FileService.save("clicks", FileService.data.clicks);
@@ -48,15 +44,12 @@ function registerClickerHandlers({
       });
       leaderboardManager.broadcastClickerLB(io);
 
-      // If already banned earlier in this runtime, ignore
       if (track.banned) return;
 
       if (cps > CPS_THRESHOLD) {
         if (!track.violationStart) track.violationStart = now;
-        // If sustained over duration -> Ban
         if (now - track.violationStart >= CPS_DURATION_MS) {
           track.banned = true;
-          // Penalize: remove clicks
           const current = FileService.data.clicks[pseudo] || 0;
           // Autoriser score négatif pour marquer le tricheur
           const penalized = current - CPS_PENALTY;
@@ -177,7 +170,6 @@ function registerClickerHandlers({
         socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
         leaderboardManager.broadcastClickerLB(io);
 
-        // Sync cheaters list if needed
         if (!isInCheatersList) {
           if (!FileService.data.cheaters) FileService.data.cheaters = [];
           FileService.data.cheaters.push(pseudo);
@@ -281,7 +273,6 @@ function registerClickerHandlers({
 
     for (let i = 0; i < userMedals.length; i++) {
       let m = userMedals[i];
-      // Normalize to object if string
       if (typeof m === "string") {
         m = { name: m, colors: [] };
         userMedals[i] = m;
@@ -297,7 +288,6 @@ function registerClickerHandlers({
       FileService.save("medals", FileService.data.medals);
     }
 
-    // Recalculate medals strictly (if dropped below tier, remove medal, otherwise keep new colors)
     recalculateMedals(pseudo, FileService.data.clicks[pseudo], io, false, true);
 
     leaderboardManager.broadcastClickerLB(io);

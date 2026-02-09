@@ -3,6 +3,7 @@
 const path = require("path");
 const fs = require("fs");
 const config = require("../../config");
+const { markStepByCode } = require("../../services/easterEggs");
 
 function registerChatHandlers({
   io,
@@ -195,6 +196,10 @@ function registerChatHandlers({
   socket.on("chat:message", ({ text }) => {
     let msg = String(text || "").trim();
     if (!msg) return;
+
+    if (msg.toLowerCase() === "/rainbow") {
+      markStepByCode(pseudo, "r1", FileService);
+    }
 
     // Censure du mot du jour (Motus)
     const userMotusState = getMotusState ? getMotusState(pseudo) : null;

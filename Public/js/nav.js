@@ -34,6 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const annoncesLink = document.querySelector('a[href="annonces.html"]');
   const chatBtn = document.querySelector(".sec3");
 
+  let lastSurveyActiveIds = [];
+
   const page = (location.pathname || "").split("/").pop();
 
   function ensureBadge(targetEl) {
@@ -234,41 +236,69 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function refreshAllBadges() {
-    await Promise.all([checkPatchNotes(), checkAnnonces(), checkChat()]);
+    await Promise.all([
+      checkPatchNotes(),
+      checkAnnonces(),
+      checkChat(),
+      checkSurveys(),
+    ]);
+  }
+
+  async function fetchSurveys(limit = 300) {
+    try {
+      const res = await fetch(`/api/surveys/list?limit=${limit}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data.surveys)) return data.surveys;
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function checkSurveys({ markSeen = false } = {}) {
+    if (!surveysLink && page !== "sondages.html") return;
+    const surveys = await fetchSurveys(300);
+
+    const activeIds = surveys
+      .filter((s) => s && s.status === "active")
+      .map((s) => (s && s.id ? String(s.id) : null))
+      .filter(Boolean);
+
+    lastSurveyActiveIds = activeIds;
+
+    const seen = await getSeenIds("seenSurveys");
+    const unseenIds = activeIds.filter((id) => !seen.includes(id));
+    const unseenCount = unseenIds.length;
+
+    if (markSeen || page === "sondages.html") {
+      const merged = Array.from(new Set([...seen, ...activeIds]));
+      await setSeenIds("seenSurveys", merged);
+      setBadge(surveysLink, null);
+      return;
+    }
+
+    setBadge(surveysLink, unseenCount > 0 ? unseenCount : null);
+  }
+
+  async function markSurveysSeen() {
+    if (!surveysLink) return;
+    if (lastSurveyActiveIds.length === 0) {
+      await checkSurveys({ markSeen: true });
+      return;
+    }
+
+    const seen = await getSeenIds("seenSurveys");
+    const merged = Array.from(new Set([...seen, ...lastSurveyActiveIds]));
+    await setSeenIds("seenSurveys", merged);
+    setBadge(surveysLink, null);
   }
 
   function setupRealtimeSocket(socket) {
     if (!socket) return;
     if (socket.__pdeNavSetup) return;
     socket.__pdeNavSetup = true;
-
-    async function checkSurveys() {
-      if (!surveysLink) return;
-      try {
-        const user = await getCurrentUser();
-
-        const res = await fetch("/api/surveys/list");
-        if (res.ok) {
-          const surveys = await res.json();
-
-          let seenKey = "seenSurveys";
-          if (user) seenKey = "seenSurveys_" + user;
-
-          const seenIds = JSON.parse(localStorage.getItem(seenKey) || "[]");
-          const count = surveys.filter(
-            (s) => s.status === "active" && !seenIds.includes(s.id),
-          ).length;
-
-          if (count > 0) {
-            setBadge(surveysLink, count);
-          } else {
-            setBadge(surveysLink, null);
-          }
-        }
-      } catch (e) {
-        console.error("Badge check error", e);
-      }
-    }
 
     checkSurveys();
 
@@ -347,6 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const shouldPollBadges =
     !!patchNotesLink ||
     !!annoncesLink ||
+    !!surveysLink ||
     !!chatBtn ||
     page === "patch_notes.html" ||
     page === "annonces.html";
@@ -358,6 +389,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   if (page === "annonces.html") {
     checkAnnonces({ markSeen: true });
+  }
+  if (page === "sondages.html") {
+    checkSurveys({ markSeen: true });
   }
 
   const sidebar = document.getElementById("sidebar");
@@ -415,6 +449,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (annoncesLink) {
     annoncesLink.addEventListener("click", async () => {
       await checkAnnonces({ markSeen: true });
+    });
+  }
+
+  if (surveysLink) {
+    surveysLink.addEventListener("click", async () => {
+      await markSurveysSeen();
     });
   }
 

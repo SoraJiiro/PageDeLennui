@@ -267,7 +267,6 @@ class MashGame {
         if (this.onPayout)
           this.onPayout(bet.pseudo, FileService.data.clicks[bet.pseudo]);
       } else {
-        // Loser: if daily profit cap already exhausted, refund the stake
         try {
           const currentClicks = FileService.data.clicks[bet.pseudo] || 0;
           const capInfo = getDailyProfitCapInfo({

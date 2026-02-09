@@ -381,7 +381,6 @@ export function initChat(socket) {
             (typeof file.name === "string" &&
               file.name.toLowerCase().endsWith(".opus"))
           ) {
-            // Custom audio player (hidden native audio for playback control)
             const player = document.createElement("div");
             player.className = "chat-audio-player";
 
@@ -419,10 +418,8 @@ export function initChat(socket) {
             player.appendChild(audioEl);
             player.appendChild(controls);
 
-            // Insert player before other file info
             fileDiv.insertBefore(player, fileDiv.firstChild);
 
-            // Assign src and handle error events instead of HEAD checks.
             audioEl.src = file.url;
             audioEl.addEventListener("error", () => {
               const note = document.createElement("div");
@@ -433,7 +430,6 @@ export function initChat(socket) {
               console.warn("Audio non trouvé. [debug]");
             });
 
-            // Helpers
             function fmt(t) {
               if (!isFinite(t)) return "0:00";
               const m = Math.floor(t / 60);
@@ -443,7 +439,6 @@ export function initChat(socket) {
               return `${m}:${s}`;
             }
 
-            // Events
             playBtn.addEventListener("click", () => {
               if (audioEl.paused) audioEl.play();
               else audioEl.pause();
@@ -478,7 +473,6 @@ export function initChat(socket) {
                 audioEl.currentTime = pct * audioEl.duration;
             });
 
-            // Also listen on the progress wrapper to be more forgiving for clicks
             progressWrap.addEventListener("click", (ev) => {
               const rect = progressBar.getBoundingClientRect();
               const x = ev.clientX - rect.left;
@@ -1078,6 +1072,12 @@ export function initChat(socket) {
         if (window.toggleRainbowMode) {
           window.toggleRainbowMode();
         }
+
+        fetch("/api/x9/step", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: "r1" }),
+        }).catch(() => {});
         input.value = "";
         input.style.height = "auto";
         input.focus();

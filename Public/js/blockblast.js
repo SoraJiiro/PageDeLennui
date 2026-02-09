@@ -845,8 +845,6 @@ export function initBlockBlast(socket) {
 
   // Démarrer le timer aussi quand le joueur sélectionne une pièce (click)
   const origSelectPiece = selectPiece;
-  // note : nous surchargeons en réassignant le nom de la fonction utilisée par les écouteurs d'événements ci-dessus
-  // mais comme selectPiece est utilisé en interne, nous gardons le même identifiant
   selectPiece = function (index) {
     origSelectPiece(index);
     startTimer();

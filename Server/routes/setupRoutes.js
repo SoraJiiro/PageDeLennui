@@ -18,6 +18,7 @@ function setupRoutes(
     tagRoutes,
     surveyRoutesFactory,
     suggestionRoutes,
+    easterEggRoutes,
   },
 ) {
   // API
@@ -29,6 +30,7 @@ function setupRoutes(
   app.use("/api/tag", tagRoutes);
   app.use("/api/surveys", surveyRoutesFactory(io));
   app.use("/api/suggestions", suggestionRoutes);
+  app.use("/api/x9", easterEggRoutes);
   app.use("/api/profile", requireAuth, profileRoutes);
 
   // Badges sidebar (auth)

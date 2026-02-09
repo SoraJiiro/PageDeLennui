@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EE Tracker</title>
+
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/pz2.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css" />
+
+    <link rel="icon" type="img/png" href="imgs/icon_d.png"
+      media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="img/png" href="imgs/icon_l.png"
+      media="(prefers-color-scheme: light)" />
+
+    <script defer src="/socket.io/socket.io.js"></script>
+    <script defer src="js/uiColor.js"></script>
+    <script defer src="js/nav.js"></script>
+    <script defer src="js/auto_reload.js"></script>
+    <script defer src="js/pz2.js"></script>
+  </head>
+  <body>
+    <div class="container ee-container">
+      <button class="btn-back" onclick="window.location.href='/'">
+        <i class="fa-solid fa-arrow-left"></i> Retour
+      </button>
+
+      <h1 class="page-title"><i class="fa-solid fa-egg"></i> Easter Egg
+        Tracker</h1>
+
+      <div id="ee-status" class="ee-status"
+        aria-live="polite">Chargement...</div>
+      < />
+      <div id="ee-list" class="ee-list"></div>
+
+    </div>
+  </body>
+</html>

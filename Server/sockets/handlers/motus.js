@@ -114,7 +114,6 @@ function registerMotusHandlers({
       if (!state.currentWord) return;
     }
 
-    // Check if already won
     const last = state.history[state.history.length - 1];
     if (last && last.result.every((s) => s === 2)) return;
 
@@ -127,7 +126,6 @@ function registerMotusHandlers({
 
     state.history.push({ guess: guess.toUpperCase(), result });
 
-    // Update tries immediately (increment by 1 for every guess)
     if (!FileService.data.motusScores) FileService.data.motusScores = {};
     if (!FileService.data.motusScores[pseudo]) {
       FileService.data.motusScores[pseudo] = { words: 0, tries: 0 };

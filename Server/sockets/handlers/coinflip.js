@@ -99,9 +99,7 @@ function registerCoinflipHandlers({
     FileService.save("coinflipStats", FileService.data.coinflipStats);
     leaderboardManager.broadcastCoinflipLB(io);
 
-    // Log transaction with IP
     const ip = getIpFromSocket(socket);
-    // If user lost but quota already reached, refund the bet (no net loss)
     let netChange = 0;
     if (won) netChange = profitAllowed;
     else {
