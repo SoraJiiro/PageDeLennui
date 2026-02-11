@@ -14,6 +14,7 @@ module.exports = {
 
   // Blacklist
   BLACKLIST: [],
+  BLACKLIST_PSEUDOS: [],
   // IPs qui doivent TOUJOURS être bloquées (forcées)
   FORCED_ALWAYS_BLOCKED: [
     "192.168.197.197",
@@ -21,6 +22,8 @@ module.exports = {
     "192.168.193.193",
     "192.168.193.1",
   ],
+  // Pseudos qui doivent TOUJOURS être bloqués (forcés)
+  FORCED_ALWAYS_BLOCKED_PSEUDOS: [],
 
   // Sauvegarder l'historique des mouvements blockblast sur le disque (définir env SAVE_BLOCKBLAST_HISTORY=true pour activer)
   SAVE_BLOCKBLAST_HISTORY:
@@ -35,7 +38,7 @@ module.exports = {
     const blacklistPath = path.join(__dirname, "..", "blacklist.json");
     try {
       if (!fs.existsSync(blacklistPath)) {
-        const defaultData = { alwaysBlocked: [] };
+        const defaultData = { alwaysBlocked: [], alwaysBlockedPseudos: [] };
         fs.writeFileSync(
           blacklistPath,
           JSON.stringify(defaultData, null, 2),
@@ -49,16 +52,29 @@ module.exports = {
       const fileAlways = Array.isArray(data.alwaysBlocked)
         ? data.alwaysBlocked
         : [];
+      const fileAlwaysPseudos = Array.isArray(data.alwaysBlockedPseudos)
+        ? data.alwaysBlockedPseudos
+        : [];
       const forced = Array.isArray(this.FORCED_ALWAYS_BLOCKED)
         ? this.FORCED_ALWAYS_BLOCKED
         : [];
+      const forcedPseudos = Array.isArray(this.FORCED_ALWAYS_BLOCKED_PSEUDOS)
+        ? this.FORCED_ALWAYS_BLOCKED_PSEUDOS
+        : [];
       const alwaysBlocked = [...new Set([...forced, ...fileAlways])];
+      const alwaysBlockedPseudos = [
+        ...new Set([...forcedPseudos, ...fileAlwaysPseudos]),
+      ];
 
       // Persister les IP forcées dans le fichier si manquantes (seules les IP forcées sont écrites)
       try {
-        const missing = forced.filter((ip) => !fileAlways.includes(ip));
-        if (missing.length > 0) {
+        const missingIps = forced.filter((ip) => !fileAlways.includes(ip));
+        const missingPseudos = forcedPseudos.filter(
+          (p) => !fileAlwaysPseudos.includes(p),
+        );
+        if (missingIps.length > 0 || missingPseudos.length > 0) {
           data.alwaysBlocked = alwaysBlocked;
+          data.alwaysBlockedPseudos = alwaysBlockedPseudos;
           fs.writeFileSync(
             blacklistPath,
             JSON.stringify(data, null, 2),
@@ -71,8 +87,10 @@ module.exports = {
 
       // Définir la blacklist d'exécution sur alwaysBlocked fusionné (forcé + fichier)
       this.BLACKLIST = [...new Set(alwaysBlocked)];
+      this.BLACKLIST_PSEUDOS = [...new Set(alwaysBlockedPseudos)];
     } catch (err) {
       this.BLACKLIST = [];
+      this.BLACKLIST_PSEUDOS = [];
     }
   },
 };

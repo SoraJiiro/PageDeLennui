@@ -20,6 +20,7 @@ function registerBlockblastHandlers({
     getReviveCostForSocket,
     incrementReviveUsed,
   } = require("../../services/economy");
+  const { consumeLife } = require("../../services/reviveLives");
 
   function setRunnerProgress(score) {
     const s = Math.floor(Number(score) || 0);
@@ -137,7 +138,6 @@ function registerBlockblastHandlers({
   });
 
   socket.on("blockblast:payToContinue", ({ price }) => {
-    const userClicks = FileService.data.clicks[pseudo] || 0;
     const info = getReviveCostForSocket(socket, "blockblast");
     if (!info || info.cost == null) {
       socket.emit(
@@ -150,6 +150,22 @@ function registerBlockblastHandlers({
       socket.emit("blockblast:reviveError", info.error);
       return;
     }
+
+    const lifeResult = consumeLife(FileService, pseudo);
+    if (lifeResult.used) {
+      incrementReviveUsed(socket, "blockblast");
+      socket.emit("blockblast:reviveSuccess");
+
+      console.log(
+        withGame(
+          `[BlockBlast] ${pseudo} a utilise une vie de reanimation.`,
+          colors.green,
+        ),
+      );
+      return;
+    }
+
+    const userClicks = FileService.data.clicks[pseudo] || 0;
 
     const cost = Number(info.cost);
     if (!Number.isFinite(cost) || cost < 0) {

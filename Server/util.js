@@ -7,6 +7,20 @@ const DEFAULT_PFP_URL = "/Public/imgs/defaultProfile.png";
 
 const BLACKLIST_PATH = path.join(__dirname, "..", "blacklist.json");
 
+function normalizePseudoValue(pseudo) {
+  const p = String(pseudo || "").trim();
+  return p ? p.toLowerCase() : "";
+}
+
+function isPseudoBlacklisted(pseudo) {
+  const key = normalizePseudoValue(pseudo);
+  if (!key) return false;
+  const list = Array.isArray(config.BLACKLIST_PSEUDOS)
+    ? config.BLACKLIST_PSEUDOS
+    : [];
+  return list.some((p) => normalizePseudoValue(p) === key);
+}
+
 function getIpFromSocket(s) {
   try {
     const ipHeader = s.handshake.headers["x-forwarded-for"];
@@ -25,7 +39,7 @@ function getIpFromSocket(s) {
 function persistBanIp(ip) {
   try {
     if (!fs.existsSync(BLACKLIST_PATH)) {
-      const defaultData = { alwaysBlocked: [] };
+      const defaultData = { alwaysBlocked: [], alwaysBlockedPseudos: [] };
       fs.writeFileSync(
         BLACKLIST_PATH,
         JSON.stringify(defaultData, null, 2),
@@ -37,6 +51,9 @@ function persistBanIp(ip) {
     data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
       ? data.alwaysBlocked
       : [];
+    data.alwaysBlockedPseudos = Array.isArray(data.alwaysBlockedPseudos)
+      ? data.alwaysBlockedPseudos
+      : [];
     if (!data.alwaysBlocked.includes(ip)) {
       data.alwaysBlocked.push(ip);
       fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
@@ -46,6 +63,52 @@ function persistBanIp(ip) {
     return true;
   } catch (e) {
     console.error("Erreur persistance blacklist:", e);
+    return false;
+  }
+}
+
+function persistBanPseudo(pseudo) {
+  try {
+    const rawPseudo = String(pseudo || "").trim();
+    if (!rawPseudo) return false;
+
+    if (!fs.existsSync(BLACKLIST_PATH)) {
+      const defaultData = { alwaysBlocked: [], alwaysBlockedPseudos: [] };
+      fs.writeFileSync(
+        BLACKLIST_PATH,
+        JSON.stringify(defaultData, null, 2),
+        "utf8",
+      );
+    }
+
+    const raw = fs.readFileSync(BLACKLIST_PATH, "utf8");
+    const data = JSON.parse(raw || "{}");
+    data.alwaysBlocked = Array.isArray(data.alwaysBlocked)
+      ? data.alwaysBlocked
+      : [];
+    data.alwaysBlockedPseudos = Array.isArray(data.alwaysBlockedPseudos)
+      ? data.alwaysBlockedPseudos
+      : [];
+
+    const key = normalizePseudoValue(rawPseudo);
+    const already = data.alwaysBlockedPseudos.some(
+      (p) => normalizePseudoValue(p) === key,
+    );
+
+    if (!already) {
+      data.alwaysBlockedPseudos.push(rawPseudo);
+      fs.writeFileSync(BLACKLIST_PATH, JSON.stringify(data, null, 2), "utf8");
+    }
+
+    if (!isPseudoBlacklisted(rawPseudo)) {
+      if (!Array.isArray(config.BLACKLIST_PSEUDOS)) {
+        config.BLACKLIST_PSEUDOS = [];
+      }
+      config.BLACKLIST_PSEUDOS.push(rawPseudo);
+    }
+    return true;
+  } catch (e) {
+    console.error("Erreur persistance blacklist pseudo:", e);
     return false;
   }
 }
@@ -65,6 +128,7 @@ const expressSession = session({
 
 // ------- Blacklist + Middleware -------
 const alreadyTriedToConnect = [];
+const alreadyTriedToConnectPseudos = [];
 
 const blacklistMiddleware = (req, res, next) => {
   const ip = (
@@ -73,10 +137,21 @@ const blacklistMiddleware = (req, res, next) => {
     ""
   ).replace("::ffff:", "");
 
+  const pseudo = req.session && req.session.user && req.session.user.pseudo;
+
   if (config.BLACKLIST.includes(ip)) {
     if (!alreadyTriedToConnect.includes(ip)) {
       console.log(`\n🚫 Accès refusé à ${ip}\n`);
       alreadyTriedToConnect.push(ip);
+    }
+    return res.status(403).sendFile(path.join(config.PUBLIC, "403.html"));
+  }
+
+  if (isPseudoBlacklisted(pseudo)) {
+    const key = normalizePseudoValue(pseudo);
+    if (key && !alreadyTriedToConnectPseudos.includes(key)) {
+      console.log(`\n🚫 Accès refusé au pseudo ${pseudo}\n`);
+      alreadyTriedToConnectPseudos.push(key);
     }
     return res.status(403).sendFile(path.join(config.PUBLIC, "403.html"));
   }
@@ -96,11 +171,13 @@ class FileService {
       chatLogs: path.join(config.DATA, "chat_logs.jsonl"),
       pfps: path.join(config.DATA, "pfps.json"),
       pfpRequests: path.join(config.DATA, "pfp_requests.json"),
+      customBadgeRequests: path.join(config.DATA, "custom_badge_requests.json"),
       chatBadges: path.join(config.DATA, "chat_badges.json"),
       dinoScores: path.join(config.DATA, "dino_scores.json"),
       flappyScores: path.join(config.DATA, "flappy_scores.json"),
       runnerResume: path.join(config.DATA, "runner_resume.json"),
       unoWins: path.join(config.DATA, "uno_wins.json"),
+      unoStats: path.join(config.DATA, "uno_stats.json"),
       medals: path.join(config.DATA, "medals.json"),
       p4Wins: path.join(config.DATA, "p4_wins.json"),
       blockblastScores: path.join(config.DATA, "blockblast_scores.json"),
@@ -123,6 +200,8 @@ class FileService {
       dms: path.join(config.DATA, "dms.json"),
       sharedFiles: path.join(config.DATA, "shared_files.json"),
       easterEggTracking: path.join(config.DATA, "easter_egg_tracking.json"),
+      shopCatalog: path.join(config.DATA, "shop_catalog.json"),
+      reviveLives: path.join(config.DATA, "revive_lives.json"),
       fileActions: path.join(config.DATA, "file_actions.log"),
     };
 
@@ -158,11 +237,140 @@ class FileService {
   }
 
   loadAll() {
+    const defaultShopCatalog = {
+      items: {
+        glitch: {
+          id: "glitch",
+          name: "Glitch Neon",
+          emoji: "\u26A1",
+          price: 2400,
+          available: true,
+          desc: "Animation neon avec un effet glitch sur ton pseudo.",
+        },
+        royal: {
+          id: "royal",
+          name: "Couronne Royale",
+          emoji: "\uD83D\uDC51",
+          price: 5200,
+          available: true,
+          desc: "Halo dore et bordure premium sur la fiche profil.",
+        },
+        pixel: {
+          id: "pixel",
+          name: "Pixel Runner",
+          emoji: "\uD83D\uDFE9",
+          price: 1800,
+          available: true,
+          desc: "Traileur pixel vert pendant les mini-jeux arcade.",
+        },
+        meteor: {
+          id: "meteor",
+          name: "Impact Meteor",
+          emoji: "\u2604\uFE0F",
+          price: 6800,
+          available: false,
+          desc: "Badge de saison avec explosion lumineuse sur la sidebar.",
+        },
+        arc: {
+          id: "arc",
+          name: "Arc Lumineux",
+          emoji: "\uD83C\uDF19",
+          price: 950,
+          available: true,
+          desc: "Halo discret autour de ton avatar dans le chat.",
+        },
+        circuit: {
+          id: "circuit",
+          name: "Circuit Bleu",
+          emoji: "\uD83E\uDDE0",
+          price: 3100,
+          available: true,
+          desc: "Effet de circuit anime pour les profils verification pro.",
+        },
+        ember: {
+          id: "ember",
+          name: "Embers",
+          emoji: "\uD83D\uDD25",
+          price: 2100,
+          available: true,
+          desc: "Petites braises autour du badge lors des events nocturnes.",
+        },
+        pulse: {
+          id: "pulse",
+          name: "Pulse",
+          emoji: "\uD83D\uDCA0",
+          price: 750,
+          available: true,
+          desc: "Pulse discret pendant les parties rapides.",
+        },
+        life_1: {
+          id: "life_1",
+          name: "Vie x1",
+          emoji: "\u2764\uFE0F",
+          price: 12500,
+          available: true,
+          type: "revive_life",
+          amount: 1,
+          desc: "Ajoute 1 vie de reanimation pour les mini-jeux.",
+        },
+        life_2: {
+          id: "life_2",
+          name: "Vie x2",
+          emoji: "\u2764\uFE0F\u2764\uFE0F",
+          price: 23000,
+          available: true,
+          type: "revive_life",
+          amount: 2,
+          desc: "Ajoute 2 vies de reanimation pour les mini-jeux.",
+        },
+        life_3: {
+          id: "life_3",
+          name: "Vie x3",
+          emoji: "\u2764\uFE0F\u2764\uFE0F\u2764\uFE0F",
+          price: 33000,
+          available: true,
+          type: "revive_life",
+          amount: 3,
+          desc: "Ajoute 3 vies de reanimation pour les mini-jeux.",
+        },
+        pixel_1: {
+          id: "pixel_1",
+          name: "Pixel x1",
+          emoji: "\uD83D\uDFE9",
+          price: 2500,
+          available: true,
+          type: "pixelwar",
+          upgrade: "pixel_1",
+          desc: "Ajoute 1 pixel a placer dans Pixel War.",
+        },
+        pixel_15: {
+          id: "pixel_15",
+          name: "Pixels x15",
+          emoji: "\uD83D\uDFE9",
+          price: 30000,
+          available: true,
+          type: "pixelwar",
+          upgrade: "pixel_15",
+          desc: "Ajoute 15 pixels a placer dans Pixel War.",
+        },
+        storage_10: {
+          id: "storage_10",
+          name: "Stockage +10",
+          emoji: "\uD83D\uDCE6",
+          price: 10500,
+          available: true,
+          type: "pixelwar",
+          upgrade: "storage_10",
+          desc: "Augmente la capacite Pixel War de 10.",
+        },
+      },
+    };
     return {
       clicks: this.readJSON(this.files.clicks, {}),
       historique: this.readJSON(this.files.historique, []),
       pfps: this.readJSON(this.files.pfps, {}),
       pfpRequests: this.readJSON(this.files.pfpRequests, []),
+      customBadgeRequests: this.readJSON(this.files.customBadgeRequests, []),
       chatBadges: this.readJSON(this.files.chatBadges, {
         catalog: {},
         users: {},
@@ -172,6 +380,7 @@ class FileService {
       flappyScores: this.readJSON(this.files.flappyScores, {}),
       runnerResume: this.readJSON(this.files.runnerResume, {}),
       unoWins: this.readJSON(this.files.unoWins, {}),
+      unoStats: this.readJSON(this.files.unoStats, {}),
       p4Wins: this.readJSON(this.files.p4Wins, {}),
       blockblastScores: this.readJSON(this.files.blockblastScores, {}),
       blockblastSaves: this.readJSON(this.files.blockblastSaves, {}),
@@ -193,6 +402,8 @@ class FileService {
       dms: this.readJSON(this.files.dms, []),
       sharedFiles: this.readJSON(this.files.sharedFiles, {}),
       easterEggs: this.readJSON(this.files.easterEggTracking, { users: {} }),
+      shopCatalog: this.readJSON(this.files.shopCatalog, defaultShopCatalog),
+      reviveLives: this.readJSON(this.files.reviveLives, { users: {} }),
       // fileActions is an append-only log, don't try to parse as JSON here
     };
   }
@@ -274,12 +485,14 @@ class FileService {
       historique: this.files.historique,
       pfps: this.files.pfps,
       pfpRequests: this.files.pfpRequests,
+      customBadgeRequests: this.files.customBadgeRequests,
       chatBadges: this.files.chatBadges,
       dinoScores: this.files.dinoScores,
       medals: this.files.medals,
       flappyScores: this.files.flappyScores,
       runnerResume: this.files.runnerResume,
       unoWins: this.files.unoWins,
+      unoStats: this.files.unoStats,
       p4Wins: this.files.p4Wins,
       blockblastScores: this.files.blockblastScores,
       blockblastSaves: this.files.blockblastSaves,
@@ -302,6 +515,8 @@ class FileService {
       dms: this.files.dms,
       sharedFiles: this.files.sharedFiles,
       easterEggs: this.files.easterEggTracking,
+      shopCatalog: this.files.shopCatalog,
+      reviveLives: this.files.reviveLives,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);
@@ -394,4 +609,6 @@ module.exports = {
   GameStateManager,
   getIpFromSocket,
   persistBanIp,
+  persistBanPseudo,
+  isPseudoBlacklisted,
 };

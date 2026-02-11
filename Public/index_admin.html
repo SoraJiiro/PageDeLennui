@@ -164,6 +164,32 @@
                         </div>
                     </section>
 
+                    <!-- CUSTOM BADGE REQUESTS -->
+                    <section class="admin-section" style="order: 3;">
+                        <h2><i class="fa-solid fa-certificate"></i> /Badges
+                            perso</h2>
+                        <div class="transactions-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pseudo</th>
+                                        <th>Emoji</th>
+                                        <th>Nom</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="custom-badge-requests-list"></tbody>
+                            </table>
+                            <center>
+                                <button onclick="refreshCustomBadgeRequests()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
+                        </div>
+                    </section>
+
                     <!-- Sections "Fichiers partagés" et "Logs actions fichiers" supprimées -->
 
                     <!-- BADGES CHAT -->
@@ -240,6 +266,99 @@
                                     </tr>
                                 </thead>
                                 <tbody id="badges-catalog-list"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- SHOP BADGES -->
+                    <section class="admin-section" style="order: 10;">
+                        <h2><i class="fa-solid fa-cart-shopping"></i> /Shop
+                            badges</h2>
+                        <div class="transactions-container">
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="shopItemId">ID</label>
+                                        <input id="shopItemId"
+                                            placeholder="ex: glitch" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="shopItemEmoji">Emoji</label>
+                                        <input id="shopItemEmoji"
+                                            placeholder="⚡" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="shopItemName">Nom</label>
+                                        <input id="shopItemName"
+                                            placeholder="Glitch Neon" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="shopItemPrice">Prix</label>
+                                        <input id="shopItemPrice" type="number"
+                                            min="1" placeholder="2400" />
+                                    </div>
+                                </div>
+
+                                <div class="form-row"
+                                    style="grid-template-columns: 1fr 1fr 1fr auto;">
+                                    <div class="form-field">
+                                        <label
+                                            for="shopItemDesc">Description</label>
+                                        <textarea id="shopItemDesc"
+                                            placeholder="Description courte"></textarea>
+                                    </div>
+                                    <div class="form-field">
+                                        <label
+                                            for="shopItemAvailable">Disponible</label>
+                                        <input id="shopItemAvailable"
+                                            type="checkbox" checked />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="shopItemSelect">Modifier un
+                                            badge</label>
+                                        <select id="shopItemSelect"></select>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="createShopItem()"
+                                            class="btn"><i
+                                                class="fa-solid fa-plus"></i>
+                                            Creer</button>
+                                        <button onclick="updateShopItem()"
+                                            class="btn"><i
+                                                class="fa-solid fa-pen"></i>
+                                            Modifier</button>
+                                    </div>
+                                </div>
+
+                                <div class="form-row"
+                                    style="grid-template-columns: 1fr auto;">
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="deleteShopItem()"
+                                            class="btn btn-red"><i
+                                                class="fa-solid fa-trash"></i>
+                                            Supprimer</button>
+                                        <button onclick="refreshShopCatalog()"
+                                            class="btn"><i
+                                                class="fa-solid fa-rotate"></i>
+                                            Refresh</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Emoji</th>
+                                        <th>Nom</th>
+                                        <th>Prix</th>
+                                        <th>Dispo</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shop-catalog-list"></tbody>
                             </table>
                         </div>
                     </section>
@@ -992,6 +1111,10 @@
                         <div class="control-form">
                             <div style="margin-bottom:8px">IP(s) blacklistées:
                                 <strong id="blacklistCount">0</strong></div>
+                            <div style="margin-bottom:8px">Pseudo(s)
+                                blacklistés:
+                                <strong id="blacklistPseudoCount">0</strong>
+                            </div>
 
                             <div class="form-row">
                                 <div class="form-field">
@@ -1007,13 +1130,33 @@
                                 </div>
                             </div>
 
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>Pseudo à bannir</label>
+                                    <input type="text"
+                                        id="blacklistPseudoInput"
+                                        placeholder="Pseudo" />
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="btn btn-red"
+                                        onclick="addPseudoBanFromInput()">Bannir</button>
+                                </div>
+                            </div>
+
                             <!-- textarea removed: blacklist managed via add/remove buttons -->
 
                             <div style="margin-top:12px">
-                                <label>Liste actuelle</label>
+                                <label>Liste actuelle (IPs)</label>
                                 <table
                                     style="width:100%;border-collapse:collapse;margin-top:6px"><tbody
                                         id="blacklistList"></tbody></table>
+                            </div>
+
+                            <div style="margin-top:12px">
+                                <label>Liste actuelle (Pseudos)</label>
+                                <table
+                                    style="width:100%;border-collapse:collapse;margin-top:6px"><tbody
+                                        id="blacklistPseudoList"></tbody></table>
                             </div>
                         </div>
                     </section>
@@ -1138,6 +1281,48 @@
             loadAdminSurveys();
         }
 
+        const adminRefreshHandlers = {
+            'transactions': () => refreshTransactions(),
+            'password-requests': () => refreshPasswordRequests(),
+            'pfp-requests': () => refreshPfpRequests(),
+            'custom-badge-requests': () => refreshCustomBadgeRequests(),
+            'badges': () => refreshBadges(),
+            'shop-catalog': () => refreshShopCatalog(),
+            'daily-cap': () => refreshDailyCap(),
+            'ee-completions': () => refreshEeCompletions(),
+            'tag-requests': () => loadTagRequests(),
+            'surveys': () => loadAdminSurveys(),
+            'cheaters': () => loadCheaters(),
+        };
+
+        const adminRefreshTimers = new Map();
+
+        function scheduleAdminRefresh(typeOrList) {
+            const types = Array.isArray(typeOrList) ? typeOrList : [typeOrList];
+            types.forEach((entry) => {
+                const key = String(entry || '').trim();
+                if (!key) return;
+                if (key === 'all') {
+                    Object.keys(adminRefreshHandlers).forEach((k) => scheduleAdminRefresh(k));
+                    return;
+                }
+                const handler = adminRefreshHandlers[key];
+                if (!handler) return;
+                if (adminRefreshTimers.has(key)) return;
+                adminRefreshTimers.set(
+                    key,
+                    setTimeout(() => {
+                        adminRefreshTimers.delete(key);
+                        try {
+                            handler();
+                        } catch (err) {
+                            console.warn('Erreur refresh admin:', key, err);
+                        }
+                    }, 150),
+                );
+            });
+        }
+
         // Initialiser Socket.IO
         function initSocket() {
             // on crée la socket sans auto-connexion pour pouvoir initialiser
@@ -1186,6 +1371,21 @@
                 }
             });
 
+            socket.on('admin:data:refresh', (payload) => {
+                const types = payload?.types || (payload?.type ? [payload.type] : []);
+                scheduleAdminRefresh(types);
+            });
+
+            socket.on('admin:new_transaction', () => {
+                scheduleAdminRefresh('transactions');
+            });
+
+            const onSurveyChange = () => scheduleAdminRefresh('surveys');
+            socket.on('survey:new', onSurveyChange);
+            socket.on('survey:update', onSurveyChange);
+            socket.on('survey:closed', onSurveyChange);
+            socket.on('survey:deleted', onSurveyChange);
+
             // Leaderboards
             socket.on('clicker:leaderboard', (data) => updateLeaderboard('clicker', data, 'score'));
             socket.on('dino:leaderboard', (data) => updateLeaderboard('dino', data, 'score'));
@@ -1220,14 +1420,28 @@
             socket.on('admin:blacklist:result', (res) => {
                 if (!res) return;
                 if (!res.success) return showNotification(`❌ ${res.message || 'Erreur blacklist'}`, 'error');
-                window.__adminBlacklistData = res.data || { alwaysBlocked: [] };
+                const payload = (res.data && typeof res.data === 'object' && !Array.isArray(res.data))
+                    ? res.data
+                    : { alwaysBlocked: Array.isArray(res.data) ? res.data : [], alwaysBlockedPseudos: [] };
+                window.__adminBlacklistData = {
+                    alwaysBlocked: Array.isArray(payload.alwaysBlocked) ? payload.alwaysBlocked : [],
+                    alwaysBlockedPseudos: Array.isArray(payload.alwaysBlockedPseudos) ? payload.alwaysBlockedPseudos : []
+                };
                 window.__adminBlacklistForced = Array.isArray(res.forced) ? res.forced : [];
+                window.__adminBlacklistForcedPseudos = Array.isArray(res.forcedPseudos) ? res.forcedPseudos : [];
                 renderBlacklist();
             });
 
             socket.on('admin:blacklist:updated', (alwaysBlocked) => {
-                window.__adminBlacklistData = { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [] };
+                const payload = (alwaysBlocked && typeof alwaysBlocked === 'object' && !Array.isArray(alwaysBlocked))
+                    ? alwaysBlocked
+                    : { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [], alwaysBlockedPseudos: [] };
+                window.__adminBlacklistData = {
+                    alwaysBlocked: Array.isArray(payload.alwaysBlocked) ? payload.alwaysBlocked : [],
+                    alwaysBlockedPseudos: Array.isArray(payload.alwaysBlockedPseudos) ? payload.alwaysBlockedPseudos : []
+                };
                 if (!Array.isArray(window.__adminBlacklistForced)) window.__adminBlacklistForced = [];
+                if (!Array.isArray(window.__adminBlacklistForcedPseudos)) window.__adminBlacklistForcedPseudos = [];
                 renderBlacklist();
                 showNotification('✅ Blacklist mise à jour', 'success');
             });
@@ -1569,6 +1783,86 @@
             }
         }
 
+        // --- Custom badge requests ---
+        async function refreshCustomBadgeRequests() {
+            try {
+                const res = await fetch('/api/admin/custom-badges/requests');
+                if (!res.ok) return;
+                const requests = await res.json();
+                const pending = requests.filter(r => r.status === 'pending');
+
+                const tbody = document.getElementById('custom-badge-requests-list');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                if (pending.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucune demande</td></tr>';
+                    return;
+                }
+
+                pending.forEach(req => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${req.pseudo}</td>
+                        <td>${req.emoji || ''}</td>
+                        <td>${req.name || ''}</td>
+                        <td>${new Date(req.createdAt || Date.now()).toLocaleString()}</td>
+                        <td>
+                            <button onclick="approveCustomBadge('${req.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;" title="Approuver">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                            <button onclick="rejectCustomBadge('${req.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;" title="Refuser">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error('Erreur refreshCustomBadgeRequests', e);
+            }
+        }
+
+        async function approveCustomBadge(id) {
+            if (!confirm('Valider ce badge perso ?')) return;
+            try {
+                const res = await fetch('/api/admin/custom-badges/requests/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    showNotification('Badge perso validé', 'success');
+                    refreshCustomBadgeRequests();
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function rejectCustomBadge(id) {
+            const reason = prompt('Raison du refus ? (optionnel)') || '';
+            if (!confirm('Refuser ce badge perso ?')) return;
+            try {
+                const res = await fetch('/api/admin/custom-badges/requests/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, reason })
+                });
+                if (res.ok) {
+                    showNotification('Badge perso refusé', 'success');
+                    refreshCustomBadgeRequests();
+                } else {
+                    showNotification('Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         // --- Badges (chat) ---
         let _badgesCache = null;
         async function refreshBadges() {
@@ -1593,7 +1887,10 @@
                                 <td>${def.emoji || ''}</td>
                                 <td>${def.name || ''}</td>
                                 <td>
-                                    <button onclick="deleteBadge('${id}')" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;" title="Supprimer">
+                                    <button class="btn" onclick="updateBadge('${id}')" title="Modifier">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button onclick="deleteBadge('${id}')" class="btn btn-red" title="Supprimer">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </td>
@@ -1663,6 +1960,75 @@
             }
         }
 
+        async function updateBadge(id) {
+            openBadgeEditModal(id);
+        }
+
+        function openBadgeEditModal(id) {
+            const catalog = _badgesCache && _badgesCache.catalog ? _badgesCache.catalog : {};
+            const current = catalog[id] || {};
+            const modal = document.getElementById('badge-edit-modal');
+            if (!modal) return;
+
+            modal.dataset.originalId = id;
+            const idInput = document.getElementById('badgeEditId');
+            const emojiInput = document.getElementById('badgeEditEmoji');
+            const nameInput = document.getElementById('badgeEditName');
+
+            if (idInput) idInput.value = id;
+            if (emojiInput) emojiInput.value = current.emoji || '';
+            if (nameInput) nameInput.value = current.name || id;
+
+            modal.style.display = 'flex';
+            if (idInput) setTimeout(() => idInput.focus(), 0);
+        }
+
+        function closeBadgeEditModal() {
+            const modal = document.getElementById('badge-edit-modal');
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.dataset.originalId = '';
+        }
+
+        async function submitBadgeEdit() {
+            const modal = document.getElementById('badge-edit-modal');
+            if (!modal) return;
+            const originalId = modal.dataset.originalId || '';
+            const idInput = document.getElementById('badgeEditId');
+            const emojiInput = document.getElementById('badgeEditEmoji');
+            const nameInput = document.getElementById('badgeEditName');
+
+            const cleanedId = String(idInput?.value || '').trim();
+            const cleanedEmoji = String(emojiInput?.value || '').trim();
+            const cleanedName = String(nameInput?.value || '').trim();
+
+            if (!originalId || !cleanedId || !cleanedEmoji || !cleanedName) {
+                showNotification('Champs manquants', 'error');
+                return;
+            }
+
+            if (!confirm(`Modifier le badge ${originalId} ?`)) return;
+
+            try {
+                const res = await fetch('/api/admin/badges/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: originalId, newId: cleanedId, emoji: cleanedEmoji, name: cleanedName })
+                });
+                const data = await res.json().catch(()=>({}));
+                if (res.ok) {
+                    showNotification('Badge modifié', 'success');
+                    closeBadgeEditModal();
+                    refreshBadges();
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur', 'error');
+            }
+        }
+
         async function assignBadge(action) {
             const pseudo = (document.getElementById('assignPseudo')?.value || '').trim();
             const badgeId = (document.getElementById('assignBadgeId')?.value || '').trim();
@@ -1679,6 +2045,160 @@
                 const data = await res.json().catch(()=>({}));
                 if (res.ok) {
                     showNotification(action === 'remove' ? 'Badge retiré' : 'Badge donné', 'success');
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // --- Shop badges ---
+        let _shopCatalogCache = [];
+
+        function readShopForm() {
+            return {
+                id: (document.getElementById('shopItemId')?.value || '').trim(),
+                emoji: (document.getElementById('shopItemEmoji')?.value || '').trim(),
+                name: (document.getElementById('shopItemName')?.value || '').trim(),
+                price: parseInt(document.getElementById('shopItemPrice')?.value, 10),
+                desc: (document.getElementById('shopItemDesc')?.value || '').trim(),
+                available: Boolean(document.getElementById('shopItemAvailable')?.checked)
+            };
+        }
+
+        function fillShopForm(item) {
+            if (!item) return;
+            const idInput = document.getElementById('shopItemId');
+            const emojiInput = document.getElementById('shopItemEmoji');
+            const nameInput = document.getElementById('shopItemName');
+            const priceInput = document.getElementById('shopItemPrice');
+            const descInput = document.getElementById('shopItemDesc');
+            const availableInput = document.getElementById('shopItemAvailable');
+
+            if (idInput) idInput.value = item.id || '';
+            if (emojiInput) emojiInput.value = item.emoji || '';
+            if (nameInput) nameInput.value = item.name || '';
+            if (priceInput) priceInput.value = item.price || '';
+            if (descInput) descInput.value = item.desc || '';
+            if (availableInput) availableInput.checked = !!item.available;
+        }
+
+        async function refreshShopCatalog() {
+            try {
+                const res = await fetch('/api/admin/shop/catalog');
+                if (!res.ok) return;
+                const data = await res.json();
+                const items = Array.isArray(data.items) ? data.items : [];
+                _shopCatalogCache = items.slice();
+
+                const tbody = document.getElementById('shop-catalog-list');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    if (items.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Aucun badge</td></tr>';
+                    } else {
+                        items
+                            .slice()
+                            .sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')))
+                            .forEach((item) => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td>${item.id || ''}</td>
+                                    <td>${item.emoji || ''}</td>
+                                    <td>${item.name || ''}</td>
+                                    <td>${typeof item.price === 'number' ? item.price.toLocaleString('fr-FR') : ''}</td>
+                                    <td>${item.available ? 'Oui' : 'Non'}</td>
+                                    <td>${item.desc || ''}</td>
+                                `;
+                                tbody.appendChild(tr);
+                            });
+                    }
+                }
+
+                const select = document.getElementById('shopItemSelect');
+                if (select) {
+                    select.innerHTML = '';
+                    items
+                        .slice()
+                        .sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')))
+                        .forEach((item) => {
+                            const opt = document.createElement('option');
+                            opt.value = item.id;
+                            opt.textContent = `${item.id} ${item.emoji ? '(' + item.emoji + ')' : ''} - ${item.name || ''}`;
+                            select.appendChild(opt);
+                        });
+                }
+            } catch (e) {
+                console.error('Erreur refreshShopCatalog', e);
+            }
+        }
+
+        async function createShopItem() {
+            const payload = readShopForm();
+            if (!payload.id || !payload.name || !payload.emoji || !payload.price) {
+                showNotification('Champs manquants', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/shop/catalog/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(()=>({}));
+                if (res.ok) {
+                    showNotification('Badge shop créé', 'success');
+                    refreshShopCatalog();
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function updateShopItem() {
+            const payload = readShopForm();
+            if (!payload.id) {
+                showNotification('ID manquant', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/api/admin/shop/catalog/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(()=>({}));
+                if (res.ok) {
+                    showNotification('Badge shop modifié', 'success');
+                    refreshShopCatalog();
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteShopItem() {
+            const id = (document.getElementById('shopItemSelect')?.value || '').trim();
+            if (!id) {
+                showNotification('ID manquant', 'error');
+                return;
+            }
+            if (!confirm(`Supprimer le badge shop ${id} ?`)) return;
+            try {
+                const res = await fetch('/api/admin/shop/catalog/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json().catch(()=>({}));
+                if (res.ok) {
+                    showNotification('Badge shop supprimé', 'success');
+                    refreshShopCatalog();
                 } else {
                     showNotification(data.message || 'Erreur', 'error');
                 }
@@ -1858,7 +2378,18 @@
         refreshTransactions();
         refreshPasswordRequests();
         refreshPfpRequests();
+        refreshCustomBadgeRequests();
         refreshBadges();
+        refreshShopCatalog();
+
+        const shopSelect = document.getElementById('shopItemSelect');
+        if (shopSelect) {
+            shopSelect.addEventListener('change', () => {
+                const id = shopSelect.value;
+                const item = _shopCatalogCache.find((x) => x && x.id === id);
+                fillShopForm(item);
+            });
+        }
         refreshDailyCap();
         refreshEeCompletions();
 
@@ -2899,39 +3430,77 @@ async function modifyTries() {
         socket && socket.on && socket.on('admin:blacklist:result', (res) => {
             if (!res) return;
             if (!res.success) return showNotification(`❌ ${res.message || 'Erreur blacklist'}`, 'error');
-            window.__adminBlacklistData = res.data || { alwaysBlocked: [] };
+            const payload = (res.data && typeof res.data === 'object' && !Array.isArray(res.data))
+                ? res.data
+                : { alwaysBlocked: Array.isArray(res.data) ? res.data : [], alwaysBlockedPseudos: [] };
+            window.__adminBlacklistData = {
+                alwaysBlocked: Array.isArray(payload.alwaysBlocked) ? payload.alwaysBlocked : [],
+                alwaysBlockedPseudos: Array.isArray(payload.alwaysBlockedPseudos) ? payload.alwaysBlockedPseudos : []
+            };
             window.__adminBlacklistForced = Array.isArray(res.forced) ? res.forced : [];
+            window.__adminBlacklistForcedPseudos = Array.isArray(res.forcedPseudos) ? res.forcedPseudos : [];
             renderBlacklist();
         });
 
         socket && socket.on && socket.on('admin:blacklist:updated', (alwaysBlocked) => {
-            // admin:blacklist:updated provides updated alwaysBlocked array; forced list remains from initial payload
-            window.__adminBlacklistData = { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [] };
-            // ensure forced list exists
+            // admin:blacklist:updated provides updated data object or alwaysBlocked array
+            const payload = (alwaysBlocked && typeof alwaysBlocked === 'object' && !Array.isArray(alwaysBlocked))
+                ? alwaysBlocked
+                : { alwaysBlocked: Array.isArray(alwaysBlocked) ? alwaysBlocked : [], alwaysBlockedPseudos: [] };
+            window.__adminBlacklistData = {
+                alwaysBlocked: Array.isArray(payload.alwaysBlocked) ? payload.alwaysBlocked : [],
+                alwaysBlockedPseudos: Array.isArray(payload.alwaysBlockedPseudos) ? payload.alwaysBlockedPseudos : []
+            };
+            // ensure forced lists exist
             if (!Array.isArray(window.__adminBlacklistForced)) window.__adminBlacklistForced = [];
+            if (!Array.isArray(window.__adminBlacklistForcedPseudos)) window.__adminBlacklistForcedPseudos = [];
             renderBlacklist();
             showNotification('✅ Blacklist mise à jour', 'success');
         });
 
         function renderBlacklist() {
-            const data = window.__adminBlacklistData || { alwaysBlocked: [] };
-            const arr = Array.isArray(data.alwaysBlocked) ? data.alwaysBlocked : [];
+            const data = window.__adminBlacklistData || { alwaysBlocked: [], alwaysBlockedPseudos: [] };
+            const ipArr = Array.isArray(data.alwaysBlocked) ? data.alwaysBlocked : [];
+            const pseudoArr = Array.isArray(data.alwaysBlockedPseudos) ? data.alwaysBlockedPseudos : [];
             const list = document.getElementById('blacklistList');
+            const pseudoList = document.getElementById('blacklistPseudoList');
             const count = document.getElementById('blacklistCount');
-            if (count) count.textContent = arr.length;
-            if (!list) return;
-            list.innerHTML = '';
+            const pseudoCount = document.getElementById('blacklistPseudoCount');
+            if (count) count.textContent = ipArr.length;
+            if (pseudoCount) pseudoCount.textContent = pseudoArr.length;
+            if (list) list.innerHTML = '';
+            if (pseudoList) pseudoList.innerHTML = '';
+
             const forced = Array.isArray(window.__adminBlacklistForced) ? window.__adminBlacklistForced : [];
-            arr.forEach(ip => {
-                const tr = document.createElement('tr');
-                const isForced = forced.includes(ip);
-                if (isForced) {
-                    tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip} <span style="color:#b00;font-weight:700;margin-left:8px">(FORCÉE)</span></td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn" disabled style="opacity:0.5;cursor:not-allowed">Unban</button></td>`;
-                } else {
-                    tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip}</td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn btn-red" onclick="removeBan('${ip}')">Unban</button></td>`;
-                }
-                list.appendChild(tr);
-            });
+            const forcedPseudos = Array.isArray(window.__adminBlacklistForcedPseudos)
+                ? window.__adminBlacklistForcedPseudos
+                : [];
+
+            if (list) {
+                ipArr.forEach(ip => {
+                    const tr = document.createElement('tr');
+                    const isForced = forced.includes(ip);
+                    if (isForced) {
+                        tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip} <span style="color:#b00;font-weight:700;margin-left:8px">(FORCÉE)</span></td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn" disabled style="opacity:0.5;cursor:not-allowed">Unban</button></td>`;
+                    } else {
+                        tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${ip}</td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn btn-red" onclick="removeBan('${ip}')">Unban</button></td>`;
+                    }
+                    list.appendChild(tr);
+                });
+            }
+
+            if (pseudoList) {
+                pseudoArr.forEach(p => {
+                    const tr = document.createElement('tr');
+                    const isForced = forcedPseudos.some(fp => fp && fp.toLowerCase && fp.toLowerCase() === String(p).toLowerCase());
+                    if (isForced) {
+                        tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${p} <span style="color:#b00;font-weight:700;margin-left:8px">(FORCÉ)</span></td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn" disabled style="opacity:0.5;cursor:not-allowed">Unban</button></td>`;
+                    } else {
+                        tr.innerHTML = `<td style="padding:6px;border:1px solid #222">${p}</td><td style="padding:6px;border:1px solid #222;text-align:right"><button class="btn btn-red" onclick="removePseudoBan('${p}')">Unban</button></td>`;
+                    }
+                    pseudoList.appendChild(tr);
+                });
+            }
         }
 
         function addBanFromInput() {
@@ -2945,9 +3514,23 @@ async function modifyTries() {
             document.getElementById('blacklistInput').value = '';
         }
 
+        function addPseudoBanFromInput() {
+            const pseudo = document.getElementById('blacklistPseudoInput').value.trim();
+            if (!pseudo) return showNotification('⚠️ Entrez un pseudo', 'error');
+            if (!confirm(`Bannir ${pseudo} ?`)) return;
+            socket.emit('admin:blacklist:pseudo:add', { pseudo });
+            loadBlacklist();
+            document.getElementById('blacklistPseudoInput').value = '';
+        }
+
         function removeBan(ip) {
             if (!confirm(`Retirer le ban pour ${ip} ?`)) return;
             socket.emit('admin:blacklist:remove', { ip });
+        }
+
+        function removePseudoBan(pseudo) {
+            if (!confirm(`Retirer le ban pour ${pseudo} ?`)) return;
+            socket.emit('admin:blacklist:pseudo:remove', { pseudo });
         }
 
         function disconnectOtherAdmins() {
@@ -3557,6 +4140,32 @@ async function modifyTries() {
                         class="btn-cancel">Annuler</button>
                     <button id="password-confirm"
                         class="btn-confirm">Confirmer</button>
+                </div>
+            </div>
+        </div>
+        <!-- Badge Edit Modal -->
+        <div id="badge-edit-modal" class="modal-overlay" style="display:none;"
+            onclick="closeBadgeEditModal()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <h3>Modifier un badge</h3>
+                <p>Modifie l'ID, l'emoji ou le nom du badge.</p>
+                <div class="input-group">
+                    <label for="badgeEditId">ID</label>
+                    <input id="badgeEditId" placeholder="ex: star" />
+                </div>
+                <div class="input-group">
+                    <label for="badgeEditEmoji">Emoji</label>
+                    <input id="badgeEditEmoji" placeholder="⭐" />
+                </div>
+                <div class="input-group">
+                    <label for="badgeEditName">Nom</label>
+                    <input id="badgeEditName" placeholder="Star" />
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel"
+                        onclick="closeBadgeEditModal()">Annuler</button>
+                    <button type="button" class="btn-confirm"
+                        onclick="submitBadgeEdit()">Enregistrer</button>
                 </div>
             </div>
         </div>

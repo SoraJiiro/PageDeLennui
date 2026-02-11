@@ -11,6 +11,20 @@ function registerAdminHandlers({
   gameState,
   pixelWarGame,
 }) {
+  const normalizePseudoValue = (p) => {
+    const raw = String(p || "").trim();
+    return raw ? raw.toLowerCase() : "";
+  };
+
+  const listHasPseudo = (list, p) => {
+    const key = normalizePseudoValue(p);
+    if (!key) return false;
+    return list.some((entry) => normalizePseudoValue(entry) === key);
+  };
+
+  const getSocketPseudo = (s) => {
+    return s?.data?.pseudo || s?.handshake?.session?.user?.pseudo || null;
+  };
   // ------- Admin Events -------
   socket.on("admin:rules:resetAll", () => {
     if (pseudo !== "Admin") return;
@@ -65,11 +79,22 @@ function registerAdminHandlers({
         alwaysBlocked: Array.isArray(config.BLACKLIST)
           ? config.BLACKLIST.slice()
           : [],
+        alwaysBlockedPseudos: Array.isArray(config.BLACKLIST_PSEUDOS)
+          ? config.BLACKLIST_PSEUDOS.slice()
+          : [],
       };
       const forced = Array.isArray(config.FORCED_ALWAYS_BLOCKED)
         ? config.FORCED_ALWAYS_BLOCKED
         : [];
-      socket.emit("admin:blacklist:result", { success: true, data, forced });
+      const forcedPseudos = Array.isArray(config.FORCED_ALWAYS_BLOCKED_PSEUDOS)
+        ? config.FORCED_ALWAYS_BLOCKED_PSEUDOS
+        : [];
+      socket.emit("admin:blacklist:result", {
+        success: true,
+        data,
+        forced,
+        forcedPseudos,
+      });
     } catch (e) {
       socket.emit("admin:blacklist:result", {
         success: false,
@@ -88,7 +113,12 @@ function registerAdminHandlers({
     try {
       if (!Array.isArray(config.BLACKLIST)) config.BLACKLIST = [];
       if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
-      const data = { alwaysBlocked: config.BLACKLIST.slice() };
+      const data = {
+        alwaysBlocked: config.BLACKLIST.slice(),
+        alwaysBlockedPseudos: Array.isArray(config.BLACKLIST_PSEUDOS)
+          ? config.BLACKLIST_PSEUDOS.slice()
+          : [],
+      };
 
       try {
         io.sockets.sockets.forEach((s) => {
@@ -109,12 +139,66 @@ function registerAdminHandlers({
         });
       } catch (e) {}
 
-      io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
+      io.to("admins").emit("admin:blacklist:updated", data);
       socket.emit("admin:blacklist:result", { success: true, data });
     } catch (e) {
       socket.emit("admin:blacklist:result", {
         success: false,
         message: "Erreur ajout blacklist",
+      });
+    }
+  });
+
+  socket.on("admin:blacklist:pseudo:add", ({ pseudo: target }) => {
+    if (pseudo !== "Admin") return;
+    const targetPseudo = String(target || "").trim();
+    if (!targetPseudo)
+      return socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Pseudo manquant",
+      });
+    try {
+      if (!Array.isArray(config.BLACKLIST_PSEUDOS))
+        config.BLACKLIST_PSEUDOS = [];
+      if (!listHasPseudo(config.BLACKLIST_PSEUDOS, targetPseudo)) {
+        config.BLACKLIST_PSEUDOS.push(targetPseudo);
+      }
+      const data = {
+        alwaysBlocked: Array.isArray(config.BLACKLIST)
+          ? config.BLACKLIST.slice()
+          : [],
+        alwaysBlockedPseudos: config.BLACKLIST_PSEUDOS.slice(),
+      };
+
+      try {
+        io.sockets.sockets.forEach((s) => {
+          try {
+            const sPseudo = getSocketPseudo(s);
+            if (
+              sPseudo &&
+              normalizePseudoValue(sPseudo) ===
+                normalizePseudoValue(targetPseudo)
+            ) {
+              try {
+                s.emit("system:notification", {
+                  message: "🚫 Votre pseudo a été banni",
+                  duration: 8000,
+                });
+              } catch (e) {}
+              try {
+                setTimeout(() => s.disconnect(true), 2500);
+              } catch (e) {}
+            }
+          } catch (e) {}
+        });
+      } catch (e) {}
+
+      io.to("admins").emit("admin:blacklist:updated", data);
+      socket.emit("admin:blacklist:result", { success: true, data });
+    } catch (e) {
+      socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Erreur ajout blacklist pseudo",
       });
     }
   });
@@ -139,9 +223,14 @@ function registerAdminHandlers({
 
       if (!Array.isArray(config.BLACKLIST)) config.BLACKLIST = [];
       config.BLACKLIST = config.BLACKLIST.filter((v) => v !== ip);
-      const data = { alwaysBlocked: config.BLACKLIST.slice() };
+      const data = {
+        alwaysBlocked: config.BLACKLIST.slice(),
+        alwaysBlockedPseudos: Array.isArray(config.BLACKLIST_PSEUDOS)
+          ? config.BLACKLIST_PSEUDOS.slice()
+          : [],
+      };
 
-      io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
+      io.to("admins").emit("admin:blacklist:updated", data);
       socket.emit("admin:blacklist:result", { success: true, data });
     } catch (e) {
       socket.emit("admin:blacklist:result", {
@@ -159,7 +248,12 @@ function registerAdminHandlers({
         : [];
       const provided = Array.isArray(alwaysBlocked) ? alwaysBlocked : [];
       const merged = Array.from(new Set([...forcedList, ...provided]));
-      const data = { alwaysBlocked: merged };
+      const data = {
+        alwaysBlocked: merged,
+        alwaysBlockedPseudos: Array.isArray(config.BLACKLIST_PSEUDOS)
+          ? config.BLACKLIST_PSEUDOS.slice()
+          : [],
+      };
       config.BLACKLIST = data.alwaysBlocked.slice();
 
       try {
@@ -181,12 +275,54 @@ function registerAdminHandlers({
         });
       } catch (e) {}
 
-      io.to("admins").emit("admin:blacklist:updated", data.alwaysBlocked);
+      io.to("admins").emit("admin:blacklist:updated", data);
       socket.emit("admin:blacklist:result", { success: true, data });
     } catch (e) {
       socket.emit("admin:blacklist:result", {
         success: false,
         message: "Erreur écriture blacklist",
+      });
+    }
+  });
+
+  socket.on("admin:blacklist:pseudo:remove", ({ pseudo: target }) => {
+    if (pseudo !== "Admin") return;
+    const targetPseudo = String(target || "").trim();
+    if (!targetPseudo)
+      return socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Pseudo manquant",
+      });
+    try {
+      const forcedList = Array.isArray(config.FORCED_ALWAYS_BLOCKED_PSEUDOS)
+        ? config.FORCED_ALWAYS_BLOCKED_PSEUDOS
+        : [];
+      if (listHasPseudo(forcedList, targetPseudo)) {
+        return socket.emit("admin:blacklist:result", {
+          success: false,
+          message: "Impossible de retirer un pseudo forcé",
+        });
+      }
+
+      if (!Array.isArray(config.BLACKLIST_PSEUDOS))
+        config.BLACKLIST_PSEUDOS = [];
+      config.BLACKLIST_PSEUDOS = config.BLACKLIST_PSEUDOS.filter(
+        (v) => normalizePseudoValue(v) !== normalizePseudoValue(targetPseudo),
+      );
+
+      const data = {
+        alwaysBlocked: Array.isArray(config.BLACKLIST)
+          ? config.BLACKLIST.slice()
+          : [],
+        alwaysBlockedPseudos: config.BLACKLIST_PSEUDOS.slice(),
+      };
+
+      io.to("admins").emit("admin:blacklist:updated", data);
+      socket.emit("admin:blacklist:result", { success: true, data });
+    } catch (e) {
+      socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Erreur suppression blacklist pseudo",
       });
     }
   });

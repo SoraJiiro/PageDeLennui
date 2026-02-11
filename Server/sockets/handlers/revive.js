@@ -12,16 +12,15 @@ function registerReviveHandlers({
     getReviveCostForSocket,
     incrementReviveUsed,
   } = require("../../services/economy");
+  const { consumeLife } = require("../../services/reviveLives");
 
   function handleRevive(game, label, successEvent, errorEvent, color) {
     return () => {
-      const userClicks = FileService.data.clicks[pseudo] || 0;
-
       const info = getReviveCostForSocket(socket, game);
       if (!info || info.cost == null) {
         socket.emit(
           errorEvent,
-          "Contexte de réanimation introuvable (score manquant)."
+          "Contexte de réanimation introuvable (score manquant).",
         );
         return;
       }
@@ -29,6 +28,21 @@ function registerReviveHandlers({
         socket.emit(errorEvent, info.error);
         return;
       }
+
+      const lifeResult = consumeLife(FileService, pseudo);
+      if (lifeResult.used) {
+        incrementReviveUsed(socket, game);
+        socket.emit(successEvent);
+        console.log(
+          withGame(
+            `[${label}] ${pseudo} a utilise une vie de reanimation.`,
+            color,
+          ),
+        );
+        return;
+      }
+
+      const userClicks = FileService.data.clicks[pseudo] || 0;
 
       const cost = Number(info.cost);
       if (!Number.isFinite(cost) || cost < 0) {
@@ -45,7 +59,7 @@ function registerReviveHandlers({
           FileService.data.clicks[pseudo],
           io,
           false,
-          true
+          true,
         );
 
         socket.emit("clicker:you", {
@@ -59,8 +73,8 @@ function registerReviveHandlers({
         console.log(
           withGame(
             `[${label}] ${pseudo} a payé ${cost} clicks pour continuer.`,
-            color
-          )
+            color,
+          ),
         );
       } else {
         socket.emit(errorEvent, "Pas assez de clicks !");
@@ -76,8 +90,8 @@ function registerReviveHandlers({
       "Dino",
       "dino:reviveSuccess",
       "dino:reviveError",
-      colors.blue
-    )
+      colors.blue,
+    ),
   );
 
   // ------- Flappy Revive -------
@@ -88,8 +102,8 @@ function registerReviveHandlers({
       "Flappy",
       "flappy:reviveSuccess",
       "flappy:reviveError",
-      colors.pink
-    )
+      colors.pink,
+    ),
   );
 
   // ------- Snake Revive -------
@@ -100,8 +114,8 @@ function registerReviveHandlers({
       "Snake",
       "snake:reviveSuccess",
       "snake:reviveError",
-      colors.green
-    )
+      colors.green,
+    ),
   );
 
   // ------- 2048 Revive -------
@@ -112,8 +126,8 @@ function registerReviveHandlers({
       "2048",
       "2048:reviveSuccess",
       "2048:reviveError",
-      colors.green
-    )
+      colors.green,
+    ),
   );
 }
 

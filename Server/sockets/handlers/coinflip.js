@@ -7,6 +7,7 @@ function registerCoinflipHandlers({
   getIpFromSocket,
   recalculateMedals,
 }) {
+  const { applyAutoBadges } = require("../../services/badgesAuto");
   const {
     applyDailyProfitCap,
     getDailyProfitCapInfo,
@@ -83,10 +84,12 @@ function registerCoinflipHandlers({
         biggestBet: 0,
         biggestLoss: 0,
         allIns: 0,
+        totalBet: 0,
       };
     }
     const stats = FileService.data.coinflipStats[pseudo];
     stats.gamesPlayed++;
+    stats.totalBet = (stats.totalBet || 0) + bet;
     if (won) {
       stats.wins++;
     } else {
@@ -98,6 +101,9 @@ function registerCoinflipHandlers({
 
     FileService.save("coinflipStats", FileService.data.coinflipStats);
     leaderboardManager.broadcastCoinflipLB(io);
+    try {
+      applyAutoBadges({ pseudo, FileService });
+    } catch {}
 
     const ip = getIpFromSocket(socket);
     let netChange = 0;

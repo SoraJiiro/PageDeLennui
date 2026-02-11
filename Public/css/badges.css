@@ -1,0 +1,107 @@
+.badges-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.badges-header {
+  margin-top: 50px;
+  text-align: center;
+  margin-bottom: 40px;
+  color: var(--primary-color);
+}
+
+.badges-header h1.badges-title {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2rem;
+}
+
+.badges-intro {
+  font-size: 1.2rem;
+  color: var(--text-color, var(--primary-color));
+  font-style: italic;
+  line-height: 18px;
+  padding: 20px;
+  border-radius: 32px;
+  border-left: 3px dotted var(--primary-color);
+  border-right: 3px dotted var(--primary-color);
+}
+
+.badges-intro p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 3px;
+}
+
+.badges-list {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 20px;
+  border: 2px solid var(--primary-color);
+  padding: 20px;
+  flex-direction: column;
+}
+
+p.warn {
+  background: var(--secondary-color, var(--bg-color));
+  padding: 10px;
+  font-size: 0.9rem;
+  color: var(--text-color, var(--primary-color));
+  overflow-x: auto;
+  text-align: start;
+  border: 2px solid var(--primary-color);
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 20px;
+  flex: 1;
+  width: 100%;
+  border-bottom: 2px solid var(--primary-color);
+  border-left: 2px solid var(--primary-color);
+  padding: calc(1rem - 2.5px);
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease,
+    scale 0.2s ease-out,
+    border-radius 0.2s ease-out;
+}
+
+.badge:hover {
+  background: rgba(255, 255, 255, 0.1);
+  cursor: help;
+  scale: 1.0075;
+  transform: translateY(-5px);
+  border-radius: 0 0 0 15px;
+}
+
+.badge-name {
+  width: 100%;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.badge-name::before {
+  content: "▸ ";
+  color: var(--primary-color);
+}
+
+.badge-desc,
+.badge-note {
+  width: 100%;
+  font-size: 1rem;
+  color: var(--text-color, var(--primary-color));
+  line-height: 20px;
+}
+
+.badge-note i {
+  color: var(--primary-color);
+  margin-right: 6px;
+}

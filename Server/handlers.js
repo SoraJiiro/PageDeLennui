@@ -1,4 +1,9 @@
-const { FileService, getIpFromSocket, persistBanIp } = require("./util");
+const {
+  FileService,
+  getIpFromSocket,
+  persistBanIp,
+  isPseudoBlacklisted,
+} = require("./util");
 const dbUsers = require("./db/dbUsers");
 const {
   recalculateMedals,
@@ -27,6 +32,7 @@ const { register2048Handlers } = require("./sockets/handlers/game2048");
 const { registerAdminHandlers } = require("./sockets/handlers/admin");
 const { registerMotusHandlers } = require("./sockets/handlers/motus");
 const { registerMashHandlers } = require("./sockets/handlers/mash");
+const { applyAutoBadges } = require("./services/badgesAuto");
 const {
   ensureBlackjackGameConfigured,
   registerBlackjackHandlers,
@@ -302,6 +308,19 @@ function initSocketHandlers(io, socket, gameState) {
 
   const pseudo = user.pseudo;
 
+  if (isPseudoBlacklisted(pseudo)) {
+    try {
+      socket.emit("system:notification", {
+        message: "🚫 Votre pseudo a été banni",
+        duration: 8000,
+      });
+    } catch (e) {}
+    try {
+      socket.disconnect(true);
+    } catch (e) {}
+    return;
+  }
+
   // Permet au shutdown manager (et autres) d'identifier le joueur via socket.data
   try {
     if (!socket.data) socket.data = {};
@@ -378,6 +397,9 @@ function initSocketHandlers(io, socket, gameState) {
 
   // Envoi dada initiales
   socket.emit("you:name", pseudo);
+  try {
+    applyAutoBadges({ pseudo, FileService });
+  } catch {}
 
   const getSelectedBadgesForChat = (p) => {
     try {

@@ -3,6 +3,7 @@ const fs = require("fs");
 const express = require("express");
 const { FileService } = require("../util");
 const profileRoutes = require("./profileRoutes");
+const { listShopItems } = require("../services/shopCatalog");
 
 function setupRoutes(
   app,
@@ -21,6 +22,9 @@ function setupRoutes(
     easterEggRoutes,
   },
 ) {
+  app.locals.io = io;
+  app.locals.pixelWarGame = pixelWarGame;
+
   // API
   app.use("/api", authRoutes);
   app.use(
@@ -32,6 +36,12 @@ function setupRoutes(
   app.use("/api/suggestions", suggestionRoutes);
   app.use("/api/x9", easterEggRoutes);
   app.use("/api/profile", requireAuth, profileRoutes);
+
+  // Shop catalog (auth)
+  app.get("/api/shop/catalog", requireAuth, (req, res) => {
+    const items = listShopItems();
+    res.json({ items });
+  });
 
   // Badges sidebar (auth)
   app.get("/api/nav/badges", requireAuth, (req, res) => {

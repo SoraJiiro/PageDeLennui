@@ -37,6 +37,8 @@ class PixelWarGame {
 
     this.UNIVERSAL_STORAGE_LIMIT = 250;
 
+    this.PIXEL_GENERATION_INTERVAL_MS = 45000;
+
     this.MAX_UNDO_DEPTH_PER_PIXEL = 10;
 
     this.load();
@@ -72,8 +74,6 @@ class PixelWarGame {
   _refreshAllUsersStates() {
     if (!this.users || typeof this.users !== "object") return;
     for (const pseudo of Object.keys(this.users)) {
-      // getUserState applique la régénération (par minute) + daily.
-      // Important: ça ne change rien si aucun palier n'a été franchi.
       this.getUserState(pseudo);
     }
   }
@@ -399,7 +399,7 @@ class PixelWarGame {
 
     const now = Date.now();
     const diff = now - user.lastPixelGeneration;
-    const generated = Math.floor(diff / 60000);
+    const generated = Math.floor(diff / this.PIXEL_GENERATION_INTERVAL_MS);
 
     if (generated > 0) {
       if (user.pixels < user.maxPixels) {
@@ -409,7 +409,7 @@ class PixelWarGame {
           user.pixels += toAdd;
         }
       }
-      user.lastPixelGeneration += generated * 60000;
+      user.lastPixelGeneration += generated * this.PIXEL_GENERATION_INTERVAL_MS;
       this.usersDirty = true;
     }
 
@@ -439,7 +439,8 @@ class PixelWarGame {
     if (user.pixels >= user.maxPixels) return 0;
 
     const now = Date.now();
-    const nextTime = user.lastPixelGeneration + 60000;
+    const nextTime =
+      user.lastPixelGeneration + this.PIXEL_GENERATION_INTERVAL_MS;
     return Math.max(0, nextTime - now);
   }
 

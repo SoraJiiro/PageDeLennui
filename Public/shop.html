@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Shop Badges - PDE</title>
+
+        <link rel="preload"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+            as="style"
+            onload="this.onload=null;this.rel='stylesheet'">
+        <noscript>
+            <link rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        </noscript>
+
+        <link rel="stylesheet" href="css/common.css">
+        <link rel="stylesheet" href="css/shop.css">
+
+        <script defer src="/socket.io/socket.io.js"></script>
+        <script defer type="module" src="js/notifications.js"></script>
+        <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer type="text/javascript" src="js/shop.js"></script>
+        <script defer type="text/javascript" src="js/auto_reload.js"></script>
+
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)" />
+    </head>
+    <body class="shop-page">
+        <div class="shop-bg"></div>
+
+        <main class="shop-container container">
+            <button onclick="window.location.href='/'" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+
+            <header class="shop-hero">
+                <div class="hero-title">
+                    <h1><i class="fa-solid fa-cart-shopping"></i> Shop </h1>
+                    <p class="hero-subtitle">Cosmétiques et objets utiles</p>
+                </div>
+                <div class="shop-balance">
+                    <strong id="shop-balance">0 C</strong>
+                </div>
+            </header>
+
+            <section class="shop-controls">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="shop-search" type="search"
+                        placeholder="Rechercher un badge ou un objet ..."
+                        autocomplete="off">
+                </div>
+                <div class="control-row">
+                    <div class="result-count">
+                        <span id="shop-count">0</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="shop-shell">
+                <div class="shop-catalog">
+                    <div class="shop-grid" id="shop-grid">
+
+                    </div>
+                    <p class="shop-empty" id="shop-empty">Aucun article pour le
+                        moment.</p>
+                </div>
+
+                <aside class="shop-cart">
+                    <div class="cart-header">
+                        <h2><i class="fa-solid fa-bag-shopping"></i> Panier</h2>
+                        <span id="cart-count">0</span>
+                    </div>
+                    <p class="cart-empty" id="cart-empty">Ajoute des
+                        articles.</p>
+                    <ul class="cart-list" id="cart-list"></ul>
+                    <div class="cart-total">
+                        <span>Total</span>
+                        <strong id="cart-total">0 C</strong>
+                    </div>
+                    <button class="checkout-btn" id="checkout-btn">Valider
+                        l'achat</button>
+                    <p class="cart-note" id="cart-note">Les badges et objets
+                        sont
+                        donnés
+                        apres confirmation serveur.</p>
+                </aside>
+            </section>
+        </main>
+
+        <div class="personalization-modal">
+            <div class="modal-content">
+                <h2>Personnaliser le badge</h2>
+                <br>
+                <p class="personalization-status" id="custom-badge-status"></p>
+                <label for="user-badge-name">Nom du badge</label>
+                <input type="text" id="user-badge-name"
+                    placeholder="Nom du badge" min="1" max="32">
+                <label for="user-badge-emoji">Emoji du badge</label>
+                <input type="text" id="user-badge-emoji"
+                    placeholder="Emoji du badge">
+                <div class="modal-actions">
+                    <button id="modal-cancel-btn">Annuler</button>
+                    <button id="modal-confirm-btn">Confirmer</button>
+                </div>
+            </div>
+        </div>
+
+    </body>
+</html>

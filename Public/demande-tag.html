@@ -54,6 +54,58 @@
         <script src="/socket.io/socket.io.js"></script>
         <script>
         let socket;
+        let lastPendingRequest = null;
+
+        function showStatusPending(request) {
+            const form = document.getElementById('requestForm');
+            const statusDisplay = document.getElementById('statusDisplay');
+            if (!request) return;
+
+            form.style.display = 'none';
+            statusDisplay.style.display = 'block';
+            statusDisplay.className = 'status-message status-pending';
+
+            let tagDisplay = `<strong>${request.tag}</strong>`;
+            if (request.colors && Array.isArray(request.colors)) {
+                const words = request.tag.split(/\s+/);
+                tagDisplay = words
+                    .map((w, i) => `<span style="color:${request.colors[i]}">${w}</span>`)
+                    .join(' ');
+            }
+
+            statusDisplay.innerHTML = `
+                <h3>Demande en attente</h3>
+                <p>Tag demandé : ${tagDisplay}</p>
+                <p>Envoyé le : ${new Date(request.time).toLocaleString()}</p>
+                <p><em>En attente de validation par l'admin...</em></p>
+            `;
+        }
+
+        function showStatusAccepted(tag) {
+            const statusDisplay = document.getElementById('statusDisplay');
+            const form = document.getElementById('requestForm');
+
+            statusDisplay.style.display = 'block';
+            form.style.display = 'none';
+            statusDisplay.className = 'status-message status-accepted';
+            statusDisplay.innerHTML = `
+                <h3>✅ Demande Acceptée !</h3>
+                <p>Votre tag <strong>${tag}</strong> a été validé.</p>
+            `;
+        }
+
+        function showStatusRejected() {
+            const statusDisplay = document.getElementById('statusDisplay');
+            const form = document.getElementById('requestForm');
+
+            statusDisplay.style.display = 'block';
+            form.style.display = 'none';
+            statusDisplay.className = 'status-message status-rejected';
+            statusDisplay.innerHTML = `
+                <h3>❌ Demande Refusée</h3>
+                <p>L'admin a refusé votre demande de tag.</p>
+            `;
+        }
 
         async function init() {
             try {
@@ -74,29 +126,14 @@
                 }
 
                 socket.on('tag:response', (data) => {
-                    const statusDisplay = document.getElementById('statusDisplay');
-                    const form = document.getElementById('requestForm');
-                    
-                    statusDisplay.style.display = 'block';
-                    form.style.display = 'none';
-
-                    if (data.accepted) {
-                        statusDisplay.className = 'status-message status-accepted';
-                        statusDisplay.innerHTML = `
-                            <h3>✅ Demande Acceptée !</h3>
-                            <p>Votre tag <strong>${data.tag}</strong> a été validé.</p>
-                        `;
-                            setTimeout(() => {
-                            }, 5000);
+                    if (data && data.accepted) {
+                        showStatusAccepted(data.tag || (lastPendingRequest && lastPendingRequest.tag) || '');
+                        lastPendingRequest = null;
                     } else {
-                        statusDisplay.className = 'status-message status-rejected';
-                        statusDisplay.innerHTML = `
-                            <h3>❌ Demande Refusée</h3>
-                            <p>L'admin a refusé votre demande de tag.</p>
-                        `;
+                        showStatusRejected();
+                        lastPendingRequest = null;
                         setTimeout(() => {
-                             form.style.display = 'block';
-                             statusDisplay.style.display = 'none';
+                            checkStatus();
                         }, 5000);
                     }
                 });
@@ -120,23 +157,10 @@
                 const statusDisplay = document.getElementById('statusDisplay');
 
                 if (data.hasPending) {
-                    form.style.display = 'none';
-                    statusDisplay.style.display = 'block';
-                    statusDisplay.className = 'status-message status-pending';
-                    
-                    let tagDisplay = `<strong>${data.request.tag}</strong>`;
-                    if (data.request.colors && Array.isArray(data.request.colors)) {
-                        const words = data.request.tag.split(/\s+/);
-                        tagDisplay = words.map((w, i) => `<span style="color:${data.request.colors[i]}">${w}</span>`).join(' ');
-                    }
-
-                    statusDisplay.innerHTML = `
-                        <h3>Demande en attente</h3>
-                        <p>Tag demandé : ${tagDisplay}</p>
-                        <p>Envoyé le : ${new Date(data.request.time).toLocaleString()}</p>
-                        <p><em>En attente de validation par l'admin...</em></p>
-                    `;
+                    lastPendingRequest = data.request;
+                    showStatusPending(data.request);
                 } else {
+                    lastPendingRequest = null;
                     form.style.display = 'block';
                     statusDisplay.style.display = 'none';
                 }

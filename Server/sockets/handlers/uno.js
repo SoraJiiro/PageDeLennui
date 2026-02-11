@@ -1,3 +1,16 @@
+const { applyAutoBadges } = require("../../services/badgesAuto");
+
+function trackUnoGames(players, FileService) {
+  if (!Array.isArray(players) || players.length === 0) return;
+  if (!FileService.data.unoStats) FileService.data.unoStats = {};
+  players.forEach((p) => {
+    const key = String(p || "").trim();
+    if (!key) return;
+    FileService.data.unoStats[key] = (FileService.data.unoStats[key] || 0) + 1;
+  });
+  FileService.save("unoStats", FileService.data.unoStats);
+}
+
 function registerUnoHandlers({
   io,
   socket,
@@ -249,6 +262,7 @@ function registerUnoHandlers({
     if (!res.success) return socket.emit("uno:error", res.message);
 
     if (res.winner) {
+      const participants = gameActuelle.joueurs.map((p) => p.pseudo);
       console.log(
         withGame(
           `\n🏆 [${colors.orange}${res.winner}${colors.violet}] a gagné la partie de UNO !\n`,
@@ -259,6 +273,12 @@ function registerUnoHandlers({
       FileService.data.unoWins[res.winner] =
         (FileService.data.unoWins[res.winner] || 0) + 1;
       FileService.save("unoWins", FileService.data.unoWins);
+      trackUnoGames(participants, FileService);
+      participants.forEach((p) => {
+        try {
+          applyAutoBadges({ pseudo: p, FileService });
+        } catch {}
+      });
       io.emit("uno:gameEnd", { winner: res.winner });
       leaderboardManager.broadcastUnoLB(io);
       setUnoGame(new UnoGame());

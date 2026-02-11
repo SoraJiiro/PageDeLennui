@@ -115,6 +115,11 @@ router.post("/request", (req, res) => {
   requests.push(newRequest);
   saveRequests(requests);
 
+  const io = req.app && req.app.locals ? req.app.locals.io : null;
+  if (io) {
+    io.to("admins").emit("admin:data:refresh", { type: "tag-requests" });
+  }
+
   res.json({ success: true, request: newRequest });
 });
 

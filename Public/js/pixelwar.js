@@ -46,7 +46,7 @@ const COLOR_NAMES = [
   "Rose",
   "Gris",
   "Cyan",
-  "Vert clair",
+  "Citron vert",
   "Magenta",
   "Bleu ciel",
 ];
@@ -246,12 +246,20 @@ function initControls() {
   document.getElementById("btn-batch-confirm").onclick = confirmBatch;
   document.getElementById("btn-batch-cancel").onclick = cancelBatch;
 
-  document.getElementById("buy-pixel-single").onclick = () =>
-    socket.emit("pixelwar:buy", "pixel_1");
-  document.getElementById("buy-pixel-pack").onclick = () =>
-    socket.emit("pixelwar:buy", "pixel_15");
-  document.getElementById("buy-storage").onclick = () =>
-    socket.emit("pixelwar:buy", "storage_10");
+  const buySingle = document.getElementById("buy-pixel-single");
+  if (buySingle) {
+    buySingle.onclick = () => socket.emit("pixelwar:buy", "pixel_1");
+  }
+
+  const buyPack = document.getElementById("buy-pixel-pack");
+  if (buyPack) {
+    buyPack.onclick = () => socket.emit("pixelwar:buy", "pixel_15");
+  }
+
+  const buyStorage = document.getElementById("buy-storage");
+  if (buyStorage) {
+    buyStorage.onclick = () => socket.emit("pixelwar:buy", "storage_10");
+  }
 }
 
 function centerView() {
@@ -513,7 +521,7 @@ function addToBatch(x, y, colorIdx, colorHex) {
   }
 
   pendingPixels.set(key, { x, y, colorIdx, colorHex });
-  drawPixel(x, y, colorHex);
+  drawPixel(x, y, colorHex, { pending: true });
   updateBatchUI();
 }
 
@@ -689,12 +697,12 @@ function drawFullBoard(compressedBoard) {
 
   if (isBatchMode && pendingPixels.size > 0) {
     pendingPixels.forEach((p) => {
-      drawPixel(p.x, p.y, p.colorHex);
+      drawPixel(p.x, p.y, p.colorHex, { pending: true });
     });
   }
 }
 
-function drawPixel(x, y, colorHex) {
+function drawPixel(x, y, colorHex, options = {}) {
   if (!colorHex) return;
   const ix = Math.floor(x);
   const iy = Math.floor(y);

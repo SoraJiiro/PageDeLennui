@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Badges</title>
+        <link rel="stylesheet" href="css/common.css">
+        <link rel="stylesheet" href="css/badges.css">
+        <script src="js/uiColor.js" type="text/javascript"></script>
+        <script defer src="/socket.io/socket.io.js"></script>
+        <script type="text/javascript" src="js/nav.js"></script>
+        <script defer type="module" src="js/main.js"></script>
+        <script defer type="text/javascript" src="js/auto_reload.js"></script>
+        <link rel="preload"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+            as="style"
+            onload="this.onload=null;this.rel='stylesheet'">
+        <noscript>
+            <link rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        </noscript>
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)" />
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)" />
+    </head>
+    <body>
+        <div class="badges-container">
+            <button onclick="window.location.href='/'" class="btn-back"><i
+                    class="fa-solid fa-arrow-left"></i> Retour</button>
+
+            <div class="badges-header">
+                <h1 class="badges-title"><i
+                        class="fa-solid fa-award"></i> Badges</h1>
+            </div>
+
+            <div class="badges-intro">
+                <p>&nbsp;&nbsp;&nbsp; Cette page decrit comment debloquer chaque
+                    badge.</p>
+            </div>
+
+            <hr style="margin: 40px auto;">
+
+            <div class="badges-list">
+                <p class="warn">* Les badges montrés ici sont les badges qui
+                    <u>peuvent être débloqués</u>. Certains badges ne seront
+                    attribués que par l'Admin pour des raisons spéciales.
+                    D'autres badges apparaîtront sûrement ici au fur et à
+                    mesure, ouvre l'oeil.</p>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">⭐​</span> EasterEgg S[?]</h3>
+                    <p class="badge-desc">Les badges EasterEgg sont des
+                        récompenses données pour avoir découvert des un Easter
+                        Egg.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i>Vous pouvez voir
+                        votre avancement sur les EE dans la page EE Tracker
+                        disponible depuis la sidebar.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">💻​</span> SLAM</h3>
+                    <p class="badge-desc">Ce badge est donné aux étudiants en
+                        SLAM.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Si vous n'avez
+                        pas de badge d'Option, envoyez un MP à l'Admin avec
+                        votre Option.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">🔐</span> SISR</h3>
+                    <p class="badge-desc">Ce badge est donné aux étudiants en
+                        SISR.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Si vous n'avez
+                        pas de badge d'Option, envoyez un MP à l'Admin avec
+                        votre Option.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">📢​</span> Orateur</h3>
+                    <p class="badge-desc">Ce badge est donné aux utilisateurs
+                        qui ont réalisé un bon oral dans n'importe quelle
+                        matière avec une certaine facilité à l'oral.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Les critères de
+                        qualité de l'oral sont gardés par l'Admin et seul lui
+                        décidera de l'obtention du badge.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">🖱️​</span> Clicker Fou</h3>
+                    <p class="badge-desc">Ce badge est donné aux utilisateurs
+                        qui ont une grande activité de clics et à ceux qui
+                        aiment cliquer (pour rien).</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Un minimum de 9
+                        CPS humain est requis pour obtenir ce badge.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">1️⃣​</span> Uno Addict</h3>
+                    <p class="badge-desc">Ce badge est donné aux utilisateurs
+                        qui ne peuvent pas se passer du jeu Uno.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Il vous faudra un
+                        minimum de 50 parties jouées pour obtenir ce badge.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">💁‍♀️​​</span> Lady</h3>
+                    <p class="badge-desc">Ce badge est donné aux femmes.
+                        (obviously)</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Le badge ne sera
+                        pas donné au hommes et gars qui veulent devenir
+                        trans.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">🤍​</span> OG</h3>
+                    <p class="badge-desc">Ce badge est donnés aux utilisateurs
+                        ayant créé un compte avant les vacance de Noël 2025.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Si vous pensez
+                        que votre compte est assez vieux, contactez un Admin
+                        pour vérification de l'égibilité.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">🌟​</span> Champion d'Antan
+                        S[?]</h3>
+                    <p class="badge-desc">Ce badge est donné en fin de Saison à
+                        l'utilisateur qui compte le plus de TOP1 dans les
+                        leaderboards.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Bonne chance pour
+                        maintenir vos titres.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">🕵️‍♂️</span> Bug Finder</h3>
+                    <p class="badge-desc">Ce badge est donné aux utilisateurs
+                        qui signalent des bugs.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Un petit bug ne
+                        vous donnera pas le badge. Il vous faudra signaler
+                        plusieurs petits bugs ou un seul bug majeur pour
+                        l'avoir.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">🍀​</span> Casino Master</h3>
+                    <p class="badge-desc">Ce badge est donné aux utilisateurs
+                        qui ont une grande chance au casino et aux gros
+                        dépenseurs dans les jeux d'argents.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Un minimum de 100
+                        000 C dépensés dans les jeux d'argent est requis pour
+                        obtenir ce badge.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">📝</span> Motus Fanatic</h3>
+                    <p class="badge-desc">Ce badge est donné aux utilisateurs
+                        qui aime se creuser la tête sur le jeu Motus.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Un minimum de 45
+                        mots trouvés est requis pour obtenir ce badge.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- <div class="badge">
+            <h3 class="badge-name"></h3>
+            <p class="badge-desc"></p>
+            <p class="badge-note"><i
+                    class="fa-solid fa-lightbulb"></i></p>
+        </div> -->
+    </body>
+</html>

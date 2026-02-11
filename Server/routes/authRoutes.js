@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const config = require("../config");
 const { FileService } = require("../util");
 
 const router = express.Router();
@@ -46,6 +47,20 @@ function setUtilisateur(users) {
   fs.writeFileSync(usersFile, JSON.stringify({ users }, null, 2), "utf-8");
 }
 
+function normalizePseudoValue(pseudo) {
+  const p = String(pseudo || "").trim();
+  return p ? p.toLowerCase() : "";
+}
+
+function isPseudoBlacklisted(pseudo) {
+  const key = normalizePseudoValue(pseudo);
+  if (!key) return false;
+  const list = Array.isArray(config.BLACKLIST_PSEUDOS)
+    ? config.BLACKLIST_PSEUDOS
+    : [];
+  return list.some((p) => normalizePseudoValue(p) === key);
+}
+
 function verifNombreCompte(ip) {
   const users = readUsers();
   return users.filter((u) => u.creeDepuis === ip).length;
@@ -61,6 +76,10 @@ router.post("/register", async (req, res) => {
 
   if (!pseudo || !password)
     return res.status(400).json({ message: "Champs manquants." });
+
+  if (isPseudoBlacklisted(pseudo)) {
+    return res.status(403).json({ message: "Pseudo banni." });
+  }
 
   const users = readUsers();
 
@@ -122,6 +141,10 @@ router.post("/login", async (req, res) => {
 
   if (!pseudo || !password)
     return res.status(400).json({ message: "Champs manquants." });
+
+  if (isPseudoBlacklisted(pseudo)) {
+    return res.status(403).json({ message: "Compte banni." });
+  }
 
   const users = readUsers();
 
@@ -262,6 +285,10 @@ router.post("/request-password-change", (req, res) => {
   fs.writeFileSync(reqFile, JSON.stringify({ requests }, null, 2), "utf-8");
 
   console.log(`[DEMANDE_MDP] Demande de ${pseudo} (${ip})`);
+  const io = req.app && req.app.locals ? req.app.locals.io : null;
+  if (io) {
+    io.to("admins").emit("admin:data:refresh", { type: "password-requests" });
+  }
   res.json({ message: "Demande envoyée à l'administrateur." });
 });
 

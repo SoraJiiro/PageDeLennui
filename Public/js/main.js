@@ -6,7 +6,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
   if (window.socketInitialized) return;
   window.socketInitialized = true;
 
-  const subPageName = document.URL.split("/")[3];
+  const subPageName = document.URL;
   const sidebar = document.getElementById("sidebar");
 
   const sessionRes = await fetch("/api/session");
@@ -157,12 +157,13 @@ import { initCanvasResizer } from "./canvas_resize.js";
     });
 
     if (
-      subPageName !== "demande-tag.html" &&
-      subPageName !== "suggestions.html" &&
-      subPageName !== "hall-des-oublies.html" &&
-      subPageName !== "patch_notes.html" &&
-      subPageName !== "profile.html" &&
-      subPageName !== "403.html"
+      !subPageName.endsWith("demande-tag.html") &&
+      !subPageName.endsWith("suggestions.html") &&
+      !subPageName.endsWith("hall-des-oublies.html") &&
+      !subPageName.endsWith("patch_notes.html") &&
+      !subPageName.endsWith("profile.html") &&
+      !subPageName.endsWith("403.html") &&
+      !subPageName.endsWith("badges.html")
     ) {
       if (chat?.initChat) chat.initChat(socket);
       if (clicker?.initClicker) clicker.initClicker(socket);

@@ -58,10 +58,6 @@ export function initPixelwarLeaderboard(socket) {
       }
 
       overriddenCell.textContent = entry.pixelsOverridden || 0;
-
-      if (index === 0) row.classList.add("first");
-      else if (index === 1) row.classList.add("second");
-      else if (index === 2) row.classList.add("third");
     });
   });
 

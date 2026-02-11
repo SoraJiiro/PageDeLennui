@@ -1,3 +1,26 @@
+const { applyAutoBadges } = require("../../services/badgesAuto");
+
+function trackBlackjackBet(pseudo, amount, FileService) {
+  const bet = Number(amount) || 0;
+  if (bet <= 0) return;
+  if (!FileService.data.blackjackStats) FileService.data.blackjackStats = {};
+  if (!FileService.data.blackjackStats[pseudo]) {
+    FileService.data.blackjackStats[pseudo] = {
+      handsPlayed: 0,
+      handsWon: 0,
+      handsLost: 0,
+      biggestBet: 0,
+      doubles: 0,
+      bjs: 0,
+      totalBet: 0,
+    };
+  }
+  const stats = FileService.data.blackjackStats[pseudo];
+  stats.totalBet = (stats.totalBet || 0) + bet;
+  if (bet > (stats.biggestBet || 0)) stats.biggestBet = bet;
+  FileService.save("blackjackStats", FileService.data.blackjackStats);
+}
+
 function ensureBlackjackGameConfigured({
   io,
   blackjackGame,
@@ -96,6 +119,7 @@ function ensureBlackjackGameConfigured({
           if (updates.biggestBet > (current.biggestBet || 0)) {
             current.biggestBet = updates.biggestBet;
           }
+          if (current.totalBet == null) current.totalBet = 0;
         });
         FileService.save("blackjackStats", FileService.data.blackjackStats);
         leaderboardManager.broadcastBlackjackLB(io);
@@ -183,6 +207,10 @@ function registerBlackjackHandlers({
       // Deduct bet immediately
       FileService.data.clicks[pseudo] = currentClicks - bet;
       FileService.save("clicks", FileService.data.clicks);
+      trackBlackjackBet(pseudo, bet, FileService);
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
       recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
       io.to("user:" + pseudo).emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
@@ -223,6 +251,10 @@ function registerBlackjackHandlers({
     if (res.success) {
       FileService.data.clicks[pseudo] = currentClicks - res.cost;
       FileService.save("clicks", FileService.data.clicks);
+      trackBlackjackBet(pseudo, res.cost, FileService);
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
       recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
       io.to("user:" + pseudo).emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
@@ -249,6 +281,10 @@ function registerBlackjackHandlers({
     if (res.success) {
       FileService.data.clicks[pseudo] = currentClicks - res.cost;
       FileService.save("clicks", FileService.data.clicks);
+      trackBlackjackBet(pseudo, res.cost, FileService);
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
       recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
       io.to("user:" + pseudo).emit("clicker:you", {
         score: FileService.data.clicks[pseudo],

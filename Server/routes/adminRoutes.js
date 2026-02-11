@@ -7,7 +7,10 @@ const dbUsers = require("../db/dbUsers");
 const { exec } = require("child_process");
 const { recalculateMedals } = require("../moduleGetter");
 const { EGG_DEFS } = require("../services/easterEggs");
+const { ensureShopCatalog } = require("../services/shopCatalog");
 const words = require("../constants/words");
+
+const CUSTOM_BADGE_PRICE = 200000;
 
 // Fonction pour créer le router avec accès à io
 function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
@@ -78,6 +81,16 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
   }
 
+  function emitAdminRefresh(type, extra) {
+    if (!io) return;
+    const payload = { type: String(type || "").trim() };
+    if (!payload.type) return;
+    if (extra && typeof extra === "object") {
+      Object.assign(payload, extra);
+    }
+    io.to("admins").emit("admin:data:refresh", payload);
+  }
+
   // Middleware pour vérifier que l'utilisateur est Admin
   function requireAdmin(req, res, next) {
     if (
@@ -125,6 +138,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     broadcastSystemMessage(`🖼️ PFP approuvée pour ${item.pseudo}.`, false);
 
+    emitAdminRefresh("pfp-requests");
+
     res.json({ success: true });
   });
 
@@ -148,6 +163,170 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     FileService.save("pfpRequests", reqs);
 
     broadcastSystemMessage(`🖼️ PFP refusée pour ${item.pseudo}.`, false);
+    emitAdminRefresh("pfp-requests");
+    res.json({ success: true });
+  });
+
+  // --- Profils: Custom badge requests ---
+  function ensureCustomBadgeRequests() {
+    if (!Array.isArray(FileService.data.customBadgeRequests)) {
+      FileService.data.customBadgeRequests = [];
+    }
+    return FileService.data.customBadgeRequests;
+  }
+
+  function buildCustomBadgeId(pseudo, catalog) {
+    const raw = String(pseudo || "").toLowerCase();
+    const safe = raw.replace(/[^a-z0-9]/g, "").slice(0, 12) || "user";
+    const base = `custom_${safe}_`;
+    let candidate = base + Math.random().toString(36).slice(2, 8);
+    let attempts = 0;
+    while (catalog[candidate] && attempts < 10) {
+      candidate = base + Math.random().toString(36).slice(2, 8);
+      attempts += 1;
+    }
+    return candidate;
+  }
+
+  router.get("/custom-badges/requests", requireAdmin, (req, res) => {
+    const requests = ensureCustomBadgeRequests();
+    res.json(requests);
+  });
+
+  router.post("/custom-badges/requests/approve", requireAdmin, (req, res) => {
+    const { id } = req.body || {};
+    if (!id) return res.status(400).json({ message: "id manquant" });
+
+    const requests = ensureCustomBadgeRequests();
+    const item = requests.find((r) => r && r.id === id);
+    if (!item) return res.status(404).json({ message: "Demande introuvable" });
+    if (item.status !== "pending") {
+      return res.status(400).json({ message: "Demande déjà traitée" });
+    }
+
+    const targetUser = dbUsers.findBypseudo(item.pseudo);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    const badgesData = FileService.data.chatBadges || {
+      catalog: {},
+      users: {},
+    };
+    if (!badgesData.catalog) badgesData.catalog = {};
+    if (!badgesData.users) badgesData.users = {};
+
+    const badgeId = buildCustomBadgeId(item.pseudo, badgesData.catalog);
+    badgesData.catalog[badgeId] = {
+      emoji: String(item.emoji || "🏷️"),
+      name: String(item.name || badgeId),
+      price: CUSTOM_BADGE_PRICE,
+      source: "custom",
+      createdBy: item.pseudo,
+    };
+
+    const bucket = badgesData.users[item.pseudo] || {
+      assigned: [],
+      selected: [],
+    };
+    const assigned = Array.isArray(bucket.assigned) ? bucket.assigned : [];
+    const selected = Array.isArray(bucket.selected) ? bucket.selected : [];
+
+    const nextAssigned = Array.from(new Set([...assigned, badgeId]));
+    badgesData.users[item.pseudo] = { assigned: nextAssigned, selected };
+
+    FileService.save("chatBadges", badgesData);
+
+    item.status = "approved";
+    item.processedAt = new Date().toISOString();
+    item.processedBy = req.session.user.pseudo;
+    item.badgeId = badgeId;
+    item.price = CUSTOM_BADGE_PRICE;
+    FileService.save("customBadgeRequests", requests);
+
+    emitAdminRefresh("custom-badge-requests");
+    emitAdminRefresh("badges");
+
+    emitAdminRefresh("custom-badge-requests");
+
+    const targetSocket = io ? io.to("user:" + item.pseudo) : null;
+    if (targetSocket) {
+      targetSocket.emit("system:info", "Ton badge personnalise a ete valide !");
+      targetSocket.emit("customBadge:status", {
+        status: "approved",
+        badgeId,
+        processedAt: item.processedAt,
+      });
+    }
+
+    try {
+      FileService.appendLog({
+        type: "CUSTOM_BADGE_APPROVED",
+        from: item.pseudo,
+        amount: CUSTOM_BADGE_PRICE,
+        badgeId,
+        at: new Date().toISOString(),
+      });
+    } catch {}
+
+    res.json({
+      success: true,
+      badgeId,
+      balance: FileService.data.clicks[item.pseudo],
+    });
+  });
+
+  router.post("/custom-badges/requests/reject", requireAdmin, (req, res) => {
+    const { id, reason } = req.body || {};
+    if (!id) return res.status(400).json({ message: "id manquant" });
+
+    const requests = ensureCustomBadgeRequests();
+    const item = requests.find((r) => r && r.id === id);
+    if (!item) return res.status(404).json({ message: "Demande introuvable" });
+    if (item.status !== "pending") {
+      return res.status(400).json({ message: "Demande déjà traitée" });
+    }
+
+    item.status = "rejected";
+    item.reason = reason ? String(reason).slice(0, 200) : null;
+    item.processedAt = new Date().toISOString();
+    item.processedBy = req.session.user.pseudo;
+    item.price =
+      typeof item.price === "number" ? item.price : CUSTOM_BADGE_PRICE;
+    FileService.save("customBadgeRequests", requests);
+
+    const refundAmount =
+      typeof item.price === "number" ? item.price : CUSTOM_BADGE_PRICE;
+    const currentClicks = FileService.data.clicks[item.pseudo] || 0;
+    FileService.data.clicks[item.pseudo] = currentClicks + refundAmount;
+    FileService.save("clicks", FileService.data.clicks);
+
+    const targetSocket = io ? io.to("user:" + item.pseudo) : null;
+    if (targetSocket) {
+      targetSocket.emit("clicker:you", {
+        score: FileService.data.clicks[item.pseudo],
+      });
+      targetSocket.emit(
+        "system:info",
+        "Ton badge personnalise a ete refuse. Remboursement effectue.",
+      );
+      targetSocket.emit("customBadge:status", {
+        status: "rejected",
+        reason: item.reason || null,
+        processedAt: item.processedAt,
+        balance: FileService.data.clicks[item.pseudo],
+      });
+    }
+
+    try {
+      FileService.appendLog({
+        type: "CUSTOM_BADGE_REFUND",
+        from: item.pseudo,
+        amount: refundAmount,
+        at: new Date().toISOString(),
+      });
+    } catch {}
+
     res.json({ success: true });
   });
 
@@ -217,6 +396,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
     data.catalog[badgeId] = { emoji: badgeEmoji, name: badgeName };
     FileService.save("chatBadges", data);
+    emitAdminRefresh("badges");
     res.json({ success: true });
   });
 
@@ -242,7 +422,68 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
 
     FileService.save("chatBadges", data);
+    emitAdminRefresh("badges");
     res.json({ success: true });
+  });
+
+  router.post("/badges/update", requireAdmin, (req, res) => {
+    const { id, newId, emoji, name } = req.body || {};
+    const badgeId = String(id || "").trim();
+    const nextIdRaw = newId == null ? badgeId : String(newId || "").trim();
+    const badgeEmoji = String(emoji || "").trim();
+    const badgeName = String(name || "").trim();
+
+    if (!badgeId) return res.status(400).json({ message: "id manquant" });
+
+    if (
+      !nextIdRaw ||
+      nextIdRaw.length > 32 ||
+      !/^[a-zA-Z0-9_-]+$/.test(nextIdRaw)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "id invalide (a-zA-Z0-9_- max 32)" });
+    }
+    if (!badgeEmoji || badgeEmoji.length > 10) {
+      return res.status(400).json({ message: "emoji invalide" });
+    }
+    if (!badgeName || badgeName.length > 30) {
+      return res.status(400).json({ message: "nom invalide" });
+    }
+
+    const data = ensureBadgesData();
+    if (!data.catalog[badgeId]) {
+      return res.status(404).json({ message: "Badge introuvable" });
+    }
+
+    const nextId = nextIdRaw;
+    if (nextId !== badgeId && data.catalog[nextId]) {
+      return res.status(400).json({ message: "id déjà utilisé" });
+    }
+
+    if (nextId !== badgeId) {
+      const prev = data.catalog[badgeId];
+      delete data.catalog[badgeId];
+      data.catalog[nextId] = { emoji: badgeEmoji, name: badgeName };
+
+      for (const pseudo of Object.keys(data.users)) {
+        const bucket = data.users[pseudo];
+        if (!bucket) continue;
+        const assigned = Array.isArray(bucket.assigned) ? bucket.assigned : [];
+        const selected = Array.isArray(bucket.selected) ? bucket.selected : [];
+
+        const nextAssigned = assigned.map((x) => (x === badgeId ? nextId : x));
+        const nextSelected = selected.map((x) => (x === badgeId ? nextId : x));
+
+        data.users[pseudo] = { assigned: nextAssigned, selected: nextSelected };
+      }
+    } else {
+      data.catalog[badgeId] = { emoji: badgeEmoji, name: badgeName };
+    }
+
+    FileService.save("chatBadges", data);
+    emitAdminRefresh("badges");
+    res.json({ success: true, id: nextId });
   });
 
   router.post("/badges/assign", requireAdmin, (req, res) => {
@@ -280,6 +521,108 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
 
     FileService.save("chatBadges", data);
+    emitAdminRefresh("badges");
+    res.json({ success: true });
+  });
+
+  // --- Shop: Catalog ---
+  function normalizeShopPayload(body, { requireId = true } = {}) {
+    const id = String(body?.id || "").trim();
+    const name = String(body?.name || "").trim();
+    const emoji = String(body?.emoji || "").trim();
+    const desc = String(body?.desc || "").trim();
+    const price = Number.parseInt(body?.price, 10);
+    const available = body?.available == null ? true : Boolean(body.available);
+
+    if (requireId && (!id || id.length > 32 || !/^[a-zA-Z0-9_-]+$/.test(id))) {
+      return { error: "id invalide (a-zA-Z0-9_- max 32)" };
+    }
+    if (!name || name.length > 40) return { error: "nom invalide" };
+    if (!emoji || emoji.length > 10) return { error: "emoji invalide" };
+    if (!Number.isFinite(price) || price <= 0 || price > 1_000_000_000) {
+      return { error: "prix invalide" };
+    }
+    if (desc.length > 220) return { error: "description invalide" };
+
+    return { id, name, emoji, desc, price, available };
+  }
+
+  router.get("/shop/catalog", requireAdmin, (req, res) => {
+    const catalog = ensureShopCatalog();
+    const items = Object.values(catalog.items || {});
+    res.json({ items });
+  });
+
+  router.post("/shop/catalog/create", requireAdmin, (req, res) => {
+    const parsed = normalizeShopPayload(req.body || {});
+    if (parsed.error) return res.status(400).json({ message: parsed.error });
+
+    const catalog = ensureShopCatalog();
+    if (catalog.items[parsed.id]) {
+      return res.status(400).json({ message: "id deja utilise" });
+    }
+
+    catalog.items[parsed.id] = {
+      id: parsed.id,
+      name: parsed.name,
+      emoji: parsed.emoji,
+      desc: parsed.desc,
+      price: parsed.price,
+      available: parsed.available,
+    };
+
+    FileService.save("shopCatalog", catalog);
+    emitAdminRefresh("shop-catalog");
+    res.json({ success: true, item: catalog.items[parsed.id] });
+  });
+
+  router.post("/shop/catalog/update", requireAdmin, (req, res) => {
+    const parsed = normalizeShopPayload(req.body || {});
+    if (parsed.error) return res.status(400).json({ message: parsed.error });
+
+    const catalog = ensureShopCatalog();
+    if (!catalog.items[parsed.id]) {
+      return res.status(404).json({ message: "Badge introuvable" });
+    }
+
+    const existing = catalog.items[parsed.id] || {};
+    catalog.items[parsed.id] = {
+      ...existing,
+      id: parsed.id,
+      name: parsed.name,
+      emoji: parsed.emoji,
+      desc: parsed.desc,
+      price: parsed.price,
+      available: parsed.available,
+    };
+
+    if (FileService.data.chatBadges?.catalog?.[parsed.id]) {
+      FileService.data.chatBadges.catalog[parsed.id] = {
+        ...FileService.data.chatBadges.catalog[parsed.id],
+        name: parsed.name,
+        emoji: parsed.emoji,
+      };
+      FileService.save("chatBadges", FileService.data.chatBadges);
+      emitAdminRefresh("badges");
+    }
+
+    FileService.save("shopCatalog", catalog);
+    emitAdminRefresh("shop-catalog");
+    res.json({ success: true, item: catalog.items[parsed.id] });
+  });
+
+  router.post("/shop/catalog/delete", requireAdmin, (req, res) => {
+    const id = String(req.body?.id || "").trim();
+    if (!id) return res.status(400).json({ message: "id manquant" });
+
+    const catalog = ensureShopCatalog();
+    if (!catalog.items[id]) {
+      return res.status(404).json({ message: "Badge introuvable" });
+    }
+
+    delete catalog.items[id];
+    FileService.save("shopCatalog", catalog);
+    emitAdminRefresh("shop-catalog");
     res.json({ success: true });
   });
 
@@ -400,6 +743,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     };
 
     FileService.save("easterEggs", FileService.data.easterEggs);
+    emitAdminRefresh("ee-completions");
     res.json({ ok: true });
   });
 
@@ -443,6 +787,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     // Update destinataire si connecté
     refreshLeaderboard("clicks");
+
+    emitAdminRefresh("transactions");
 
     res.json({ success: true });
   });
@@ -488,6 +834,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       true,
     );
     refreshLeaderboard("clicks");
+
+    emitAdminRefresh("transactions");
 
     res.json({ success: true });
   });
@@ -890,6 +1238,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     const clicks = FileService.data.clicks[pseudo] || 0;
     recalculateMedals(pseudo, clicks, io);
 
+    emitAdminRefresh("cheaters");
     res.json({ message: "Joueur ajouté aux tricheurs" });
   });
 
@@ -947,6 +1296,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     const clicks = FileService.data.clicks[pseudo] || 0;
     recalculateMedals(pseudo, clicks, io);
 
+    emitAdminRefresh("cheaters");
     res.json({ message: "Joueur retiré des tricheurs" });
   });
 
@@ -2469,6 +2819,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       }
     }
 
+    emitAdminRefresh("tag-requests");
     res.json({ success: true });
   });
 
@@ -2593,6 +2944,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       data.requests.splice(requestIndex, 1); // remove from pending or keep log? User didn't specify. I'll remove done requests to keep it clean.
       fs.writeFileSync(reqFile, JSON.stringify(data, null, 2));
 
+      emitAdminRefresh("password-requests");
       res.json({ success: true, status: request.status });
     } catch (e) {
       console.error(e);

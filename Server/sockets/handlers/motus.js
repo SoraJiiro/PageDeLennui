@@ -1,3 +1,5 @@
+const { applyAutoBadges } = require("../../services/badgesAuto");
+
 function registerMotusHandlers({
   io,
   socket,
@@ -142,6 +144,9 @@ function registerMotusHandlers({
 
     FileService.save("motusScores", FileService.data.motusScores);
     leaderboardManager.broadcastMotusLB(io);
+    try {
+      applyAutoBadges({ pseudo, FileService });
+    } catch {}
 
     FileService.save("motusState", FileService.data.motusState);
 
