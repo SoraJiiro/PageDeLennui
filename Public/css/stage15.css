@@ -11,9 +11,9 @@
 .mash-card {
   background: rgba(0, 0, 0, 0.8);
   border: 2px solid var(--primary-color);
-  padding: 20px;
-  width: 90%;
-  max-width: 800px;
+  padding: 24px;
+  width: min(96vw, 1200px);
+  max-width: 1200px;
   text-align: center;
   position: relative;
 }
@@ -41,20 +41,24 @@
   display: flex !important;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
 .mash-players {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
+  gap: 24px;
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .player-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 45%;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .player-pseudo {
@@ -76,11 +80,26 @@
 
 .progress-bar-container {
   width: 100%;
-  height: 30px;
+  height: 34px;
   background: #333;
   overflow: hidden;
   position: relative;
   border: 2px solid #f3f3f3;
+}
+
+@media (max-width: 900px) {
+  .mash-card {
+    width: 94vw;
+    padding: 18px;
+  }
+
+  .mash-players {
+    gap: 14px;
+  }
+
+  .player-pseudo {
+    font-size: 1.2rem;
+  }
 }
 
 .progress-bar {

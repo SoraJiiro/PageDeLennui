@@ -33,7 +33,7 @@ export function initPuissance4(socket) {
         if (entry.isIntersecting) socket.emit("p4:getState");
       });
     },
-    { threshold: 0.5 }
+    { threshold: 0.5 },
   );
 
   const stage8 = document.getElementById("stage8");
@@ -76,8 +76,8 @@ export function initPuissance4(socket) {
     if (ui.specsList && data.spectators && data.spectators.length > 0) {
       ui.specsList.innerHTML = `
         <p>Spectateurs (${data.spectators.length}) : ${data.spectators.join(
-        ", "
-      )}</p>
+          ", ",
+        )}</p>
       `;
     } else if (ui.specsList) {
       ui.specsList.innerHTML = "";
@@ -129,6 +129,8 @@ export function initPuissance4(socket) {
   });
 
   socket.on("p4:gameEnd", (data) => {
+    const myGain = Number(data?.moneyByPlayer?.[state.monPseudo] || 0);
+    const moneyLine = `\n💰 Total gagné: ${myGain.toLocaleString("fr-FR")} monnaie`;
     if (!state.estSpec) {
       if (data.winner === "Partie annulée !") {
         alert(`${data.winner} ${data.reason}`);
@@ -137,14 +139,14 @@ export function initPuissance4(socket) {
         socket.emit("p4:getState");
       } else if (data.draw) {
         setTimeout(() => {
-          alert(`🤝 Match nul !`);
+          alert(`🤝 Match nul !${moneyLine}`);
           ui.game.classList.remove("active");
           ui.lobby.style.display = "block";
           socket.emit("p4:getState");
         }, 3000);
       } else {
         setTimeout(() => {
-          alert(`🎉 ${data.winner} a gagné la partie !`);
+          alert(`🎉 ${data.winner} a gagné la partie !${moneyLine}`);
           ui.game.classList.remove("active");
           ui.lobby.style.display = "block";
           socket.emit("p4:getState");
@@ -219,7 +221,7 @@ export function initPuissance4(socket) {
               gameStateData.winningCells.length > 0
             ) {
               const isWinningCell = gameStateData.winningCells.some(
-                (wc) => wc.row === row && wc.col === col
+                (wc) => wc.row === row && wc.col === col,
               );
               if (isWinningCell) {
                 token.style.background = "#fff";

@@ -1,5 +1,5 @@
 :root {
-  --sidebar-width: 280px;
+  --sidebar-width: 300px;
   --sidebar-bg: var(--bg-color);
   --sidebar-border: 1px solid var(--primary-color);
   --sidebar-text: var(--primary-color);
@@ -11,6 +11,19 @@
   left: 20px;
   z-index: 1000;
   backdrop-filter: blur(5px);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.sidebar-toggle:hover,
+.sidebar-toggle:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px var(--primary-color),
+    0 0 14px rgba(0, 255, 0, 0.22);
+  opacity: 0.98;
 }
 
 .sidebar {
@@ -51,15 +64,15 @@
 
 .sidebar-close {
   background: none;
-  border: none;
   color: var(--primary-color);
+  border: none !important;
   font-size: 1.5rem;
   cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.sidebar-close:hover {
-  opacity: 0.7;
+  transition:
+    transform 0.25s ease,
+    scale 0.3s ease;
+  padding: 7px;
+  border-radius: 50%;
 }
 
 .sidebar-content {
@@ -79,6 +92,23 @@
 
 .sidebar-section {
   margin-bottom: 25px;
+}
+
+#periodic-msg {
+  width: fit-content;
+  max-width: calc(100vw - 24px);
+  display: flex;
+  gap: 1.5px;
+  overflow: hidden;
+  margin: 0 auto 20px auto;
+}
+
+#periodic-msg span {
+  display: inline-block;
+  animation: letterLight 2.5s infinite;
+  opacity: 0.4;
+  color: #fff;
+  font-family: fantasy, monospace;
 }
 
 .sidebar-section h3 {
@@ -105,17 +135,6 @@
   font-style: italic;
 }
 
-#sb-cap-info {
-  display: inline-block;
-  color: var(--primary-color);
-  border-top: 1.5px solid var(--primary-color);
-  border-right: 1.5px solid var(--primary-color);
-  border-bottom: 1.5px solid var(--primary-color);
-  padding: 10px;
-  font-style: italic;
-  font-size: 0.8rem;
-}
-
 .sidebar-section ul {
   list-style: none;
   padding: 0;
@@ -134,22 +153,52 @@
   padding: 10px 40px 10px 15px;
   background: transparent;
   border: 1px solid transparent;
-  color: #eee;
+  color: var(--primary-color);
   cursor: pointer;
   text-align: left;
   border-radius: 0;
-  transition: all 0.2s;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    padding-left 0.18s ease,
+    box-shadow 0.18s ease;
   text-decoration: none;
   font-size: 1rem;
   font-family: inherit;
+  position: relative;
+}
+
+.nav-btn::before {
+  content: "*";
+  position: absolute;
+  left: 2px;
+  top: 54%;
+  transform: translateY(-46%);
 }
 
 .nav-btn:hover,
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.05);
+.nav-link:hover,
+.nav-btn:focus-visible,
+.nav-link:focus-visible {
+  background: rgba(0, 255, 0, 0.08);
   border-color: var(--primary-color);
   color: var(--primary-color);
-  transform: translateY(-2.5px);
+  transform: translateX(4px);
+  padding-left: 18px;
+}
+
+.nav-btn:active,
+.nav-link:active {
+  transform: translateX(1px);
+}
+
+.nav-btn:hover::before {
+  content: "*";
+  position: absolute;
+  left: 2px;
+  top: 54%;
+  transform: translateY(-46%) translateX(2px);
 }
 
 .sidebar-controls {
@@ -169,6 +218,25 @@
 .control-item label {
   color: #ccc;
   font-size: 0.9rem;
+}
+
+.sidebar-controls .keybind-submit,
+.sidebar-controls .nav-link,
+.sidebar-controls input[type="text"] {
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.sidebar-controls .keybind-submit:hover,
+.sidebar-controls .nav-link:hover,
+.sidebar-controls input[type="text"]:focus-visible {
+  border-color: var(--primary-color) !important;
+  background: rgba(0, 255, 0, 0.08) !important;
+  color: var(--primary-color) !important;
+  transform: translateY(-1px);
 }
 
 input[type="color"] {
@@ -204,6 +272,19 @@ input[type="color"]::-webkit-color-swatch {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.log-off-btn:hover,
+.log-off-btn:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px var(--primary-color),
+    0 0 14px rgba(0, 255, 0, 0.2);
+  opacity: 0.98;
 }
 
 .sidebar-overlay {

@@ -26,6 +26,140 @@ function registerAdminHandlers({
     return s?.data?.pseudo || s?.handshake?.session?.user?.pseudo || null;
   };
   // ------- Admin Events -------
+  // ------- Reset complet -------
+  socket.on("admin:server:softReset", async () => {
+    if (pseudo !== "Admin") return;
+    const fs = require("fs");
+    const path = require("path");
+    const dataDir = path.join(__dirname, "../../../data");
+    // Fichiers à ne PAS toucher
+    const exclude = [
+      "motus_scores.json",
+      "motus_state.json",
+      "pixelwar_users.json",
+      "pixelwar_custom_colors.json",
+      "tags.json",
+      "tag_requests.json",
+      "shop_catalog.json",
+      "surveys.json",
+      "annonces.json",
+      "password_requests.json",
+      "pfps.json",
+      "pfp_requests.json",
+      "easter_egg_tracking.json", // NE PAS TOUCHER Easter Eggs
+    ];
+    // Fichiers à reset partiel (ex: badges, medals)
+    const partialReset = {
+      "chat_badges.json": (data) => ({ ...data, users: {} }),
+    };
+    try {
+      const files = fs.readdirSync(dataDir);
+      for (const file of files) {
+        if (exclude.includes(file) || file.startsWith("pixelwar_")) continue;
+        const filePath = path.join(dataDir, file);
+        if (!file.endsWith(".json")) continue;
+        // Reset partiel pour certains fichiers
+        if (partialReset[file]) {
+          let raw;
+          try {
+            raw = fs.readFileSync(filePath, "utf-8");
+          } catch {
+            continue;
+          }
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            continue;
+          }
+          data = partialReset[file](data);
+          fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+        } else if (file === "users.json") {
+          let raw;
+          try {
+            raw = fs.readFileSync(filePath, "utf-8");
+          } catch {
+            continue;
+          }
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            continue;
+          }
+          data.users = data.users.map((u) => ({
+            id: u.id,
+            pseudo: u.pseudo,
+            password: u.password,
+            passwordHashé: u.passwordHashé,
+            creeDepuis: u.creeDepuis,
+            creeAt: u.creeAt,
+            tag: u.tag,
+            birthDate: u.birthDate,
+          }));
+          fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+        } else if (file === "clicks.json" || file === "medals.json") {
+          // Supprimer complètement clicks.json et medals.json
+          try {
+            fs.unlinkSync(filePath);
+          } catch {}
+        } else {
+          // Pour tous les autres fichiers, on les supprime complètement
+          try {
+            fs.unlinkSync(filePath);
+          } catch {}
+        }
+      }
+      // Vider aussi l'état en mémoire afin d'éviter une recréation immédiate
+      try {
+        if (!FileService.data) FileService.data = {};
+        FileService.data.clicks = {};
+        FileService.save("clicks", FileService.data.clicks);
+
+        FileService.data.clickerHumanPeakCps = {};
+        FileService.save(
+          "clickerHumanPeakCps",
+          FileService.data.clickerHumanPeakCps,
+        );
+
+        // Vider les wallets (monnaie + tokens)
+        FileService.data.wallets = {};
+        FileService.save("wallets", FileService.data.wallets);
+
+        FileService.data.medals = {};
+        FileService.save("medals", FileService.data.medals);
+      } catch (e) {
+        // ne pas bloquer le reset si la sauvegarde mémoire échoue
+      }
+
+      // Rebroadcast des leaderboards vides pour que les clients rafraîchissent immédiatement
+      try {
+        leaderboardManager.broadcastClickerLB(io);
+        leaderboardManager.broadcastDinoLB(io);
+        leaderboardManager.broadcastFlappyLB(io);
+        leaderboardManager.broadcastUnoLB(io);
+        leaderboardManager.broadcastP4LB(io);
+        leaderboardManager.broadcastBlockBlastLB(io);
+        leaderboardManager.broadcastSnakeLB(io);
+        leaderboardManager.broadcastMotusLB(io);
+        leaderboardManager.broadcast2048LB(io);
+        leaderboardManager.broadcastMashLB(io);
+        leaderboardManager.broadcastBlackjackLB(io);
+        leaderboardManager.broadcastCoinflipLB(io);
+      } catch (e) {
+        // noop
+      }
+
+      socket.emit("admin:server:softReset:result", { success: true });
+      // Rafraîchir tous les clients (admin et users)
+      io.emit("reload", { file: "index.html" });
+    } catch (e) {
+      socket.emit("admin:server:softReset:result", {
+        success: false,
+        error: e.message,
+      });
+    }
+  });
   socket.on("admin:rules:resetAll", () => {
     if (pseudo !== "Admin") return;
     if (!dbUsers || typeof dbUsers.readAll !== "function") {
@@ -35,7 +169,6 @@ function registerAdminHandlers({
       });
       return;
     }
-
     try {
       const db = dbUsers.readAll();
       const users = Array.isArray(db?.users) ? db.users : [];
@@ -353,6 +486,47 @@ function registerAdminHandlers({
       "🔙 L'historique du chat a été effacé par l'Admin.",
       true,
     );
+  });
+
+  // Mute / Unmute utilisateurs (Admin)
+  socket.on("admin:chat:mute", ({ target, durationMs }) => {
+    if (pseudo !== "Admin") return;
+    if (!target) return;
+    try {
+      FileService.data.chatMuted = FileService.data.chatMuted || {};
+      const dur = Number(durationMs) || 0;
+      const until = dur > 0 ? new Date(Date.now() + dur).toISOString() : null;
+      FileService.data.chatMuted[target] = { until, by: pseudo };
+      FileService.save("chatMuted", FileService.data.chatMuted);
+      io.emit("chat:muted:update", FileService.data.chatMuted);
+
+      const text = until
+        ? `${target} a été mis en sourdine par l'Admin pendant ${Math.round(dur / 1000)}s.`
+        : `${target} a été mis en sourdine indéfiniment par l'Admin.`;
+      broadcastSystemMessage(io, text, true);
+    } catch (e) {
+      // ignore
+    }
+  });
+
+  socket.on("admin:chat:unmute", ({ target }) => {
+    if (pseudo !== "Admin") return;
+    if (!target) return;
+    try {
+      FileService.data.chatMuted = FileService.data.chatMuted || {};
+      if (FileService.data.chatMuted[target]) {
+        delete FileService.data.chatMuted[target];
+        FileService.save("chatMuted", FileService.data.chatMuted);
+        io.emit("chat:muted:update", FileService.data.chatMuted);
+        broadcastSystemMessage(
+          io,
+          `${target} a été rétabli du mute par l'Admin.`,
+          true,
+        );
+      }
+    } catch (e) {
+      // ignore
+    }
   });
 
   socket.on("admin:global-notification", ({ message, withCountdown }) => {

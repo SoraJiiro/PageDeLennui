@@ -3,7 +3,15 @@ const { FileService } = require("../util");
 const dbUsers = require("../db/dbUsers");
 const { applyAutoBadges } = require("../services/badgesAuto");
 const { getShopItem } = require("../services/shopCatalog");
+
+function normalizeHexColor(value) {
+  if (typeof value !== "string") return null;
+  const c = value.trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(c)) return null;
+  return c.toUpperCase();
+}
 const { canPurchaseLives, addLives } = require("../services/reviveLives");
+const { getWallet } = require("../services/wallet");
 
 const router = express.Router();
 const CUSTOM_BADGE_PRICE = 200000;
@@ -31,8 +39,19 @@ function getTagFor(pseudo) {
 }
 
 function getStatsFor(pseudo) {
+  const wallet = getWallet(
+    FileService,
+    pseudo,
+    (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
+  );
   return {
     clicks: (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
+    money: wallet.money || 0,
+    tokens: wallet.tokens || 0,
+    peakHumanCps:
+      (FileService.data.clickerHumanPeakCps &&
+        FileService.data.clickerHumanPeakCps[pseudo]) ||
+      0,
     dinoScore:
       (FileService.data.dinoScores && FileService.data.dinoScores[pseudo]) || 0,
     flappyScore:
@@ -53,6 +72,17 @@ function getStatsFor(pseudo) {
       (FileService.data.scores2048 && FileService.data.scores2048[pseudo]) || 0,
     mashWins:
       (FileService.data.mashWins && FileService.data.mashWins[pseudo]) || 0,
+    sudokuCompleted:
+      (FileService.data.sudokuScores &&
+        FileService.data.sudokuScores[pseudo]) ||
+      0,
+    roulette:
+      (FileService.data.rouletteStats &&
+        FileService.data.rouletteStats[pseudo]) ||
+      null,
+    slots:
+      (FileService.data.slotsStats && FileService.data.slotsStats[pseudo]) ||
+      null,
     motus:
       (FileService.data.motusScores && FileService.data.motusScores[pseudo]) ||
       null,
@@ -180,6 +210,11 @@ router.get("/user/:pseudo", (req, res) => {
   } catch {}
 
   const chatProfile = getChatProfile(exists.pseudo);
+  const pixelWarGame = req.app?.locals?.pixelWarGame || null;
+  const pixelUser =
+    pixelWarGame && typeof pixelWarGame.getUserState === "function"
+      ? pixelWarGame.getUserState(exists.pseudo)
+      : null;
 
   res.json({
     pseudo: exists.pseudo,
@@ -193,6 +228,10 @@ router.get("/user/:pseudo", (req, res) => {
     medals:
       (FileService.data.medals && FileService.data.medals[exists.pseudo]) || [],
     stats: getStatsFor(exists.pseudo),
+    customPixelColors:
+      pixelUser && Array.isArray(pixelUser.unlockedCustomColors)
+        ? pixelUser.unlockedCustomColors
+        : [],
   });
 });
 
@@ -207,6 +246,11 @@ router.get("/me", (req, res) => {
 
   const chatProfile = getChatProfile(exists.pseudo);
   const pfpStatus = getPfpRequestStatus(exists.pseudo);
+  const pixelWarGame = req.app?.locals?.pixelWarGame || null;
+  const pixelUser =
+    pixelWarGame && typeof pixelWarGame.getUserState === "function"
+      ? pixelWarGame.getUserState(exists.pseudo)
+      : null;
 
   res.json({
     pseudo: exists.pseudo,
@@ -223,6 +267,10 @@ router.get("/me", (req, res) => {
     medals:
       (FileService.data.medals && FileService.data.medals[exists.pseudo]) || [],
     stats: getStatsFor(exists.pseudo),
+    customPixelColors:
+      pixelUser && Array.isArray(pixelUser.unlockedCustomColors)
+        ? pixelUser.unlockedCustomColors
+        : [],
   });
 });
 
@@ -347,11 +395,16 @@ router.post("/badges/custom/request", express.json(), (req, res) => {
     return res.status(400).json({ message: "Une demande est déjà en cours" });
   }
 
-  const currentClicks = FileService.data.clicks[pseudo] || 0;
-  if (currentClicks < CUSTOM_BADGE_PRICE) {
+  const wallet = getWallet(
+    FileService,
+    pseudo,
+    FileService.data.clicks[pseudo] || 0,
+  );
+  const currentMoney = Number(wallet.money || 0);
+  if (currentMoney < CUSTOM_BADGE_PRICE) {
     return res.status(400).json({
-      message: "Pas assez de clicks",
-      balance: currentClicks,
+      message: "Pas assez de monnaie",
+      balance: currentMoney,
     });
   }
 
@@ -369,14 +422,18 @@ router.post("/badges/custom/request", express.json(), (req, res) => {
   requests.push(request);
   FileService.save("customBadgeRequests", requests);
 
-  FileService.data.clicks[pseudo] = currentClicks - CUSTOM_BADGE_PRICE;
-  FileService.save("clicks", FileService.data.clicks);
+  FileService.data.wallets[pseudo].money = Math.max(
+    0,
+    Number(FileService.data.wallets[pseudo].money || 0) - CUSTOM_BADGE_PRICE,
+  );
+  FileService.save("wallets", FileService.data.wallets);
 
   const io = req.app && req.app.locals ? req.app.locals.io : null;
   if (io) {
-    io.to("user:" + pseudo).emit("clicker:you", {
-      score: FileService.data.clicks[pseudo],
-    });
+    io.to("user:" + pseudo).emit(
+      "economy:wallet",
+      getWallet(FileService, pseudo, FileService.data.clicks[pseudo] || 0),
+    );
     io.to("admins").emit("admin:data:refresh", {
       type: "custom-badge-requests",
     });
@@ -395,7 +452,7 @@ router.post("/badges/custom/request", express.json(), (req, res) => {
     success: true,
     request,
     price: CUSTOM_BADGE_PRICE,
-    balance: FileService.data.clicks[pseudo],
+    balance: FileService.data.wallets[pseudo].money,
   });
 });
 
@@ -469,8 +526,26 @@ router.post("/shop/purchase", express.json(), (req, res) => {
       return res.status(400).json({ message: "Article indisponible" });
     }
 
+    const customColor =
+      item.type === "pixelwar" && item.upgrade === "color_custom"
+        ? normalizeHexColor(raw && typeof raw === "object" ? raw.color : null)
+        : null;
+    if (
+      item.type === "pixelwar" &&
+      item.upgrade === "color_custom" &&
+      !customColor
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Couleur personnalisée invalide" });
+    }
+
     const isRepeatable =
-      item.type === "revive_life" || item.type === "pixelwar";
+      item.type === "revive_life" ||
+      (item.type === "pixelwar" &&
+        (item.upgrade === "pixel_1" ||
+          item.upgrade === "pixel_15" ||
+          item.upgrade === "storage_10"));
     if (!isRepeatable && qty !== 1) {
       return res.status(400).json({ message: "Quantite invalide" });
     }
@@ -483,7 +558,7 @@ router.post("/shop/purchase", express.json(), (req, res) => {
       continue;
     }
 
-    lineItems.set(id, { item, qty });
+    lineItems.set(id, { item, qty, customColor });
   }
 
   const normalized = Array.from(lineItems.values());
@@ -530,9 +605,15 @@ router.post("/shop/purchase", express.json(), (req, res) => {
     if (
       upgrade !== "storage_10" &&
       upgrade !== "pixel_1" &&
-      upgrade !== "pixel_15"
+      upgrade !== "pixel_15" &&
+      upgrade !== "color_custom"
     ) {
       return res.status(400).json({ message: "Upgrade Pixel War invalide" });
+    }
+    if (upgrade === "color_custom" && !entry.customColor) {
+      return res
+        .status(400)
+        .json({ message: "Couleur personnalisée invalide" });
     }
   }
 
@@ -544,7 +625,7 @@ router.post("/shop/purchase", express.json(), (req, res) => {
   }, 0);
 
   if (livesToBuy > 0) {
-    const limitCheck = canPurchaseLives(FileService, pseudo, livesToBuy, 3);
+    const limitCheck = canPurchaseLives(FileService, pseudo, livesToBuy, 5);
     if (!limitCheck.ok) {
       return res.status(400).json({
         message: "Limite journaliere de vies atteinte",
@@ -584,16 +665,21 @@ router.post("/shop/purchase", express.json(), (req, res) => {
     return res.status(400).json({ message: "Aucun article valide" });
   }
 
-  const currentClicks = FileService.data.clicks[pseudo] || 0;
+  const wallet = getWallet(
+    FileService,
+    pseudo,
+    FileService.data.clicks[pseudo] || 0,
+  );
+  const currentMoney = Number(wallet.money || 0);
   const total = itemsToCharge.reduce((sum, entry) => {
     const price = Number(entry.item.price) || 0;
     const qty = Math.max(1, Math.floor(Number(entry.qty) || 1));
     return sum + price * qty;
   }, 0);
-  if (total > currentClicks) {
+  if (total > currentMoney) {
     return res.status(400).json({
-      message: "Pas assez de clicks",
-      balance: currentClicks,
+      message: "Pas assez de monnaie",
+      balance: currentMoney,
     });
   }
 
@@ -621,7 +707,7 @@ router.post("/shop/purchase", express.json(), (req, res) => {
   }
 
   if (livesToBuy > 0) {
-    addLives(FileService, pseudo, livesToBuy, 3);
+    addLives(FileService, pseudo, livesToBuy, 5);
   }
 
   if (pixelWarGame && pixelItems.length) {
@@ -638,6 +724,14 @@ router.post("/shop/purchase", express.json(), (req, res) => {
       } else if (entry.item.upgrade === "pixel_15") {
         userState.pixels =
           Math.max(0, Number(userState.pixels) || 0) + qty * 15;
+      } else if (entry.item.upgrade === "color_custom") {
+        const colorHex = normalizeHexColor(entry.customColor);
+        if (
+          colorHex &&
+          typeof pixelWarGame.unlockCustomColorForUser === "function"
+        ) {
+          pixelWarGame.unlockCustomColorForUser(pseudo, colorHex);
+        }
       }
       if (userState.pixels > pixelWarGame.UNIVERSAL_STORAGE_LIMIT) {
         userState.pixels = pixelWarGame.UNIVERSAL_STORAGE_LIMIT;
@@ -647,15 +741,30 @@ router.post("/shop/purchase", express.json(), (req, res) => {
     pixelWarGame.saveUsers();
   }
 
-  FileService.data.clicks[pseudo] = currentClicks - total;
-  FileService.save("clicks", FileService.data.clicks);
+  FileService.data.wallets[pseudo].money = Math.max(
+    0,
+    Number(FileService.data.wallets[pseudo].money || 0) - total,
+  );
+  FileService.save("wallets", FileService.data.wallets);
 
   const io = req.app && req.app.locals ? req.app.locals.io : null;
   if (io) {
-    io.to("user:" + pseudo).emit("clicker:you", {
-      score: FileService.data.clicks[pseudo],
-    });
+    io.to("user:" + pseudo).emit(
+      "economy:wallet",
+      getWallet(FileService, pseudo, FileService.data.clicks[pseudo] || 0),
+    );
     io.to("user:" + pseudo).emit("system:info", "Achat confirme.");
+    if (
+      pixelWarGame &&
+      pixelItems.some((entry) => entry.item.upgrade === "color_custom")
+    ) {
+      io.to("user:" + pseudo).emit("pixelwar:palette_update", {
+        colors: pixelWarGame.COLORS,
+        unlockedColorIndices: Array.from(
+          pixelWarGame.getUnlockedColorIndicesForUser(pseudo),
+        ),
+      });
+    }
   }
 
   try {
@@ -663,6 +772,7 @@ router.post("/shop/purchase", express.json(), (req, res) => {
       type: "SHOP_PURCHASE",
       from: pseudo,
       amount: total,
+      currency: "money",
       items: itemsToCharge.map((entry) => ({
         id: entry.item.id,
         qty: Math.max(1, Math.floor(Number(entry.qty) || 1)),
@@ -677,7 +787,7 @@ router.post("/shop/purchase", express.json(), (req, res) => {
 
   res.json({
     success: true,
-    balance: FileService.data.clicks[pseudo],
+    balance: FileService.data.wallets[pseudo].money,
     purchasedIds: toBuyBadges.map((entry) => entry.item.id),
     assignedIds: nextAssigned,
   });

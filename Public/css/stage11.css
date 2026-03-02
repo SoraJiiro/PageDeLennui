@@ -4,26 +4,32 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  height: 100%;
   position: relative;
   background-color: #000;
   color: white;
   font-family: monospace, sans-serif;
-  padding: 50px 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .motus-container {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: clamp(6px, 1.2vh, 12px);
   align-items: center;
-  width: 100%;
-  max-width: 600px;
-  height: auto;
+  width: min(1120px, 96vw);
+  max-width: 96vw;
+  height: min(calc(100vh - 116px), 860px);
+  max-height: calc(100vh - 116px);
   position: relative;
+  padding: clamp(4px, 1vh, 10px) clamp(6px, 1vw, 12px);
+  overflow: hidden;
 }
 
 .motus-header {
-  color: var(--bg-color);
-  background-color: var(--primary-color);
+  color: var(--primary-color);
+  background-color: var(--bg-color);
   position: relative;
 }
 
@@ -34,48 +40,47 @@
   padding: 2.5px 7.5px;
   font-size: 1.1rem;
   font-weight: bold;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .motus-header::after {
   content: "(Pays du monde)";
-  font-size: 0.8rem;
-  position: absolute;
+  font-size: clamp(0.72rem, 1.5vw, 0.85rem);
+  position: static;
   color: var(--primary-color);
-  bottom: -20px;
-  right: 50%;
-  width: 140%;
   text-align: center;
-  transform: translateX(50%);
+  display: block;
+  margin-top: 4px;
 }
 
 .motus-grid {
-  display: grid;
-  padding: 10px;
-  width: fit-content;
-  box-sizing: border-box;
-  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  margin-top: 0;
   grid-gap: 5px;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-behavior: smooth;
-  padding-bottom: 12px;
+  overflow: hidden;
+  padding: 0;
 }
 
 .motus-grid::-webkit-scrollbar {
-  height: 6px;
+  display: none;
 }
 
 .motus-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 3px;
+  display: none;
 }
 
 .motus-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  grid-gap: 10px;
+  grid-gap: 8px;
   width: fit-content;
   margin: 0 auto;
 }
@@ -87,15 +92,15 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  font-size: 1.6rem;
+  font-size: clamp(0.88rem, 2.5vw, 1.2rem);
   line-height: 1;
   font-weight: bold;
   vertical-align: middle;
   box-sizing: border-box;
   text-transform: uppercase;
   user-select: none;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 24px;
+  min-height: 24px;
 }
 
 .motus-tile[data-state="active"] {
@@ -119,21 +124,23 @@
 }
 
 .motus-keyboard {
-  margin-top: auto;
-  margin-bottom: 20px;
+  margin: 0 auto;
   width: 100%;
+  max-width: min(875px, 82vw);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .motus-key-row {
   display: flex;
   width: 100%;
-  margin: 0 auto 8px;
+  margin: 0 auto clamp(3px, 0.7vh, 8px);
   touch-action: manipulation;
   justify-content: center;
-  gap: 2px;
+  gap: clamp(2px, 0.35vw, 6px);
 }
 
 .motus-key {
@@ -141,8 +148,8 @@
   font-weight: bold;
   border: 0;
   padding: 0;
-  margin: 0 6px 0 0;
-  height: 45px;
+  margin: 0;
+  height: clamp(28px, 4.4vh, 40px);
   cursor: pointer;
   user-select: none;
   background-color: #818384;
@@ -153,24 +160,33 @@
   align-items: center;
   text-transform: uppercase;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
-  font-size: 1rem;
+  font-size: clamp(0.74rem, 1.2vw, 0.92rem);
   position: relative;
 }
 
 button.motus-key:hover {
-  background-color: #a4a4a5;
+  background-color: #97989b;
   border: none;
   outline: none;
 }
 
 button.motus-key[data-state="absent"]:hover {
-  background-color: #2a2a2a;
-  color: #a4a4a5;
+  background-color: #242426;
+  color: #8d8d92;
   border: none;
   outline: none;
   cursor: not-allowed;
 }
 button.motus-key[data-state="correct"]:hover {
+  background-color: color-mix(in srgb, var(--primary-color) 82%, white 18%);
+  color: #000;
+  border: none;
+  outline: none;
+}
+
+button.motus-key[data-state="present"]:hover {
+  background-color: #cab34f;
+  color: #101010;
   border: none;
   outline: none;
 }
@@ -180,7 +196,7 @@ button.motus-key[data-state="correct"]:hover {
 }
 
 .motus-key.big {
-  flex: 1.5;
+  flex: 1.35;
 }
 
 .motus-key[data-correct-indices]::after {
@@ -200,7 +216,7 @@ button.motus-key[data-state="correct"]:hover {
 }
 
 .motus-key[data-state="present"] {
-  background-color: #b59f3b;
+  background-color: #c4c421;
 }
 
 .motus-key[data-state="absent"] {
@@ -224,14 +240,38 @@ button.motus-key[data-state="correct"]:hover {
 .motus-reset,
 .motus-skip,
 .motus-continue {
-  margin-top: 15px;
+  margin-top: 0;
   /* Styles inherited from common.css */
   text-transform: uppercase;
+  min-height: clamp(34px, 5vh, 44px);
+  padding: clamp(6px, 1vh, 10px) clamp(12px, 2vw, 18px);
 }
 
 .motus-already-found {
-  margin-top: 10px;
+  margin-top: 2px;
   color: var(--primary-color);
   font-weight: bold;
   text-align: center;
+}
+
+@media (max-height: 780px) {
+  .motus-container {
+    height: min(calc(100vh - 104px), 760px);
+  }
+
+  .motus-key {
+    height: clamp(26px, 4vh, 34px);
+  }
+}
+
+@media (max-width: 860px) {
+  .motus-container {
+    width: 98vw;
+    max-width: 98vw;
+    padding-inline: 4px;
+  }
+
+  .motus-key {
+    font-size: clamp(0.68rem, 2.5vw, 0.92rem);
+  }
 }

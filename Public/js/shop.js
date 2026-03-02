@@ -21,6 +21,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalCancelBtn = document.getElementById("modal-cancel-btn");
   const modalConfirmBtn = document.getElementById("modal-confirm-btn");
   const badgeStatusEl = document.getElementById("custom-badge-status");
+  const colorPersonalizationModal = document.querySelector(
+    ".color-personalization-modal",
+  );
+  const pixelwarCustomColorInput = document.getElementById(
+    "pixelwar-custom-color",
+  );
+  const colorModalCancelBtn = document.getElementById("color-modal-cancel-btn");
+  const colorModalConfirmBtn = document.getElementById(
+    "color-modal-confirm-btn",
+  );
 
   let cards = [];
   const cart = new Map();
@@ -31,22 +41,42 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastCustomDecision = null;
   let socket = null;
   let customStatusTimer = null;
+  let pendingColorCard = null;
   const CART_STORAGE_KEY = "pde_shop_cart_v1";
   let cartStorageKey = CART_STORAGE_KEY;
   let catalogMap = new Map();
+
+  function notifyParentAction(action, payload = {}) {
+    return;
+  }
 
   function toNumber(value) {
     const parsed = Number.parseInt(value, 10);
     return Number.isNaN(parsed) ? 0 : parsed;
   }
 
+  function normalizeHexColor(value) {
+    const v = String(value || "")
+      .trim()
+      .toUpperCase();
+    return /^#[0-9A-F]{6}$/.test(v) ? v : null;
+  }
+
   function formatPrice(value) {
-    return `${value.toLocaleString("fr-FR")} C`;
+    return `${value.toLocaleString("fr-FR")} M`;
   }
 
   function isRepeatableItem(item) {
     if (!item) return false;
-    return item.type === "pixelwar" || item.type === "revive_life";
+    if (item.type === "revive_life") return true;
+    if (item.type === "pixelwar") {
+      return (
+        item.upgrade === "pixel_1" ||
+        item.upgrade === "pixel_15" ||
+        item.upgrade === "storage_10"
+      );
+    }
+    return false;
   }
 
   function canUseStorage() {
@@ -126,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
           type: item.type || "",
           amount: item.amount != null ? String(item.amount) : "",
           upgrade: item.upgrade || "",
+          customColor: null,
           repeatable,
           qty,
         });
@@ -150,8 +181,8 @@ document.addEventListener("DOMContentLoaded", () => {
       socket.emit("clicker:sync");
     });
 
-    socket.on("clicker:you", (payload) => {
-      const next = Number(payload && payload.score);
+    socket.on("economy:wallet", (payload) => {
+      const next = Number(payload && payload.money);
       if (Number.isFinite(next)) {
         setBalance(next);
         syncCardStates();
@@ -179,6 +210,16 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       syncPersonalizeButton();
       renderCustomBadgeStatus();
+
+      if (payload.status === "approved") {
+        notifyParentAction("shop:custom-badge-approved", {
+          badgeId: payload.badgeId || null,
+        });
+      } else if (payload.status === "rejected") {
+        notifyParentAction("shop:custom-badge-rejected", {
+          badgeId: payload.badgeId || null,
+        });
+      }
     });
   }
 
@@ -330,7 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="availability">${availability}</span>
       </div>
       <div class="card-actions">
-        <button class="add-to-cart">Ajouter</button>
+        <button class="add-to-cart">${item.upgrade === "color_custom" ? "Personnaliser" : "Ajouter"}</button>
       </div>
     `;
 
@@ -420,7 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       } else {
         li.innerHTML = `
-          <span>${item.name}</span>
+          <span>${item.name}${item.customColor ? ` (${item.customColor})` : ""}</span>
           <button type="button" data-remove="${item.id}">Retirer</button>
         `;
       }
@@ -447,6 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = card.dataset.badgeId;
     if (!id) return;
     const repeatable = card.dataset.repeatable === "true";
+    const isCustomColor = (card.dataset.upgrade || "") === "color_custom";
 
     const button = card.querySelector(".add-to-cart");
     if (repeatable) {
@@ -473,6 +515,11 @@ document.addEventListener("DOMContentLoaded", () => {
         button.textContent = "Ajouter";
       }
     } else {
+      if (isCustomColor) {
+        openColorPersonalizationModal(card);
+        return;
+      }
+
       cart.set(id, {
         id,
         name: card.dataset.name || "Badge",
@@ -481,6 +528,7 @@ document.addEventListener("DOMContentLoaded", () => {
         type: card.dataset.type || "",
         amount: card.dataset.amount || "",
         upgrade: card.dataset.upgrade || "",
+        customColor: null,
         repeatable: false,
         qty: 1,
       });
@@ -490,6 +538,57 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    updateCartUI();
+    syncCardStates();
+  }
+
+  function openColorPersonalizationModal(card) {
+    if (!colorPersonalizationModal || !card) return;
+    pendingColorCard = card;
+    if (pixelwarCustomColorInput) {
+      pixelwarCustomColorInput.value = "#39FF14";
+      pixelwarCustomColorInput.focus();
+    }
+    colorPersonalizationModal.classList.add("is-open");
+  }
+
+  function closeColorPersonalizationModal() {
+    if (!colorPersonalizationModal) return;
+    colorPersonalizationModal.classList.remove("is-open");
+    pendingColorCard = null;
+  }
+
+  function confirmColorPersonalization() {
+    if (!pendingColorCard) return;
+    const id = pendingColorCard.dataset.badgeId;
+    if (!id) return;
+
+    const button = pendingColorCard.querySelector(".add-to-cart");
+    const customColor = normalizeHexColor(pixelwarCustomColorInput?.value);
+    if (!customColor) {
+      showNotice("Choisis une couleur valide.", "error");
+      return;
+    }
+
+    cart.set(id, {
+      id,
+      name: pendingColorCard.dataset.name || "Badge",
+      emoji: pendingColorCard.dataset.emoji || "🏷️",
+      price: toNumber(pendingColorCard.dataset.price),
+      type: pendingColorCard.dataset.type || "",
+      amount: pendingColorCard.dataset.amount || "",
+      upgrade: pendingColorCard.dataset.upgrade || "",
+      customColor,
+      repeatable: false,
+      qty: 1,
+    });
+
+    if (button) {
+      button.classList.add("is-added");
+      button.textContent = "Retirer";
+    }
+
+    closeColorPersonalizationModal();
     updateCartUI();
     syncCardStates();
   }
@@ -505,6 +604,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const items = Array.from(cart.values()).map((item) => {
         const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+        if (item.customColor) {
+          return { id: item.id, qty: 1, color: item.customColor };
+        }
         if (item.repeatable && qty > 1) {
           return { id: item.id, qty };
         }
@@ -540,6 +642,11 @@ document.addEventListener("DOMContentLoaded", () => {
       showNotice("Achat confirme.", "success");
       syncCardStates();
       updateCartUI();
+
+      notifyParentAction("shop:purchase-success", {
+        purchasedIds: Array.isArray(data.purchasedIds) ? data.purchasedIds : [],
+        assignedIds: Array.isArray(data.assignedIds) ? data.assignedIds : [],
+      });
     } catch (e) {
       showNotice("Erreur reseau. Reessaie plus tard.", "error");
       updateCartUI();
@@ -646,6 +753,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (badgeEmojiInput) badgeEmojiInput.value = "";
       closePersonalizationModal();
       syncPersonalizeButton();
+
+      notifyParentAction("shop:custom-badge-requested");
     } catch (e) {
       showNotice("Erreur reseau. Reessaie plus tard.", "error");
     } finally {
@@ -658,8 +767,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/profile/me", { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
-      const clicks = Number(data?.stats?.clicks || 0);
-      setBalance(clicks);
+      const money = Number(data?.stats?.money || 0);
+      setBalance(money);
 
       if (data?.pseudo) {
         updateCartStorageKey(data.pseudo);
@@ -764,10 +873,29 @@ document.addEventListener("DOMContentLoaded", () => {
     modalConfirmBtn.addEventListener("click", submitCustomBadgeRequest);
   }
 
+  if (colorModalCancelBtn) {
+    colorModalCancelBtn.addEventListener(
+      "click",
+      closeColorPersonalizationModal,
+    );
+  }
+
+  if (colorModalConfirmBtn) {
+    colorModalConfirmBtn.addEventListener("click", confirmColorPersonalization);
+  }
+
   if (personalizationModal) {
     personalizationModal.addEventListener("click", (event) => {
       if (event.target === personalizationModal) {
         closePersonalizationModal();
+      }
+    });
+  }
+
+  if (colorPersonalizationModal) {
+    colorPersonalizationModal.addEventListener("click", (event) => {
+      if (event.target === colorPersonalizationModal) {
+        closeColorPersonalizationModal();
       }
     });
   }

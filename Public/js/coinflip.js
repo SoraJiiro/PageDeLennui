@@ -6,54 +6,25 @@ export function initCoinFlip(socket) {
   const btnTails = document.getElementById("cf-btn-tails");
   const resultMsg = document.getElementById("cf-result");
   const quickBtns = document.querySelectorAll(".quick-bet-btn");
-  const capInfoEl = document.getElementById("cf-cap-info");
 
   let isFlipping = false;
-  let currentScore = 0;
+  let currentTokens = 0;
 
   function updateMaxBetUI() {
-    const maxBet = Math.max(0, Math.floor(currentScore || 0));
+    const maxBet = Math.max(0, Math.floor(currentTokens || 0));
     if (betInput) betInput.max = String(maxBet);
     if (betMaxInfo) {
       betMaxInfo.textContent = `Mise max : ${maxBet.toLocaleString(
         "fr-FR",
-      )} (100% de vos clicks)`;
+      )} (100% de vos tokens)`;
     }
   }
 
   updateMaxBetUI();
 
-  // Écouter les mises à jour du score depuis le serveur
-  socket.on("clicker:you", (data) => {
-    currentScore = data.score;
+  socket.on("economy:wallet", (data) => {
+    currentTokens = Number(data?.tokens || 0);
     updateMaxBetUI();
-    try {
-      socket.emit("economy:getProfitCap");
-    } catch (e) {}
-  });
-
-  socket.on("economy:profitCap", (capInfo) => {
-    // capInfo: { cap, earned, remaining, baseClicks, active }
-    if (!capInfoEl) return;
-    try {
-      const rem = Number(capInfo?.remaining || 0);
-      const cap = Number(capInfo?.cap || 0);
-      if (rem <= 0) {
-        capInfoEl.textContent = `Quota de gains atteint aujourd'hui.`;
-        capInfoEl.style.color = "#ff6666";
-      } else {
-        capInfoEl.textContent = `Gains restants aujourd'hui : ${rem.toLocaleString("fr-FR")} / ${cap.toLocaleString("fr-FR")}`;
-        capInfoEl.style.color = "#ccc";
-      }
-    } catch (e) {}
-  });
-
-  socket.on("clicker:update", (data) => {
-    currentScore = data.score;
-    updateMaxBetUI();
-    try {
-      socket.emit("economy:getProfitCap");
-    } catch (e) {}
   });
 
   // Boutons de mise rapide
@@ -65,8 +36,8 @@ export function initCoinFlip(socket) {
     newBtn.addEventListener("click", () => {
       const percent = parseInt(newBtn.dataset.percent);
 
-      if (!isNaN(percent) && currentScore > 0) {
-        const betAmount = Math.floor(currentScore * (percent / 100));
+      if (!isNaN(percent) && currentTokens > 0) {
+        const betAmount = Math.floor(currentTokens * (percent / 100));
         betInput.value = betAmount;
       } else {
         betInput.value = 0;
@@ -78,7 +49,7 @@ export function initCoinFlip(socket) {
     betInput.addEventListener("input", () => {
       if (betInput.value === "") return;
       const val = parseInt(betInput.value);
-      const maxBet = Math.max(0, Math.floor(currentScore || 0));
+      const maxBet = Math.max(0, Math.floor(currentTokens || 0));
       if (!isNaN(val) && val > maxBet) betInput.value = maxBet;
     });
   }
@@ -131,31 +102,11 @@ export function initCoinFlip(socket) {
       betInput.disabled = false;
 
       if (data.won) {
-        resultMsg.textContent = `Gagné ! +${data.amount} clicks`;
+        resultMsg.textContent = `Gagné ! +${data.amount} tokens`;
         resultMsg.className = "result-message win";
       } else {
-        resultMsg.textContent = `Perdu ! -${data.amount} clicks`;
+        resultMsg.textContent = `Perdu ! -${data.amount} tokens`;
         resultMsg.className = "result-message lose";
-      }
-
-      // Mettre à jour l'affichage du cap si présent
-      if (data.capInfo && capInfoEl) {
-        try {
-          const rem = Number(data.capInfo.remaining || 0);
-          const cap = Number(data.capInfo.cap || 0);
-          if (rem <= 0) {
-            capInfoEl.textContent = `Quota de gains atteint aujourd'hui.`;
-            capInfoEl.style.color = "#ff6666";
-          } else {
-            capInfoEl.textContent = `Gains restants aujourd'hui : ${rem.toLocaleString("fr-FR")} / ${cap.toLocaleString("fr-FR")}`;
-            capInfoEl.style.color = "#ccc";
-          }
-        } catch (e) {}
-      }
-      // Mettre à jour l'affichage du score global s'il existe
-      const scoreDisplay = document.getElementById("your-score");
-      if (scoreDisplay) {
-        scoreDisplay.innerText = data.newScore;
       }
     }, 3000); // Correspond à la durée de l'animation CSS
   });

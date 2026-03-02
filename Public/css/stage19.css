@@ -1,0 +1,262 @@
+#stage19 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  padding: 14px;
+}
+
+.sudoku-card {
+  width: min(1100px, 98vw);
+  max-height: calc(100dvh - 28px);
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: auto;
+}
+
+.sudoku-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.sudoku-header h2 {
+  background: color-mix(in srgb, var(--bg-color) 20%, var(--primary-color) 80%);
+  color: var(--bg-color);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 90%, #fff 10%);
+  padding: 7px 16px;
+  font-size: clamp(1.2rem, 2.5vw, 1.45rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sudoku-timer {
+  border: 1px solid color-mix(in srgb, var(--primary-color) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 78%, var(--primary-color) 22%);
+  min-width: 96px;
+  text-align: center;
+  padding: 7px 12px;
+  font-weight: 700;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+
+.sudoku-grid {
+  width: min(860px, 100%, calc(100dvh - 315px));
+  max-width: 860px;
+  aspect-ratio: 1/1;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border: 2px solid color-mix(in srgb, var(--primary-color) 88%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 88%, var(--primary-color) 12%);
+  position: relative;
+  z-index: 1;
+  margin-inline: auto;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary-color) 26%, transparent) inset,
+    0 0 16px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.sudoku-cell {
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: "Ubuntu", sans-serif, monospace;
+  text-transform: none;
+  letter-spacing: 0;
+  outline: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  min-width: 0;
+  line-height: 1;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 46%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 90%, var(--primary-color) 10%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.95rem, 1.8vw, 1.45rem);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--primary-color) 88%, #fff 12%);
+  cursor: help;
+  user-select: none;
+  transition:
+    background-color 0.14s ease,
+    color 0.14s ease,
+    transform 0.08s ease,
+    box-shadow 0.14s ease;
+}
+
+.sudoku-cell.fixed {
+  background: color-mix(in srgb, var(--bg-color) 72%, var(--primary-color) 28%);
+  color: color-mix(in srgb, var(--primary-color) 65%, #fff 35%);
+  text-shadow: 0 0 7px color-mix(in srgb, var(--primary-color) 24%, transparent);
+  cursor: default;
+}
+
+.sudoku-cell.fixed:hover {
+  background: color-mix(in srgb, var(--bg-color) 72%, var(--primary-color) 28%);
+  color: color-mix(in srgb, var(--primary-color) 65%, #fff 35%);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 46%, transparent);
+  outline: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.sudoku-cell:not(.fixed):hover {
+  border: 1px solid color-mix(in srgb, var(--primary-color) 46%, transparent);
+  outline: none;
+  background: color-mix(in srgb, var(--bg-color) 60%, var(--primary-color) 40%);
+}
+
+.sudoku-cell.active {
+  background: color-mix(in srgb, var(--bg-color) 46%, var(--primary-color) 54%);
+  color: var(--bg-color);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--primary-color) 95%, #fff 5%) inset,
+    0 0 14px color-mix(in srgb, var(--primary-color) 34%, transparent);
+  z-index: 1;
+}
+
+.sudoku-cell.block-r {
+  border-right: 2px solid
+    color-mix(in srgb, var(--primary-color) 82%, transparent);
+}
+
+.sudoku-cell.block-b {
+  border-bottom: 2px solid
+    color-mix(in srgb, var(--primary-color) 82%, transparent);
+}
+
+.sudoku-pad {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 8px;
+  width: min(860px, 100%);
+  position: relative;
+  z-index: 1;
+  margin-inline: auto;
+}
+
+.sudoku-pad-btn,
+.sudoku-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: "Ubuntu", sans-serif, monospace;
+  outline: none;
+  padding: 0 10px;
+  margin: 0;
+  line-height: 1;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 85%, var(--primary-color) 15%);
+  color: var(--primary-color);
+  min-height: 42px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+}
+
+.sudoku-pad-btn {
+  border-radius: 8px;
+  font-size: clamp(0.95rem, 1.7vw, 1.2rem);
+  min-width: 0;
+}
+
+.sudoku-btn {
+  min-height: 46px;
+  border-radius: 8px;
+  text-transform: uppercase;
+}
+
+.sudoku-btn#sudoku-clear {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.sudoku-pad-btn:hover,
+.sudoku-btn:hover {
+  background: color-mix(in srgb, var(--primary-color) 82%, var(--bg-color) 18%);
+  color: var(--bg-color);
+  border-color: color-mix(in srgb, var(--primary-color) 96%, #fff 4%);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary-color) 24%, transparent);
+}
+
+.sudoku-btn#sudoku-clear:hover {
+  background: color-mix(in srgb, #ff4444 88%, var(--bg-color) 12%);
+  color: var(--bg-color);
+  border-color: var(--bg-color);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px color-mix(in srgb, #ff4444 24%, transparent);
+  outline: 2px solid color-mix(in srgb, #ff4444 72%, transparent);
+}
+
+.sudoku-pad-btn:active,
+.sudoku-btn:active {
+  transform: translateY(0);
+}
+
+.sudoku-actions {
+  width: min(860px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+  margin-inline: auto;
+}
+
+.sudoku-msg {
+  width: min(860px, 100%);
+  min-height: 1.6rem;
+  border: 1px dashed color-mix(in srgb, var(--primary-color) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-color) 84%, var(--primary-color) 16%);
+  padding: 8px 10px;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  margin-inline: auto;
+}
+
+@media (max-width: 760px) {
+  #stage19 {
+    padding: 8px;
+  }
+
+  .sudoku-card {
+    width: min(100%, 98vw);
+    max-height: calc(100dvh - 16px);
+    padding: 0.9rem;
+    gap: 12px;
+  }
+
+  .sudoku-grid {
+    width: min(100%, calc(100dvh - 330px));
+  }
+
+  .sudoku-header h2 {
+    padding: 6px 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .sudoku-actions {
+    grid-template-columns: 1fr;
+  }
+}

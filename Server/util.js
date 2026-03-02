@@ -173,6 +173,7 @@ class FileService {
       pfpRequests: path.join(config.DATA, "pfp_requests.json"),
       customBadgeRequests: path.join(config.DATA, "custom_badge_requests.json"),
       chatBadges: path.join(config.DATA, "chat_badges.json"),
+      chatMuted: path.join(config.DATA, "chat_muted.json"),
       dinoScores: path.join(config.DATA, "dino_scores.json"),
       flappyScores: path.join(config.DATA, "flappy_scores.json"),
       runnerResume: path.join(config.DATA, "runner_resume.json"),
@@ -191,17 +192,31 @@ class FileService {
       motusState: path.join(config.DATA, "motus_state.json"),
       motusScores: path.join(config.DATA, "motus_scores.json"),
       scores2048: path.join(config.DATA, "2048_scores.json"),
+      scores2048MaxTile: path.join(config.DATA, "2048_max_tiles.json"),
       mashWins: path.join(config.DATA, "mash_wins.json"),
       transactions: path.join(config.DATA, "transactions.json"),
       blackjackStats: path.join(config.DATA, "blackjack_stats.json"),
       coinflipStats: path.join(config.DATA, "coinflip_stats.json"),
+      rouletteStats: path.join(config.DATA, "roulette_stats.json"),
+      slotsStats: path.join(config.DATA, "slots_stats.json"),
+      sudokuScores: path.join(config.DATA, "sudoku_scores.json"),
       dailyEarnings: path.join(config.DATA, "daily_earnings.json"),
+      wallets: path.join(config.DATA, "wallets.json"),
       annonces: path.join(config.DATA, "annonces.json"),
       dms: path.join(config.DATA, "dms.json"),
       sharedFiles: path.join(config.DATA, "shared_files.json"),
       easterEggTracking: path.join(config.DATA, "easter_egg_tracking.json"),
       shopCatalog: path.join(config.DATA, "shop_catalog.json"),
       reviveLives: path.join(config.DATA, "revive_lives.json"),
+      clickerHumanPeakCps: path.join(
+        config.DATA,
+        "clicker_human_peak_cps.json",
+      ),
+      clickerFouChallenges: path.join(
+        config.DATA,
+        "clicker_fou_challenges.json",
+      ),
+      clickerUpgrades: path.join(config.DATA, "clicker_upgrades.json"),
       fileActions: path.join(config.DATA, "file_actions.log"),
     };
 
@@ -239,75 +254,11 @@ class FileService {
   loadAll() {
     const defaultShopCatalog = {
       items: {
-        glitch: {
-          id: "glitch",
-          name: "Glitch Neon",
-          emoji: "\u26A1",
-          price: 2400,
-          available: true,
-          desc: "Animation neon avec un effet glitch sur ton pseudo.",
-        },
-        royal: {
-          id: "royal",
-          name: "Couronne Royale",
-          emoji: "\uD83D\uDC51",
-          price: 5200,
-          available: true,
-          desc: "Halo dore et bordure premium sur la fiche profil.",
-        },
-        pixel: {
-          id: "pixel",
-          name: "Pixel Runner",
-          emoji: "\uD83D\uDFE9",
-          price: 1800,
-          available: true,
-          desc: "Traileur pixel vert pendant les mini-jeux arcade.",
-        },
-        meteor: {
-          id: "meteor",
-          name: "Impact Meteor",
-          emoji: "\u2604\uFE0F",
-          price: 6800,
-          available: false,
-          desc: "Badge de saison avec explosion lumineuse sur la sidebar.",
-        },
-        arc: {
-          id: "arc",
-          name: "Arc Lumineux",
-          emoji: "\uD83C\uDF19",
-          price: 950,
-          available: true,
-          desc: "Halo discret autour de ton avatar dans le chat.",
-        },
-        circuit: {
-          id: "circuit",
-          name: "Circuit Bleu",
-          emoji: "\uD83E\uDDE0",
-          price: 3100,
-          available: true,
-          desc: "Effet de circuit anime pour les profils verification pro.",
-        },
-        ember: {
-          id: "ember",
-          name: "Embers",
-          emoji: "\uD83D\uDD25",
-          price: 2100,
-          available: true,
-          desc: "Petites braises autour du badge lors des events nocturnes.",
-        },
-        pulse: {
-          id: "pulse",
-          name: "Pulse",
-          emoji: "\uD83D\uDCA0",
-          price: 750,
-          available: true,
-          desc: "Pulse discret pendant les parties rapides.",
-        },
         life_1: {
           id: "life_1",
           name: "Vie x1",
           emoji: "\u2764\uFE0F",
-          price: 12500,
+          price: 18000,
           available: true,
           type: "revive_life",
           amount: 1,
@@ -317,7 +268,7 @@ class FileService {
           id: "life_2",
           name: "Vie x2",
           emoji: "\u2764\uFE0F\u2764\uFE0F",
-          price: 23000,
+          price: 34000,
           available: true,
           type: "revive_life",
           amount: 2,
@@ -327,7 +278,7 @@ class FileService {
           id: "life_3",
           name: "Vie x3",
           emoji: "\u2764\uFE0F\u2764\uFE0F\u2764\uFE0F",
-          price: 33000,
+          price: 50000,
           available: true,
           type: "revive_life",
           amount: 3,
@@ -337,7 +288,7 @@ class FileService {
           id: "pixel_1",
           name: "Pixel x1",
           emoji: "\uD83D\uDFE9",
-          price: 2500,
+          price: 250,
           available: true,
           type: "pixelwar",
           upgrade: "pixel_1",
@@ -347,7 +298,7 @@ class FileService {
           id: "pixel_15",
           name: "Pixels x15",
           emoji: "\uD83D\uDFE9",
-          price: 30000,
+          price: 3000,
           available: true,
           type: "pixelwar",
           upgrade: "pixel_15",
@@ -357,11 +308,21 @@ class FileService {
           id: "storage_10",
           name: "Stockage +10",
           emoji: "\uD83D\uDCE6",
-          price: 10500,
+          price: 8000,
           available: true,
           type: "pixelwar",
           upgrade: "storage_10",
           desc: "Augmente la capacite Pixel War de 10.",
+        },
+        color_custom: {
+          id: "color_custom",
+          name: "Couleur Personnalisée",
+          emoji: "\uD83C\uDFA8",
+          price: 3000,
+          available: true,
+          type: "pixelwar",
+          upgrade: "color_custom",
+          desc: "Crée et débloque une couleur Pixel War personnalisée.",
         },
       },
     };
@@ -375,6 +336,7 @@ class FileService {
         catalog: {},
         users: {},
       }),
+      chatMuted: this.readJSON(this.files.chatMuted, {}),
       dinoScores: this.readJSON(this.files.dinoScores, {}),
       medals: this.readJSON(this.files.medals, {}),
       flappyScores: this.readJSON(this.files.flappyScores, {}),
@@ -393,17 +355,25 @@ class FileService {
       motusState: this.readJSON(this.files.motusState, {}),
       motusScores: this.readJSON(this.files.motusScores, {}),
       scores2048: this.readJSON(this.files.scores2048, {}),
+      scores2048MaxTile: this.readJSON(this.files.scores2048MaxTile, {}),
       mashWins: this.readJSON(this.files.mashWins, {}),
       transactions: this.readJSON(this.files.transactions, []),
       blackjackStats: this.readJSON(this.files.blackjackStats, {}),
       coinflipStats: this.readJSON(this.files.coinflipStats, {}),
+      rouletteStats: this.readJSON(this.files.rouletteStats, {}),
+      slotsStats: this.readJSON(this.files.slotsStats, {}),
+      sudokuScores: this.readJSON(this.files.sudokuScores, {}),
       dailyEarnings: this.readJSON(this.files.dailyEarnings, {}),
+      wallets: this.readJSON(this.files.wallets, {}),
       annonces: this.readJSON(this.files.annonces, []),
       dms: this.readJSON(this.files.dms, []),
       sharedFiles: this.readJSON(this.files.sharedFiles, {}),
       easterEggs: this.readJSON(this.files.easterEggTracking, { users: {} }),
       shopCatalog: this.readJSON(this.files.shopCatalog, defaultShopCatalog),
       reviveLives: this.readJSON(this.files.reviveLives, { users: {} }),
+      clickerHumanPeakCps: this.readJSON(this.files.clickerHumanPeakCps, {}),
+      clickerFouChallenges: this.readJSON(this.files.clickerFouChallenges, {}),
+      clickerUpgrades: this.readJSON(this.files.clickerUpgrades, {}),
       // fileActions is an append-only log, don't try to parse as JSON here
     };
   }
@@ -506,17 +476,26 @@ class FileService {
       motusState: this.files.motusState,
       motusScores: this.files.motusScores,
       scores2048: this.files.scores2048,
+      scores2048MaxTile: this.files.scores2048MaxTile,
       mashWins: this.files.mashWins,
       transactions: this.files.transactions,
       blackjackStats: this.files.blackjackStats,
       coinflipStats: this.files.coinflipStats,
+      rouletteStats: this.files.rouletteStats,
+      slotsStats: this.files.slotsStats,
+      sudokuScores: this.files.sudokuScores,
       dailyEarnings: this.files.dailyEarnings,
+      wallets: this.files.wallets,
       annonces: this.files.annonces,
       dms: this.files.dms,
       sharedFiles: this.files.sharedFiles,
       easterEggs: this.files.easterEggTracking,
       shopCatalog: this.files.shopCatalog,
       reviveLives: this.files.reviveLives,
+      clickerHumanPeakCps: this.files.clickerHumanPeakCps,
+      clickerFouChallenges: this.files.clickerFouChallenges,
+      clickerUpgrades: this.files.clickerUpgrades,
+      chatMuted: this.files.chatMuted,
     };
     if (fileMap[key]) {
       this.writeJSON(fileMap[key], data);
@@ -554,16 +533,28 @@ class GameStateManager {
   constructor() {
     this.users = new Map();
     this.userSockets = new Map();
+    this.socketSessions = new Map();
   }
 
-  addUser(socketId, pseudo, io) {
+  addUser(socketId, pseudo, io, sessionId = null) {
+    this.socketSessions.set(socketId, sessionId || null);
+
     if (this.userSockets.has(pseudo)) {
       const oldSockets = this.userSockets.get(pseudo); // Déco anciennes instances
 
-      // Si ce n'est pas l'Admin, on déconnecte les anciennes sessions pour éviter les doublons
+      // Si ce n'est pas l'Admin, on déconnecte les anciennes sessions pour éviter les doublons.
+      // Exception: on conserve les sockets issus de la MÊME session HTTP
+      // (ex: index + iframe même utilisateur) pour garder l'app synchronisée.
       if (pseudo !== "Admin") {
         oldSockets.forEach((oldId) => {
           if (oldId !== socketId) {
+            const oldSessionId = this.socketSessions.get(oldId) || null;
+            const sameHttpSession =
+              !!sessionId && !!oldSessionId && oldSessionId === sessionId;
+            if (sameHttpSession) {
+              return;
+            }
+
             const oldSocket = io.sockets.sockets.get(oldId);
             if (oldSocket) {
               if (config.LOG_SOCKET_EVENTS) {
@@ -586,6 +577,7 @@ class GameStateManager {
 
   removeUser(socketId, pseudo) {
     this.users.delete(socketId);
+    this.socketSessions.delete(socketId);
     if (this.userSockets.has(pseudo)) {
       this.userSockets.get(pseudo).delete(socketId);
       if (this.userSockets.get(pseudo).size === 0) {

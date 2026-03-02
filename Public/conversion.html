@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Conversion - PDE</title>
+        <link rel="stylesheet" href="css/common.css" />
+        <link rel="stylesheet" href="css/conversion.css" />
+        <script defer src="/socket.io/socket.io.js"></script>
+        <script defer src="js/annexBack.js"></script>
+        <script defer type="module" src="js/notifications.js"></script>
+        <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer type="module" src="js/conversion.js"></script>
+    </head>
+    <body>
+        <main class="conversion-page container">
+            <h1>Conversion</h1>
+            <p id="wallet-line" class="wallet-line">Monnaie: 0 | Tokens: 0 |
+                Clicks: 0</p>
+
+            <section class="conversion-card">
+                <h3>Clicks → Monnaie (5 clicks = 1 monnaie)</h3>
+                <div class="conversion-row">
+                    <input id="cv-clicks" type="number" min="5"
+                        placeholder="Montant clicks" />
+                    <div class="cv-preview" id="cv-clicks-preview">→ Prévu: 0
+                        monnaie</div>
+                    <button id="cv-clicks-btn" class="btn">Convertir</button>
+                </div>
+            </section>
+
+            <section class="conversion-card">
+                <h3>Monnaie → Tokens (50 monnaie = 1 token)</h3>
+                <p id="cv-cap" class="cv-cap">Quota conversion monnaie → tokens
+                    restant: —</p>
+                <div class="conversion-row">
+                    <input id="cv-money" type="number" min="50"
+                        placeholder="Montant monnaie" />
+                    <div class="cv-preview" id="cv-money-preview">→ Prévu: 0
+                        tokens</div>
+                    <button id="cv-money-btn" class="btn">Convertir</button>
+                </div>
+            </section>
+
+            <section class="conversion-card">
+                <h3>Tokens → Monnaie (1 token = 50 monnaie)</h3>
+                <div class="conversion-row">
+                    <input id="cv-tokens" type="number" min="1"
+                        placeholder="Montant tokens" />
+                    <div class="cv-preview" id="cv-tokens-preview">→ Prévu: 0
+                        monnaie</div>
+                    <button id="cv-tokens-btn" class="btn">Convertir</button>
+                </div>
+            </section>
+
+            <p id="cv-msg" class="cv-msg"></p>
+        </main>
+    </body>
+</html>

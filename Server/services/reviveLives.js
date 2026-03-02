@@ -55,7 +55,7 @@ function getUserBucket(FileService, pseudo) {
   return bucket;
 }
 
-function canPurchaseLives(FileService, pseudo, amount, maxPerDay = 3) {
+function canPurchaseLives(FileService, pseudo, amount, maxPerDay = 5) {
   const qty = Math.max(0, Math.floor(Number(amount) || 0));
   if (!qty) return { ok: false, remaining: 0 };
 
@@ -70,7 +70,7 @@ function canPurchaseLives(FileService, pseudo, amount, maxPerDay = 3) {
   return { ok: true, remaining };
 }
 
-function addLives(FileService, pseudo, amount, maxPerDay = 3) {
+function addLives(FileService, pseudo, amount, maxPerDay = 5) {
   const qty = Math.max(0, Math.floor(Number(amount) || 0));
   if (!qty) return { ok: false, lives: 0, remaining: 0 };
 

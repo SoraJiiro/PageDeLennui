@@ -62,7 +62,7 @@
 
 .tool-btn {
   padding: 5px 15px;
-  border: 1px solid var(--primary-color);
+  border: 1.75px solid var(--primary-color);
   background: rgba(0, 0, 0, 0.3);
   color: white;
   cursor: pointer;

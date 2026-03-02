@@ -24,6 +24,7 @@ const {
   motusGame,
   leaderboardManager,
   pixelWarGame,
+  broadcastSiteMoneyStats,
 } = require("./handlers");
 const { checkReconnect } = require("./reconnectHandler");
 const fileLogger = require("./logger");
@@ -79,6 +80,15 @@ setupRoutes(app, {
 
 // ------- Sockets -------
 setupSockets(io, { checkReconnect, initSocketHandlers, gameState });
+
+try {
+  broadcastSiteMoneyStats(io);
+  setInterval(() => {
+    broadcastSiteMoneyStats(io);
+  }, 1500);
+} catch (e) {
+  console.warn("[economy:siteMoneyStats] broadcast init failed", e);
+}
 
 // --- Diffusion des logs serveur vers les admins ---
 setupAdminLogBridge(io, fileLogger);

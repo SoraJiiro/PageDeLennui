@@ -41,7 +41,7 @@ export function initUno(socket) {
         }
       });
     },
-    { threshold: 0.5 }
+    { threshold: 0.5 },
   );
 
   const stage6 = document.getElementById("stage6");
@@ -298,7 +298,7 @@ export function initUno(socket) {
       if (ui.specsList && data.spectators && data.spectators.length > 0) {
         ui.specsList.innerHTML = `
         <p>Spectateurs (${data.spectators.length}) : ${data.spectators.join(
-          ", "
+          ", ",
         )}</p>
       `;
       } else if (ui.specsList) {
@@ -359,13 +359,16 @@ export function initUno(socket) {
   });
 
   socket.on("uno:gameEnd", (data) => {
+    const myGain = Number(data?.moneyByPlayer?.[state.myUsername] || 0);
     if (ui.infoEl) {
       if (data.winner === "Partie annulée !") {
         ui.infoEl.innerHTML = `<div class="p4-winner-message">⚠️ ${
           data.winner
         } ${data.reason || ""}</div>`;
       } else {
-        ui.infoEl.innerHTML = `<div class="p4-winner-message">� ${data.winner} remporte la partie ! 🏆</div>`;
+        ui.infoEl.innerHTML = `<div class="p4-winner-message">🏆 ${data.winner} remporte la partie !<br/>💰 Total gagné: ${myGain.toLocaleString(
+          "fr-FR",
+        )} monnaie</div>`;
       }
     }
     if (ui.statusEl) ui.statusEl.textContent = "";

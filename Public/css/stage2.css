@@ -12,7 +12,7 @@
   flex-direction: column;
   align-items: center;
   gap: 15px;
-  width: min(82.5vw, 100%);
+  width: min(95vw, 1200px);
   max-height: 90vh;
   position: relative;
 }
@@ -55,11 +55,7 @@
 
 .dino-wrap canvas.game {
   width: 100%;
-  max-width: 1000px;
-  height: 450px;
+  max-width: 1200px;
+  height: 410px;
   outline: 2px solid var(--primary-color);
-}
-
-.dino-btns-wrap button {
-  /* Styles inherited from common.css */
 }

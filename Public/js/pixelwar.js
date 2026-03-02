@@ -13,7 +13,7 @@ let currentTool = "draw";
 let selectedColor = "#000000";
 let pixelsInfo = {};
 
-const COLORS = [
+let COLORS = [
   "#FFFFFF",
   "#000000",
   "#FF0000",
@@ -32,7 +32,7 @@ const COLORS = [
   "#5EAFFF",
 ];
 
-const COLOR_NAMES = [
+let COLOR_NAMES = [
   "Blanc",
   "Noir",
   "Rouge",
@@ -67,6 +67,7 @@ let gridCanvas, gridCtx;
 let isBatchMode = false;
 let pendingPixels = new Map();
 let localBoardCache = new Uint8Array(BOARD_SIZE * BOARD_SIZE);
+let unlockedColorIndices = new Set(Array.from({ length: 16 }, (_, i) => i));
 
 export function initPixelWar(sock) {
   socket = sock;
@@ -122,9 +123,57 @@ export function initPixelWar(sock) {
     centerView();
   } catch (e) {}
 
+  const recenterPixelWarView = () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try {
+          centerView();
+        } catch (e) {}
+      });
+    });
+  };
+
+  window.addEventListener("pde:section-activated", (e) => {
+    const sectionId = e && e.detail ? e.detail.sectionId : null;
+    if (sectionId === "stage16") {
+      recenterPixelWarView();
+    }
+  });
+
   socket.on("pixelwar:init", (data) => {
+    if (Array.isArray(data.colors) && data.colors.length) {
+      COLORS = data.colors.slice();
+      if (!Array.isArray(COLOR_NAMES) || COLOR_NAMES.length < COLORS.length) {
+        COLOR_NAMES = COLORS.map(
+          (_, idx) => COLOR_NAMES[idx] || `Couleur ${idx + 1}`,
+        );
+      }
+    }
+    if (Array.isArray(data.unlockedColorIndices)) {
+      unlockedColorIndices = new Set(
+        data.unlockedColorIndices.map((v) => Number(v)),
+      );
+    }
+    initPalette();
     updateStats(data);
     drawFullBoard(data.board);
+  });
+
+  socket.on("pixelwar:palette_update", (data) => {
+    if (Array.isArray(data?.colors) && data.colors.length) {
+      COLORS = data.colors.slice();
+      if (!Array.isArray(COLOR_NAMES) || COLOR_NAMES.length < COLORS.length) {
+        COLOR_NAMES = COLORS.map(
+          (_, idx) => COLOR_NAMES[idx] || `Couleur ${idx + 1}`,
+        );
+      }
+    }
+    if (Array.isArray(data?.unlockedColorIndices)) {
+      unlockedColorIndices = new Set(
+        data.unlockedColorIndices.map((v) => Number(v)),
+      );
+    }
+    initPalette();
   });
 
   socket.on("pixelwar:update_pixel", (data) => {
@@ -173,8 +222,22 @@ function initPalette() {
     div.className = "color-swatch";
     div.style.backgroundColor = c;
     div.title = COLOR_NAMES[idx] || "";
+    const unlocked = unlockedColorIndices.has(idx);
+    if (!unlocked) {
+      div.style.opacity = "0.35";
+      div.style.filter = "grayscale(1)";
+      div.title = `${div.title} (Achat requis)`;
+    }
     if (c === selectedColor) div.classList.add("active");
     div.onclick = () => {
+      if (!unlocked) {
+        if (window.showNotif)
+          window.showNotif(
+            "Couleur verrouillée: achète cette couleur dans le shop.",
+            3000,
+          );
+        return;
+      }
       selectColor(c);
     };
     p.appendChild(div);
@@ -595,6 +658,8 @@ function requestPixelInfo(x, y) {
 
 function showTooltip(data) {
   const modal = document.getElementById("pixel-info-modal");
+  modal.style.left = px(currentMouseX - 25);
+  modal.style.top = px(currentMouseY - 225);
 
   if (data.owner) {
     modal.innerHTML = `

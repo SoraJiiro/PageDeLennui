@@ -18,6 +18,7 @@ export function init2048(socket) {
   const size = 4;
   let nextId = 1;
   let revivesUsed = 0;
+  let availableReviveLives = 0;
   let uiColor = "#00ff00";
 
   // --- Shutdown resume glue (score-only) ---
@@ -57,6 +58,89 @@ export function init2048(socket) {
     } catch (e) {}
   }
 
+  function normalizeLives(value) {
+    return Math.max(0, Math.floor(Number(value) || 0));
+  }
+
+  function requestReviveLives() {
+    try {
+      socket.emit("revive:getLives");
+    } catch {}
+  }
+
+  function computeRevivePrice() {
+    const multiplier = 10;
+    const escalation = 1 + revivesUsed * 0.75;
+    let price = Math.floor(score * multiplier * escalation);
+    price = Math.max(5000, Math.min(5000000, price));
+    return price;
+  }
+
+  function updateReviveOverlayContent() {
+    const reviveOverlay = document.querySelector(".game-2048-revive-overlay");
+    if (!reviveOverlay || reviveOverlay.style.display !== "block") return;
+
+    const remainingRevives = 3 - revivesUsed;
+    const hasShopLife = availableReviveLives > 0;
+    const price = computeRevivePrice();
+    const modeEl = reviveOverlay.querySelector(".revive-mode");
+    const costEl = reviveOverlay.querySelector(".cost");
+    const countEl = reviveOverlay.querySelector(".revive-count");
+    const btnEl = reviveOverlay.querySelector(".revive-btn");
+    const payBtnEl = reviveOverlay.querySelector(".revive-pay-btn");
+
+    if (modeEl) {
+      modeEl.textContent = hasShopLife
+        ? "Choix: vie du shop ou paiement en monnaie"
+        : "Choix: paiement en monnaie";
+    }
+
+    if (costEl) {
+      costEl.textContent = hasShopLife ? "0" : price.toLocaleString("fr-FR");
+    }
+    if (countEl) {
+      countEl.textContent = remainingRevives;
+    }
+    if (btnEl) {
+      btnEl.innerHTML = hasShopLife
+        ? `Utiliser 1 vie (<span class="revive-count">${remainingRevives}</span> restants)`
+        : `Payer ${price
+            .toLocaleString("fr-FR")
+            .replace(
+              /\s/g,
+              "\u00a0",
+            )} monnaie (<span class="revive-count">${remainingRevives}</span> restants)`;
+      btnEl.onclick = () => {
+        socket.emit("2048:payToContinue", {
+          price,
+          mode: hasShopLife ? "life" : "pay",
+        });
+      };
+    }
+
+    if (payBtnEl) {
+      if (hasShopLife) {
+        payBtnEl.style.display = "inline-block";
+        payBtnEl.disabled = false;
+        payBtnEl.style.opacity = "1";
+        payBtnEl.style.cursor = "pointer";
+        payBtnEl.textContent = `Payer ${price
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
+        payBtnEl.onclick = () => {
+          socket.emit("2048:payToContinue", { price, mode: "pay" });
+        };
+      } else {
+        payBtnEl.style.display = "inline-block";
+        payBtnEl.disabled = true;
+        payBtnEl.style.opacity = "0.6";
+        payBtnEl.style.cursor = "default";
+        payBtnEl.textContent = "Pas de vie disponible";
+        payBtnEl.onclick = null;
+      }
+    }
+  }
+
   // Initialisation
   function init() {
     // Obtenir la couleur UI initiale
@@ -94,9 +178,17 @@ export function init2048(socket) {
     updateScoreDisplay();
   });
 
-  socket.on("2048:reviveSuccess", () => {
+  socket.on("revive:lives", ({ lives } = {}) => {
+    availableReviveLives = normalizeLives(lives);
+    updateReviveOverlayContent();
+  });
+
+  socket.on("2048:reviveSuccess", ({ usedLife, remainingLives } = {}) => {
     revivesUsed++;
     gameOver = false;
+    if (typeof remainingLives !== "undefined") {
+      availableReviveLives = normalizeLives(remainingLives);
+    }
     const reviveOverlay = document.querySelector(".game-2048-revive-overlay");
     if (reviveOverlay) reviveOverlay.style.display = "none";
     toggleScrollLock(false);
@@ -132,7 +224,11 @@ export function init2048(socket) {
     addRandomTile();
 
     renderBoard();
-    showNotif("Partie continuée !");
+    showNotif(
+      usedLife
+        ? `Partie continuée ! (vie restante: ${availableReviveLives})`
+        : "Partie continuée !",
+    );
   });
 
   socket.on("2048:reviveError", (msg) => {
@@ -161,8 +257,9 @@ export function init2048(socket) {
     div.innerHTML = `
             <h3 style="color: var(--primary-color); margin-bottom: 10px;">GAME OVER</h3>
             <p style="color: #fff; margin-bottom: 15px;">Continuer la partie ?</p>
-            <p class="revive-price" style="color: #fff; margin-bottom: 15px; font-weight: bold;">Coût: <span class="cost">0</span> clicks</p>
+          <p class="revive-mode" style="color: #fff; margin-bottom: 10px; font-size: 0.95rem;">Choix: paiement en clicks</p>
             <button class="revive-btn" style="padding: 8px 16px; cursor: pointer; background: var(--primary-color); border: none; font-weight: bold;">Payer & Continuer (<span class="revive-count">3</span> restants)</button>
+            <button class="revive-pay-btn" style="display:none; margin-top: 8px; padding: 8px 12px; cursor: pointer; background: transparent; border: 1px solid #fff; color: #fff;">Payer</button>
             <button class="cancel-btn" style="display: block; margin: 10px auto 0; background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px; cursor: pointer; ">Non merci</button>
         `;
 
@@ -175,10 +272,8 @@ export function init2048(socket) {
     const cancelBtn = div.querySelector(".cancel-btn");
 
     reviveBtn.onclick = () => {
-      const price = parseInt(
-        div.querySelector(".cost").textContent.replace(/\s/g, ""),
-      );
-      socket.emit("2048:payToContinue", { price });
+      const price = computeRevivePrice();
+      socket.emit("2048:payToContinue", { price, mode: "pay" });
     };
 
     cancelBtn.onclick = () => {
@@ -469,30 +564,39 @@ export function init2048(socket) {
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
         if (grid[r][c] === null) return; // Cellule vide
-        if (c < size - 1 && grid[r][c].value === grid[r][c + 1].value) return; // Fusion horizontale
-        if (r < size - 1 && grid[r][c].value === grid[r + 1][c].value) return; // Fusion verticale
+        if (
+          c < size - 1 &&
+          grid[r][c + 1] !== null &&
+          grid[r][c].value === grid[r][c + 1].value
+        )
+          return; // Fusion horizontale
+        if (
+          r < size - 1 &&
+          grid[r + 1][c] !== null &&
+          grid[r][c].value === grid[r + 1][c].value
+        )
+          return; // Fusion verticale
       }
     }
 
     // Aucun mouvement possible
     gameOver = true;
-    socket.emit("2048:submit_score", score);
+    let maxTile = 0;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const tileVal = Number(grid[r][c]?.value || 0);
+        if (tileVal > maxTile) maxTile = tileVal;
+      }
+    }
+    socket.emit("2048:submit_score", { score, maxTile });
 
     if (revivesUsed < 3) {
       const reviveOverlay = document.querySelector(".game-2048-revive-overlay");
       if (reviveOverlay) {
         reviveOverlay.style.display = "block";
         toggleScrollLock(true);
-
-        reviveOverlay.querySelector(".revive-count").textContent =
-          3 - revivesUsed;
-
-        const multiplier = 10;
-        const escalation = 1 + revivesUsed * 0.75;
-        let price = Math.floor(score * multiplier * escalation);
-        price = Math.max(5000, Math.min(5000000, price));
-        reviveOverlay.querySelector(".cost").textContent =
-          price.toLocaleString("fr-FR");
+        updateReviveOverlayContent();
+        requestReviveLives();
       } else {
         overlay.classList.add("show");
       }

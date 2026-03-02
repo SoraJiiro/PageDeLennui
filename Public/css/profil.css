@@ -231,6 +231,28 @@
   margin-top: 2px;
 }
 
+.custom-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.custom-color-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--primary-color);
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.custom-color-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #fff;
+  display: inline-block;
+}
+
 @media (max-width: 640px) {
   .profil-top {
     grid-template-columns: 1fr;

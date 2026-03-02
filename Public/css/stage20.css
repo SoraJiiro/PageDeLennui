@@ -1,0 +1,48 @@
+#stage20 {
+  height: 100vh;
+  max-height: 100vh;
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#stage20 .chatgpt-stage-card {
+  border: 2px solid var(--primary-color);
+  padding: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(0, 255, 0, 0.02);
+}
+
+#stage20 .chatgpt-stage-title {
+  margin: 0 0 12px 0;
+}
+
+#stage20 .chatgpt-stage-frame {
+  width: 100%;
+  min-height: 75vh;
+  border: 1px solid var(--primary-color);
+  background: var(--bg-color);
+}
+
+#stage20 .chatgpt-stage-fallback {
+  display: block;
+  margin-top: 10px;
+  border: 1px solid var(--primary-color);
+  padding: 10px;
+  text-align: center;
+}
+
+#stage20 .chatgpt-stage-fallback p {
+  margin: 0 0 8px 0;
+}
+
+#stage20 .chatgpt-stage-link {
+  display: inline-block;
+  border: 1px solid var(--primary-color);
+  padding: 6px 10px;
+  color: var(--primary-color);
+  text-decoration: none;
+}

@@ -9,6 +9,12 @@ function registerUserHandlers({
   getIpFromSocket,
   recalculateMedals,
 }) {
+  const {
+    getWallet,
+    convertClicksToMoney,
+    convertMoneyToTokens,
+    convertTokensToMoney,
+  } = require("../../services/wallet");
   socket.on("system:acceptRules", () => {
     try {
       // IMPORTANT: pseudo peut varier en casse selon les clients.
@@ -106,12 +112,16 @@ function registerUserHandlers({
     }
 
     if (recipient === pseudo) {
-      socket.emit("system:info", "Vous ne pouvez pas vous donner des clicks.");
+      socket.emit("system:info", "Vous ne pouvez pas vous donner de monnaie.");
       return;
     }
 
-    const senderClicks = FileService.data.clicks[pseudo] || 0;
-    if (senderClicks < val) {
+    const senderWallet = getWallet(
+      FileService,
+      pseudo,
+      FileService.data.clicks[pseudo] || 0,
+    );
+    if ((senderWallet.money || 0) < val) {
       socket.emit("system:info", "Fonds insuffisants.");
       return;
     }
@@ -126,112 +136,93 @@ function registerUserHandlers({
       return;
     }
 
-    // Déduire immédiatement du sender
-    FileService.data.clicks[pseudo] -= val;
-    FileService.save("clicks", FileService.data.clicks);
-    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io, true); // Silent recalc
-    socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
+    const wallets = FileService.data.wallets || {};
+    if (!wallets[pseudo]) return;
+    wallets[pseudo].money = Math.max(0, (wallets[pseudo].money || 0) - val);
+    FileService.save("wallets", wallets);
+    io.to("user:" + pseudo).emit(
+      "economy:wallet",
+      getWallet(FileService, pseudo, FileService.data.clicks[pseudo] || 0),
+    );
 
     const senderIp = getIpFromSocket(socket);
 
-    if (val > 250000) {
-      // Transaction en attente
-      if (!FileService.data.transactions) FileService.data.transactions = [];
-      const transaction = {
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        from: pseudo,
-        fromIp: senderIp,
-        to: recipient,
-        amount: val,
-        date: new Date().toISOString(),
-        status: "pending",
-      };
-      FileService.data.transactions.push(transaction);
-      FileService.save("transactions", FileService.data.transactions);
+    // Transaction en attente (sans seuil minimum)
+    if (!FileService.data.transactions) FileService.data.transactions = [];
+    const transaction = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      from: pseudo,
+      fromIp: senderIp,
+      to: recipient,
+      amount: val,
+      currency: "money",
+      date: new Date().toISOString(),
+      status: "pending",
+    };
+    FileService.data.transactions.push(transaction);
+    FileService.save("transactions", FileService.data.transactions);
 
-      console.log(
-        `[DON_EN_ATTENTE] De ${pseudo} (${senderIp}) à ${recipient} : ${val}`,
-      );
-      FileService.appendLog({
-        type: "DONATION_PENDING",
-        from: `${pseudo} (${senderIp})`,
-        to: recipient,
-        amount: val,
-      });
+    console.log(
+      `[DON_EN_ATTENTE] De ${pseudo} (${senderIp}) à ${recipient} : ${val}`,
+    );
+    FileService.appendLog({
+      type: "DONATION_PENDING",
+      from: `${pseudo} (${senderIp})`,
+      to: recipient,
+      amount: val,
+      currency: "money",
+    });
 
-      socket.emit(
-        "system:info",
-        `Don de ${val} clicks à ${recipient} en attente de validation (montant > 250k).`,
-      );
+    socket.emit(
+      "system:info",
+      `Demande de don de ${val} monnaie envoyée. En attente de validation admin.`,
+    );
 
-      // Notifier les admins connectés
-      io.to("admins").emit("admin:new_transaction", transaction);
-    } else {
-      // Transfert direct
-      if (!FileService.data.clicks[recipient])
-        FileService.data.clicks[recipient] = 0;
-      FileService.data.clicks[recipient] += val;
-      FileService.save("clicks", FileService.data.clicks);
-
-      console.log(`[DON] De ${pseudo} (${senderIp}) à ${recipient} : ${val}`);
-      FileService.appendLog({
-        type: "DONATION",
-        from: `${pseudo} (${senderIp})`,
-        to: recipient,
-        amount: val,
-      });
-
-      recalculateMedals(
-        recipient,
-        FileService.data.clicks[recipient],
-        io,
-        true,
-      ); // Silent recalc
-
-      socket.emit(
-        "system:info",
-        `Vous avez donné ${val} clicks à ${recipient}.`,
-      );
-
-      // Notifier le destinataire s'il est en ligne
-      const recipientSocketId = gameState.userSockets.get(recipient); // Set of socketIds
-      if (recipientSocketId) {
-        recipientSocketId.forEach((sid) => {
-          io.to(sid).emit(
-            "system:info",
-            `${pseudo} vous a donné ${val} clicks !`,
-          );
-          io.to(sid).emit("clicker:you", {
-            score: FileService.data.clicks[recipient],
-          });
-        });
-      }
-    }
+    // Notifier les admins connectés
+    io.to("admins").emit("admin:new_transaction", transaction);
 
     leaderboardManager.broadcastClickerLB(io);
   });
 
-  // Fournir l'état du cap quotidien au client (sidebar / UI)
-  socket.on("economy:getProfitCap", () => {
-    try {
-      const {
-        getDailyProfitCapInfo,
-        freezeDailyProfitCapBaseClicks,
-      } = require("../../services/economy");
-      const currentClicks = FileService.data.clicks[pseudo] || 0;
+  socket.on("economy:getWallet", () => {
+    const clicks = FileService.data.clicks[pseudo] || 0;
+    socket.emit("economy:wallet", getWallet(FileService, pseudo, clicks));
+  });
 
-      // Figer le baseClicks dès la première connexion du jour
-      try {
-        freezeDailyProfitCapBaseClicks({ FileService, pseudo, currentClicks });
-      } catch (e) {}
+  socket.on("economy:convertClicksToMoney", ({ clicks }) => {
+    const result = convertClicksToMoney({
+      FileService,
+      pseudo,
+      clicksAmount: clicks,
+      currentClicks: FileService.data.clicks[pseudo] || 0,
+    });
+    if (!result.ok) return socket.emit("economy:error", result.message);
+    recalculateMedals(pseudo, result.clicks, io, false, false);
+    socket.emit("clicker:you", { score: result.clicks });
+    io.to("user:" + pseudo).emit("economy:wallet", result.wallet);
+    leaderboardManager.broadcastClickerLB(io);
+  });
 
-      const capInfo = getDailyProfitCapInfo({
-        FileService,
-        pseudo,
-        currentClicks,
-      });
-      socket.emit("economy:profitCap", capInfo);
-    } catch (e) {}
+  socket.on("economy:convertMoneyToTokens", ({ money }) => {
+    const result = convertMoneyToTokens({
+      FileService,
+      pseudo,
+      moneyAmount: money,
+      currentClicks: FileService.data.clicks[pseudo] || 0,
+    });
+    if (!result.ok) return socket.emit("economy:error", result.message);
+    io.to("user:" + pseudo).emit("economy:wallet", result.wallet);
+  });
+
+  socket.on("economy:convertTokensToMoney", ({ tokens }) => {
+    const result = convertTokensToMoney({
+      FileService,
+      pseudo,
+      tokenAmount: tokens,
+      currentClicks: FileService.data.clicks[pseudo] || 0,
+    });
+    if (!result.ok) return socket.emit("economy:error", result.message);
+    io.to("user:" + pseudo).emit("economy:wallet", result.wallet);
   });
 }
 

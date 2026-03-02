@@ -1,5 +1,6 @@
 let ctx = null;
 let shutdownStarted = false;
+const { addMoney } = require("../services/wallet");
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -51,11 +52,25 @@ function getTopPseudoMotus(motusScores) {
   }
 }
 
-function awardDailyShutdownLeaderboardClicks({ FileService, io }) {
-  // +2500 clicks au 1er de chaque leaderboard (Dino, Flappy, Snake, Motus, 2048)
-  const REWARD = 2500;
+function awardDailyShutdownLeaderboardMoney({ FileService, io }) {
+  // +500 monnaie au 1er de chaque leaderboard (Dino, Flappy, Snake, Sudoku, 2048)
+  const REWARD = 500;
 
   try {
+    // Ne pas redonner si déjà attribué aujourd'hui (premier shutdown du jour seulement)
+    try {
+      const meta = FileService.data.leaderboardBonusMeta || {};
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+      if (meta.lastDate === today) {
+        console.log({
+          level: "info",
+          message: `[Shutdown] Leaderboard bonus already awarded today (${today}), skipping.`,
+        });
+        return { rewarded: 0, winners: [], skipped: true };
+      }
+    } catch (e) {
+      // ignore meta read errors, proceed to attempt awarding
+    }
     const winners = [
       {
         game: "dino",
@@ -70,8 +85,8 @@ function awardDailyShutdownLeaderboardClicks({ FileService, io }) {
         pseudo: getTopPseudoSimpleScore(FileService.data.snakeScores),
       },
       {
-        game: "motus",
-        pseudo: getTopPseudoMotus(FileService.data.motusScores),
+        game: "sudoku",
+        pseudo: getTopPseudoSimpleScore(FileService.data.sudokuScores),
       },
       {
         game: "2048",
@@ -81,37 +96,43 @@ function awardDailyShutdownLeaderboardClicks({ FileService, io }) {
 
     if (winners.length === 0) return { rewarded: 0, winners: [] };
 
-    if (
-      !FileService.data.clicks ||
-      typeof FileService.data.clicks !== "object"
-    ) {
-      FileService.data.clicks = {};
-    }
-
     let rewarded = 0;
     for (const { game, pseudo } of winners) {
-      FileService.data.clicks[pseudo] = safeNumber(
-        FileService.data.clicks[pseudo],
+      const walletView = addMoney(
+        FileService,
+        pseudo,
+        REWARD,
+        FileService.data.clicks?.[pseudo] || 0,
       );
-      FileService.data.clicks[pseudo] += REWARD;
       rewarded += REWARD;
 
       // best-effort: push update aux sockets (peut ne pas arriver avant fermeture)
       try {
-        io.to("user:" + pseudo).emit("clicker:you", {
-          score: FileService.data.clicks[pseudo],
-        });
+        io.to("user:" + pseudo).emit("economy:wallet", walletView);
       } catch (e) {}
 
       try {
         io.to("user:" + pseudo).emit("system:notification", {
-          message: `🏆 Bonus leaderboard ${game}: +${REWARD.toLocaleString("fr-FR")} clicks (fin de session)`,
+          message: `🏆 Bonus leaderboard ${game}: +${REWARD.toLocaleString("fr-FR")} monnaie (fin de session)`,
           duration: 8000,
         });
       } catch (e) {}
     }
 
-    FileService.save("clicks", FileService.data.clicks);
+    // Enregistrer la date d'attribution pour éviter doublons le même jour
+    try {
+      FileService.data.leaderboardBonusMeta = {
+        lastDate: new Date().toISOString().slice(0, 10),
+        awardedAt: new Date().toISOString(),
+        winners: winners.map((w) => ({ game: w.game, pseudo: w.pseudo })),
+      };
+      FileService.save(
+        "leaderboardBonusMeta",
+        FileService.data.leaderboardBonusMeta,
+      );
+    } catch (e) {
+      // best-effort
+    }
     console.log({
       level: "action",
       message: `[Shutdown] Bonus leaderboards: ${winners
@@ -353,9 +374,9 @@ async function requestShutdown(reason = "unknown") {
     console.error("[Shutdown] refund error", e);
   }
 
-  // 4.5) Bonus de fin de session: leaderboards -> clicks
+  // 4.5) Bonus de fin de session: leaderboards -> monnaie
   try {
-    awardDailyShutdownLeaderboardClicks({ FileService, io });
+    awardDailyShutdownLeaderboardMoney({ FileService, io });
   } catch (e) {
     // best-effort
   }

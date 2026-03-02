@@ -158,36 +158,7 @@ export function requestPassword() {
 
 export async function openSearchNoSocket() {
   try {
-    const resp = await fetch("/search.html");
-    if (!resp.ok) throw new Error("fetch failed");
-    let html = await resp.text();
-
-    // Remove all <script>...</script> blocks
-    html = html.replace(/<script[\s\S]*?<\/script>/gi, "");
-
-    // Remove inline event handlers like onClick, onkeydown etc.
-    html = html.replace(/\son\w+\s*=\s*"[^"]*"/gi, "");
-    html = html.replace(/\son\w+\s*=\s*'[^']*'/gi, "");
-
-    try {
-      const baseHref = window.location.origin + "/";
-      if (/\<head[^>]*>/i.test(html)) {
-        html = html.replace(
-          /\<head([^>]*)>/i,
-          `<head$1><base href="${baseHref}"><script defer src="/js/pz1.js"></script>`,
-        );
-      } else {
-        html =
-          `<head><base href="${baseHref}"><script defer src="/js/pz1.js"></script></head>` +
-          html;
-      }
-    } catch (e) {}
-
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    // Revoke after a minute
-    setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+    const win = window.open("/search.html", "_blank");
     return !!win;
   } catch (e) {
     try {

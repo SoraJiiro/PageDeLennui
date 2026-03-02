@@ -1,0 +1,17 @@
+Charte des récompenses money (version 2026-02-28)
+
+Règles :
+- Jeux multijoueurs : 250 money au gagnant de la partie.
+- Motus : 100 money pour chaque mot trouvé.
+- Flappy : 5 money tous les 10 points.
+- Dino : 7 money tous les 1000 points.
+- Snake : 2 money tous les 5 points.
+- 2048 : 5 money pour chaque nouvelle highest combinaison.
+- Blockblast : 3 money tous les 400 points.
+- Sudoku : 250 money pour chaque grille complétée.
+
+Affichage :
+- Afficher le total de money gagné à la fin des parties.
+
+Note :
+- Cette charte est conservée pour les prochaines évolutions.

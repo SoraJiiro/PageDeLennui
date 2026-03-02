@@ -3,6 +3,77 @@ const cpsTracker = new Map();
 const CPS_THRESHOLD = Number(process.env.CPS_THRESHOLD) || 50; // clicks/sec
 const CPS_DURATION_MS = Number(process.env.CPS_DURATION_MS) || 3000; // ms
 const CPS_PENALTY = Number(process.env.CPS_PENALTY) || 1000; // clicks to remove
+const CLICKER_UPGRADE_GROWTH = 1.8;
+
+const CLICKER_UPGRADES = {
+  per_click_1: {
+    id: "per_click_1",
+    name: "Click Booster",
+    cost: 210,
+    maxLevel: 20,
+    type: "perClick",
+    valuePerLevel: 1,
+  },
+  per_click_2: {
+    id: "per_click_2",
+    name: "Le Flo",
+    cost: 1000,
+    maxLevel: 15,
+    type: "perClick",
+    valuePerLevel: 5,
+  },
+  auto_click_1: {
+    id: "auto_click_1",
+    name: "CPS Booster",
+    cost: 400,
+    maxLevel: 20,
+    type: "autoCps",
+    valuePerLevel: 1,
+  },
+  auto_click_2: {
+    id: "auto_click_2",
+    name: "L'Ultime",
+    cost: 12500,
+    maxLevel: 10,
+    type: "autoCps",
+    valuePerLevel: 7,
+  },
+};
+
+function getUserUpgrades(FileService, pseudo) {
+  if (
+    !FileService.data.clickerUpgrades ||
+    typeof FileService.data.clickerUpgrades !== "object"
+  ) {
+    FileService.data.clickerUpgrades = {};
+  }
+  if (!FileService.data.clickerUpgrades[pseudo]) {
+    FileService.data.clickerUpgrades[pseudo] = {};
+  }
+  return FileService.data.clickerUpgrades[pseudo];
+}
+
+function getUpgradeEffects(FileService, pseudo) {
+  const upgrades = getUserUpgrades(FileService, pseudo);
+  let perClickBonus = 0;
+  let autoCpsBonus = 0;
+  for (const def of Object.values(CLICKER_UPGRADES)) {
+    const level = Math.max(0, Math.floor(Number(upgrades[def.id] || 0)));
+    if (def.type === "perClick") perClickBonus += level * def.valuePerLevel;
+    if (def.type === "autoCps") autoCpsBonus += level * def.valuePerLevel;
+  }
+  return { perClickBonus, autoCpsBonus };
+}
+
+function getUpgradePayload(FileService, pseudo) {
+  const upgrades = getUserUpgrades(FileService, pseudo);
+  const effects = getUpgradeEffects(FileService, pseudo);
+  return {
+    upgrades,
+    catalog: Object.values(CLICKER_UPGRADES),
+    effects,
+  };
+}
 
 function registerClickerHandlers({
   io,
@@ -14,9 +85,135 @@ function registerClickerHandlers({
   persistBanIp,
   recalculateMedals,
   broadcastSystemMessage,
+  applyAutoBadges,
   withGame,
   colors,
 }) {
+  const { getWallet } = require("../../services/wallet");
+
+  function emitWalletForUser() {
+    io.to("user:" + pseudo).emit(
+      "economy:wallet",
+      getWallet(FileService, pseudo, FileService.data.clicks[pseudo] || 0),
+    );
+  }
+
+  socket.on("clicker:getUpgrades", () => {
+    socket.emit("clicker:upgrades", getUpgradePayload(FileService, pseudo));
+  });
+
+  socket.on("clicker:buyUpgrade", ({ id }) => {
+    const def = CLICKER_UPGRADES[id];
+    if (!def) return socket.emit("clicker:upgradeError", "Upgrade introuvable");
+
+    const userUpgrades = getUserUpgrades(FileService, pseudo);
+    const level = Math.max(0, Math.floor(Number(userUpgrades[id] || 0)));
+    if (level >= def.maxLevel) {
+      return socket.emit("clicker:upgradeError", "Niveau max atteint");
+    }
+
+    const dynamicCost = Math.floor(
+      def.cost * Math.pow(CLICKER_UPGRADE_GROWTH, level),
+    );
+    const currentClicks = Math.max(
+      0,
+      Math.floor(Number(FileService.data.clicks[pseudo] || 0)),
+    );
+    if (currentClicks < dynamicCost) {
+      return socket.emit("clicker:upgradeError", "Pas assez de clicks");
+    }
+
+    FileService.data.clicks[pseudo] = currentClicks - dynamicCost;
+    userUpgrades[id] = level + 1;
+
+    FileService.save("clicks", FileService.data.clicks);
+    FileService.save("clickerUpgrades", FileService.data.clickerUpgrades);
+
+    io.to("user:" + pseudo).emit("clicker:you", {
+      score: FileService.data.clicks[pseudo],
+    });
+    leaderboardManager.broadcastClickerLB(io);
+    emitWalletForUser();
+    socket.emit("clicker:upgrades", getUpgradePayload(FileService, pseudo));
+  });
+
+  socket.on("clicker:humanPeakUpdate", ({ peakCps } = {}) => {
+    try {
+      const nextPeak = Number(peakCps);
+      if (!Number.isFinite(nextPeak)) return;
+      const safePeak = Math.max(0, Math.min(100, nextPeak));
+
+      if (
+        !FileService.data.clickerHumanPeakCps ||
+        typeof FileService.data.clickerHumanPeakCps !== "object"
+      ) {
+        FileService.data.clickerHumanPeakCps = {};
+      }
+
+      const currentPeak =
+        Number(FileService.data.clickerHumanPeakCps[pseudo]) || 0;
+      if (safePeak <= currentPeak) return;
+
+      FileService.data.clickerHumanPeakCps[pseudo] = safePeak;
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      leaderboardManager.broadcastClickerLB(io);
+    } catch (e) {
+      console.error("Erreur clicker:humanPeakUpdate:", e);
+    }
+  });
+
+  socket.on("clicker:humanCpsChallengeComplete", ({ peakCps } = {}) => {
+    try {
+      if (
+        !FileService.data.clickerFouChallenges ||
+        typeof FileService.data.clickerFouChallenges !== "object"
+      ) {
+        FileService.data.clickerFouChallenges = {};
+      }
+
+      if (!FileService.data.clickerFouChallenges[pseudo]) {
+        FileService.data.clickerFouChallenges[pseudo] = {
+          completedAt: new Date().toISOString(),
+          requirement: "14cps_6.7s",
+        };
+        FileService.save(
+          "clickerFouChallenges",
+          FileService.data.clickerFouChallenges,
+        );
+      }
+
+      const reportedPeak = Number(peakCps);
+      if (Number.isFinite(reportedPeak)) {
+        if (
+          !FileService.data.clickerHumanPeakCps ||
+          typeof FileService.data.clickerHumanPeakCps !== "object"
+        ) {
+          FileService.data.clickerHumanPeakCps = {};
+        }
+        const safePeak = Math.max(0, Math.min(100, reportedPeak));
+        const currentPeak =
+          Number(FileService.data.clickerHumanPeakCps[pseudo]) || 0;
+        if (safePeak > currentPeak) {
+          FileService.data.clickerHumanPeakCps[pseudo] = safePeak;
+          FileService.save(
+            "clickerHumanPeakCps",
+            FileService.data.clickerHumanPeakCps,
+          );
+          leaderboardManager.broadcastClickerLB(io);
+        }
+      }
+
+      if (typeof applyAutoBadges === "function") {
+        applyAutoBadges({ pseudo, FileService });
+      }
+    } catch (e) {
+      console.error("Erreur clicker:humanCpsChallengeComplete:", e);
+    }
+  });
+
   socket.on("clicker:click", () => {
     try {
       const ip = getIpFromSocket(socket);
@@ -36,8 +233,11 @@ function registerClickerHandlers({
       const oneSecCut = now - 1000;
       const cps = track.timestamps.filter((t) => t >= oneSecCut).length;
 
+      const effects = getUpgradeEffects(FileService, pseudo);
+      const perClickGain =
+        1 + Math.max(0, Math.floor(Number(effects.perClickBonus) || 0));
       FileService.data.clicks[pseudo] =
-        (FileService.data.clicks[pseudo] || 0) + 1;
+        (FileService.data.clicks[pseudo] || 0) + perClickGain;
       FileService.save("clicks", FileService.data.clicks);
       io.to("user:" + pseudo).emit("clicker:you", {
         score: FileService.data.clicks[pseudo],
@@ -65,49 +265,8 @@ function registerClickerHandlers({
             }
           }
 
-          // Recalculer médailles (version locale simplifiée)
           try {
-            // Recalculer médailles comme dans adminRoutes
-            const medalsList = [
-              { nom: "Bronze", pallier: 2500 },
-              { nom: "Argent", pallier: 5000 },
-              { nom: "Or", pallier: 10000 },
-              { nom: "Diamant", pallier: 20000 },
-              { nom: "Rubis", pallier: 40000 },
-              { nom: "Saphir", pallier: 80000 },
-              { nom: "Légendaire", pallier: 160000 },
-            ];
-            function generatePrestigeMedals() {
-              const prestige = [];
-              let precedente = medalsList[medalsList.length - 1];
-              for (let idx = 8; idx <= 21; idx++) {
-                // Même calcul que le client : multiplier par 1.8 puis soustraire 50
-                let pallierTemp = precedente.pallier * 1.8;
-                let pallier = Math.ceil(pallierTemp - 50);
-                prestige.push({ nom: `Médaille Prestige - ${idx}`, pallier });
-                precedente = { pallier };
-              }
-              return prestige;
-            }
-            const allMedals = [...medalsList, ...generatePrestigeMedals()];
-            if (!FileService.data.medals) FileService.data.medals = {};
-            const existingMedals = FileService.data.medals[pseudo] || [];
-            const existingColors = {};
-            existingMedals.forEach((m) => {
-              if (m && m.colors && m.colors.length > 0)
-                existingColors[m.name] = m.colors;
-            });
-            const userMedals = [];
-            for (const medal of allMedals) {
-              if (penalized >= medal.pallier) {
-                userMedals.push({
-                  name: medal.nom,
-                  colors: existingColors[medal.nom] || [],
-                });
-              }
-            }
-            FileService.data.medals[pseudo] = userMedals;
-            FileService.save("medals", FileService.data.medals);
+            recalculateMedals(pseudo, penalized, io, false, true);
           } catch (e) {
             console.warn("Erreur recalcul médailles après pénalité", e);
           }
@@ -153,6 +312,99 @@ function registerClickerHandlers({
     }
   });
 
+  // Evenement pour les auto-clicks (émis par le client). Ces clicks doivent
+  // ajouter des clicks de base sans appliquer les bonuses "perClick".
+  socket.on("clicker:autoClick", () => {
+    try {
+      const ip = getIpFromSocket(socket);
+      const now = Date.now();
+
+      let track = cpsTracker.get(ip);
+      if (!track) {
+        track = { timestamps: [], violationStart: null, banned: false };
+        cpsTracker.set(ip, track);
+      }
+
+      track.timestamps.push(now);
+      const cutoff = now - 2000;
+      while (track.timestamps.length && track.timestamps[0] < cutoff)
+        track.timestamps.shift();
+
+      const oneSecCut = now - 1000;
+      const cps = track.timestamps.filter((t) => t >= oneSecCut).length;
+
+      // NE PAS appliquer le perClickBonus aux auto-clicks
+      const perClickGain = 1;
+      FileService.data.clicks[pseudo] =
+        (FileService.data.clicks[pseudo] || 0) + perClickGain;
+      FileService.save("clicks", FileService.data.clicks);
+      io.to("user:" + pseudo).emit("clicker:you", {
+        score: FileService.data.clicks[pseudo],
+      });
+      leaderboardManager.broadcastClickerLB(io);
+
+      if (track.banned) return;
+
+      if (cps > CPS_THRESHOLD) {
+        if (!track.violationStart) track.violationStart = now;
+        if (now - track.violationStart >= CPS_DURATION_MS) {
+          track.banned = true;
+          const current = FileService.data.clicks[pseudo] || 0;
+          const penalized = current - CPS_PENALTY;
+          FileService.data.clicks[pseudo] = penalized;
+          FileService.save("clicks", FileService.data.clicks);
+
+          if (penalized < 0) {
+            if (!FileService.data.cheaters) FileService.data.cheaters = [];
+            if (!FileService.data.cheaters.includes(pseudo)) {
+              FileService.data.cheaters.push(pseudo);
+              FileService.save("cheaters", FileService.data.cheaters);
+            }
+          }
+
+          try {
+            recalculateMedals(pseudo, penalized, io, false, true);
+          } catch (e) {
+            console.warn("Erreur recalcul médailles après pénalité", e);
+          }
+
+          persistBanIp(ip);
+
+          console.log({
+            level: "action",
+            message: `IP ${ip} bannie automatiquement pour CPS élevé. ${CPS_PENALTY} clicks retirés à ${pseudo}`,
+          });
+
+          io.emit(
+            "system:info",
+            `${pseudo} a été banni pour triche (CPS trop élevé) !`,
+          );
+
+          io.sockets.sockets.forEach((s) => {
+            const sIp = getIpFromSocket(s);
+            if (sIp === ip) {
+              try {
+                s.emit("system:notification", {
+                  message: "🚫 Votre IP a été bannie pour CPS anormal",
+                  duration: 8000,
+                });
+              } catch (e) {}
+              try {
+                s.disconnect(true);
+              } catch (e) {}
+            }
+          });
+
+          leaderboardManager.broadcastClickerLB(io);
+        }
+      } else {
+        track.violationStart = null;
+      }
+    } catch (e) {
+      console.error("Erreur lors du traitement clicker:autoClick:", e);
+    }
+  });
+
   socket.on("clicker:penalty", () => {
     try {
       const userMedals = FileService.data.medals[pseudo] || [];
@@ -187,6 +439,14 @@ function registerClickerHandlers({
 
     FileService.data.medals[pseudo] = [];
     FileService.save("medals", FileService.data.medals);
+    if (
+      FileService.data.clickerUpgrades &&
+      FileService.data.clickerUpgrades[pseudo]
+    ) {
+      FileService.data.clickerUpgrades[pseudo] = {};
+      FileService.save("clickerUpgrades", FileService.data.clickerUpgrades);
+      socket.emit("clicker:upgrades", getUpgradePayload(FileService, pseudo));
+    }
     socket.emit("clicker:you", { score: 0 });
 
     // Si le joueur est un tricheur, on lui renvoie la médaille Tricheur même après reset
@@ -288,7 +548,13 @@ function registerClickerHandlers({
       FileService.save("medals", FileService.data.medals);
     }
 
-    recalculateMedals(pseudo, FileService.data.clicks[pseudo], io, false, true);
+    recalculateMedals(
+      pseudo,
+      FileService.data.clicks[pseudo],
+      io,
+      false,
+      false,
+    );
 
     leaderboardManager.broadcastClickerLB(io);
 
@@ -301,4 +567,8 @@ function registerClickerHandlers({
   });
 }
 
-module.exports = { registerClickerHandlers };
+module.exports = {
+  registerClickerHandlers,
+  getUserUpgrades,
+  getUpgradePayload,
+};

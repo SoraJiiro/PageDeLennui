@@ -37,9 +37,11 @@ const {
   ensureBlackjackGameConfigured,
   registerBlackjackHandlers,
 } = require("./sockets/handlers/blackjack");
+const { registerSudokuHandlers } = require("./sockets/handlers/sudoku");
 
 const PixelWarGame = require("./games/pixelWarGame");
 const { registerPixelWarHandlers } = require("./sockets/handlers/pixelWar");
+const { migrateWalletsFromClicks } = require("./services/wallet");
 
 function broadcastSystemMessage(io, text, persist = false) {
   io.emit("system:info", text);
@@ -137,6 +139,36 @@ function persistRunnerResumeFromSocket(socket, pseudo) {
   }
 }
 
+function getSiteMoneyStatsPayload() {
+  const wallets =
+    FileService && FileService.data && FileService.data.wallets
+      ? FileService.data.wallets
+      : {};
+
+  const entries = Object.values(wallets || {}).filter(
+    (wallet) => wallet && typeof wallet === "object",
+  );
+
+  const usersCount = entries.length;
+  const totalMoney = entries.reduce((sum, wallet) => {
+    const money = Number(wallet?.money);
+    return sum + (Number.isFinite(money) ? Math.max(0, Math.floor(money)) : 0);
+  }, 0);
+
+  const averageMoney = usersCount > 0 ? totalMoney / usersCount : 0;
+
+  return {
+    usersCount,
+    totalMoney,
+    averageMoney,
+  };
+}
+
+function broadcastSiteMoneyStats(io) {
+  if (!io) return;
+  io.emit("economy:siteMoneyStats", getSiteMoneyStatsPayload());
+}
+
 // ------- Games -------
 let gameActuelle = new UnoGame();
 let p4Game = new Puissance4Game();
@@ -145,6 +177,9 @@ let blackjackGame = new BlackjackGame();
 let mashGame = null; // Will be initialized with broadcastSystemMessage wrapper
 let pixelWarGame = new PixelWarGame(FileService);
 pixelWarGame.startAutoSave();
+try {
+  migrateWalletsFromClicks(FileService);
+} catch (e) {}
 
 function getRuntimeGames() {
   return {
@@ -169,10 +204,24 @@ const colors = { orange, reset, blue, green, pink, violet, red };
 // ------- LB manager -------
 const leaderboardManager = {
   broadcastClickerLB(io) {
+    const peakMap = FileService.data.clickerHumanPeakCps || {};
+    const wallets = FileService.data.wallets || {};
     const arr = Object.entries(FileService.data.clicks)
-      .map(([pseudo, score]) => ({ pseudo, score: Number(score) || 0 }))
+      .map(([pseudo, score]) => ({
+        pseudo,
+        score: Number(score) || 0,
+        peakHumanCps: Number(peakMap[pseudo]) || 0,
+        money:
+          wallets[pseudo] && Number(wallets[pseudo].money)
+            ? Number(wallets[pseudo].money)
+            : 0,
+        tokens:
+          wallets[pseudo] && Number(wallets[pseudo].tokens)
+            ? Number(wallets[pseudo].tokens)
+            : 0,
+      }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
-    io.emit("clicker:leaderboard", arr);
+    io.emit("economie:leaderboard", arr);
   },
   broadcastDinoLB(io) {
     const arr = Object.entries(FileService.data.dinoScores)
@@ -289,6 +338,53 @@ const leaderboardManager = {
       );
     io.emit("coinflip:leaderboard", arr);
   },
+  broadcastRouletteLB(io) {
+    const data = FileService.data.rouletteStats || {};
+    const arr = Object.entries(data)
+      .map(([u, s]) => ({
+        pseudo: u,
+        gamesPlayed: s.gamesPlayed || 0,
+        wins: s.wins || 0,
+        losses: s.losses || 0,
+        biggestBet: s.biggestBet || 0,
+        biggestWin: s.biggestWin || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.wins - a.wins ||
+          b.biggestWin - a.biggestWin ||
+          a.pseudo.localeCompare(b.pseudo),
+      );
+    io.emit("roulette:leaderboard", arr);
+  },
+  broadcastSlotsLB(io) {
+    const data = FileService.data.slotsStats || {};
+    const arr = Object.entries(data)
+      .map(([u, s]) => ({
+        pseudo: u,
+        gamesPlayed: s.gamesPlayed || 0,
+        wins: s.wins || 0,
+        losses: s.losses || 0,
+        biggestBet: s.biggestBet || 0,
+        biggestWin: s.biggestWin || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.wins - a.wins ||
+          b.biggestWin - a.biggestWin ||
+          a.pseudo.localeCompare(b.pseudo),
+      );
+    io.emit("slots:leaderboard", arr);
+  },
+  broadcastSudokuLB(io) {
+    const data = FileService.data.sudokuScores || {};
+    const arr = Object.entries(data)
+      .map(([u, s]) => ({ pseudo: u, completed: Number(s) || 0 }))
+      .sort(
+        (a, b) => b.completed - a.completed || a.pseudo.localeCompare(b.pseudo),
+      );
+    io.emit("sudoku:leaderboard", arr);
+  },
 };
 
 // ------- Handler Socket -------
@@ -388,7 +484,9 @@ function initSocketHandlers(io, socket, gameState) {
     } catch {}
   }
 
-  gameState.addUser(socket.id, pseudo, io);
+  const sessionId =
+    socket.handshake.sessionID || socket.handshake.session?.id || null;
+  gameState.addUser(socket.id, pseudo, io, sessionId);
   if (pseudo !== "Admin") {
     if (config.LOG_SOCKET_EVENTS) {
       console.log(`>> [${colorize(pseudo, orange)}] connecté`);
@@ -493,6 +591,14 @@ function initSocketHandlers(io, socket, gameState) {
   );
   socket.emit("chat:dm:history", getDmHistoryFor(pseudo));
   socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] || 0 });
+  try {
+    const { getWallet } = require("./services/wallet");
+    socket.emit(
+      "economy:wallet",
+      getWallet(FileService, pseudo, FileService.data.clicks[pseudo] || 0),
+    );
+  } catch (e) {}
+  socket.emit("economy:siteMoneyStats", getSiteMoneyStatsPayload());
 
   // Resync à la demande (utile si le client a raté un event init)
   socket.on("chat:sync", () => {
@@ -526,6 +632,19 @@ function initSocketHandlers(io, socket, gameState) {
     } catch (e) {
       socket.emit("clicker:adminAutoCps", { value: 0 });
     }
+
+    try {
+      const {
+        getUserUpgrades,
+        getUpgradePayload,
+      } = require("./sockets/handlers/clicker");
+      getUserUpgrades(FileService, pseudo);
+      socket.emit("clicker:upgrades", getUpgradePayload(FileService, pseudo));
+    } catch (e) {}
+  });
+
+  socket.on("economy:siteMoneyStats:get", () => {
+    socket.emit("economy:siteMoneyStats", getSiteMoneyStatsPayload());
   });
 
   // Init Mash Key
@@ -603,6 +722,7 @@ function initSocketHandlers(io, socket, gameState) {
     persistBanIp,
     recalculateMedals,
     broadcastSystemMessage,
+    applyAutoBadges,
     withGame,
     colors,
   });
@@ -700,6 +820,9 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcast2048LB(io);
   leaderboardManager.broadcastBlackjackLB(io);
   leaderboardManager.broadcastCoinflipLB(io);
+  leaderboardManager.broadcastRouletteLB(io);
+  leaderboardManager.broadcastSlotsLB(io);
+  leaderboardManager.broadcastSudokuLB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
 
@@ -735,6 +858,14 @@ function initSocketHandlers(io, socket, gameState) {
     pseudo,
     FileService,
     motusGame,
+    leaderboardManager,
+  });
+
+  registerSudokuHandlers({
+    io,
+    socket,
+    pseudo,
+    FileService,
     leaderboardManager,
   });
 
@@ -829,4 +960,5 @@ module.exports = {
   motusGame,
   pixelWarGame,
   getRuntimeGames,
+  broadcastSiteMoneyStats,
 };

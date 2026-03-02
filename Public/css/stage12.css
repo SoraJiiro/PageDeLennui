@@ -74,6 +74,7 @@
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
   gap: 10px;
+  border: 2px solid var(--primary-color);
 }
 
 .grid-cell {
@@ -92,7 +93,9 @@
   font-size: 2rem;
   font-weight: bold;
   color: #776e65;
-  transition: top 100ms ease-in-out, left 100ms ease-in-out,
+  transition:
+    top 100ms ease-in-out,
+    left 100ms ease-in-out,
     transform 100ms ease-in-out;
   z-index: 10;
 }

@@ -530,9 +530,7 @@ export function initChat(socket) {
         btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
         btn.title = "Supprimer ce message";
         btn.onclick = () => {
-          if (confirm("Supprimer ce message ?")) {
-            socket.emit("chat:delete", { id });
-          }
+          socket.emit("chat:delete", { id });
         };
         el.appendChild(btn);
 
@@ -543,12 +541,45 @@ export function initChat(socket) {
           fileDelBtn.innerHTML = '<i class="fa-solid fa-file-slash"></i>';
           fileDelBtn.title = "Supprimer ce fichier";
           fileDelBtn.onclick = () => {
-            if (confirm("Supprimer ce fichier ?")) {
-              socket.emit("chat:deleteFile", { fileId: file.id });
-            }
+            socket.emit("chat:deleteFile", { fileId: file.id });
           };
           el.appendChild(fileDelBtn);
         }
+
+        // Mute / Unmute buttons (Admin)
+        const muteBtn = document.createElement("button");
+        muteBtn.className = "msg-mute-btn";
+        muteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+        muteBtn.title = "Muet (sans durée)";
+        muteBtn.onclick = () => {
+          const target = auteur;
+          socket.emit("admin:chat:mute", { target, durationMs: 0 });
+        };
+        el.appendChild(muteBtn);
+
+        const muteTimerBtn = document.createElement("button");
+        muteTimerBtn.className = "msg-mute-btn";
+        muteTimerBtn.innerHTML = '<i class="fa-solid fa-hourglass-half"></i>';
+        muteTimerBtn.title = "Muet temporaire (s)";
+        muteTimerBtn.onclick = () => {
+          const raw = prompt("Durée du mute en secondes (ex: 30)", "30");
+          if (raw === null) return;
+          const s = parseInt(String(raw || "").trim(), 10);
+          if (!isFinite(s) || s <= 0) return alert("Durée invalide");
+          const target = auteur;
+          socket.emit("admin:chat:mute", { target, durationMs: s * 1000 });
+        };
+        el.appendChild(muteTimerBtn);
+
+        const unmuteBtn = document.createElement("button");
+        unmuteBtn.className = "msg-unmute-btn";
+        unmuteBtn.innerHTML = '<i class="fa-solid fa-bell"></i>';
+        unmuteBtn.title = "Rétablir le droit d'envoyer des messages";
+        unmuteBtn.onclick = () => {
+          const target = auteur;
+          socket.emit("admin:chat:unmute", { target });
+        };
+        el.appendChild(unmuteBtn);
       }
 
       messages.appendChild(el);
@@ -723,6 +754,24 @@ export function initChat(socket) {
       usersCount.innerHTML = `En ligne: <b>${l.length}</b>`;
       usersCount.title = `‣ ${l.join("\n‣ ")}`;
     }
+  });
+
+  // Recevoir la liste des utilisateurs muets
+  socket.on("chat:muted:update", (data) => {
+    try {
+      window.__chatMuted = data || {};
+    } catch (e) {}
+  });
+
+  socket.on("chat:muted", ({ until, by }) => {
+    const when = until
+      ? `jusqu'à ${new Date(until).toLocaleString("fr-FR")}`
+      : "indéfiniment";
+    addMessage({
+      auteur: "Système",
+      text: `Vous êtes en sourdine ${when} (par ${by}).`,
+      type: "system",
+    });
   });
 
   socket.on("chat:message", (payload) => {
@@ -1068,6 +1117,29 @@ export function initChat(socket) {
       const text = input.value.trim();
       if (!text) return;
 
+      // Vérifier côté client si mute persistant
+      try {
+        const me = myPseudo;
+        if (window.__chatMuted && me && window.__chatMuted[me]) {
+          const entry = window.__chatMuted[me];
+          const now = Date.now();
+          if (!entry.until || new Date(entry.until).getTime() > now) {
+            const when = entry.until
+              ? `jusqu'à ${new Date(entry.until).toLocaleString("fr-FR")}`
+              : "indéfiniment";
+            addMessage({
+              auteur: "Système",
+              text: `Vous êtes en sourdine ${when}.`,
+              type: "system",
+            });
+            input.value = "";
+            input.style.height = "auto";
+            input.focus();
+            return;
+          }
+        }
+      } catch (e) {}
+
       if (text.toLowerCase() === "/rainbow") {
         if (window.toggleRainbowMode) {
           window.toggleRainbowMode();
@@ -1165,7 +1237,36 @@ export function initChat(socket) {
 }
 
 function showNotif(message) {
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification(message);
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
   }
+
+  if (!window.__pdeBrowserNotifQueue) {
+    window.__pdeBrowserNotifQueue = {
+      pending: [],
+      processing: false,
+    };
+  }
+
+  const queue = window.__pdeBrowserNotifQueue;
+  queue.pending.push(String(message || ""));
+
+  const processQueue = () => {
+    if (queue.processing) return;
+    if (!queue.pending.length) return;
+
+    queue.processing = true;
+    const nextMessage = queue.pending.shift();
+    const browserNotif = new Notification(nextMessage);
+
+    setTimeout(() => {
+      try {
+        browserNotif.close();
+      } catch {}
+      queue.processing = false;
+      setTimeout(processQueue, 250);
+    }, 3200);
+  };
+
+  processQueue();
 }

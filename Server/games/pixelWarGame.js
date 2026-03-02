@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const config = require("../config");
+const { getWallet } = require("../services/wallet");
 
 class PixelWarGame {
   constructor(fileService) {
@@ -8,10 +9,14 @@ class PixelWarGame {
 
     this.boardPath = path.join(config.DATA, "pixelwar_board.json");
     this.usersPath = path.join(config.DATA, "pixelwar_users.json");
+    this.customColorsPath = path.join(
+      config.DATA,
+      "pixelwar_custom_colors.json",
+    );
 
     this.WIDTH = 256;
     this.HEIGHT = 256;
-    this.COLORS = [
+    this.BASE_COLORS = [
       "#FFFFFF",
       "#000000",
       "#FF0000",
@@ -29,15 +34,27 @@ class PixelWarGame {
       "#FF00FF",
       "#1E90FF",
     ];
+    this.COLOR_PACKS = {
+      color_pack_neon: ["#39FF14", "#FF1493", "#00E5FF", "#FFD700"],
+      color_pack_pastel: ["#FFB3BA", "#BAFFC9", "#BAE1FF", "#FFF4B3"],
+      color_pack_nature: ["#2E8B57", "#6B8E23", "#CD853F", "#87CEEB"],
+    };
+    this.customColorRegistry = [];
+    this.legacyPackColors = [
+      ...this.COLOR_PACKS.color_pack_neon,
+      ...this.COLOR_PACKS.color_pack_pastel,
+      ...this.COLOR_PACKS.color_pack_nature,
+    ];
+    this.COLORS = [...this.BASE_COLORS, ...this.legacyPackColors];
 
     this.board = new Uint8Array(this.WIDTH * this.HEIGHT);
     this.owners = {};
     this.undoStacks = {};
     this.users = {};
 
-    this.UNIVERSAL_STORAGE_LIMIT = 250;
+    this.UNIVERSAL_STORAGE_LIMIT = 500;
 
-    this.PIXEL_GENERATION_INTERVAL_MS = 45000;
+    this.PIXEL_GENERATION_INTERVAL_MS = 30000;
 
     this.MAX_UNDO_DEPTH_PER_PIXEL = 10;
 
@@ -259,6 +276,26 @@ class PixelWarGame {
 
   load() {
     try {
+      if (fs.existsSync(this.customColorsPath)) {
+        const raw = JSON.parse(fs.readFileSync(this.customColorsPath, "utf8"));
+        if (Array.isArray(raw)) {
+          this.customColorRegistry = raw
+            .map((c) => (typeof c === "string" ? c.trim().toUpperCase() : ""))
+            .filter((c) => /^#[0-9A-F]{6}$/.test(c));
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load custom pixelwar colors:", e);
+      this.customColorRegistry = [];
+    }
+
+    this.COLORS = [
+      ...this.BASE_COLORS,
+      ...this.legacyPackColors,
+      ...this.customColorRegistry,
+    ];
+
+    try {
       if (fs.existsSync(this.usersPath)) {
         this.users = JSON.parse(fs.readFileSync(this.usersPath, "utf8"));
       }
@@ -329,6 +366,17 @@ class PixelWarGame {
     }
   }
 
+  saveCustomColors() {
+    try {
+      fs.writeFileSync(
+        this.customColorsPath,
+        JSON.stringify(this.customColorRegistry, null, 2),
+      );
+    } catch (e) {
+      console.error("Failed to save custom pixelwar colors:", e);
+    }
+  }
+
   saveBoard() {
     try {
       const data = {
@@ -387,6 +435,7 @@ class PixelWarGame {
         pixelsPlaced: 0,
         pixelsOverridden: 0,
         pixelsErased: 0,
+        unlockedColorPacks: [],
       };
       this.usersDirty = true;
     }
@@ -430,7 +479,149 @@ class PixelWarGame {
       this.usersDirty = true;
     }
 
+    if (!Array.isArray(user.unlockedColorPacks)) {
+      user.unlockedColorPacks = [];
+      this.usersDirty = true;
+    }
+
+    if (!Array.isArray(user.unlockedCustomColors)) {
+      user.unlockedCustomColors = [];
+      this.usersDirty = true;
+    }
+
     return user;
+  }
+
+  // Retourne l'état utilisateur calculé sans modifier ni créer d'entrée persistée.
+  peekUserState(pseudo) {
+    const existing = this.users[pseudo];
+    const now = Date.now();
+
+    const user = existing
+      ? JSON.parse(JSON.stringify(existing))
+      : {
+          pixels: 0,
+          maxPixels: 30,
+          lastPixelGeneration: now,
+          lastDaily: null,
+          pixelsPlaced: 0,
+          pixelsOverridden: 0,
+          pixelsErased: 0,
+          unlockedColorPacks: [],
+        };
+
+    // Clamp local copy to limits
+    try {
+      this._clampUserToUniversalLimits(user);
+    } catch (e) {
+      // noop
+    }
+
+    const diff = now - (Number(user.lastPixelGeneration) || now);
+    const generated = Math.floor(diff / this.PIXEL_GENERATION_INTERVAL_MS);
+
+    if (generated > 0) {
+      if (user.pixels < user.maxPixels) {
+        const space = user.maxPixels - user.pixels;
+        const toAdd = Math.min(generated, space);
+        if (toAdd > 0) user.pixels += toAdd;
+      }
+      // Do not persist lastPixelGeneration for peek
+      user.lastPixelGeneration =
+        (Number(user.lastPixelGeneration) || now) +
+        generated * this.PIXEL_GENERATION_INTERVAL_MS;
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    if (user.lastDaily !== today) {
+      const pixelsToGive = Math.floor(user.maxPixels * 0.75);
+      const capacity = Math.min(user.maxPixels, this.UNIVERSAL_STORAGE_LIMIT);
+      const spaceLeft = Math.max(0, capacity - user.pixels);
+      if (spaceLeft > 0) {
+        const toAdd = Math.min(pixelsToGive, spaceLeft);
+        user.pixels += toAdd;
+      }
+      // Do not persist lastDaily for peek
+      user.lastDaily = today;
+    }
+
+    if (user.pixels > this.UNIVERSAL_STORAGE_LIMIT) {
+      user.pixels = this.UNIVERSAL_STORAGE_LIMIT;
+    }
+
+    if (!Array.isArray(user.unlockedColorPacks)) user.unlockedColorPacks = [];
+    if (!Array.isArray(user.unlockedCustomColors))
+      user.unlockedCustomColors = [];
+
+    return user;
+  }
+
+  getUnlockedColorIndicesForUser(pseudo) {
+    const user = this.getUserState(pseudo);
+    const unlocked = new Set(
+      Array.isArray(user.unlockedColorPacks) ? user.unlockedColorPacks : [],
+    );
+    const allowed = new Set();
+
+    for (let i = 0; i < this.BASE_COLORS.length; i++) {
+      allowed.add(i);
+    }
+
+    let offset = this.BASE_COLORS.length;
+    for (const packId of Object.keys(this.COLOR_PACKS)) {
+      const packColors = this.COLOR_PACKS[packId] || [];
+      if (unlocked.has(packId)) {
+        for (let i = 0; i < packColors.length; i++) {
+          allowed.add(offset + i);
+        }
+      }
+      offset += packColors.length;
+    }
+
+    const customUnlocked = Array.isArray(user.unlockedCustomColors)
+      ? user.unlockedCustomColors
+      : [];
+    for (const colorHex of customUnlocked) {
+      const idx = this.customColorRegistry.indexOf(
+        String(colorHex).toUpperCase(),
+      );
+      if (idx >= 0) {
+        allowed.add(offset + idx);
+      }
+    }
+
+    return allowed;
+  }
+
+  unlockCustomColorForUser(pseudo, colorHex) {
+    const hex =
+      typeof colorHex === "string" ? colorHex.trim().toUpperCase() : "";
+    if (!/^#[0-9A-F]{6}$/.test(hex)) {
+      return { ok: false, reason: "Couleur invalide" };
+    }
+
+    const user = this.getUserState(pseudo);
+    if (!Array.isArray(user.unlockedCustomColors)) {
+      user.unlockedCustomColors = [];
+    }
+
+    if (!this.customColorRegistry.includes(hex)) {
+      this.customColorRegistry.push(hex);
+      this.COLORS = [
+        ...this.BASE_COLORS,
+        ...this.legacyPackColors,
+        ...this.customColorRegistry,
+      ];
+      this.saveCustomColors();
+    }
+
+    if (!user.unlockedCustomColors.includes(hex)) {
+      user.unlockedCustomColors.push(hex);
+      this.usersDirty = true;
+      this.saveUsers();
+    }
+
+    return { ok: true, color: hex };
   }
 
   getNextPixelIn(pseudo) {
@@ -454,7 +645,12 @@ class PixelWarGame {
       return { success: false, reason: "Pas assez de pixels" };
     if (x < 0 || x >= this.WIDTH || y < 0 || y >= this.HEIGHT)
       return { success: false };
-    if (colorIndex < 0 || colorIndex >= this.COLORS.length)
+    const allowedIndices = this.getUnlockedColorIndicesForUser(pseudo);
+    if (
+      colorIndex < 0 ||
+      colorIndex >= this.COLORS.length ||
+      !allowedIndices.has(colorIndex)
+    )
       return { success: false };
 
     const idx = y * this.WIDTH + x;
@@ -531,21 +727,22 @@ class PixelWarGame {
 
   buyUpgrade(pseudo, type) {
     const costs = {
-      storage_10: 10500,
-      pixel_1: 2500,
-      pixel_15: 30000,
+      storage_10: 8000,
+      pixel_1: 250,
+      pixel_15: 3000,
     };
 
     if (!costs[type]) return { success: false };
 
     const cost = costs[type];
 
-    let currentClicks = this.fileService.data.clicks[pseudo];
-    if (typeof currentClicks !== "number") currentClicks = 0;
-    currentClicks = Number(currentClicks) || 0;
-
-    if (currentClicks < cost)
-      return { success: false, reason: "Pas assez de clicks" };
+    const wallet = getWallet(
+      this.fileService,
+      pseudo,
+      this.fileService.data.clicks[pseudo] || 0,
+    );
+    if ((wallet.money || 0) < cost)
+      return { success: false, reason: "Pas assez de monnaie" };
 
     const user = this.getUserState(pseudo);
 
@@ -566,8 +763,11 @@ class PixelWarGame {
         user.pixels = this.UNIVERSAL_STORAGE_LIMIT;
     }
 
-    this.fileService.data.clicks[pseudo] = currentClicks - cost;
-    this.fileService.save("clicks", this.fileService.data.clicks);
+    this.fileService.data.wallets[pseudo].money = Math.max(
+      0,
+      Number(this.fileService.data.wallets[pseudo].money || 0) - cost,
+    );
+    this.fileService.save("wallets", this.fileService.data.wallets);
 
     this.usersDirty = true;
     return { success: true, userState: user };

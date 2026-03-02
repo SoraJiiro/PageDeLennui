@@ -16,6 +16,7 @@
             media="(prefers-color-scheme: light)" />
 
         <script defer type="text/javascript" src="js/uiColor.js"></script>
+        <script defer src="js/annexBack.js"></script>
         <script defer type="module" src="js/main.js"></script>
         <script defer src="/socket.io/socket.io.js"></script>
         <script defer type="text/javascript" src="js/nav.js"></script>
@@ -23,186 +24,469 @@
     </head>
     <body>
         <div class="patch-container">
-            <button onclick="window.location.href='/'" class="btn-back"><i
-                    class="fa-solid fa-arrow-left"></i> Retour</button>
-
             <div class="patch-header">
                 <h1><i class="fa-solid fa-pen-to-square"></i> Patch Notes</h1>
                 <p>Historique des mises à jour et changements</p>
             </div>
 
             <div class="patch-entry">
-            <i class="fa-solid fa-caret-down" id="topArrow"></i>
-            <div class="patch-title">
-                <span class="version">v2.1.9</span>
-                <span class="date">9/2/2026</span>
-            </div>
-            <div class="patch-content">
-                <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                <ul>
-                    <li><span class="tag-new">[NEW]</span><strong>Easter Egg Tracker :</strong> Une page dédiée aux Easter Eggs pour suivre votre progression et découvrir des indices au fur et à mesure.</li>
-                    <li><span class="tag-ee">[EASTER EGG]</span><strong>Indice : </strong>Observez bien l'endroit d'où tout commence...</li>
-                </ul>
-                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
-                <ul>
-                    <li><span class="tag-fix">[FIX]</span><strong>Faute message périodique : </strong> La faute 'sqares' a été corrigée.</li>
-                    <li><span class="tag-fix">[FIX]</span><strong>Navigation index &rightarrow; anexes : </strong>Plus fluide et moins polluante pour le serveur.</li>
-                </ul>
-                <h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Retraits / Resets —</h3>
-                <ul>
-                    <li><span class="tag-removed">[RESET]</span><strong>Des fichiers que vous ne pouvez pas voir ont été réinitialisés. (lol)</strong></li>
-                </ul>
-            </div>
-        </div>
-
-            <div class="patch-entry">
-            <i class="fa-solid fa-caret-down" id="topArrow"></i>
-            <div class="patch-title">
-                <span class="version">v2.1.8</span>
-                <span class="date">7/2/2026 - 9/2/2026</span>
-            </div>
-            <div class="patch-content">
-                <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                <ul>
-                    <li><span class="tag-new">[NEW]</span><strong>2500 Clicks des 1er : </strong> L'ajout des 2500 clicks pour les 1er des leaderboard est maintenant automatique. Plus besoin de s'inquiéter ni d'implorer l'Admin.</li>
-                    <li><span class="tag-new">[NEW]</span><strong>PixelWar : </strong> 4 nouvelles couleurs ont été ajoutées. Cyan, citron vert, magenta et bleu ciel.</li>
-                    <li><span class="tag-new">[NEW]</span><strong>Chat : </strong>Quand il n'y a qu'une suggestion de pseudo quand vous écrivez une mention, appuyez sur <u>Tab</u> pour automatiquement la finir. Quand vous mentionnez quelqu'un la mention est auto-formaté avec un lien vers son profil. Les joueurs sans PFP auront désormais une icône par défaut au lieu du font gris.</li>
-                    <li><span class="tag-new">[NEW]</span><strong>MPs (messages privés) : </strong>Vous pouvez désormais envoyer des messages privés à d'autres joueurs. La commande s'utilise ainsi : /msg [pseudo] (message..)</li>
-                    <li><span class="tag-ee">[EASTER EGG]</span><strong>Implémenté ! :</strong> L'Easter Egg est maintenant disponible et résolvable! Soyez à l'affût, et bonne chance... Vous en aurez besoin. ;) (Vous n'aurez pas besoin de regarder le code source pour le trouver.)</li>
-                    <li><span class="tag-new">[NEW]</span><strong>Chat (files share) : </strong> La liste de fichiers autorisé a été améliorée, vous pouvez maintenant envoyer des fichier '.pkt' par exemple.</li>
-                </ul>
-                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
-                <ul>
-                    <li><span class="tag-change">[CHANGE]</span> <strong>Limite universelle de Pixels:</strong> Une limite générale a été ajouté au Stockage de Pixels. Elle est de <u>250</u>.</li>
-                    <li><span class="tag-change">[CHANGE]</span><strong>Message périodique :</strong> Le message périodique a été modifié.</li>
-                    <li><span class="tag-change">[CHANGE]</span><strong>Quota quotidien : </strong> Le quota est freeze à la première connexion de la journée.</li>
-                    <li><span class="tag-fix">[FIX]</span><strong>Bugs : </strong> Les bugs liés à la PixelWar ont été corrigés. Quelques bugs d'affichage ont également été résolus.</li>
-                    <li><span class="tag-fix">[FIX]</span><strong>Timer règlement : </strong>Le bug le la page réglement a (normalement) été fixé, et le timer de lecture "obligatoire" a été diminué (1m10s &rightarrow; <u>30s</u>).</li>
-                </ul>
-                <h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Retraits / Resets —</h3>
-                <ul>
-                    <li><span class="tag-removed">[RESET]</span> <strong>Les joueurs avec un Stockage de Pixels supérieur à 250 ont été réinitialisés (à 250). Ils seront aussi remboursé de la somme qu'ils ont dépensés en plus.</strong></li>
-                </ul>
-            </div>
-        </div>
-
-            <div class="patch-entry">
-            <i class="fa-solid fa-caret-down" id="topArrow"></i>
-            <div class="patch-title">
-                <span class="version">v2.1.6</span>
-                <span class="date">2/2/2026</span>
-            </div>
-            <div class="patch-content">
-                <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                <ul>
-                    <li><span class="tag-new">[NEW]</span> <strong>Profil :</strong> Vous pouvez désormais voir vos médailles directement sur votre profil (et celles des autres). En laissant votre souris dessus, vous pourrez observer les couleurs présentes dessus. Vous pouvez aussi saisir votre date de naissance pour qu'elle soit visible par tous et puis... Peut être que vous aurez un petit cadeau le jour J !</li>
-                    <li><span class="tag-new">[NEW]</span> <strong>Motus : </strong>Une ligne d'accents a été ajoutée pour améliorer l'expérience de jeu et éviter les bugs liés aux caractères accentués. (blocages dans la progression). Une touche espace a également été ajoutée. Les indices des positions des lettres que vous avez bien placées seront maintenant visibles.</li>
-                </ul>
-                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
-                <ul>
-                    <li><span class="tag-fix">[FIX]</span> <strong>Profil :</strong> Vous pouvez maintenant voir tous les badges des utilisateurs, vraiment cette fois-ci. Le bug d'affichage les limitant à 3 a été corrigé.</li>
-                    <li><span class="tag-fix">[FIX]</span> <strong>Motus :</strong> La taille des cases a été ajustée pour une meilleure lisibilité.</li>
-                    <li><span class="tag-change">[CHANGE]</span> <strong>Snake :</strong> La taille de l'écran du jeu a été ajustée sur les écrans plus grands.</li>
-                    <li><span class="tag-change">[CHANGE]</span> <strong>Chat :</strong> Le formatage des liens hypertextes envoyés dans le chat est maintenant disponible ; Vous pouvez désormais cliquer sur les liens pour les ouvrir directement.</li>
-                    <li><span class="tag-change">[CHANGE]</span> <strong>Economie :</strong> Le prix de revive a été légèrement baissé en fonction du jeu auquel vous jouez.</li>
-                    <li><span class="tag-change">[CHANGE]</span> <strong>Règlement :</strong> Mise à jour du règlement.</li>
-                </ul>
-            </div>
-        </div>
-
-            <div class="patch-entry">
-            <i class="fa-solid fa-caret-down" id="topArrow"></i>
-            <div class="patch-title">
-                <span class="version">v2.1.5</span>
-                <span class="date">30/01/2026</span>
-            </div>
-            <div class="patch-content">
-                <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                <ul>
-                    <li><span class="tag-new">[NEW]</span> <strong>Hall des Oubliés : </strong> Vous pouvez désormais retrouver les joueurs disparus dans le Hall des Oubliés. Cliquez <a href="./hall-des-oublies.html" title="Hall des Oubliés" style="color: #00FF00;">ici</a> pour consulter la page.</li>
-                    <li><span class="tag-ee">[EASTER EGG]</span><strong>Easter Egg info : </strong>L'Easter Egg sera disponible en même temps que la mise à jour qui comportera le PixelWar. Soyez à l'affût, celui-ci risque d'être très complexe à trouver et à déchiffrer... ;)</li>
-                </ul>
-                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
-                <ul>
-                    <li><span class="tag-change">[FIX]</span> <strong>Affichage quota & paliers : </strong>Les bugs d'affichages concernants le quota quotidien et les paliers des médailles a été corrigé. Les valeurs affiché sont désormais les bonnes.</li>
-                </ul>
-                <h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Retraits / Resets —</h3>
-                <ul>
-                    <li><span class="tag-removed">[RESET]</span> <strong>Médailles : </strong> Les médailles ont été réinitialisées pour tous les joueurs. (aucune incidence sur vos clicks)</li>
-                </ul>
-            </div>
-        </div>
-
-            <div class="patch-entry">
-                <i class="fa-solid fa-caret-down" id="topArrow"></i>
-            <div class="patch-title">
-                <span class="version">v2.1.4</span>
-                <span class="date">27/01/2026 - 27/01/2026</span>
-            </div>
-            <div class="patch-content">
-                <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                <ul>
-                    <li><span class="tag-new">[NEW]</span> <strong>Médias : </strong>Les médias (video, image, audio) sont désormais affichés dans le Chat.</li>
-                    <li><span class="tag-new">[NEW]</span> <strong>Motus :</strong> Les touches et le support des "E" accents "é" et "è" ont été ajoutés.</li>
-                    <li><span class="tag-new">[NEW]</span> <strong>Suggestions :</strong> Vous pouvez redonnez vos suggestions depuis le Site, le système a été remis en ligne.</li>
-                </ul>
-                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3><ul>
-                    <li><span class="tag-fix">[FIX]</span><strong>Jeux & Pause :</strong> Le bug concernant l'enregistrement du score après avoir fait pause pendant une partie de Snake, Dino et Flappy Bird a été définitivement fixé. Les joueurs victimes receveront une compensation.</li>
-                    <li><span class="tag-change">[CHANGE]</span><strong>Chat :</strong> Amélioration du système de partage de fichiers + affichage des medias / messages.</li>
-                    <li><span class="tag-change">[CHANGE]</span><strong> Patch notes :</strong> Légers changements visuels et structurels.</li>
-                    </ul>
-                    <h3><i
-                            class="fa-solid fa-arrow-right-arrow-left"></i>
-                        Retraits / Resets —</h3>
-                        <ul><li><span class="tag-removed">[REMOVED]</span><strong>Mario : </strong>L'onglet et le jeu Mario a été supprimé de la page à la demande de Tom. (Il a dit qu'il parlait en votre nom à tous :D)</li></ul>
-            </div>
-        </div>
-
-            <div class="patch-entry">
-                <i class="fa-solid fa-caret-down" id="topArrow"></i>
-            <div class="patch-title">
-                <span class="version">v2.1.2</span>
-                <span class="date">25/01/2026</span>
-            </div>
-            <div class="patch-content">
-                <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                <ul>
-                    <li><span class="tag-new">[NEW]</span> <strong>Partage de fichiers :</strong> Vous pouvez désormais partager des fichiers avec d'autres utilisateurs directement via le Chat.</li>
-                </ul>
-                <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3><ul>
-                    <li><span class="tag-fix">[FIX]</span><strong>Profil :</strong> Le bug d'affichage des badges a été corrigé. Les autres utilisateurs peuvent maintenant voir tous vos badges et non seulement ceux équippés depuis votre profil.</li>
-                        <li>
-                            <span class="tag-change">[CHANGE]</span><strong>CPS et Médailles :</strong> Les CPS auto ont été ajustés et les palliers des médailles ont été modifiés. (+)</li>
-                        </li>
-                    </ul>
-            </div>
-        </div>
-            <div class="patch-entry">
                 <i class="fa-solid fa-caret-down" id="topArrow"></i>
                 <div class="patch-title">
-                    <span class="version">v2.1.1</span>
-                    <span class="date">21/01/2026</span>
+                    <span class="version">v3.0.0</span>
+                    <span class="date">Vacances d'Hiver</span>
                 </div>
                 <div class="patch-content">
                     <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
                     <ul>
-                        <li><span class="tag-new">[NEW]</span> <strong>Quota
-                                :</strong>Vous pouvez désormais voir votre quota
-                            de gains quotidien. (depuis la sidebar /
-                            Navigation)</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Badges
+                                :</strong> Des badges pour chaque jeu ont été
+                            ajoutés! Direction <a
+                                href="badges.html">"badges"</a> pour en savoir
+                            plus.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Economie
+                                :</strong> Un nouveau système économique a fait
+                            surface! Direction <a
+                                href="reglement.html">"règlement & infos"</a>
+                            pour en savoir plus.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Sudoku
+                                :</strong> Un nouveau jeu de Sudoku a été
+                            ajouté! Allez vous casser le crâne au lieu de faire
+                            la guerre...</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>Casino
+                                :</strong> Une roulette et des slots machines
+                            (machines à sous) ont été ajoutées pour encore plus
+                            d'addiction au gambling!</li>
+                        <li><span class="tag-new">[NEW - BETA]</span>
+                            <strong>ChatGPT :</strong> Un onglet ChatGPT a été
+                            intégré. Il est encore en phase de teste et peut ne
+                            pas fonctionner correctement ; il ne vous sera pas
+                            demandé de report des bugs à propos de celui-ci,
+                            merci de votre compréhension.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong> PixelWar
+                                :</strong> Vous pouvez maintenant personaliser
+                            et acheter des couleurs personalisées depuis le <a
+                                href="shop.html">Shop</a> de manière permanente.</li>
                     </ul>
-                    <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3><ul>
-                        <li>
-                            <span class="tag-fix">[FIX]</span><strong>Pause :</strong> Le bug concernant la pause et l'enregistrement de score a été corrigé.</li>
+                    <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
+                    <ul>
+                        <li><span class="tag-change">[CHANGE]</span>
+                            <strong>Interface (UI) :</strong> L'interface a été
+                            entièrement révisée pour améliorer l'expérience
+                            utilisateur. Vos retours constructif, positifs et/ou
+                            négatifs sont les bienvenus.</li>
+                        <li><span class="tag-change">[CHANGE]</span>
+                            <strong>Performance :</strong> Amélioration des
+                            performances globales du site.</li>
+                        <li><span class="tag-change">[CHANGE]</span>
+                            <strong>PixelWar :</strong> 
+                            <ul>
+                                <li>Limite de pixel
+                                    &rightarrow; 500 ;</li>
+                                    <li>1 pixel / 30
+                                    secondes ;</li>
+                                    <li>Prix pixels réduit ;</li>
+                                </ul>
+                        <li><span class="tag-change">[CHANGE]</span> <strong>Clicker :</strong> Rework du Clicker avec un système de progression amélioré. Vous pouvez maintenant acheter des amélioration pour vous aider à farm les clicks! (cookie clicker like)</li>
+                        <li><span class="tag-change">[CHANGE]</span> <strong>Revive jeux :</strong> Lors de la demande de réanimation dans les jeux, vous aurez le choix de payer ou d'utiliser une Vie achetée au <a href="shop.html">Shop</a>. Ces mêmes Vies ont aussi vu leur prix augmenter.</li>
+                        <li><span class="tag-fix">[FIX]</span> <strong>PixelWar :</strong> Correction de l'affichage de la mini box d'info concernant qui est le propriétaire d'un pixel.</li>
+                        <li><span class="tag-fix">[FIX]</span> <strong>Revive jeux :</strong> Correction d'un bug qui empêchait la réanimation de certains jeux et fixation de l'interface du modal.</li>
+                        <li><span class="tag-fix">[FIX]</span> <strong>Page de pause :</strong> Le bug de la barre de recherche non fonctionnelle a été réglé, vous pouvez refaire des recherches à partir de la page de pause.</li>
+                            </ul>
+                            <h3><i
+                                    class="fa-solid fa-arrow-right-arrow-left"></i>
+                                Retraits / Resets —</h3>
+                            <ul>
+                                <li><span class="tag-removed">[REMOVED]</span>
+                                    <strong>Leaderboard Motus:</strong> Le leaderboard Motus a été retiré. (Vous pouvez toujours voir votre avancement dans le jeu directement, et celui des autres depuis leur profil.)</li>
+                                <li><span class="tag-removed">[RESET]</span>
+                                    <strong>Reset Global :</strong> Reset saisonnier + phase de teste d'une semaine.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="patch-entry">
+                        <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                        <div class="patch-title">
+                            <span class="version">v2.1.9</span>
+                            <span class="date">9/2/2026</span>
+                        </div>
+                        <div class="patch-content">
+                            <h3><i class="fa-solid fa-star"></i> Nouveautés
+                                —</h3>
+                            <ul>
+                                <li><span
+                                        class="tag-new">[NEW]</span><strong>Easter
+                                        Egg Tracker :</strong> Une page dédiée
+                                    aux Easter Eggs pour suivre votre
+                                    progression et découvrir des indices au fur
+                                    et à mesure.</li>
+                                <li><span class="tag-ee">[EASTER
+                                        EGG]</span><strong>Indice :
+                                    </strong>Observez bien l'endroit d'où tout
+                                    commence...</li>
+                            </ul>
+                            <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                                —</h3>
+                            <ul>
+                                <li><span
+                                        class="tag-fix">[FIX]</span><strong>Faute
+                                        message périodique : </strong> La faute
+                                    'sqares' a été corrigée.</li>
+                                <li><span
+                                        class="tag-fix">[FIX]</span><strong>Navigation
+                                        index &rightarrow; anexes :
+                                    </strong>Plus fluide et moins polluante pour
+                                    le serveur.</li>
+                            </ul>
+                            <h3><i
+                                    class="fa-solid fa-arrow-right-arrow-left"></i>
+                                Retraits / Resets —</h3>
+                            <ul>
+                                <li><span
+                                        class="tag-removed">[RESET]</span><strong>Des
+                                        fichiers que vous ne pouvez pas voir ont
+                                        été réinitialisés. (lol)</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="patch-entry">
+                        <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                        <div class="patch-title">
+                            <span class="version">v2.1.8</span>
+                            <span class="date">7/2/2026 - 9/2/2026</span>
+                        </div>
+                        <div class="patch-content">
+                            <h3><i class="fa-solid fa-star"></i> Nouveautés
+                                —</h3>
+                            <ul>
+                                <li><span
+                                        class="tag-new">[NEW]</span><strong>2500
+                                        Clicks des 1er : </strong> L'ajout des
+                                    2500 clicks pour les 1er des leaderboard est
+                                    maintenant automatique. Plus besoin de
+                                    s'inquiéter ni d'implorer l'Admin.</li>
+                                <li><span
+                                        class="tag-new">[NEW]</span><strong>PixelWar
+                                        : </strong> 4 nouvelles couleurs ont été
+                                    ajoutées. Cyan, citron vert, magenta et bleu
+                                    ciel.</li>
+                                <li><span
+                                        class="tag-new">[NEW]</span><strong>Chat
+                                        : </strong>Quand il n'y a qu'une
+                                    suggestion de pseudo quand vous écrivez une
+                                    mention, appuyez sur <u>Tab</u> pour
+                                    automatiquement la finir. Quand vous
+                                    mentionnez quelqu'un la mention est
+                                    auto-formaté avec un lien vers son profil.
+                                    Les joueurs sans PFP auront désormais une
+                                    icône par défaut au lieu du font gris.</li>
+                                <li><span
+                                        class="tag-new">[NEW]</span><strong>MPs
+                                        (messages privés) : </strong>Vous pouvez
+                                    désormais envoyer des messages privés à
+                                    d'autres joueurs. La commande s'utilise
+                                    ainsi : /msg [pseudo] (message..)</li>
+                                <li><span class="tag-ee">[EASTER
+                                        EGG]</span><strong>Implémenté !
+                                        :</strong> L'Easter Egg est maintenant
+                                    disponible et résolvable! Soyez à l'affût,
+                                    et bonne chance... Vous en aurez besoin. ;)
+                                    (Vous n'aurez pas besoin de regarder le code
+                                    source pour le trouver.)</li>
+                                <li><span
+                                        class="tag-new">[NEW]</span><strong>Chat
+                                        (files share) : </strong> La liste de
+                                    fichiers autorisé a été améliorée, vous
+                                    pouvez maintenant envoyer des fichier '.pkt'
+                                    par exemple.</li>
+                            </ul>
+                            <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                                —</h3>
+                            <ul>
+                                <li><span class="tag-change">[CHANGE]</span>
+                                    <strong>Limite universelle de
+                                        Pixels:</strong> Une limite générale a
+                                    été ajouté au Stockage de Pixels. Elle est
+                                    de <u>250</u>.</li>
+                                <li><span
+                                        class="tag-change">[CHANGE]</span><strong>Message
+                                        périodique :</strong> Le message
+                                    périodique a été modifié.</li>
+                                <li><span
+                                        class="tag-change">[CHANGE]</span><strong>Quota
+                                        quotidien : </strong> Le quota est
+                                    freeze à la première connexion de la
+                                    journée.</li>
+                                <li><span
+                                        class="tag-fix">[FIX]</span><strong>Bugs
+                                        : </strong> Les bugs liés à la PixelWar
+                                    ont été corrigés. Quelques bugs d'affichage
+                                    ont également été résolus.</li>
+                                <li><span
+                                        class="tag-fix">[FIX]</span><strong>Timer
+                                        règlement : </strong>Le bug le la page
+                                    réglement a (normalement) été fixé, et le
+                                    timer de lecture "obligatoire" a été diminué
+                                    (1m10s &rightarrow; <u>30s</u>).</li>
+                            </ul>
+                            <h3><i
+                                    class="fa-solid fa-arrow-right-arrow-left"></i>
+                                Retraits / Resets —</h3>
+                            <ul>
+                                <li><span class="tag-removed">[RESET]</span>
+                                    <strong>Les joueurs avec un Stockage de
+                                        Pixels supérieur à 250 ont été
+                                        réinitialisés (à 250). Ils seront aussi
+                                        remboursé de la somme qu'ils ont
+                                        dépensés en plus.</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="patch-entry">
+                        <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                        <div class="patch-title">
+                            <span class="version">v2.1.6</span>
+                            <span class="date">2/2/2026</span>
+                        </div>
+                        <div class="patch-content">
+                            <h3><i class="fa-solid fa-star"></i> Nouveautés
+                                —</h3>
+                            <ul>
+                                <li><span class="tag-new">[NEW]</span>
+                                    <strong>Profil :</strong> Vous pouvez
+                                    désormais voir vos médailles directement sur
+                                    votre profil (et celles des autres). En
+                                    laissant votre souris dessus, vous pourrez
+                                    observer les couleurs présentes dessus. Vous
+                                    pouvez aussi saisir votre date de naissance
+                                    pour qu'elle soit visible par tous et
+                                    puis... Peut être que vous aurez un petit
+                                    cadeau le jour J !</li>
+                                <li><span class="tag-new">[NEW]</span>
+                                    <strong>Motus : </strong>Une ligne d'accents
+                                    a été ajoutée pour améliorer l'expérience de
+                                    jeu et éviter les bugs liés aux caractères
+                                    accentués. (blocages dans la progression).
+                                    Une touche espace a également été ajoutée.
+                                    Les indices des positions des lettres que
+                                    vous avez bien placées seront maintenant
+                                    visibles.</li>
+                            </ul>
+                            <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                                —</h3>
+                            <ul>
+                                <li><span class="tag-fix">[FIX]</span>
+                                    <strong>Profil :</strong> Vous pouvez
+                                    maintenant voir tous les badges des
+                                    utilisateurs, vraiment cette fois-ci. Le bug
+                                    d'affichage les limitant à 3 a été
+                                    corrigé.</li>
+                                <li><span class="tag-fix">[FIX]</span>
+                                    <strong>Motus :</strong> La taille des cases
+                                    a été ajustée pour une meilleure
+                                    lisibilité.</li>
+                                <li><span class="tag-change">[CHANGE]</span>
+                                    <strong>Snake :</strong> La taille de
+                                    l'écran du jeu a été ajustée sur les écrans
+                                    plus grands.</li>
+                                <li><span class="tag-change">[CHANGE]</span>
+                                    <strong>Chat :</strong> Le formatage des
+                                    liens hypertextes envoyés dans le chat est
+                                    maintenant disponible ; Vous pouvez
+                                    désormais cliquer sur les liens pour les
+                                    ouvrir directement.</li>
+                                <li><span class="tag-change">[CHANGE]</span>
+                                    <strong>Economie :</strong> Le prix de
+                                    revive a été légèrement baissé en fonction
+                                    du jeu auquel vous jouez.</li>
+                                <li><span class="tag-change">[CHANGE]</span>
+                                    <strong>Règlement :</strong> Mise à jour du
+                                    règlement.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="patch-entry">
+                        <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                        <div class="patch-title">
+                            <span class="version">v2.1.5</span>
+                            <span class="date">30/01/2026</span>
+                        </div>
+                        <div class="patch-content">
+                            <h3><i class="fa-solid fa-star"></i> Nouveautés
+                                —</h3>
+                            <ul>
+                                <li><span class="tag-new">[NEW]</span>
+                                    <strong>Hall des Oubliés : </strong> Vous
+                                    pouvez désormais retrouver les joueurs
+                                    disparus dans le Hall des Oubliés. Cliquez
+                                    <a href="./hall-des-oublies.html"
+                                        title="Hall des Oubliés"
+                                        style="color: #00FF00;">ici</a> pour
+                                    consulter la page.</li>
+                                <li><span class="tag-ee">[EASTER
+                                        EGG]</span><strong>Easter Egg info :
+                                    </strong>L'Easter Egg sera disponible en
+                                    même temps que la mise à jour qui comportera
+                                    le PixelWar. Soyez à l'affût, celui-ci
+                                    risque d'être très complexe à trouver et à
+                                    déchiffrer... ;)</li>
+                            </ul>
+                            <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                                —</h3>
+                            <ul>
+                                <li><span class="tag-change">[FIX]</span>
+                                    <strong>Affichage quota & paliers :
+                                    </strong>Les bugs d'affichages concernants
+                                    le quota quotidien et les paliers des
+                                    médailles a été corrigé. Les valeurs affiché
+                                    sont désormais les bonnes.</li>
+                            </ul>
+                            <h3><i
+                                    class="fa-solid fa-arrow-right-arrow-left"></i>
+                                Retraits / Resets —</h3>
+                            <ul>
+                                <li><span class="tag-removed">[RESET]</span>
+                                    <strong>Médailles : </strong> Les médailles
+                                    ont été réinitialisées pour tous les
+                                    joueurs. (aucune incidence sur vos
+                                    clicks)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="patch-entry">
+                        <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                        <div class="patch-title">
+                            <span class="version">v2.1.4</span>
+                            <span class="date">27/01/2026 - 27/01/2026</span>
+                        </div>
+                        <div class="patch-content">
+                            <h3><i class="fa-solid fa-star"></i> Nouveautés
+                                —</h3>
+                            <ul>
+                                <li><span class="tag-new">[NEW]</span>
+                                    <strong>Médias : </strong>Les médias (video,
+                                    image, audio) sont désormais affichés dans
+                                    le Chat.</li>
+                                <li><span class="tag-new">[NEW]</span>
+                                    <strong>Motus :</strong> Les touches et le
+                                    support des "E" accents "é" et "è" ont été
+                                    ajoutés.</li>
+                                <li><span class="tag-new">[NEW]</span>
+                                    <strong>Suggestions :</strong> Vous pouvez
+                                    redonnez vos suggestions depuis le Site, le
+                                    système a été remis en ligne.</li>
+                            </ul>
+                            <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                                —</h3><ul>
+                                <li><span
+                                        class="tag-fix">[FIX]</span><strong>Jeux
+                                        & Pause :</strong> Le bug concernant
+                                    l'enregistrement du score après avoir fait
+                                    pause pendant une partie de Snake, Dino et
+                                    Flappy Bird a été définitivement fixé. Les
+                                    joueurs victimes receveront une
+                                    compensation.</li>
+                                <li><span
+                                        class="tag-change">[CHANGE]</span><strong>Chat
+                                        :</strong> Amélioration du système de
+                                    partage de fichiers + affichage des medias /
+                                    messages.</li>
+                                <li><span
+                                        class="tag-change">[CHANGE]</span><strong>
+                                        Patch notes :</strong> Légers
+                                    changements visuels et structurels.</li>
+                            </ul>
+                            <h3><i
+                                    class="fa-solid fa-arrow-right-arrow-left"></i>
+                                Retraits / Resets —</h3>
+                            <ul><li><span
+                                        class="tag-removed">[REMOVED]</span><strong>Mario
+                                        : </strong>L'onglet et le jeu Mario a
+                                    été supprimé de la page à la demande de Tom.
+                                    (Il a dit qu'il parlait en votre nom à tous
+                                    :D)</li></ul>
+                        </div>
+                    </div>
+
+                    <div class="patch-entry">
+                        <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                        <div class="patch-title">
+                            <span class="version">v2.1.2</span>
+                            <span class="date">25/01/2026</span>
+                        </div>
+                        <div class="patch-content">
+                            <h3><i class="fa-solid fa-star"></i> Nouveautés
+                                —</h3>
+                            <ul>
+                                <li><span class="tag-new">[NEW]</span>
+                                    <strong>Partage de fichiers :</strong> Vous
+                                    pouvez désormais partager des fichiers avec
+                                    d'autres utilisateurs directement via le
+                                    Chat.</li>
+                            </ul>
+                            <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                                —</h3><ul>
+                                <li><span
+                                        class="tag-fix">[FIX]</span><strong>Profil
+                                        :</strong> Le bug d'affichage des badges
+                                    a été corrigé. Les autres utilisateurs
+                                    peuvent maintenant voir tous vos badges et
+                                    non seulement ceux équippés depuis votre
+                                    profil.</li>
+                                <li>
+                                    <span
+                                        class="tag-change">[CHANGE]</span><strong>CPS
+                                        et Médailles :</strong> Les CPS auto ont
+                                    été ajustés et les palliers des médailles
+                                    ont été modifiés. (+)</li>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="patch-entry">
+                    <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                    <div class="patch-title">
+                        <span class="version">v2.1.1</span>
+                        <span class="date">21/01/2026</span>
+                    </div>
+                    <div class="patch-content">
+                        <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
+                        <ul>
+                            <li><span class="tag-new">[NEW]</span> <strong>Quota
+                                    :</strong>Vous pouvez désormais voir votre
+                                quota
+                                de gains quotidien. (depuis la sidebar /
+                                Navigation)</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                            —</h3><ul>
+                            <li>
+                                <span class="tag-fix">[FIX]</span><strong>Pause
+                                    :</strong> Le bug concernant la pause et
+                                l'enregistrement de score a été corrigé.</li>
                         </li>
-                        <li><span class="tag-fix">[FIX]</span><strong>Motus : </strong> La liste de mot a été vérifiée, plus de doublon ni de villes (capitales) dedans.</li>
+                        <li><span class="tag-fix">[FIX]</span><strong>Motus :
+                            </strong> La liste de mot a été vérifiée, plus de
+                            doublon ni de villes (capitales) dedans.</li>
                     </ul>
                     <h3><i
                             class="fa-solid fa-arrow-right-arrow-left"></i>
                         Retraits / Resets —</h3>
-                        <ul><li><span class="tag-removed">[RESET]</span><strong>Motus : </strong> Reset Motus général dû aux erreurs dans la liste de mots à la sortie de la MaJ des pays du monde.</li>
-                        <li><span class="tag-removed">[REMOVED]</span><strong>Paris Mash : </strong>Le système de paris sur le Mash game a été supprimé pour causes de bugs inpatchable. Les paris ne reviendront sûrement pas.</li>
-                        </ul>
+                    <ul><li><span
+                                class="tag-removed">[RESET]</span><strong>Motus
+                                : </strong> Reset Motus général dû aux erreurs
+                            dans la liste de mots à la sortie de la MaJ des pays
+                            du monde.</li>
+                        <li><span
+                                class="tag-removed">[REMOVED]</span><strong>Paris
+                                Mash : </strong>Le système de paris sur le Mash
+                            game a été supprimé pour causes de bugs inpatchable.
+                            Les paris ne reviendront sûrement pas.</li>
+                    </ul>
                 </div>
             </div>
             <div class="patch-entry">

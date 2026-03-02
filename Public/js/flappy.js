@@ -25,6 +25,7 @@ export function initFlappy(socket) {
   let gameOverScreen = false;
   let resumeScore = null;
   let revivesUsed = 0;
+  let availableReviveLives = 0;
   let paused = false;
   let countdown = 0;
   let frameCount = 0;
@@ -45,14 +46,32 @@ export function initFlappy(socket) {
   function resizeCanvas() {
     try {
       const ratio = window.devicePixelRatio || 1;
-      const rect = ui.canvas.getBoundingClientRect();
-      if (!rect.width) return;
+      const stage = document.getElementById("stage6");
+      const wrap = ui.canvas.closest(".flappy-wrap");
+      const wrapRect = wrap
+        ? wrap.getBoundingClientRect()
+        : ui.canvas.getBoundingClientRect();
+      if (!wrapRect.width) return;
 
-      const cssW = Math.max(1, Math.round(rect.width));
-      const cssH = Math.max(
-        1,
-        Math.round(rect.height || (rect.width * 9) / 16),
+      const availableW = Math.max(220, Math.round(wrapRect.width));
+      const stageRect = stage ? stage.getBoundingClientRect() : null;
+      const availableH = Math.max(
+        160,
+        Math.round(
+          (stageRect && stageRect.height
+            ? stageRect.height
+            : window.innerHeight) - 215,
+        ),
       );
+
+      const cssW = availableW;
+      const cssH = Math.max(
+        140,
+        Math.min(Math.round((cssW * 9) / 16), availableH),
+      );
+
+      ui.canvas.style.width = `${cssW}px`;
+      ui.canvas.style.height = `${cssH}px`;
 
       const displayWidth = Math.floor(cssW * ratio);
       const displayHeight = Math.floor(cssH * ratio);
@@ -86,6 +105,20 @@ export function initFlappy(socket) {
       _resizeTO = setTimeout(() => resizeCanvas(), 120);
     } catch (e) {}
   });
+  window.addEventListener("pde:section-activated", (e) => {
+    try {
+      const sectionId = e && e.detail ? e.detail.sectionId : null;
+      if (sectionId !== "stage6") return;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resizeCanvas();
+          if (!gameRunning && !gameOverScreen) {
+            drawStartScreen();
+          }
+        });
+      });
+    } catch {}
+  });
   try {
     window.addEventListener("pauseKey:changed", (e) => {
       const k = e?.detail?.key;
@@ -98,6 +131,115 @@ export function initFlappy(socket) {
   let myBest = 0;
   let globalBestScore = 0;
   let scoreAttente = null;
+
+  function normalizeLives(value) {
+    return Math.max(0, Math.floor(Number(value) || 0));
+  }
+
+  function requestReviveLives() {
+    try {
+      socket.emit("revive:getLives");
+    } catch {}
+  }
+
+  function computeRevivePrice() {
+    const multiplier = 150;
+    const escalation = 1 + revivesUsed * 0.75;
+    let price = Math.floor(score * multiplier * escalation);
+    price = Math.max(5000, Math.min(5000000, price));
+    return price;
+  }
+
+  function updateReviveOverlayContent() {
+    if (!ui.reviveOverlay || ui.reviveOverlay.style.display !== "block") return;
+    const remainingRevives = 3 - revivesUsed;
+    if (ui.reviveCount) ui.reviveCount.textContent = remainingRevives;
+
+    const hasShopLife = availableReviveLives > 0;
+    const price = computeRevivePrice();
+    let modeEl = ui.reviveOverlay.querySelector(".flappy-revive-mode");
+    if (!modeEl) {
+      modeEl = document.createElement("p");
+      modeEl.className = "flappy-revive-mode";
+      modeEl.style.color = "#fff";
+      modeEl.style.marginBottom = "10px";
+      modeEl.style.fontSize = "0.95rem";
+      const priceEl = ui.reviveOverlay.querySelector(".flappy-revive-price");
+      if (priceEl && priceEl.parentNode) {
+        priceEl.parentNode.insertBefore(modeEl, priceEl);
+      }
+    }
+    if (modeEl) {
+      modeEl.textContent = hasShopLife
+        ? "Choix: vie du shop ou paiement en monnaie"
+        : "Choix: paiement en monnaie";
+    }
+
+    let payBtnEl = ui.reviveOverlay.querySelector(".flappy-revive-pay-btn");
+    if (!payBtnEl) {
+      payBtnEl = document.createElement("button");
+      payBtnEl.className = "flappy-revive-pay-btn";
+      payBtnEl.style.display = "none";
+      payBtnEl.style.marginTop = "8px";
+      payBtnEl.style.padding = "8px 12px";
+      payBtnEl.style.cursor = "pointer";
+      payBtnEl.style.background = "transparent";
+      payBtnEl.style.border = "1px solid #fff";
+      payBtnEl.style.color = "#fff";
+      const cancelBtn = ui.reviveOverlay.querySelector(".flappy-cancel-btn");
+      if (cancelBtn && cancelBtn.parentNode) {
+        cancelBtn.parentNode.insertBefore(payBtnEl, cancelBtn);
+      }
+    }
+
+    if (ui.revivePrice) {
+      ui.revivePrice.textContent = hasShopLife
+        ? "0"
+        : price.toLocaleString("fr-FR");
+    }
+
+    if (ui.reviveBtn) {
+      ui.reviveBtn.innerHTML = hasShopLife
+        ? `Utiliser 1 vie (<span class="flappy-revive-count">${remainingRevives}</span> restants)`
+        : `Payer ${price
+            .toLocaleString("fr-FR")
+            .replace(
+              /\s/g,
+              "\u00a0",
+            )} monnaie (<span class="flappy-revive-count">${remainingRevives}</span> restants)`;
+      ui.reviveBtn.onclick = () => {
+        socket.emit("flappy:payToContinue", {
+          price,
+          mode: hasShopLife ? "life" : "pay",
+        });
+        toggleScrollLock(false);
+      };
+    }
+
+    if (payBtnEl) {
+      if (hasShopLife) {
+        payBtnEl.style.display = "block";
+        payBtnEl.disabled = false;
+        payBtnEl.style.opacity = "1";
+        payBtnEl.style.cursor = "pointer";
+        payBtnEl.textContent = `Payer ${price
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
+        payBtnEl.onclick = () => {
+          socket.emit("flappy:payToContinue", { price, mode: "pay" });
+          toggleScrollLock(false);
+        };
+      } else {
+        payBtnEl.style.display = "block";
+        payBtnEl.disabled = true;
+        payBtnEl.style.opacity = "0.6";
+        payBtnEl.style.cursor = "default";
+        payBtnEl.textContent = "Pas de vie disponible";
+        payBtnEl.onclick = null;
+      }
+    }
+  }
+
   socket.on("you:name", (name) => (myName = name));
   socket.on("flappy:leaderboard", (arr) => {
     if (!Array.isArray(arr) || !myName) return;
@@ -115,6 +257,11 @@ export function initFlappy(socket) {
       );
       scoreAttente = null;
     }
+  });
+
+  socket.on("revive:lives", ({ lives } = {}) => {
+    availableReviveLives = normalizeLives(lives);
+    updateReviveOverlayContent();
   });
 
   function updateScales() {
@@ -227,6 +374,27 @@ export function initFlappy(socket) {
     frameCount = 0;
     ui.startBtn.style.display = "none";
     if (ui.stopBtn) ui.stopBtn.style.display = "inline-block";
+  }
+
+  function pauseForStageNavigation() {
+    if (!gameRunning) return { running: false, pausedNow: false };
+    if (paused || countdown > 0) return { running: true, pausedNow: false };
+
+    paused = true;
+    try {
+      if (socket) {
+        socket.emit("flappy:score", { score, final: false });
+        scoreAttente = score;
+      }
+    } catch {}
+    return { running: true, pausedNow: true };
+  }
+
+  function resumeAfterNavCancel() {
+    if (paused && countdown === 0) {
+      countdown = 3;
+      frameCount = 0;
+    }
   }
 
   function clearToBlack() {
@@ -374,7 +542,7 @@ export function initFlappy(socket) {
     ui.startBtn.textContent = "Rejouer";
     if (ui.stopBtn) ui.stopBtn.style.display = "none";
     showGameOver();
-    if (socket) socket.emit("flappy:score", { score });
+    if (socket) socket.emit("flappy:score", { score, final: true });
     scoreAttente = score; // attendre confirmation serveur via leaderboard
   }
 
@@ -407,22 +575,8 @@ export function initFlappy(socket) {
       if (ui.reviveOverlay) {
         ui.reviveOverlay.style.display = "block";
         toggleScrollLock(true);
-        if (ui.reviveCount) ui.reviveCount.textContent = 3 - revivesUsed;
-
-        const multiplier = 150;
-        const escalation = 1 + revivesUsed * 0.75;
-        let price = Math.floor(score * multiplier * escalation);
-        price = Math.max(5000, Math.min(5000000, price));
-
-        if (ui.revivePrice)
-          ui.revivePrice.textContent = price.toLocaleString("fr-FR");
-
-        if (ui.reviveBtn) {
-          ui.reviveBtn.onclick = () => {
-            socket.emit("flappy:payToContinue", { price });
-            toggleScrollLock(false);
-          };
-        }
+        updateReviveOverlayContent();
+        requestReviveLives();
         if (ui.cancelBtn) {
           ui.cancelBtn.onclick = () => {
             ui.reviveOverlay.style.display = "none";
@@ -438,9 +592,12 @@ export function initFlappy(socket) {
     }
   }
 
-  socket.on("flappy:reviveSuccess", () => {
+  socket.on("flappy:reviveSuccess", ({ usedLife, remainingLives } = {}) => {
     gameRunning = true;
     revivesUsed++;
+    if (typeof remainingLives !== "undefined") {
+      availableReviveLives = normalizeLives(remainingLives);
+    }
     if (ui.reviveOverlay) {
       ui.reviveOverlay.style.display = "none";
       toggleScrollLock(false);
@@ -455,7 +612,11 @@ export function initFlappy(socket) {
 
     // Reprendre la boucle
     update();
-    showNotif("Partie continuée !");
+    showNotif(
+      usedLife
+        ? `Partie continuée ! (vie restante: ${availableReviveLives})`
+        : "Partie continuée !",
+    );
   });
 
   socket.on("flappy:reviveError", (msg) => {
@@ -538,7 +699,7 @@ export function initFlappy(socket) {
         paused = true;
         try {
           if (socket) {
-            socket.emit("flappy:score", { score });
+            socket.emit("flappy:score", { score, final: false });
             scoreAttente = score;
           }
         } catch {}
@@ -569,10 +730,25 @@ export function initFlappy(socket) {
     update();
   });
 
+  window.addEventListener("pde:stage-nav-guard", (e) => {
+    const detail = e && e.detail ? e.detail : null;
+    if (!detail || detail.stageId !== "stage6") return;
+
+    if (detail.action === "pause") {
+      const result = pauseForStageNavigation();
+      detail.running = !!result.running;
+      detail.pausedNow = !!result.pausedNow;
+    }
+
+    if (detail.action === "resume") {
+      resumeAfterNavCancel();
+    }
+  });
+
   ui.stopBtn?.addEventListener("click", () => {
     if (!gameRunning) return;
     const sent = score;
-    if (socket) socket.emit("flappy:score", { score: sent });
+    if (socket) socket.emit("flappy:score", { score: sent, final: true });
     // Réinitialiser l'état de la run sans relancer
     gameRunning = false;
     paused = false;

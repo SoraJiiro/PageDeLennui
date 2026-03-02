@@ -18,7 +18,6 @@ export function initBlackjack(socket, username) {
         <button id="bj-bet-confirm" class="btn">Miser</button>
       </div>
       <div id="bj-bet-max" style="font-size:0.8em; margin-top:5px; color:#aaa; text-align:center;"></div>
-      <div id="bj-cap-info" style="font-size:0.85em; margin-top:6px; color:#ccc; text-align:center;"></div>
     `;
   }
 
@@ -46,17 +45,19 @@ export function initBlackjack(socket, username) {
 
   let myPseudo = username;
   let gameState = null;
-  let currentScore = 0; // User wealth
+  let currentTokens = 0;
+  let prevDealerCards = [];
+  let prevHandCardCounts = {};
 
   function updateMaxBetUI() {
-    const maxBet = Math.max(0, Math.floor((currentScore || 0) * 0.5));
+    const maxBet = Math.max(0, Math.floor((currentTokens || 0) * 0.5));
     if (betInput) betInput.max = String(maxBet);
 
     const betMaxInfo = document.getElementById("bj-bet-max");
     if (betMaxInfo) {
       betMaxInfo.textContent = `Mise max : ${maxBet.toLocaleString(
         "fr-FR",
-      )} (50% de vos clicks)`;
+      )} (50% de vos tokens)`;
     }
 
     if (betInput && betInput.value !== "") {
@@ -67,36 +68,9 @@ export function initBlackjack(socket, username) {
 
   updateMaxBetUI();
 
-  socket.on("economy:profitCap", (capInfo) => {
-    const el = document.getElementById("bj-cap-info");
-    if (!el) return;
-    try {
-      const rem = Number(capInfo?.remaining || 0);
-      const cap = Number(capInfo?.cap || 0);
-      if (rem <= 0) {
-        el.textContent = `Quota de gains atteint aujourd'hui.`;
-        el.style.color = "#ff6666";
-      } else {
-        el.textContent = `Gains restants aujourd'hui : ${rem.toLocaleString("fr-FR")} / ${cap.toLocaleString("fr-FR")}`;
-        el.style.color = "#ccc";
-      }
-    } catch (e) {}
-  });
-
-  // Suivi du score
-  socket.on("clicker:you", (data) => {
-    currentScore = data.score;
+  socket.on("economy:wallet", (data) => {
+    currentTokens = Number(data?.tokens || 0);
     updateMaxBetUI();
-    try {
-      socket.emit("economy:getProfitCap");
-    } catch (e) {}
-  });
-  socket.on("clicker:update", (data) => {
-    currentScore = data.score;
-    updateMaxBetUI();
-    try {
-      socket.emit("economy:getProfitCap");
-    } catch (e) {}
   });
 
   // Listeners Rejoindre/Quitter
@@ -116,7 +90,7 @@ export function initBlackjack(socket, username) {
       if (e.target.value === "") return;
 
       const val = parseInt(e.target.value);
-      const max = Math.floor((currentScore || 0) * 0.5);
+      const max = Math.floor((currentTokens || 0) * 0.5);
 
       if (!isNaN(val) && val > max) {
         e.target.value = max;
@@ -194,7 +168,16 @@ export function initBlackjack(socket, username) {
     const currentPseudo = myPseudo || window.username;
 
     // --- Affichage Croupier ---
-    syncCards(dealerHandEl, state.dealerHand);
+    const dealerVisibleCards = Array.isArray(state.dealerHand)
+      ? state.dealerHand.map((card, index) => {
+          const shouldHide =
+            index === 1 && state.phase !== "dealer" && state.phase !== "payout";
+          if (shouldHide) return { value: "?" };
+          return card;
+        })
+      : [];
+    syncCards(dealerHandEl, dealerVisibleCards, prevDealerCards);
+    prevDealerCards = dealerVisibleCards.map((card) => ({ ...card }));
     if (dealerScoreEl) dealerScoreEl.textContent = state.dealerScore;
 
     // --- Mise à jour Message ---
@@ -214,7 +197,7 @@ export function initBlackjack(socket, username) {
         messageEl.style.color = "#aaa";
       } else if (state.phase === "betting") {
         messageEl.textContent =
-          "Faites vos jeux ! (Max 50% de vos clicks)" + queueMsg;
+          "Faites vos jeux ! (Max 50% de vos tokens)" + queueMsg;
         messageEl.style.color = "gold";
       } else if (state.phase === "playing") {
         const currentPlayer = state.joueurs[state.currentPlayerIndex];
@@ -268,16 +251,30 @@ export function initBlackjack(socket, username) {
 
     // --- Affichage Joueurs ---
     playersAreaEl.innerHTML = "";
+    const nextHandCardCounts = {};
     state.joueurs.forEach((player) => {
-      const seat = createSeat(player, state, currentPseudo);
+      const seat = createSeat(
+        player,
+        state,
+        currentPseudo,
+        prevHandCardCounts,
+        nextHandCardCounts,
+      );
       playersAreaEl.appendChild(seat);
     });
+    prevHandCardCounts = nextHandCardCounts;
 
     // Mise à jour visibilité contrôles
     updateControls(state);
   }
 
-  function createSeat(player, state, currentPseudo) {
+  function createSeat(
+    player,
+    state,
+    currentPseudo,
+    previousCounts,
+    nextCounts,
+  ) {
     const isCurrentPlayer =
       state.phase === "playing" &&
       state.joueurs[state.currentPlayerIndex]?.pseudo === player.pseudo;
@@ -345,6 +342,7 @@ export function initBlackjack(socket, username) {
       const isSingleHand = player.hands.length === 1;
 
       player.hands.forEach((hand, idx) => {
+        const handKey = `${player.pseudo}:${idx}`;
         const isHandActive = isCurrentPlayer && player.activeHandIndex === idx;
         const handDiv = document.createElement("div");
         handDiv.className = "player-hand-container";
@@ -395,7 +393,16 @@ export function initBlackjack(socket, username) {
         cardsDiv.style.display = "flex";
         cardsDiv.style.minHeight = "60px";
 
-        hand.cards.forEach((c) => cardsDiv.appendChild(createCardEl(c)));
+        const prevCount = Number(previousCounts[handKey] || 0);
+        hand.cards.forEach((c, cardIdx) => {
+          const cardEl = createCardEl(c);
+          if (cardIdx >= prevCount) {
+            cardEl.classList.add("bj-deal-in");
+            cardEl.style.animationDelay = `${cardIdx * 80}ms`;
+          }
+          cardsDiv.appendChild(cardEl);
+        });
+        nextCounts[handKey] = hand.cards.length;
         handDiv.appendChild(cardsDiv);
 
         // Status Overlay specific to hand
@@ -425,9 +432,21 @@ export function initBlackjack(socket, username) {
   }
 
   // Helper sync inutilisé ici car je rebuild tout (plus simple pour multi-mains dynamique)
-  function syncCards(container, cards) {
+  function syncCards(container, cards, previousCards = []) {
     container.innerHTML = "";
-    cards.forEach((c) => container.appendChild(createCardEl(c)));
+    cards.forEach((c, index) => {
+      const el = createCardEl(c);
+      const wasHidden =
+        previousCards[index] && previousCards[index].value === "?";
+      const isNowVisible = c && c.value !== "?";
+      if (wasHidden && isNowVisible) {
+        el.classList.add("bj-reveal");
+      } else {
+        el.classList.add("bj-deal-in");
+        el.style.animationDelay = `${index * 80}ms`;
+      }
+      container.appendChild(el);
+    });
   }
 
   function updateControls(state) {

@@ -5,7 +5,7 @@ const DEFAULT_ITEMS = {
     id: "life_1",
     name: "Vie x1",
     emoji: "\u2764\uFE0F",
-    price: 12500,
+    price: 18000,
     available: true,
     type: "revive_life",
     amount: 1,
@@ -15,7 +15,7 @@ const DEFAULT_ITEMS = {
     id: "life_2",
     name: "Vie x2",
     emoji: "\u2764\uFE0F\u2764\uFE0F",
-    price: 23000,
+    price: 34000,
     available: true,
     type: "revive_life",
     amount: 2,
@@ -25,7 +25,7 @@ const DEFAULT_ITEMS = {
     id: "life_3",
     name: "Vie x3",
     emoji: "\u2764\uFE0F\u2764\uFE0F\u2764\uFE0F",
-    price: 33000,
+    price: 50000,
     available: true,
     type: "revive_life",
     amount: 3,
@@ -35,7 +35,7 @@ const DEFAULT_ITEMS = {
     id: "pixel_1",
     name: "Pixel x1",
     emoji: "\uD83D\uDFE9",
-    price: 2500,
+    price: 250,
     available: true,
     type: "pixelwar",
     upgrade: "pixel_1",
@@ -45,7 +45,7 @@ const DEFAULT_ITEMS = {
     id: "pixel_15",
     name: "Pixels x15",
     emoji: "\uD83D\uDFE9",
-    price: 30000,
+    price: 3000,
     available: true,
     type: "pixelwar",
     upgrade: "pixel_15",
@@ -55,13 +55,29 @@ const DEFAULT_ITEMS = {
     id: "storage_10",
     name: "Stockage +10",
     emoji: "\uD83D\uDCE6",
-    price: 10500,
+    price: 8000,
     available: true,
     type: "pixelwar",
     upgrade: "storage_10",
     desc: "Augmente la capacite Pixel War de 10.",
   },
+  color_custom: {
+    id: "color_custom",
+    name: "Couleur Personnalisée",
+    emoji: "\uD83C\uDFA8",
+    price: 3000,
+    available: true,
+    type: "pixelwar",
+    upgrade: "color_custom",
+    desc: "Crée et débloque une couleur Pixel War personnalisée.",
+  },
 };
+
+const RETIRED_ITEM_IDS = [
+  "color_pack_neon",
+  "color_pack_pastel",
+  "color_pack_nature",
+];
 
 function ensureShopCatalog() {
   if (
@@ -79,8 +95,25 @@ function ensureShopCatalog() {
     if (!FileService.data.shopCatalog.items[item.id]) {
       FileService.data.shopCatalog.items[item.id] = item;
       changed = true;
+      return;
+    }
+
+    if (item.type === "revive_life" || item.type === "pixelwar") {
+      const existing = FileService.data.shopCatalog.items[item.id];
+      if ((Number(existing.price) || 0) !== item.price) {
+        existing.price = item.price;
+        changed = true;
+      }
     }
   });
+
+  RETIRED_ITEM_IDS.forEach((id) => {
+    if (FileService.data.shopCatalog.items[id]) {
+      delete FileService.data.shopCatalog.items[id];
+      changed = true;
+    }
+  });
+
   if (changed) {
     FileService.save("shopCatalog", FileService.data.shopCatalog);
   }

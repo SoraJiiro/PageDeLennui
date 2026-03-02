@@ -1,0 +1,191 @@
+#stage18 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+}
+
+.slots-card {
+  width: min(640px, 95vw);
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.slots-header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.slots-header h2 {
+  margin: 0;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  padding: 5px 15px;
+  font-size: 1.5rem;
+}
+
+.slots-reels-wrap {
+  min-height: 150px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--primary-color);
+  padding: 14px;
+}
+
+.slots-reels {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.slots-reel {
+  width: min(110px, 28vw);
+  height: 96px;
+  border: 1px solid var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.slots-reel::before,
+.slots-reel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 18px;
+  pointer-events: none;
+}
+
+.slots-reel::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg-color), transparent);
+}
+
+.slots-reel::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg-color), transparent);
+}
+
+.slots-reel-symbol {
+  font-size: clamp(2.2rem, 5vw, 3rem);
+  line-height: 1;
+}
+
+.slots-reel.is-spinning .slots-reel-symbol {
+  animation: slots-flicker 0.08s linear infinite;
+}
+
+.slots-reel.is-stop-bounce .slots-reel-symbol {
+  animation: slots-stop-bounce 0.3s ease-out;
+}
+
+@keyframes slots-flicker {
+  0% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes slots-stop-bounce {
+  0% {
+    transform: translateY(-10px);
+  }
+  65% {
+    transform: translateY(4px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.slots-controls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.slots-input-group {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.slots-input {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 10px;
+  width: 100%;
+  max-width: 300px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.slots-spin-btn {
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+  min-height: 46px;
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.slots-spin-btn:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.slots-result {
+  min-height: 1.4rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.slots-result.win {
+  color: var(--primary-color);
+  text-shadow: 0 0 10px var(--primary-color);
+}
+
+.slots-result.lose {
+  color: var(--red-color);
+  text-shadow: 0 0 10px var(--red-color);
+}
+
+.slots-paytable {
+  width: 100%;
+  border: 1px solid var(--primary-color);
+  padding: 10px 12px;
+}
+
+.slots-paytable h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.slots-paytable ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+  font-size: 0.95rem;
+}

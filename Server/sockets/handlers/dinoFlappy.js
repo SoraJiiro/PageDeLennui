@@ -9,6 +9,47 @@ function registerDinoFlappyHandlers({
   colors,
 }) {
   const { updateReviveContextFromScore } = require("../../services/economy");
+  const { addMoney } = require("../../services/wallet");
+  const { applyAutoBadges } = require("../../services/badgesAuto");
+
+  function rewardFinalRun(game, score) {
+    const s = Math.max(0, Math.floor(Number(score) || 0));
+    if (s <= 0) return;
+
+    let gain = 0;
+    if (game === "dino") {
+      gain = Math.floor(s / 1000) * 7;
+    } else if (game === "flappy") {
+      gain = Math.floor(s / 10) * 5;
+    }
+
+    if (gain <= 0) return;
+    const wallet = addMoney(
+      FileService,
+      pseudo,
+      gain,
+      FileService.data.clicks[pseudo] || 0,
+    );
+    io.to("user:" + pseudo).emit("economy:wallet", wallet);
+    io.to("user:" + pseudo).emit("economy:gameMoney", {
+      game,
+      gained: gain,
+      total: gain,
+      final: true,
+      score: s,
+    });
+    try {
+      FileService.appendLog({
+        type: "GAME_MONEY_REWARD",
+        pseudo,
+        game,
+        gained: gain,
+        total: gain,
+        score: s,
+        at: new Date().toISOString(),
+      });
+    } catch {}
+  }
 
   function setRunnerProgress(game, score) {
     const s = Math.floor(Number(score) || 0);
@@ -49,7 +90,7 @@ function registerDinoFlappyHandlers({
   socket.on("flappy:resumeConsumed", () => consumeRunnerResume("flappy"));
 
   // ------- Dino -------
-  socket.on("dino:score", ({ score }) => {
+  socket.on("dino:score", ({ score, final } = {}) => {
     const s = Number(score);
     if (isNaN(s) || s < 0) return;
 
@@ -59,6 +100,9 @@ function registerDinoFlappyHandlers({
     if (s > current) {
       FileService.data.dinoScores[pseudo] = s;
       FileService.save("dinoScores", FileService.data.dinoScores);
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
       console.log(
         withGame(
           `\n🦖 Nouveau score Dino pour [${colors.orange}${pseudo}${colors.blue}] -> ${s}\n`,
@@ -70,6 +114,9 @@ function registerDinoFlappyHandlers({
         `${pseudo} a fait un nouveau score de ${s} à Dino !`,
         true,
       );
+    }
+    if (final === true) {
+      rewardFinalRun("dino", s);
     }
     leaderboardManager.broadcastDinoLB(io);
   });
@@ -88,7 +135,7 @@ function registerDinoFlappyHandlers({
   });
 
   // ------- Flappy -------
-  socket.on("flappy:score", ({ score }) => {
+  socket.on("flappy:score", ({ score, final } = {}) => {
     const s = Number(score);
     if (isNaN(s) || s < 0) return;
 
@@ -98,6 +145,9 @@ function registerDinoFlappyHandlers({
     if (s > current) {
       FileService.data.flappyScores[pseudo] = s;
       FileService.save("flappyScores", FileService.data.flappyScores);
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
       console.log(
         withGame(
           `\n🐤 Nouveau score Flappy pour [${colors.orange}${pseudo}${colors.pink}] -> ${s}\n`,
@@ -109,6 +159,9 @@ function registerDinoFlappyHandlers({
         `${pseudo} a fait un nouveau score de ${s} à Flappy !`,
         true,
       );
+    }
+    if (final === true) {
+      rewardFinalRun("flappy", s);
     }
     leaderboardManager.broadcastFlappyLB(io);
   });

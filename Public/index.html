@@ -17,6 +17,7 @@
 
         <link rel="stylesheet" type="text/css" href="css/common.css" />
         <link rel="stylesheet" type="text/css" href="css/ruleStage.css">
+        <link rel="stylesheet" type="text/css" href="css/hub.css" />
         <link rel="stylesheet" type="text/css" href="css/stage1.css" />
         <link rel="stylesheet" type="text/css" href="css/stage2.css" />
         <link rel="stylesheet" type="text/css" href="css/stage3.css" />
@@ -33,6 +34,10 @@
         <link rel="stylesheet" type="text/css" href="css/stage14.css" />
         <link rel="stylesheet" type="text/css" href="css/stage15.css" />
         <link rel="stylesheet" type="text/css" href="css/stage16.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage17.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage18.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage19.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage20.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -58,6 +63,15 @@
             title="Ouvrir le menu">
             <i class="fa-solid fa-bars"></i>
         </button>
+        <button id="stage-nav-up" class="stage-nav-arrow"
+            title="Stage précédent" aria-label="Stage précédent"
+            type="button">
+            <i class="fa-solid fa-chevron-up"></i>
+        </button>
+        <button id="stage-nav-down" class="stage-nav-arrow"
+            title="Stage suivant" aria-label="Stage suivant" type="button">
+            <i class="fa-solid fa-chevron-down"></i>
+        </button>
 
         <nav id="sidebar" class="sidebar">
             <div class="sidebar-header">
@@ -66,62 +80,61 @@
                     class="sidebar-close">&times;</button>
             </div>
             <div class="sidebar-content">
+                <pre id="periodic-msg">Magic Squares !</pre>
                 <div class="sidebar-section">
                     <h3 class="sb-username"></h3>
                     <h3 class="money"></h3>
-                    <h3 id="sb-cap-info"></h3>
                     <h3><i class="fa-solid fa-gamepad"></i> Jeux</h3>
                     <ul>
-                        <li><button class="nav-btn sec1">Clicker</button></li>
-                        <li><button class="nav-btn sec2">Dino</button></li>
-                        <li><button class="nav-btn sec5">UNO</button></li>
-                        <li><button class="nav-btn sec6">Flappy
-                                Bird</button></li>
-
-                        <li><button class="nav-btn sec8">Puissance
-                                4</button></li>
-                        <li><button class="nav-btn sec9">Block
-                                Blast</button></li>
-                        <li><button class="nav-btn sec10">Snake</button></li>
-                        <li><button class="nav-btn sec11">Motus</button></li>
-                        <li><button class="nav-btn sec12">2048</button></li>
-                        <li><button class="nav-btn sec13">Coin
-                                Flip</button></li>
-                        <li><button
-                                class="nav-btn sec14">Blackjack</button></li>
-                        <li><button class="nav-btn sec15">Mash</button></li>
-                        <li><button class="nav-btn sec16">Pixel
-                                War</button></li>
-
+                        <li><button class="nav-btn secHub">Hub</button></li>
                     </ul>
                 </div>
 
                 <div class="sidebar-section">
                     <h3><i class="fa-solid fa-users"></i> Communauté</h3>
                     <ul>
-                        <li><a href="#stage3"
-                                class="nav-link">Chat</a></li>
-                        <li><a href="#stage4"
-                                class="nav-link">Classements</a></li>
-                        <li><a href="sondages.html"
-                                class="nav-link">Sondages</a></li>
-                        <li><a href="hall-des-oublies.html"
-                                class="nav-link">Hall des Oubliés</a></li>
-                        <li><a href="suggestions.html"
-                                class="nav-link">Suggestions</a></li>
-                        <li><a href="shop.html" class="nav-link">Shop</a></li>
-                        <li><a href="pz2.html"
-                                class="nav-link">EE Tracker</a></li>
-                        <li><a href="reglement.html"
-                                class="nav-link">Règlement & Infos</a></li>
-                        <li><a href="patch_notes.html"
-                                class="nav-link">Patch Notes</a></li>
-                        <li><a href="annonces.html"
-                                class="nav-link">Annonces</a></li>
-                        <li><a href="dons.html"
-                                class="nav-link">Faire un Don</a></li>
-                        <li><a href="badges.html"
-                                class="nav-link">Badges</a></li>
+                        <li><button class="nav-btn sec3">Chat</button></li>
+                        <li><button
+                                class="nav-btn sec4">Classements</button></li>
+                        <li><button class="nav-btn sec20">ChatGPT</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="sondages.html"
+                                data-external-title="Sondages">Sondages</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="hall-des-oublies.html"
+                                data-external-title="Hall des Oubliés">Hall des
+                                Oubliés</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="suggestions.html"
+                                data-external-title="Suggestions">Suggestions</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="shop.html"
+                                data-external-title="Shop">Shop</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="conversion.html"
+                                data-external-title="Conversion">Conversion</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="pz2.html"
+                                data-external-title="EE Tracker">EE
+                                Tracker</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="reglement.html"
+                                data-external-title="Règlement & Infos">Règlement
+                                & Infos</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="patch_notes.html"
+                                data-external-title="Patch Notes">Patch
+                                Notes</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="annonces.html"
+                                data-external-title="Annonces">Annonces</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="dons.html"
+                                data-external-title="Faire un Don">Faire un
+                                Don</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="badges.html"
+                                data-external-title="Badges">Badges</button></li>
                     </ul>
                 </div>
 
@@ -168,12 +181,16 @@
 
                         <hr>
 
-                        <a href="demande-tag.html" class="nav-link"
+                        <button class="nav-link ext-btn"
+                            data-external-url="demande-tag.html"
+                            data-external-title="Demander un Tag"
                             style="text-align:center; margin-top:5px; font-size:0.9rem;width:100%;  cursor:pointer;">Demander
-                            un Tag</a>
-                        <a href="profil.html" class="nav-link"
+                            un Tag</button>
+                        <button class="nav-link ext-btn"
+                            data-external-url="profil.html"
+                            data-external-title="Mon profil"
                             style="text-align:center; margin-top:5px; font-size:0.9rem; width:100%;  cursor:pointer;">Mon
-                            profil</a>
+                            profil</button>
                         <button id="btnRequestPasswordChange" class="nav-link"
                             style="text-align:center; margin-top:5px; font-size:0.9rem; width:100%;  cursor:pointer;">Changer
                             Mot de passe</button>
@@ -195,7 +212,7 @@
 
                 <div class="rules-body">
                     <h3 class="rules-section-title"><i
-                            class="fa-solid fa-circle-info"></i> Commun</h3>
+                            class="fa-solid fa-circle-info"></i> Général</h3>
 
                     <div class="rule-item">
                         <i class="fa fa-info-circle"></i>
@@ -315,6 +332,35 @@
                     </div>
 
                     <h3 class="rules-section-title"><i
+                            class="fa-solid fa-coins"></i> Système éco</h3>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Farming : accumulez des <u>clicks</u> en jouant /
+                            interagissant, puis convertissez-les en
+                            <u>monnaie</u> (5 clicks = 1 monnaie). Vous pouvez
+                            utiliser la monnaie pour payer des services sur le
+                            site ou la convertir en <u>tokens</u> pour les jeux
+                            casino.</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Taux de conversion : <br>• 5 clicks = 1 monnaie<br>•
+                            50 monnaie = 1 token<br>• 1 token = 50 monnaie
+                            (reconversion possible)</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Limite quotidienne : conversion monnaie → tokens
+                            limitée à <strong>750 tokens</strong> par jour
+                            (équivalent <strong>37 500</strong> monnaie). Les
+                            conversions minimales sont 5 clicks → 1 monnaie et
+                            50 monnaie → 1 token.</p>
+                    </div>
+
+                    <h3 class="rules-section-title"><i
                             class="fa-solid fa-gamepad"></i> Jeux</h3>
 
                     <div class="rule-item">
@@ -344,6 +390,24 @@
                         <p>Toute tentative de <u>TRICHE</u> entraînera un
                             bannissement indéterminé et votre compte sera marqué
                             comme <u>TRICHEUR</u>.</p>
+                    </div>
+
+                    <h4 style="margin-top:12px;">Jeux — Charte de gains</h4>
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Les jeux peuvent attribuer des gains en
+                            <u>monnaie</u> et/ou en <u>tokens</u> selon les
+                            événements et performances. Les récompenses exactes
+                            dépendent du jeu et des règles propres à chaque jeu
+                            (voir l'interface du jeu pour le détail).</p>
+                    </div>
+                    <div class="rule-item">
+                        <i class="fa fa-warning"></i>
+                        <p>Les gains distribués dans les jeux respectent le
+                            principe suivant : pas de gains pour les
+                            comportements frauduleux (macros, exploits...). Les
+                            admins peuvent ajuster/annuler des gains en cas
+                            d'abus.</p>
                     </div>
 
                     <h3 class="rules-section-title"><i
@@ -398,15 +462,111 @@
             }
         </script>
 
-        <section id="stage1">
-            <center style="transform: translateY(-30px);"><pre
-                    id="periodic-msg">Magic Squares !</pre>
-                <br><a href="patch_notes.html"><button class="temp-btn"> > PATCH
-                        NOTES < </button></a></center>
-            <h1 class="display" id="main-clock" style="cursor: default;"></h1>
+        <section id="hubStage" class="hub-stage">
+            <div class="hub-shell">
+                <header class="hub-header">
+                    <h1>P(DE) Hub</h1>
+                    <div id="hub-site-money-average"
+                        class="hub-site-money-average">
+                        Avg monnaie: ...
+                    </div>
+                </header>
 
-            <div class="clock-visuelle-wrap">
-                <div class="clock">
+                <div class="hub-grid" aria-label="Hub de navigation PDE">
+                    <button class="hub-card sec1" data-game="Clicker"
+                        data-emoji="🖱️"
+                        type="button"><img class="hub-card-img"
+                            src="imgs/defaultGame.svg" alt
+                            aria-hidden="true"><span
+                            class="hub-card-label">Clicker</span></button>
+                    <button class="hub-card sec2" data-game="Dino"
+                        data-emoji="🦖" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Dino</span></button>
+                    <button class="hub-card sec5" data-game="UNO"
+                        data-emoji="🃏" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">UNO</span></button>
+                    <button class="hub-card sec6" data-game="Flappy Bird"
+                        data-emoji="🐦" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Flappy
+                            Bird</span></button>
+                    <button class="hub-card sec8" data-game="Puissance 4"
+                        data-emoji="🔴" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Puissance
+                            4</span></button>
+                    <button class="hub-card sec9" data-game="Block Blast"
+                        data-emoji="🧱" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Block
+                            Blast</span></button>
+                    <button class="hub-card sec10" data-game="Snake"
+                        data-emoji="🐍"
+                        type="button"><img class="hub-card-img"
+                            src="imgs/defaultGame.svg" alt
+                            aria-hidden="true"><span
+                            class="hub-card-label">Snake</span></button>
+                    <button class="hub-card sec11" data-game="Motus"
+                        data-emoji="🔠"
+                        type="button"><img class="hub-card-img"
+                            src="imgs/defaultGame.svg" alt
+                            aria-hidden="true"><span
+                            class="hub-card-label">Motus</span></button>
+                    <button class="hub-card sec12" data-game="2048"
+                        data-emoji="2️⃣"
+                        type="button"><img class="hub-card-img"
+                            src="imgs/defaultGame.svg" alt
+                            aria-hidden="true"><span
+                            class="hub-card-label">2048</span></button>
+                    <button class="hub-card sec13" data-game="Coin Flip"
+                        data-emoji="🪙" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Coin
+                            Flip</span></button>
+                    <button class="hub-card sec14" data-game="Blackjack"
+                        data-emoji="♠️"
+                        type="button"><img class="hub-card-img"
+                            src="imgs/defaultGame.svg" alt
+                            aria-hidden="true"><span
+                            class="hub-card-label">Blackjack</span></button>
+                    <button class="hub-card sec15" data-game="Mash"
+                        data-emoji="⌨️" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Mash</span></button>
+                    <button class="hub-card sec16" data-game="Pixel War"
+                        data-emoji="🟩" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Pixel
+                            War</span></button>
+                    <button class="hub-card sec17" data-game="Roulette"
+                        data-emoji="🎡" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Roulette</span></button>
+                    <button class="hub-card sec18" data-game="Slots"
+                        data-emoji="🎰" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Slots</span></button>
+                    <button class="hub-card sec19" data-game="Sudoku"
+                        data-emoji="🔢" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Sudoku</span></button>
+                </div>
+            </div>
+            <div class="hub-mini-clock-wrap" aria-hidden="true">
+                <div class="clock hub-mini-clock">
                     <div class="number" data-n="1">1</div>
                     <div class="number" data-n="2">2</div>
                     <div class="number" data-n="3">3</div>
@@ -420,12 +580,17 @@
                     <div class="number" data-n="11">11</div>
                     <div class="number" data-n="12">12</div>
 
-                    <div class="hand hour" id="hour"></div>
-                    <div class="hand minute" id="minute"></div>
-                    <div class="hand second" id="second"></div>
+                    <div class="hand hour"></div>
+                    <div class="hand minute"></div>
+                    <div class="hand second"></div>
                     <div class="center"></div>
                 </div>
             </div>
+        </section>
+
+        <section id="stage1">
+            <h1 class="display" id="main-clock"
+                style="cursor: default; display: none;"></h1>
 
             <h2 id="your-score" style="visibility: hidden;"></h2>
             <div class="zone-wrap">
@@ -464,6 +629,11 @@
             <button class="regen-colors-btn">
                 Régénérer les couleurs <br> (1M Clicks)
             </button>
+
+            <div class="clicker-upgrades" id="clicker-upgrades">
+                <h3>Upgrades Clicker (Monnaie)</h3>
+                <div id="clicker-upgrade-list"></div>
+            </div>
         </section>
 
         <section id="stage2">
@@ -488,9 +658,6 @@
                         OVER</h3>
                     <p style="color: #fff; margin-bottom: 15px;">Continuer la
                         partie ?</p>
-                    <p class="dino-revive-price"
-                        style="color: #fff; margin-bottom: 15px; font-weight: bold;">Coût:
-                        <span class="dino-cost">0</span> clicks</p>
                     <button class="dino-revive-btn">Payer
                         & Continuer <br>(<span
                             class="dino-revive-count">3</span>
@@ -538,7 +705,7 @@
         <section id="stage4">
 
             <div class="leaderboard-buttons">
-                <button data-board="clicker">Clicker</button>
+                <button data-board="economie">Économie</button>
                 <button data-board="dino">Dino</button>
                 <button data-board="flappy">Flappy Bird</button>
                 <button data-board="uno">UNO</button>
@@ -546,29 +713,31 @@
                 <button data-board="p4">Puissance 4</button>
                 <button data-board="blockblast">Block Blast</button>
                 <button data-board="snake">Snake</button>
-                <button data-board="motus">Motus</button>
                 <button data-board="mash">Mash</button>
                 <button data-board="2048">2048</button>
                 <button data-board="blackjack">Blackjack</button>
                 <button data-board="coinflip">Coin Flip</button>
+                <button data-board="roulette">Roulette</button>
+                <button data-board="slots">Slots</button>
+                <button data-board="sudoku">Sudoku</button>
                 <button data-board="pixelwar">PixelWar</button>
             </div>
 
             <center>
                 <p class="info-leaderboard">Le premier du Leaderboard Dino,
-                    Flappy Bird, Snake, Motus et 2048 à
+                    Flappy Bird, Snake et 2048 à
                     la fin de chaque session obtiendra <mark
-                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block; text-decoration: underline; text-decoration-color: #000; text-decoration-thickness: 1.5px; text-underline-offset: 3px;">2500</mark>
-                    Clicks
+                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block; text-decoration: underline; text-decoration-color: #000; text-decoration-thickness: 1.5px; text-underline-offset: 3px;">500</mark>
+                    Monnaie
                     !</p>
             </center>
 
             <!--LEADERBOARD CLICKER-->
             <div class="leaderboard-card">
-                <div class="leaderboard-header"><h2>Clicker
+                <div class="leaderboard-header"><h2>Economy
                         Leaderboard.exe</h2></div>
-                <table class="board" id="clicker-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Clicks</th></tr></thead>
+                <table class="board" id="economie-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Clicks</th><th>Monnaie</th><th>Tokens</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -631,16 +800,6 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <!-- LEADERBOARD MOTUS -->
-            <div class="leaderboard-card">
-                <div class="leaderboard-header">
-                    <h2>Motus Leaderboard.exe</h2>
-                </div>
-                <table class="board" id="motus-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Devinés</th><th>Essais</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
             <!-- LEADERBOARD 2048 -->
             <div class="leaderboard-card">
                 <div class="leaderboard-header">
@@ -682,6 +841,41 @@
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>W
                                 / L</th><th>Max Bet</th><th>Max
                                 Loss</th><th>All-ins</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD ROULETTE -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Roulette Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="roulette-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>W
+                                / L</th><th>Max Bet</th><th>Max
+                                Win</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD SLOTS -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Slots Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="slots-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>W
+                                / L</th><th>Max Bet</th><th>Max
+                                Win</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD SUDOKU -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Sudoku Leaderboard.exe</h2>
+                </div>
+                <table class="board" id="sudoku-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Grilles
+                                complétées</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -769,9 +963,6 @@
                         OVER</h3>
                     <p style="color: #fff; margin-bottom: 15px;">Continuer la
                         partie ?</p>
-                    <p class="flappy-revive-price"
-                        style="color: #fff; margin-bottom: 15px; font-weight: bold;">Coût:
-                        <span class="flappy-cost">0</span> clicks</p>
                     <button class="flappy-revive-btn">Payer
                         & Continuer <br>(<span
                             class="flappy-revive-count">3</span>
@@ -841,9 +1032,6 @@
                 <div class="blockblast-revive-section"
                     style="display: none; margin: 15px 0; padding: 10px; border: 1px solid var(--primary-color);">
                     <p style="margin: 5px 0;">Continuer la partie ?</p>
-                    <p class="blockblast-revive-price"
-                        style="margin: 5px 0; font-weight: bold;">Coût: <span
-                            class="revive-cost">0</span> clicks</p>
                     <button class="blockblast-revive-btn">Payer & Continuer
                         <br>(<span
                             class="revive-count">3</span> restants)</button>
@@ -875,9 +1063,6 @@
                         OVER</h3>
                     <p style="color: #fff; margin-bottom: 15px;">Continuer la
                         partie ?</p>
-                    <p class="snake-revive-price"
-                        style="color: #fff; margin-bottom: 15px; font-weight: bold;">Coût:
-                        <span class="snake-cost">0</span> clicks</p>
                     <button class="snake-revive-btn">Payer
                         & Continuer <br>(<span
                             class="snake-revive-count">3</span>
@@ -937,7 +1122,7 @@
         <section id="stage13">
             <div class="coinflip-card">
                 <div class="coinflip-header">
-                    <h2>CoinFlip.exe</h2>
+                    <h2>CoinFlip.exe (Tokens)</h2>
                 </div>
 
                 <div class="coin-container">
@@ -964,10 +1149,6 @@
                             min="1">
                     </div>
                     <div id="cf-bet-max" class="bet-max-info"></div>
-                    <div id="cf-cap-info" class="bet-max-info"
-                        style="margin-top:6px; font-size:0.9em; color:#ccc;"></div>
-                    <div id="cf-cap-info" class="bet-cap-info"
-                        style="font-size:0.85em; color:#ccc; text-align:center; margin-top:6px;"></div>
                     <div class="bet-buttons">
                         <button id="cf-btn-heads"
                             class="bet-btn btn-heads">FACE</button>
@@ -1017,6 +1198,7 @@
                 </div>
             </div>
         </section>
+
         <section id="stage15">
             <div class="mash-card">
                 <span id="mash-spec-count"
@@ -1131,6 +1313,107 @@
                     <canvas id="grid-canvas" class="game"
                         style="position:absolute; top:0; left:0; pointer-events:none;"></canvas>
                     <div id="pixel-info-modal" class="pixel-info-modal"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stage17">
+            <div class="roulette-card">
+                <div class="roulette-header"><h2>Roulette.exe
+                        (Tokens)</h2></div>
+                <div class="roulette-scene">
+                    <div class="roulette-pointer"></div>
+                    <div class="roulette-wheel-wrap">
+                        <canvas id="roulette-wheel" width="360"
+                            height="360"></canvas>
+                        <div id="roulette-ball" class="roulette-ball"></div>
+                    </div>
+                    <div id="roulette-last" class="roulette-last">Dernier:
+                        --</div>
+                </div>
+                <div class="roulette-controls">
+                    <div class="roulette-input-group">
+                        <input type="number" id="roulette-bet-amount"
+                            class="roulette-input" placeholder="Mise" min="1">
+                    </div>
+                    <div class="roulette-buttons">
+                        <button id="roulette-red"
+                            class="roulette-btn roulette-btn-red">Rouge</button>
+                        <button id="roulette-black"
+                            class="roulette-btn roulette-btn-black">Noir</button>
+                        <button id="roulette-green"
+                            class="roulette-btn roulette-btn-green">Vert
+                            x14</button>
+                    </div>
+                    <div id="roulette-result" class="roulette-result"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stage18">
+            <div class="slots-card">
+                <div class="slots-header"><h2>Slots.exe (Tokens)</h2></div>
+                <div class="slots-reels-wrap">
+                    <div id="slots-reels" class="slots-reels">
+                        <div class="slots-reel"><span
+                                class="slots-reel-symbol">🍒</span></div>
+                        <div class="slots-reel"><span
+                                class="slots-reel-symbol">🍋</span></div>
+                        <div class="slots-reel"><span
+                                class="slots-reel-symbol">🔔</span></div>
+                    </div>
+                </div>
+                <div class="slots-controls">
+                    <div class="slots-input-group">
+                        <input type="number" id="slots-bet-amount"
+                            class="slots-input" placeholder="Mise" min="1">
+                    </div>
+                    <button id="slots-spin" class="slots-spin-btn">Spin</button>
+                    <div id="slots-result" class="slots-result"></div>
+                </div>
+                <div class="slots-paytable" aria-label="Charte des gains">
+                    <h4>Charte des gains</h4>
+                    <ul>
+                        <li>3 identiques (hors 7️⃣): x5</li>
+                        <li>3 x 7️⃣: x8</li>
+                        <li>2 symboles identiques: x2</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="stage19">
+            <div class="sudoku-card">
+                <div class="sudoku-header">
+                    <h2>Sudoku.exe</h2>
+                    <div id="sudoku-timer" class="sudoku-timer">00:00</div>
+                </div>
+                <div id="sudoku-grid" class="sudoku-grid"
+                    aria-label="Grille Sudoku"></div>
+                <div id="sudoku-pad" class="sudoku-pad"></div>
+                <div class="sudoku-actions">
+                    <button id="sudoku-new" class="sudoku-btn">Nouvelle
+                        grille</button>
+                    <button id="sudoku-clear" class="sudoku-btn">Effacer
+                        case</button>
+                </div>
+                <div id="sudoku-msg" class="sudoku-msg"></div>
+            </div>
+        </section>
+
+        <section id="stage20">
+            <div class="chatgpt-stage-card">
+                <h2 class="chatgpt-stage-title">Chat GPT [BETA]</h2>
+                <iframe src="https://chatgpt.com"
+                    title="ChatGPT"
+                    class="chatgpt-stage-frame"
+                    cors="no-cors"></iframe>
+                <div id="chatgpt-fallback-home" class="chatgpt-stage-fallback">
+                    <p>Si l'iframe affiche "n'autorise pas la connexion", ouvre
+                        ChatGPT dans un nouvel onglet.</p>
+                    <a href="https://chatgpt.com" target="_blank"
+                        rel="noopener noreferrer"
+                        class="chatgpt-stage-link">Ouvrir ChatGPT</a>
                 </div>
             </div>
         </section>

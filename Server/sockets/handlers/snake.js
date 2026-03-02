@@ -9,7 +9,42 @@ function registerSnakeHandlers({
   colors,
 }) {
   const { updateReviveContextFromScore } = require("../../services/economy");
+  const { addMoney } = require("../../services/wallet");
+  const { applyAutoBadges } = require("../../services/badgesAuto");
   let isAlreadyLogged_snake = false;
+
+  function rewardSnakeFinal(score) {
+    const s = Math.max(0, Math.floor(Number(score) || 0));
+    if (s <= 0) return;
+    const gain = Math.floor(s / 5) * 2;
+    if (gain <= 0) return;
+
+    const wallet = addMoney(
+      FileService,
+      pseudo,
+      gain,
+      FileService.data.clicks[pseudo] || 0,
+    );
+    io.to("user:" + pseudo).emit("economy:wallet", wallet);
+    io.to("user:" + pseudo).emit("economy:gameMoney", {
+      game: "snake",
+      gained: gain,
+      total: gain,
+      final: true,
+      score: s,
+    });
+    try {
+      FileService.appendLog({
+        type: "GAME_MONEY_REWARD",
+        pseudo,
+        game: "snake",
+        gained: gain,
+        total: gain,
+        score: s,
+        at: new Date().toISOString(),
+      });
+    } catch {}
+  }
 
   function setRunnerProgress(score) {
     const s = Math.floor(Number(score) || 0);
@@ -54,6 +89,9 @@ function registerSnakeHandlers({
     if (s > current) {
       FileService.data.snakeScores[pseudo] = s;
       FileService.save("snakeScores", FileService.data.snakeScores);
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
 
       // Si score meilleur et indication finale, enregistrer le temps de run
       if (final === true && typeof elapsedMs === "number") {
@@ -87,6 +125,10 @@ function registerSnakeHandlers({
         FileService.data.snakeBestTimes = {};
       FileService.data.snakeBestTimes[pseudo] = Math.max(0, elapsedMs);
       FileService.save("snakeBestTimes", FileService.data.snakeBestTimes);
+    }
+
+    if (final === true) {
+      rewardSnakeFinal(s);
     }
 
     leaderboardManager.broadcastSnakeLB(io);

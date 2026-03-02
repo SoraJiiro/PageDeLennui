@@ -1,8 +1,10 @@
 const { FileService } = require("../util");
+const { addMoney } = require("../services/wallet");
 const {
   applyDailyProfitCap,
   getDailyProfitCapInfo,
 } = require("../services/economy");
+const { applyAutoBadges } = require("../services/badgesAuto");
 
 class MashGame {
   constructor(broadcastSystemMsg) {
@@ -232,6 +234,38 @@ class MashGame {
     FileService.data.mashWins[winner.pseudo] =
       (FileService.data.mashWins[winner.pseudo] || 0) + 1;
     FileService.save("mashWins", FileService.data.mashWins);
+    try {
+      applyAutoBadges({ pseudo: winner.pseudo, FileService });
+    } catch {}
+
+    const winnerWallet = addMoney(
+      FileService,
+      winner.pseudo,
+      250,
+      FileService.data.clicks[winner.pseudo] || 0,
+    );
+    if (this.onPayout) {
+      this.onPayout(
+        winner.pseudo,
+        FileService.data.clicks[winner.pseudo] || 0,
+        {
+          moneyGain: 250,
+          game: "mash",
+          wallet: winnerWallet,
+          final: true,
+        },
+      );
+    }
+    try {
+      FileService.appendLog({
+        type: "GAME_MONEY_REWARD",
+        pseudo: winner.pseudo,
+        game: "mash",
+        gained: 250,
+        total: 250,
+        at: new Date().toISOString(),
+      });
+    } catch {}
 
     this.broadcastSystem(`VICTOIRE DE ${winner.pseudo.toUpperCase()} !`);
 

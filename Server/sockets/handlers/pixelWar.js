@@ -1,4 +1,5 @@
 const pixelWarGame = require("../../games/pixelWarGame");
+const { getWallet } = require("../../services/wallet");
 
 function registerPixelWarHandlers({
   io,
@@ -18,6 +19,10 @@ function registerPixelWarHandlers({
       pixels: user.pixels,
       maxPixels: user.maxPixels,
       nextPixelIn: pixelWarGame.getNextPixelIn(pseudo),
+      colors: pixelWarGame.COLORS,
+      unlockedColorIndices: Array.from(
+        pixelWarGame.getUnlockedColorIndicesForUser(pseudo),
+      ),
     });
 
     socket.emit("pixelwar:stats", {
@@ -83,8 +88,16 @@ function registerPixelWarHandlers({
         nextPixelIn: pixelWarGame.getNextPixelIn(pseudo),
       });
       socket.emit("session:update_money", {
-        money: FileService.data.clicks[pseudo],
+        money: getWallet(
+          FileService,
+          pseudo,
+          FileService.data.clicks[pseudo] || 0,
+        ).money,
       });
+      socket.emit(
+        "economy:wallet",
+        getWallet(FileService, pseudo, FileService.data.clicks[pseudo] || 0),
+      );
 
       // Envoyer une notification de succès
       let message = "";

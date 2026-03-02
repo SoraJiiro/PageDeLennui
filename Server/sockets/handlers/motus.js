@@ -8,6 +8,7 @@ function registerMotusHandlers({
   motusGame,
   leaderboardManager,
 }) {
+  const { addMoney } = require("../../services/wallet");
   function getMotusState(pseudo) {
     if (!FileService.data.motusState) FileService.data.motusState = {};
     if (!FileService.data.motusState[pseudo]) {
@@ -140,6 +141,31 @@ function registerMotusHandlers({
       won = true;
       state.foundWords.push(state.currentWord);
       FileService.data.motusScores[pseudo].words++;
+
+      const gain = 100;
+      const wallet = addMoney(
+        FileService,
+        pseudo,
+        gain,
+        FileService.data.clicks[pseudo] || 0,
+      );
+      io.to("user:" + pseudo).emit("economy:wallet", wallet);
+      io.to("user:" + pseudo).emit("economy:gameMoney", {
+        game: "motus",
+        gained: gain,
+        total: gain,
+        final: true,
+      });
+      try {
+        FileService.appendLog({
+          type: "GAME_MONEY_REWARD",
+          pseudo,
+          game: "motus",
+          gained: gain,
+          total: gain,
+          at: new Date().toISOString(),
+        });
+      } catch {}
     }
 
     FileService.save("motusScores", FileService.data.motusScores);

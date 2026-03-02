@@ -1,5 +1,7 @@
 import { showNotif, requestPassword } from "./util.js";
 
+const CLICKER_UPGRADE_GROWTH = 1.8;
+
 export function initClicker(socket) {
   const ui = {
     zone: document.querySelector(".zone"),
@@ -19,11 +21,97 @@ export function initClicker(socket) {
     medalsDebloquees: new Set(),
     clicksManuels: [],
     cpsHumain: 0,
+    peakCpsHumain: 0,
+    cpsHumainAt14Start: null,
+    clickerFouDone: false,
     timerHumain: null,
     myPseudo: null,
     medalsInitialized: false,
     adminAutoCps: 0,
+    money: 0,
+    tokens: 0,
+    upgradeEffects: { perClickBonus: 0, autoCpsBonus: 0 },
   };
+
+  const upgradesListEl = document.getElementById("clicker-upgrade-list");
+
+  function renderSidebarWallet() {
+    if (!ui.sidebarMoneyEl) return;
+    ui.sidebarMoneyEl.innerHTML = `<i class="fa-solid fa-coins"></i>
+    ${Number(state.scoreActuel || 0)
+      .toLocaleString("fr-FR")
+      .replace(/\s/g, "\u00a0")} C 
+    • ${Number(state.money || 0)
+      .toLocaleString("fr-FR")
+      .replace(/\s/g, "\u00a0")} M 
+    • ${Number(state.tokens || 0)
+      .toLocaleString("fr-FR")
+      .replace(/\s/g, "\u00a0")} T`;
+  }
+
+  function renderUpgrades(payload) {
+    if (!upgradesListEl || !payload) return;
+    const upgrades = payload.upgrades || {};
+    const catalog = Array.isArray(payload.catalog) ? payload.catalog : [];
+    state.upgradeEffects = payload.effects || state.upgradeEffects;
+    upgradesListEl.innerHTML = "";
+
+    // Calculer les totaux fournis par les upgrades (CPS auto et bonus par clic)
+    let totalAutoCpsFromUpgrades = 0;
+    let totalPerClickFromUpgrades = 0;
+    catalog.forEach((u) => {
+      const level = Number(upgrades[u.id] || 0);
+      const effectPerLevel = Number(u.valuePerLevel || 0);
+      if (String(u.type || "") === "autoCps") {
+        totalAutoCpsFromUpgrades += level * effectPerLevel;
+      } else {
+        totalPerClickFromUpgrades += level * effectPerLevel;
+      }
+    });
+
+    // Afficher un résumé des totaux en haut de la liste d'upgrades
+    const summaryEl = document.createElement("div");
+    summaryEl.className = "clicker-upgrade-summary";
+    summaryEl.style.padding = "8px 10px";
+    summaryEl.style.marginBottom = "8px";
+    summaryEl.style.border = "1px dashed #3a3a3a";
+    summaryEl.innerHTML = `
+      <div style="font-weight:700;">Totaux Upgrades</div>
+      <div style="font-size:0.95rem;color:#cfcfcf;">+${Number(totalAutoCpsFromUpgrades).toLocaleString("fr-FR")} CPS auto • +${Number(totalPerClickFromUpgrades).toLocaleString("fr-FR")} clicks / clic</div>
+    `;
+    upgradesListEl.appendChild(summaryEl);
+
+    catalog.forEach((u) => {
+      const level = Number(upgrades[u.id] || 0);
+      const max = Number(u.maxLevel || 0);
+      const dynamicCost = Math.floor(
+        Number(u.cost || 0) * Math.pow(CLICKER_UPGRADE_GROWTH, level),
+      );
+      const effectPerLevel = Number(u.valuePerLevel || 0);
+      const isAuto = String(u.type || "") === "autoCps";
+      const currentEffect = level * effectPerLevel;
+      const nextEffect = (level + 1) * effectPerLevel;
+      const effectLabel = isAuto ? "CPS auto" : "Clicks par clic";
+      const row = document.createElement("div");
+      row.className = "clicker-upgrade-row";
+      row.innerHTML = `
+        <button class="btn" data-id="${u.id}">${u.name}</button>
+        <span>Lvl ${level}/${max} • ${dynamicCost.toLocaleString("fr-FR")} clicks</span>
+        <small>${effectLabel}: +${currentEffect} → +${nextEffect}</small>
+      `;
+      const btn = row.querySelector("button");
+      if (btn) {
+        btn.disabled = level >= max;
+        btn.addEventListener("click", () => {
+          socket.emit("clicker:buyUpgrade", { id: u.id });
+        });
+      }
+      upgradesListEl.appendChild(row);
+    });
+
+    const desired = computeDesiredAutoCps();
+    if (desired !== state.cpsActuel) setAutoClick(desired);
+  }
 
   window.openDonateModal = () => {
     document.getElementById("donate-modal").style.display = "flex";
@@ -301,7 +389,7 @@ export function initClicker(socket) {
     if (ui.acpsEl) ui.acpsEl.textContent = cps > 0 ? `+ ${cps} cps` : "";
     if (cps > 0) {
       state.timeAutoClicks = setInterval(() => {
-        for (let i = 0; i < cps; i++) socket.emit("clicker:click");
+        for (let i = 0; i < cps; i++) socket.emit("clicker:autoClick");
       }, 2250);
     }
   }
@@ -322,6 +410,10 @@ export function initClicker(socket) {
     let cpsToUse = bestMedal ? bestMedal.cps : 0;
     cpsToUse += getPrestigeBonusCPS();
     cpsToUse += Number.isFinite(state.adminAutoCps) ? state.adminAutoCps : 0;
+    cpsToUse += Math.max(
+      0,
+      Math.floor(Number(state.upgradeEffects.autoCpsBonus || 0)),
+    );
     return Math.max(0, Math.floor(cpsToUse));
   }
 
@@ -413,6 +505,12 @@ export function initClicker(socket) {
       // Bonus CPS admin (distinct des médailles)
       cpsToUse += Number.isFinite(state.adminAutoCps) ? state.adminAutoCps : 0;
 
+      // Ajouter bonus provenant des upgrades clicker (ex: autoCps)
+      cpsToUse += Math.max(
+        0,
+        Math.floor(Number(state.upgradeEffects.autoCpsBonus || 0)),
+      );
+
       cpsToUse = Math.max(0, Math.floor(cpsToUse));
       if (cpsToUse !== state.cpsActuel) setAutoClick(cpsToUse);
     }
@@ -481,8 +579,31 @@ export function initClicker(socket) {
       state.clicksManuels.push(mtn);
       state.clicksManuels = state.clicksManuels.filter((t) => mtn - t < 1000);
       state.cpsHumain = state.clicksManuels.length;
+
+      if (state.cpsHumain > state.peakCpsHumain) {
+        state.peakCpsHumain = state.cpsHumain;
+        socket.emit("clicker:humanPeakUpdate", {
+          peakCps: state.peakCpsHumain,
+        });
+      }
+
+      if (state.cpsHumain >= 14) {
+        if (!state.cpsHumainAt14Start) state.cpsHumainAt14Start = mtn;
+        if (!state.clickerFouDone && mtn - state.cpsHumainAt14Start >= 6700) {
+          state.clickerFouDone = true;
+          socket.emit("clicker:humanCpsChallengeComplete", {
+            peakCps: state.peakCpsHumain,
+          });
+        }
+      } else {
+        state.cpsHumainAt14Start = null;
+      }
+
       clearTimeout(state.timerHumain);
-      state.timerHumain = setTimeout(() => (state.cpsHumain = 0), 1100);
+      state.timerHumain = setTimeout(() => {
+        state.cpsHumain = 0;
+        state.cpsHumainAt14Start = null;
+      }, 1100);
     });
   }
 
@@ -569,10 +690,7 @@ export function initClicker(socket) {
       ui.zone.innerHTML = `<i>${Number(score)
         .toLocaleString("fr-FR")
         .replace(/\s/g, "\u00a0")}</i>`;
-    ui.sidebarMoneyEl.innerHTML = `<i
-                            class="fa-solid fa-money-bill"></i> ${Number(score)
-                              .toLocaleString("fr-FR")
-                              .replace(/\s/g, "\u00a0")} C`;
+    renderSidebarWallet();
     if (ui.yourScoreEl)
       ui.yourScoreEl.textContent = Number(score)
         .toLocaleString("fr-FR")
@@ -639,6 +757,10 @@ export function initClicker(socket) {
     highestCps += getPrestigeBonusCPS();
     // Bonus CPS admin (distinct des médailles)
     highestCps += Number.isFinite(state.adminAutoCps) ? state.adminAutoCps : 0;
+    highestCps += Math.max(
+      0,
+      Math.floor(Number(state.upgradeEffects.autoCpsBonus || 0)),
+    );
     highestCps = Math.max(0, Math.floor(highestCps));
 
     // Vérifier si le score actuel mérite d'autres médailles (sync)
@@ -656,6 +778,22 @@ export function initClicker(socket) {
       if (desired !== state.cpsActuel) setAutoClick(desired);
     }
   });
+
+  socket.on("economy:wallet", (wallet) => {
+    state.money = Number(wallet?.money || 0);
+    state.tokens = Number(wallet?.tokens || 0);
+    renderSidebarWallet();
+  });
+
+  socket.on("clicker:upgrades", (payload) => {
+    renderUpgrades(payload);
+  });
+
+  socket.on("clicker:upgradeError", (msg) => {
+    showNotif(msg || "Upgrade indisponible");
+  });
+
+  socket.emit("clicker:getUpgrades");
 
   // Événement forcé par l'admin pour nettoyer le localStorage
   socket.on("clicker:forceReset", () => {

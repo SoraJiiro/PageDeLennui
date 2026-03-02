@@ -82,19 +82,22 @@
                             onclick="shutdownServer()">OFF</button>
                     </div>
                 </div>
-
+                <div id="admin-site-money-average"
+                    class="admin-site-money-average">
+                    Avg monnaie: ...
+                </div>
                 <div class="admin-sections">
                     <!-- TRANSACTIONS -->
                     <section class="admin-section" style="order: 4;">
                         <h2><i class="fa-solid fa-money-bill-transfer"></i>
-                            /Transactions en attente</h2>
+                            /Transactions (Monnaie) en attente</h2>
                         <div class="transactions-container">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
                                         <th>De</th>
                                         <th>À</th>
-                                        <th>Montant</th>
+                                        <th>Montant (Monnaie)</th>
                                         <th>Date</th>
                                         <th>Actions</th>
                                     </tr>
@@ -105,6 +108,33 @@
                             </table>
                             <center>
                                 <button onclick="refreshTransactions()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
+                        </div>
+                    </section>
+
+                    <!-- GAME MONEY REWARDS -->
+                    <section class="admin-section" style="order: 4;">
+                        <h2><i class="fa-solid fa-coins"></i>
+                            /Gains Money (Jeux)</h2>
+                        <div class="transactions-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Pseudo</th>
+                                        <th>Jeu</th>
+                                        <th>Gain</th>
+                                        <th>Total affiché</th>
+                                        <th>Détail</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="game-money-rewards-list"></tbody>
+                            </table>
+                            <center>
+                                <button onclick="refreshGameMoneyRewards()"
                                     class="refresh-btn"><i
                                         class="fa-solid fa-rotate"></i>
                                     Actualiser</button>
@@ -414,19 +444,16 @@
 
                     <!-- ECONOMY DAILY CAP -->
                     <section class="admin-section" style="order: 12;">
-                        <h2><i class="fa-solid fa-coins"></i> /Cap quotidien
+                        <h2><i class="fa-solid fa-coins"></i> /Monitoring gains
                             (casino)</h2>
                         <div class="transactions-container">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
                                         <th>Pseudo</th>
-                                        <th>Clicks</th>
+                                        <th>Tokens</th>
                                         <th>Base</th>
-                                        <th>Cap</th>
                                         <th>Earned</th>
-                                        <th>Remaining</th>
-                                        <th>Cap (potentiel)</th>
                                         <th>Date reset</th>
                                     </tr>
                                 </thead>
@@ -505,7 +532,7 @@
                         <center>
                             <div class="leaderboard-tabs">
                                 <button class="lb-tab active"
-                                    data-board="clicker">Clicker</button>
+                                    data-board="economie">Économie</button>
                                 <button class="lb-tab"
                                     data-board="dino">Dino</button>
                                 <button class="lb-tab"
@@ -534,7 +561,7 @@
                         </center>
 
                         <div class="leaderboard-content active"
-                            data-board="clicker">
+                            data-board="economie">
                             <table>
                                 <thead>
                                     <tr>
@@ -543,7 +570,7 @@
                                         <th>Clicks</th>
                                     </tr>
                                 </thead>
-                                <tbody id="lb-clicker"></tbody>
+                                <tbody id="lb-economie"></tbody>
                             </table>
                         </div>
 
@@ -809,6 +836,9 @@
                                                 <option
                                                     value="clicks">Clicker</option>
                                                 <option
+                                                    value="wallets">Wallet
+                                                    (money/tokens)</option>
+                                                <option
                                                     value="dinoScores">Dino</option>
                                                 <option
                                                     value="flappyScores">Flappy</option>
@@ -824,12 +854,18 @@
                                                 <option
                                                     value="motusScores">Motus</option>
                                                 <option
+                                                    value="sudokuScores">Sudoku</option>
+                                                <option
                                                     value="scores2048">2048</option>
                                                 <option
                                                     value="blackjackStats">Blackjack</option>
                                                 <option
                                                     value="coinflipStats">Coin
                                                     Flip</option>
+                                                <option
+                                                    value="rouletteStats">Roulette</option>
+                                                <option
+                                                    value="slotsStats">Slots</option>
                                                 <option value="pixelwar">Pixel
                                                     War</option>
                                                 <option
@@ -1025,23 +1061,24 @@
                                 </div>
                             </div>
 
-                            <!-- Reset Leaderboards (Global) -->
+                            <!-- Reset Serveur (Soft) -->
                             <div class="control-group">
-                                <h3><i class="fa-solid fa-bomb"></i> /Reset
-                                    Leaderboards (Global)</h3>
+                                <h3><i class="fa-solid fa-fire"></i> /Reset
+                                    Serveur (soft)</h3>
                                 <div class="control-form">
                                     <p
                                         style="color: #ff4444; margin-bottom: 10px; font-size: 0.9em;">
-                                        ⚠️ Attention : Cette action va créer un
-                                        backup puis effacer TOUTES les stats
-                                        (sauf Clicks).
+                                        ⚠️ Cette action remet à zéro toutes les
+                                        stats, badges attribués, etc. (hors
+                                        Pixelwar, tags, shop).<br>
+                                        <b>Action irréversible !</b>
                                     </p>
                                     <div class="action-buttons">
                                         <button class="btn btn-red"
-                                            onclick="resetLeaderboard('all')"
-                                            style="width: 100%; padding: 15px; font-size: 1.2em;">
-                                            <i class="fa-solid fa-skull"></i>
-                                            RESET TOUT (Sauf Clicks)
+                                            onclick="resetServerSoft()"
+                                            style="width:100%;padding:15px;font-size:1.2em;">
+                                            <i class="fa-solid fa-fire"></i>
+                                            RESET SERVEUR
                                         </button>
                                     </div>
                                 </div>
@@ -1052,6 +1089,12 @@
                                 <h3><i class="fa-solid fa-history"></i>
                                     /Backups</h3>
                                 <div class="control-form">
+                                    <div
+                                        style="color:#888;font-size:0.95em;margin-bottom:6px;">
+                                        Tous les fichiers JSON du dossier
+                                        <b>data</b> sont sauvegardés (y compris
+                                        Pixelwar, tags, shop, etc).
+                                    </div>
                                     <div id="backupsList"
                                         style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #333; padding: 5px;">
                                         <p>Chargement...</p>
@@ -1243,6 +1286,7 @@
                                 class="logs-frame"></iframe>
                         </center>
                     </section>
+
                 </div>
             </div>
         </div>
@@ -1283,6 +1327,7 @@
 
         const adminRefreshHandlers = {
             'transactions': () => refreshTransactions(),
+            'game-money-rewards': () => refreshGameMoneyRewards(),
             'password-requests': () => refreshPasswordRequests(),
             'pfp-requests': () => refreshPfpRequests(),
             'custom-badge-requests': () => refreshCustomBadgeRequests(),
@@ -1340,6 +1385,16 @@
                 window.initUiColor(socket);
             }
 
+            import('/js/site_money_average.js')
+                .then(({ initSiteMoneyAverageWidget }) => {
+                    initSiteMoneyAverageWidget(socket, {
+                        elementId: 'admin-site-money-average',
+                    });
+                })
+                .catch((err) => {
+                    console.warn('Impossible de charger site_money_average.js:', err);
+                });
+
             // initialiser le module chat (s'il a été préchargé)
             try {
                 if (chatModule && typeof chatModule.initChat === 'function') {
@@ -1387,7 +1442,7 @@
             socket.on('survey:deleted', onSurveyChange);
 
             // Leaderboards
-            socket.on('clicker:leaderboard', (data) => updateLeaderboard('clicker', data, 'score'));
+            socket.on('economie:leaderboard', (data) => updateLeaderboard('economie', data, 'score'));
             socket.on('dino:leaderboard', (data) => updateLeaderboard('dino', data, 'score'));
             socket.on('flappy:leaderboard', (data) => updateLeaderboard('flappy', data, 'score'));
             socket.on('uno:leaderboard', (data) => updateLeaderboard('uno', data, 'wins'));
@@ -1608,7 +1663,7 @@
                     tr.innerHTML = `
                         <td>${fromDisplay}</td>
                         <td>${tx.to}</td>
-                        <td>${tx.amount.toLocaleString()}</td>
+                        <td>${tx.amount.toLocaleString()} M</td>
                         <td>${new Date(tx.date).toLocaleString()}</td>
                         <td>
                             <button onclick="approveTransaction('${tx.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-check"></i></button>
@@ -1622,41 +1677,74 @@
             }
         }
 
+        async function refreshGameMoneyRewards() {
+            try {
+                const res = await fetch('/api/admin/game-money-rewards?limit=200');
+                if (!res.ok) return;
+                const rows = await res.json();
+                const tbody = document.getElementById('game-money-rewards-list');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Aucun gain enregistré</td></tr>';
+                    return;
+                }
+
+                rows.forEach((entry) => {
+                    const tr = document.createElement('tr');
+                    const gain = Number(entry.gained || 0);
+                    const total = Number(entry.total || 0);
+                    const score = Number(entry.score || 0);
+                    const maxTile = Number(entry.maxTile || 0);
+                    let detail = '-';
+                    if (score > 0) detail = `score: ${score.toLocaleString('fr-FR')}`;
+                    if (maxTile > 0) detail = `maxTile: ${maxTile.toLocaleString('fr-FR')}`;
+
+                    tr.innerHTML = `
+                        <td>${entry.at ? new Date(entry.at).toLocaleString() : '-'}</td>
+                        <td>${entry.pseudo || '-'}</td>
+                        <td>${entry.game || '-'}</td>
+                        <td>+${gain.toLocaleString('fr-FR')}</td>
+                        <td>${total.toLocaleString('fr-FR')}</td>
+                        <td>${detail}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         async function approveTransaction(id) {
             if (!confirm('Valider cette transaction ?')) return;
             try {
-                const res = await fetch('/api/admin/transactions/approve', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
+                const { res, data } = await adminPostJson('/api/admin/transactions/approve', { id });
                 if (res.ok) {
                     showNotification('Transaction approuvée', 'success');
                     refreshTransactions();
                 } else {
-                    showNotification('Erreur', 'error');
+                    showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
         async function rejectTransaction(id) {
             if (!confirm('Refuser cette transaction ?')) return;
             try {
-                const res = await fetch('/api/admin/transactions/reject', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
+                const { res, data } = await adminPostJson('/api/admin/transactions/reject', { id });
                 if (res.ok) {
                     showNotification('Transaction refusée', 'success');
                     refreshTransactions();
                 } else {
-                    showNotification('Erreur', 'error');
+                    showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -1747,19 +1835,16 @@
         async function approvePfp(id) {
             if (!confirm('Approuver cette PFP ?')) return;
             try {
-                const res = await fetch('/api/admin/pfp/requests/approve', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
+                const { res, data } = await adminPostJson('/api/admin/pfp/requests/approve', { id });
                 if (res.ok) {
                     showNotification('PFP approuvée', 'success');
                     refreshPfpRequests();
                 } else {
-                    showNotification('Erreur', 'error');
+                    showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -1767,19 +1852,16 @@
             const reason = prompt('Raison du refus ? (optionnel)') || '';
             if (!confirm('Refuser cette PFP ?')) return;
             try {
-                const res = await fetch('/api/admin/pfp/requests/reject', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, reason })
-                });
+                const { res, data } = await adminPostJson('/api/admin/pfp/requests/reject', { id, reason });
                 if (res.ok) {
                     showNotification('PFP refusée', 'success');
                     refreshPfpRequests();
                 } else {
-                    showNotification('Erreur', 'error');
+                    showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -1826,12 +1908,7 @@
         async function approveCustomBadge(id) {
             if (!confirm('Valider ce badge perso ?')) return;
             try {
-                const res = await fetch('/api/admin/custom-badges/requests/approve', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
-                const data = await res.json().catch(() => ({}));
+                const { res, data } = await adminPostJson('/api/admin/custom-badges/requests/approve', { id });
                 if (res.ok) {
                     showNotification('Badge perso validé', 'success');
                     refreshCustomBadgeRequests();
@@ -1840,6 +1917,7 @@
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -1847,19 +1925,16 @@
             const reason = prompt('Raison du refus ? (optionnel)') || '';
             if (!confirm('Refuser ce badge perso ?')) return;
             try {
-                const res = await fetch('/api/admin/custom-badges/requests/reject', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, reason })
-                });
+                const { res, data } = await adminPostJson('/api/admin/custom-badges/requests/reject', { id, reason });
                 if (res.ok) {
                     showNotification('Badge perso refusé', 'success');
                     refreshCustomBadgeRequests();
                 } else {
-                    showNotification('Erreur', 'error');
+                    showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -1924,12 +1999,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/badges/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, emoji, name })
-                });
-                const data = await res.json().catch(()=>({}));
+                const { res, data } = await adminPostJson('/api/admin/badges/create', { id, emoji, name });
                 if (res.ok) {
                     showNotification('Badge créé', 'success');
                     refreshBadges();
@@ -1938,25 +2008,23 @@
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
         async function deleteBadge(id) {
             if (!confirm(`Supprimer le badge ${id} ?`)) return;
             try {
-                const res = await fetch('/api/admin/badges/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
+                const { res, data } = await adminPostJson('/api/admin/badges/delete', { id });
                 if (res.ok) {
                     showNotification('Badge supprimé', 'success');
                     refreshBadges();
                 } else {
-                    showNotification('Erreur', 'error');
+                    showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -2010,12 +2078,7 @@
             if (!confirm(`Modifier le badge ${originalId} ?`)) return;
 
             try {
-                const res = await fetch('/api/admin/badges/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: originalId, newId: cleanedId, emoji: cleanedEmoji, name: cleanedName })
-                });
-                const data = await res.json().catch(()=>({}));
+                const { res, data } = await adminPostJson('/api/admin/badges/update', { id: originalId, newId: cleanedId, emoji: cleanedEmoji, name: cleanedName });
                 if (res.ok) {
                     showNotification('Badge modifié', 'success');
                     closeBadgeEditModal();
@@ -2025,7 +2088,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                showNotification('Erreur', 'error');
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -2037,19 +2100,16 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/badges/assign', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, badgeId, action })
-                });
-                const data = await res.json().catch(()=>({}));
+                const { res, data } = await adminPostJson('/api/admin/badges/assign', { pseudo, badgeId, action });
                 if (res.ok) {
                     showNotification(action === 'remove' ? 'Badge retiré' : 'Badge donné', 'success');
+                    await refreshUserInfoPanel(pseudo);
                 } else {
                     showNotification(data.message || 'Erreur', 'error');
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -2141,12 +2201,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/shop/catalog/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json().catch(()=>({}));
+                const { res, data } = await adminPostJson('/api/admin/shop/catalog/create', payload);
                 if (res.ok) {
                     showNotification('Badge shop créé', 'success');
                     refreshShopCatalog();
@@ -2155,6 +2210,7 @@
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -2165,12 +2221,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/admin/shop/catalog/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json().catch(()=>({}));
+                const { res, data } = await adminPostJson('/api/admin/shop/catalog/update', payload);
                 if (res.ok) {
                     showNotification('Badge shop modifié', 'success');
                     refreshShopCatalog();
@@ -2179,6 +2230,7 @@
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -2190,12 +2242,7 @@
             }
             if (!confirm(`Supprimer le badge shop ${id} ?`)) return;
             try {
-                const res = await fetch('/api/admin/shop/catalog/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
-                const data = await res.json().catch(()=>({}));
+                const { res, data } = await adminPostJson('/api/admin/shop/catalog/delete', { id });
                 if (res.ok) {
                     showNotification('Badge shop supprimé', 'success');
                     refreshShopCatalog();
@@ -2204,6 +2251,7 @@
                 }
             } catch (e) {
                 console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -2212,7 +2260,7 @@
             try {
                 const tbody = document.getElementById('daily-cap-list');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Chargement...</td></tr>';
 
                 const res = await fetch('/api/admin/economy/daily-cap');
                 if (!res.ok) {
@@ -2224,7 +2272,7 @@
 
                 tbody.innerHTML = '';
                 if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Aucune donnée</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucune donnée</td></tr>';
                     return;
                 }
 
@@ -2233,12 +2281,9 @@
                     const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('fr-FR') : '—');
                     tr.innerHTML = `
                         <td>${r.pseudo}</td>
-                        <td>${fmt(r.currentClicks)}</td>
+                        <td>${fmt(r.currentTokens)}</td>
                         <td>${fmt(r.baseClicks)}</td>
-                        <td>${fmt(r.cap)}</td>
                         <td>${fmt(r.earned)}</td>
-                        <td>${fmt(r.remaining)}</td>
-                        <td>${fmt(r.capPotential)}</td>
                         <td>${r.date || '—'}</td>
                     `;
                     tbody.appendChild(tr);
@@ -2319,7 +2364,40 @@
             }
         }
 
+        // --- RESET SERVEUR (SOFT) ---
+        function resetServerSoft() {
+            if (!window.socket) {
+                showNotification('❌ Socket non initialisée', 'error');
+                return;
+            }
+            if (!confirm('⚠️ Cette action va effacer toutes les stats, badges attribués, etc. (hors Pixelwar, tags, shop).\n\nContinuer ?')) return;
+            window.socket.emit('admin:server:softReset');
+            showNotification('⏳ Reset serveur en cours...', 'info');
+        }
+
+        // Écouteur unique pour le résultat du reset serveur (évite doublons)
+        if (window.socket && !window._softResetListenerAdded) {
+            window._softResetListenerAdded = true;
+            window.socket.on('admin:server:softReset:result', (res) => {
+                if (!res) return;
+                if (res.success) {
+                    showNotification('✅ Reset serveur effectué avec succès', 'success');
+                } else {
+                    showNotification('❌ Erreur reset serveur : ' + (res.error || 'inconnue'), 'error');
+                }
+            });
+        }
+
         async function resetEeProgress() {
+                        // Résultat reset serveur (soft)
+                        socket.on('admin:server:softReset:result', (res) => {
+                            if (!res) return;
+                            if (res.success) {
+                                showNotification('✅ Reset serveur effectué avec succès', 'success');
+                            } else {
+                                showNotification('❌ Erreur reset serveur : ' + (res.error || 'inconnue'), 'error');
+                            }
+                        });
             const pseudo = (document.getElementById('ee-reset-pseudo')?.value || '').trim();
             const eggId = (document.getElementById('ee-reset-id')?.value || '').trim();
 
@@ -2376,6 +2454,7 @@
 
         // Initial load
         refreshTransactions();
+        refreshGameMoneyRewards();
         refreshPasswordRequests();
         refreshPfpRequests();
         refreshCustomBadgeRequests();
@@ -2417,6 +2496,46 @@
             }
         });
 
+        function renderClickerUpgradeAdminRows(data) {
+            const catalog = Array.isArray(data?.clickerUpgradeCatalog) ? data.clickerUpgradeCatalog : [];
+            const upgrades = data?.clickerUpgrades && typeof data.clickerUpgrades === 'object'
+                ? data.clickerUpgrades
+                : {};
+
+            if (!catalog.length) {
+                return `<span style="color:var(--primary-color)">Aucun upgrade disponible</span>`;
+            }
+
+            return catalog.map((u) => {
+                const id = String(u?.id || '');
+                const name = String(u?.name || id || 'Upgrade');
+                const maxLevel = Math.max(0, Number(u?.maxLevel || 0));
+                const level = Math.max(0, Number(upgrades[id] || 0));
+                return `
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid #2f2f2f;padding:8px 10px;margin-bottom:8px;">
+                        <div>
+                            <div style="font-weight:600;">${name}</div>
+                            <div style="font-size:0.9rem;color:#9a9a9a;">ID: ${id} • Lvl ${level}/${maxLevel}</div>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button type="button" class="btn btn-red" data-clicker-upgrade-action="decrease" data-upgrade-id="${id}" data-upgrade-name="${name}" data-pseudo="${data.pseudo || ''}">
+                                <i class="fa-solid fa-minus"></i>
+                                -1
+                            </button>
+                            <button type="button" class="btn" data-clicker-upgrade-action="increase" data-upgrade-id="${id}" data-upgrade-name="${name}" data-pseudo="${data.pseudo || ''}">
+                                <i class="fa-solid fa-plus"></i>
+                                +1
+                            </button>
+                            <button type="button" class="btn btn-red" data-clicker-upgrade-action="reset" data-upgrade-id="${id}" data-upgrade-name="${name}" data-pseudo="${data.pseudo || ''}">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function displayUserInfo(data) {
             const display = document.getElementById('userInfoDisplay');
             const pseudoEl = document.getElementById('userInfoPseudo');
@@ -2444,6 +2563,28 @@
                 <div class="user-stat">
                     <span class="label">Clicks (Clicker):</span>
                     <span class="value">${data.clicks || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Upgrades Clicker (admin):</span>
+                    <div style="margin-top:8px;">${renderClickerUpgradeAdminRows(data)}</div>
+                    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <button type="button" class="btn" id="maxAllClickerUpgradesBtn" data-pseudo="${(data.pseudo||'')}">
+                            <i class="fa-solid fa-angles-up"></i>
+                            Max tous les upgrades
+                        </button>
+                        <button type="button" class="btn btn-red" id="resetAllClickerUpgradesBtn" data-pseudo="${(data.pseudo||'')}">
+                            <i class="fa-solid fa-broom"></i>
+                            Reset tous les upgrades
+                        </button>
+                    </div>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Money:</span>
+                    <span class="value">${data.money || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Tokens:</span>
+                    <span class="value">${data.tokens || 0}</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">CPS auto (bonus admin):</span>
@@ -2486,6 +2627,18 @@
                 <div class="user-stat">
                     <span class="label">Score 2048:</span>
                     <span class="value">${data.score2048 || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Sudoku (grilles complétées):</span>
+                    <span class="value">${data.sudokuCompleted || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Roulette (W/L):</span>
+                    <span class="value">${data.rouletteStats ? `${data.rouletteStats.wins || 0} / ${data.rouletteStats.losses || 0}` : '0 / 0'}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Slots (W/L):</span>
+                    <span class="value">${data.slotsStats ? `${data.slotsStats.wins || 0} / ${data.slotsStats.losses || 0}` : '0 / 0'}</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">Motus (Mots/Essais):</span>
@@ -2568,6 +2721,10 @@
                             : (data.tag || '—')
                     }</span>
                 </div>
+                <div class="user-stat">
+                    <span class="label">Couleurs custom PixelWar:</span>
+                    <span class="value">${Array.isArray(data.customPixelColors) && data.customPixelColors.length ? data.customPixelColors.join(', ') : 'Aucune'}</span>
+                </div>
             `;
 
             pwdLength = data.password ? data.password.length : 0;
@@ -2644,6 +2801,168 @@
                 if (resetCpsBtn) {
                     resetCpsBtn.addEventListener('click', () => resetAdminAutoCps(resetCpsBtn.dataset.pseudo || data.pseudo));
                 }
+
+                const clickerUpgradeButtons = statsEl.querySelectorAll('[data-clicker-upgrade-action]');
+                clickerUpgradeButtons.forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        manageClickerUpgradeLevel({
+                            pseudo: btn.dataset.pseudo || data.pseudo,
+                            upgradeId: btn.dataset.upgradeId,
+                            upgradeName: btn.dataset.upgradeName || btn.dataset.upgradeId || 'upgrade',
+                            action: btn.dataset.clickerUpgradeAction,
+                        });
+                    });
+                });
+
+                const resetAllClickerUpgradesBtn = document.getElementById('resetAllClickerUpgradesBtn');
+                if (resetAllClickerUpgradesBtn) {
+                    resetAllClickerUpgradesBtn.addEventListener('click', () => {
+                        resetAllClickerUpgrades(resetAllClickerUpgradesBtn.dataset.pseudo || data.pseudo);
+                    });
+                }
+
+                const maxAllClickerUpgradesBtn = document.getElementById('maxAllClickerUpgradesBtn');
+                if (maxAllClickerUpgradesBtn) {
+                    maxAllClickerUpgradesBtn.addEventListener('click', () => {
+                        maxAllClickerUpgrades(maxAllClickerUpgradesBtn.dataset.pseudo || data.pseudo);
+                    });
+                }
+        }
+
+        async function refreshUserInfoPanel(pseudoHint = '') {
+            try {
+                const searchInput = document.getElementById('userSearchInput');
+                const pseudoFromInput = (searchInput?.value || '').trim();
+                const pseudoFromHint = String(pseudoHint || '').trim();
+                const pseudo = (pseudoFromHint || pseudoFromInput).trim();
+
+                if (!pseudo || pseudo.toUpperCase() === 'ALL') return;
+
+                const res = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                displayUserInfo(data);
+            } catch (e) {
+                console.error('Erreur refreshUserInfoPanel', e);
+            }
+        }
+
+        async function handleAdminStatSuccess(data, pseudo, { clearPseudo = false } = {}) {
+            showNotification(`✅ ${data?.message || 'Action effectuée'}`, 'success');
+            if (socket) socket.emit('admin:refresh');
+            await refreshUserInfoPanel(pseudo);
+
+            if (clearPseudo) {
+                const userInput = document.getElementById('modifyUser');
+                if (userInput) userInput.value = '';
+            }
+
+            const valueInput = document.getElementById('modifyStatValue');
+            if (valueInput) valueInput.value = '';
+        }
+
+        async function adminPostJson(url, payload) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload || {})
+            });
+            const data = await res.json().catch(() => ({}));
+            return { res, data };
+        }
+
+        async function manageClickerUpgradeLevel({ pseudo, upgradeId, upgradeName, action }) {
+            const p = String(pseudo || '').trim();
+            const id = String(upgradeId || '').trim();
+            const mode = String(action || '').trim().toLowerCase();
+            const name = String(upgradeName || id || 'upgrade').trim();
+
+            if (!p || !id || !['increase', 'decrease', 'reset'].includes(mode)) {
+                showNotification('⚠️ Données invalides pour la modification d\'upgrade', 'error');
+                return;
+            }
+
+            if (mode === 'reset') {
+                const ok = confirm(`Reset le niveau de "${name}" pour ${p} ?`);
+                if (!ok) return;
+            }
+
+            try {
+                const { res, data } = await adminPostJson('/api/admin/clicker/upgrades/level', {
+                    pseudo: p,
+                    upgradeId: id,
+                    action: mode,
+                });
+
+                if (!res.ok) {
+                    showNotification(`❌ ${data?.message || 'Erreur lors de la modification de l\'upgrade'}`, 'error');
+                    return;
+                }
+
+                const level = Number(data?.level || 0);
+                const maxLevel = Number(data?.maxLevel || 0);
+                showNotification(`✅ ${name}: niveau ${level}/${maxLevel} (${p})`, 'success');
+                await refreshUserInfoPanel(p);
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur serveur lors de la modification de l\'upgrade', 'error');
+            }
+        }
+
+        async function resetAllClickerUpgrades(pseudo) {
+            const p = String(pseudo || '').trim();
+            if (!p) {
+                showNotification('⚠️ Pseudo manquant', 'error');
+                return;
+            }
+
+            const ok = confirm(`Reset tous les upgrades clicker de ${p} ?`);
+            if (!ok) return;
+
+            try {
+                const { res, data } = await adminPostJson('/api/admin/clicker/upgrades/reset-all', {
+                    pseudo: p,
+                });
+
+                if (!res.ok) {
+                    showNotification(`❌ ${data?.message || 'Erreur lors du reset des upgrades'}`, 'error');
+                    return;
+                }
+
+                showNotification(`✅ Tous les upgrades clicker ont été reset pour ${p}`, 'success');
+                await refreshUserInfoPanel(p);
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur serveur lors du reset des upgrades', 'error');
+            }
+        }
+
+        async function maxAllClickerUpgrades(pseudo) {
+            const p = String(pseudo || '').trim();
+            if (!p) {
+                showNotification('⚠️ Pseudo manquant', 'error');
+                return;
+            }
+
+            const ok = confirm(`Mettre tous les upgrades clicker au niveau max pour ${p} ?`);
+            if (!ok) return;
+
+            try {
+                const { res, data } = await adminPostJson('/api/admin/clicker/upgrades/max-all', {
+                    pseudo: p,
+                });
+
+                if (!res.ok) {
+                    showNotification(`❌ ${data?.message || 'Erreur lors du max des upgrades'}`, 'error');
+                    return;
+                }
+
+                showNotification(`✅ Tous les upgrades clicker ont été maxés pour ${p}`, 'success');
+                await refreshUserInfoPanel(p);
+            } catch (err) {
+                console.error(err);
+                showNotification('⚠️ Erreur serveur lors du max des upgrades', 'error');
+            }
         }
 
         async function addAdminAutoCps(pseudo) {
@@ -2849,6 +3168,28 @@
                 { value: 'totalWon', label: 'Total Gagné' },
                 { value: 'totalLost', label: 'Total Perdu' }
             ],
+            'rouletteStats': [
+                { value: 'gamesPlayed', label: 'Parties' },
+                { value: 'wins', label: 'Victoires' },
+                { value: 'losses', label: 'Défaites' },
+                { value: 'biggestBet', label: 'Plus grosse mise' },
+                { value: 'biggestWin', label: 'Plus gros gain net' },
+                { value: 'totalWon', label: 'Total gagné net' },
+                { value: 'totalLost', label: 'Total perdu' }
+            ],
+            'slotsStats': [
+                { value: 'gamesPlayed', label: 'Parties' },
+                { value: 'wins', label: 'Victoires' },
+                { value: 'losses', label: 'Défaites' },
+                { value: 'biggestBet', label: 'Plus grosse mise' },
+                { value: 'biggestWin', label: 'Plus gros gain net' },
+                { value: 'totalWon', label: 'Total gagné net' },
+                { value: 'totalLost', label: 'Total perdu' }
+            ],
+            'wallets': [
+                { value: 'money', label: 'Money' },
+                { value: 'tokens', label: 'Tokens' }
+            ],
             'pixelwar': [
                 { value: 'pixels', label: 'Pixels (Stock)' },
                 { value: 'maxPixels', label: 'Stockage Max' }
@@ -2913,10 +3254,6 @@
           }
           
           if (!confirm(confirmMsg)) return;
-                    if (statType === 'all') {
-                        if (!confirm(`⚠️ Vous êtes sur le point de modifier TOUTES les stats ${targetAll ? 'de ALL LES JOUEURS' : 'de ' + pseudo} à ${value} ! Confirmer ?`)) return;
-                    }
-
                     if (statType === 'motusScores' && field === 'tries') {
                         if (targetAll) {
                             showNotification('⚠️ Modification des essais pour ALL non supportée', 'error');
@@ -2931,10 +3268,7 @@
                             });
                             const data = await res.json().catch(()=>({}));
                             if (res.ok) {
-                                showNotification('✅ Essais Motus modifiés', 'success');
-                                if (socket) socket.emit('admin:refresh');
-                                document.getElementById('modifyUser').value = '';
-                                document.getElementById('modifyStatValue').value = '';
+                                await handleAdminStatSuccess({ message: 'Essais Motus modifiés' }, pseudo);
                             } else {
                                 showNotification(data.message || 'Erreur', 'error');
                             }
@@ -2961,10 +3295,7 @@
                         const data = await res.json();
             
                         if (res.ok) {
-                            showNotification(`✅ ${data.message}`, 'success');
-            socket.emit('admin:refresh');
-            document.getElementById('modifyUser').value = '';
-            document.getElementById('modifyStatValue').value = '';
+                            await handleAdminStatSuccess(data, pseudo);
         } else {
             showNotification(`❌ ${data.message}`, 'error');
         }
@@ -2987,7 +3318,7 @@ async function addStat() {
                 }
         }
 
-        if (!pseudo || isNaN(value)) {
+        if (!pseudo || isNaN(value) || value <= 0) {
                 showNotification('⚠️ Veuillez remplir tous les champs avec une valeur positive', 'error');
                 return;
         }
@@ -3029,10 +3360,7 @@ async function addStat() {
             });
             const data = await res.json();
             if (res.ok) {
-                showNotification(`✅ Essais Motus augmentés (total: ${newTries})`, 'success');
-                socket.emit('admin:refresh');
-                document.getElementById('modifyUser').value = '';
-                document.getElementById('modifyStatValue').value = '';
+                await handleAdminStatSuccess({ message: `Essais Motus augmentés (total: ${newTries})` }, pseudo);
             } else {
                 showNotification(`❌ ${data.message}`, 'error');
             }
@@ -3054,10 +3382,7 @@ async function addStat() {
     const data = await res.json();
     
     if (res.ok) {
-      showNotification(`✅ ${data.message}`, 'success');
-      socket.emit('admin:refresh');
-      document.getElementById('modifyUser').value = '';
-      document.getElementById('modifyStatValue').value = '';
+            await handleAdminStatSuccess(data, pseudo);
     } else {
       showNotification(`❌ ${data.message}`, 'error');
     }
@@ -3122,10 +3447,7 @@ async function removeStat() {
                         });
                         const data = await res.json();
                         if (res.ok) {
-                                showNotification(`✅ Essais Motus mis à jour (total: ${newTries})`, 'success');
-                                socket.emit('admin:refresh');
-                                document.getElementById('modifyUser').value = '';
-                                document.getElementById('modifyStatValue').value = '';
+                            await handleAdminStatSuccess({ message: `Essais Motus mis à jour (total: ${newTries})` }, pseudo);
                         } else {
                                 showNotification(`❌ ${data.message}`, 'error');
                         }
@@ -3147,10 +3469,7 @@ async function removeStat() {
         const data = await res.json();
 
         if (res.ok) {
-            showNotification(`✅ ${data.message}`, 'success');
-            socket.emit('admin:refresh');
-            document.getElementById('modifyUser').value = '';
-            document.getElementById('modifyStatValue').value = '';
+            await handleAdminStatSuccess(data, pseudo);
         } else {
             showNotification(`❌ ${data.message}`, 'error');
         }
@@ -3180,15 +3499,11 @@ async function modifyTime() {
     if (!confirm(`Définir la durée (${time} ms) pour ${pseudo} sur ${allowed[board]} ?`)) return;
 
     try {
-        const res = await fetch('/api/admin/modify-time', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pseudo, boardType: allowed[board], time })
-        });
-        const data = await res.json();
+        const { res, data } = await adminPostJson('/api/admin/modify-time', { pseudo, boardType: allowed[board], time });
         if (res.ok) {
             showNotification(`✅ ${data.message}`, 'success');
             if (socket) socket.emit('admin:refresh');
+            await refreshUserInfoPanel(pseudo);
         } else {
             showNotification(`❌ ${data.message}`, 'error');
         }
@@ -3216,15 +3531,11 @@ async function removeTime() {
     if (!confirm(`Supprimer la durée enregistrée pour ${pseudo} sur ${allowed[board]} ?`)) return;
 
     try {
-        const res = await fetch('/api/admin/remove-time', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pseudo, boardType: allowed[board] })
-        });
-        const data = await res.json();
+        const { res, data } = await adminPostJson('/api/admin/remove-time', { pseudo, boardType: allowed[board] });
         if (res.ok) {
             showNotification(`✅ ${data.message}`, 'success');
             if (socket) socket.emit('admin:refresh');
+            await refreshUserInfoPanel(pseudo);
         } else {
             showNotification(`❌ ${data.message}`, 'error');
         }
@@ -3252,15 +3563,11 @@ async function modifyTries() {
     if (!confirm(`Définir ${tries} essais pour ${pseudo} sur Motus ?`)) return;
 
     try {
-        const res = await fetch('/api/admin/modify-tries', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pseudo, tries })
-        });
-        const data = await res.json();
+        const { res, data } = await adminPostJson('/api/admin/modify-tries', { pseudo, tries });
         if (res.ok) {
             showNotification(`✅ ${data.message}`, 'success');
             if (socket) socket.emit('admin:refresh');
+            await refreshUserInfoPanel(pseudo);
         } else {
             showNotification(`❌ ${data.message}`, 'error');
         }
@@ -3281,16 +3588,11 @@ async function modifyTries() {
             }
 
             try {
-                const res = await fetch('/api/admin/set-tag', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, tag, color: "#ffffff" })
-                });
-
-                const data = await res.json();
+                const { res, data } = await adminPostJson('/api/admin/set-tag', { pseudo, tag, color: "#ffffff" });
                 
                 if (res.ok) {
                     showNotification(`✅ ${data.message}`, 'success');
+                    await refreshUserInfoPanel(pseudo);
                     document.getElementById('tagUser').value = '';
                     document.getElementById('tagValue').value = '';
                 } else {
@@ -3313,16 +3615,11 @@ async function modifyTries() {
             if (!confirm(`Supprimer le tag de ${pseudo} ?`)) return;
 
             try {
-                const res = await fetch('/api/admin/remove-tag', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo })
-                });
-
-                const data = await res.json();
+                const { res, data } = await adminPostJson('/api/admin/remove-tag', { pseudo });
                 
                 if (res.ok) {
                     showNotification(`✅ ${data.message}`, 'success');
+                    await refreshUserInfoPanel(pseudo);
                     document.getElementById('tagUser').value = '';
                     document.getElementById('tagValue').value = '';
                 } else {
@@ -3351,18 +3648,14 @@ async function modifyTries() {
             if (!confirm(`⚠️ ATTENTION ⚠️\n\nSupprimer définitivement l'utilisateur "${pseudo}" ?\n\nToutes ses données seront perdues !`)) return;
 
             try {
-                const res = await fetch('/api/admin/delete-user', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo })
-                });
-
-                const data = await res.json();
+                const { res, data } = await adminPostJson('/api/admin/delete-user', { pseudo });
                 
                 if (res.ok) {
                     showNotification(`✅ ${data.message}`, 'success');
                     document.getElementById('deleteUser').value = '';
                     socket.emit('admin:refresh');
+                    const userInfoDisplay = document.getElementById('userInfoDisplay');
+                    if (userInfoDisplay) userInfoDisplay.classList.remove('visible');
                 } else {
                     showNotification(`❌ ${data.message}`, 'error');
                 }
@@ -3403,15 +3696,11 @@ async function modifyTries() {
             if (!confirm(`Supprimer les entrées ${label} de "${pseudo}" ?`)) return;
 
             try {
-                const res = await fetch('/api/admin/clear-from-leaderboard', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, boardType, resetTimes })
-                });
-                const data = await res.json();
+                const { res, data } = await adminPostJson('/api/admin/clear-from-leaderboard', { pseudo, boardType, resetTimes });
                 if (res.ok) {
                     showNotification(`✅ ${data.message}`, 'success');
                     if (socket) socket.emit('admin:refresh');
+                    await refreshUserInfoPanel(pseudo);
                 } else {
                     showNotification(`❌ ${data.message || 'Erreur lors du nettoyage'}`, 'error');
                 }
@@ -3915,39 +4204,6 @@ async function modifyTries() {
             }
         }
 
-        async function resetLeaderboard(type) {
-            if (type !== 'all') return;
-
-            if (!confirm(`⚠️ Êtes-vous SÛR de vouloir réinitialiser TOUS les leaderboards (sauf Clicks) ?\nUn backup sera créé automatiquement.`)) {
-                return;
-            }
-
-            // Double confirmation pour éviter les accidents
-            if (!confirm(`⚠️ Confirmation finale : Supprimer TOUTES les données ?`)) {
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/admin/reset-leaderboard', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ boardType: 'all' })
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    showNotification(`✅ ${data.message}`, 'success');
-                    socket.emit('admin:refresh');
-                    loadBackups();
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showNotification('⚠️ Erreur lors du reset', 'error');
-            }
-        }
 
         async function createBackup() {
             if (!confirm("Créer un backup manuel de toutes les stats (y compris Clicks) ?")) return;

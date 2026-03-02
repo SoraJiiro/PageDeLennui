@@ -18,6 +18,7 @@ export function initMotus(socket) {
   let hyphenIndices = [];
   let totalWords = null;
   let foundWordsCount = 0;
+  const gridGap = 5;
 
   function updateAvancement() {
     if (avancement) {
@@ -53,40 +54,85 @@ export function initMotus(socket) {
   }
 
   // Initialiser la grille
+  function computeTileSize(length) {
+    const viewportWidth = window.innerWidth || 1280;
+    const viewportHeight = window.innerHeight || 720;
+    const containerRect =
+      grid.parentElement &&
+      typeof grid.parentElement.getBoundingClientRect === "function"
+        ? grid.parentElement.getBoundingClientRect()
+        : null;
+
+    const keyboardHeight = keyboard
+      ? keyboard.getBoundingClientRect().height || 210
+      : 210;
+
+    const availableWidth = Math.max(
+      180,
+      Math.min(
+        (containerRect?.width || viewportWidth) - 24,
+        viewportWidth - 28,
+      ),
+    );
+
+    const availableHeight = Math.max(
+      150,
+      Math.min(
+        (containerRect?.height || viewportHeight) - keyboardHeight - 130,
+        viewportHeight - keyboardHeight - 170,
+      ),
+    );
+
+    const sizeFromWidth = (availableWidth - (length - 1) * gridGap) / length;
+    const sizeFromHeight =
+      (availableHeight - (maxRows - 1) * gridGap) / maxRows;
+    const baseTileSize = Math.floor(Math.min(sizeFromWidth, sizeFromHeight));
+    const minTileSize = 22;
+    const maxTileSize = 70;
+    return Math.max(minTileSize, Math.min(maxTileSize, baseTileSize));
+  }
+
+  function applyResponsiveGridSizing(length) {
+    const tileSize = computeTileSize(length);
+    grid.style.setProperty("--motus-tile-size", `${tileSize}px`);
+    grid.style.width = "100%";
+    grid.style.height = "fit-content";
+    grid.style.gridTemplateRows = `repeat(${maxRows}, ${tileSize}px)`;
+    grid.style.gap = `${gridGap}px`;
+
+    Array.from(grid.children).forEach((row) => {
+      row.style.gridTemplateColumns = `repeat(${length}, ${tileSize}px)`;
+      row.style.gap = `${gridGap}px`;
+      Array.from(row.children).forEach((tile) => {
+        tile.style.fontSize = `${Math.max(12, Math.floor(tileSize * 0.58))}px`;
+        tile.style.lineHeight = `${tileSize}px`;
+      });
+    });
+  }
+
+  function scheduleMotusResize() {
+    const runResize = () => {
+      if (wordLength > 0) {
+        applyResponsiveGridSizing(wordLength);
+      }
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(runResize);
+    });
+  }
+
   function createGrid(length) {
     grid.innerHTML = "";
     wordLength = length;
 
-    const maxWidth = 350;
-    const maxHeight = 300;
-    const gap = 5;
-    const rows = 6;
-
-    const sizeFromWidth = (maxWidth - (length - 1) * gap) / length;
-    const sizeFromHeight = (maxHeight - (rows - 1) * gap) / rows;
-    const baseTileSize = Math.floor(Math.min(sizeFromWidth, sizeFromHeight));
-    const minTileSize = 40;
-    const maxTileSize = 70;
-    const tileSize = Math.max(minTileSize, Math.min(maxTileSize, baseTileSize));
-    grid.style.setProperty("--motus-tile-size", `${tileSize}px`);
-
-    // Mettre à jour les styles de la grille
-    grid.style.width = "fit-content";
-    grid.style.height = "fit-content";
-    grid.style.gridTemplateRows = `repeat(${rows}, ${tileSize}px)`;
-    grid.style.gap = `${gap}px`;
-
     for (let i = 0; i < maxRows; i++) {
       const row = document.createElement("div");
       row.className = "motus-row";
-      row.style.gridTemplateColumns = `repeat(${length}, ${tileSize}px)`;
-      row.style.gap = `${gap}px`;
 
       for (let j = 0; j < length; j++) {
         const tile = document.createElement("div");
         tile.className = "motus-tile";
-        tile.style.fontSize = `${tileSize * 0.6}px`; // Taille de police dynamique
-        tile.style.lineHeight = `${tileSize}px`;
 
         if (hyphenIndices.includes(j)) {
           tile.textContent = "-";
@@ -96,6 +142,8 @@ export function initMotus(socket) {
       }
       grid.appendChild(row);
     }
+
+    applyResponsiveGridSizing(length);
   }
 
   // Initialiser le clavier
@@ -147,6 +195,8 @@ export function initMotus(socket) {
 
     spaceRow.appendChild(spaceBtn);
     keyboard.appendChild(spaceRow);
+
+    applyResponsiveGridSizing(wordLength);
   }
 
   function updateKeyCorrectIndices(letter, tileIndex, keyElement) {
@@ -436,6 +486,8 @@ export function initMotus(socket) {
         // Boutons gérés dans init
       }
     }
+
+    scheduleMotusResize();
   });
 
   socket.on("motus:result", ({ result, guess, won }) => {
@@ -460,9 +512,7 @@ export function initMotus(socket) {
   document.addEventListener("keydown", (e) => {
     // Vérifier si stage11 est visible
     const stage = document.getElementById("stage11");
-    if (!stage) return;
-    const rect = stage.getBoundingClientRect();
-    if (rect.top > window.innerHeight || rect.bottom < 0) return;
+    if (!stage || !stage.classList.contains("is-active")) return;
 
     // Autoriser les raccourcis navigateur (Ctrl+R, Ctrl+Shift+I, etc.)
     if (e.ctrlKey || e.altKey || e.metaKey) return;
@@ -506,4 +556,18 @@ export function initMotus(socket) {
   // Demander les stats initiales
   socket.emit("motus:requestWordListLength");
   socket.emit("motus:getFoundWords");
+
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      scheduleMotusResize();
+    }, 80);
+  });
+
+  window.addEventListener("pde:section-activated", (e) => {
+    const sectionId = e && e.detail ? e.detail.sectionId : null;
+    if (sectionId !== "stage11") return;
+    scheduleMotusResize();
+  });
 }

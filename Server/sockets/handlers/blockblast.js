@@ -16,11 +16,47 @@ function registerBlockblastHandlers({
   config,
 }) {
   const { updateReviveContextFromScore } = require("../../services/economy");
+  const { addMoney } = require("../../services/wallet");
+  const { applyAutoBadges } = require("../../services/badgesAuto");
   const {
     getReviveCostForSocket,
     incrementReviveUsed,
   } = require("../../services/economy");
-  const { consumeLife } = require("../../services/reviveLives");
+  const { consumeLife, getLivesCount } = require("../../services/reviveLives");
+  const { spendMoney } = require("../../services/wallet");
+
+  function rewardBlockblastFinal(score) {
+    const s = Math.max(0, Math.floor(Number(score) || 0));
+    if (s <= 0) return;
+    const gain = Math.floor(s / 400) * 3;
+    if (gain <= 0) return;
+
+    const wallet = addMoney(
+      FileService,
+      pseudo,
+      gain,
+      FileService.data.clicks[pseudo] || 0,
+    );
+    io.to("user:" + pseudo).emit("economy:wallet", wallet);
+    io.to("user:" + pseudo).emit("economy:gameMoney", {
+      game: "blockblast",
+      gained: gain,
+      total: gain,
+      final: true,
+      score: s,
+    });
+    try {
+      FileService.appendLog({
+        type: "GAME_MONEY_REWARD",
+        pseudo,
+        game: "blockblast",
+        gained: gain,
+        total: gain,
+        score: s,
+        at: new Date().toISOString(),
+      });
+    } catch {}
+  }
 
   function setRunnerProgress(score) {
     const s = Math.floor(Number(score) || 0);
@@ -64,6 +100,9 @@ function registerBlockblastHandlers({
     if (s > current) {
       FileService.data.blockblastScores[pseudo] = s;
       FileService.save("blockblastScores", FileService.data.blockblastScores);
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
       // Si score meilleur et indication finale, enregistrer le temps de run
       if (final === true && typeof elapsedMs === "number") {
         if (!FileService.data.blockblastBestTimes)
@@ -103,6 +142,10 @@ function registerBlockblastHandlers({
       );
     }
 
+    if (final === true) {
+      rewardBlockblastFinal(s);
+    }
+
     leaderboardManager.broadcastBlockBlastLB(io);
   });
 
@@ -137,7 +180,7 @@ function registerBlockblastHandlers({
     }
   });
 
-  socket.on("blockblast:payToContinue", ({ price }) => {
+  socket.on("blockblast:payToContinue", ({ price, mode } = {}) => {
     const info = getReviveCostForSocket(socket, "blockblast");
     if (!info || info.cost == null) {
       socket.emit(
@@ -151,10 +194,23 @@ function registerBlockblastHandlers({
       return;
     }
 
-    const lifeResult = consumeLife(FileService, pseudo);
-    if (lifeResult.used) {
+    const requestedMode = mode === "life" || mode === "pay" ? mode : "auto";
+
+    if (requestedMode === "life") {
+      const lifeResult = consumeLife(FileService, pseudo);
+      if (!lifeResult.used) {
+        socket.emit(
+          "blockblast:reviveError",
+          "Tu n'as plus de vie disponible.",
+        );
+        return;
+      }
+
       incrementReviveUsed(socket, "blockblast");
-      socket.emit("blockblast:reviveSuccess");
+      socket.emit("blockblast:reviveSuccess", {
+        usedLife: true,
+        remainingLives: lifeResult.remaining,
+      });
 
       console.log(
         withGame(
@@ -165,7 +221,24 @@ function registerBlockblastHandlers({
       return;
     }
 
-    const userClicks = FileService.data.clicks[pseudo] || 0;
+    if (requestedMode === "auto") {
+      const lifeResult = consumeLife(FileService, pseudo);
+      if (lifeResult.used) {
+        incrementReviveUsed(socket, "blockblast");
+        socket.emit("blockblast:reviveSuccess", {
+          usedLife: true,
+          remainingLives: lifeResult.remaining,
+        });
+
+        console.log(
+          withGame(
+            `[BlockBlast] ${pseudo} a utilise une vie de reanimation.`,
+            colors.green,
+          ),
+        );
+        return;
+      }
+    }
 
     const cost = Number(info.cost);
     if (!Number.isFinite(cost) || cost < 0) {
@@ -173,35 +246,29 @@ function registerBlockblastHandlers({
       return;
     }
 
-    if (userClicks >= cost) {
-      FileService.data.clicks[pseudo] = userClicks - cost;
-      FileService.save("clicks", FileService.data.clicks);
+    const spend = spendMoney(
+      FileService,
+      pseudo,
+      cost,
+      FileService.data.clicks?.[pseudo] || 0,
+    );
 
-      recalculateMedals(
-        pseudo,
-        FileService.data.clicks[pseudo],
-        io,
-        false,
-        true,
-      );
-
-      // Notifier le nouveau solde de clicks
-      socket.emit("clicker:you", {
-        score: FileService.data.clicks[pseudo],
-      });
-      leaderboardManager.broadcastClickerLB(io);
-
+    if (spend.ok) {
+      socket.emit("economy:wallet", spend.wallet);
       incrementReviveUsed(socket, "blockblast");
-      socket.emit("blockblast:reviveSuccess");
+      socket.emit("blockblast:reviveSuccess", {
+        usedLife: false,
+        remainingLives: getLivesCount(FileService, pseudo),
+      });
 
       console.log(
         withGame(
-          `[BlockBlast] ${pseudo} a payé ${cost} clicks pour continuer.`,
+          `[BlockBlast] ${pseudo} a payé ${cost} monnaie pour continuer.`,
           colors.green,
         ),
       );
     } else {
-      socket.emit("blockblast:reviveError", "Pas assez de clicks !");
+      socket.emit("blockblast:reviveError", "Pas assez de monnaie !");
     }
   });
 

@@ -16,6 +16,7 @@
             media="(prefers-color-scheme: light)" />
 
         <script defer type="text/javascript" src="/js/uiColor.js"></script>
+        <script defer src="js/annexBack.js"></script>
         <script src="/socket.io/socket.io.js"></script>
         <script defer src="/js/auto_reload.js"></script>
 
@@ -64,17 +65,13 @@
     </head>
     <body>
         <div class="container">
-            <button onclick="window.location.href='/'" class="btn-back"><i
-                    class="fa-solid fa-arrow-left"></i> Retour</button>
-            <br>
-
             <div class="rules-content">
                 <h2><i class="fa-solid fa-scale-balanced"></i> Règlement &
                     Informations</h2>
 
                 <div class="rules-body">
                     <h3 class="rules-section-title"><i
-                            class="fa-solid fa-circle-info"></i> Commun</h3>
+                            class="fa-solid fa-circle-info"></i> Général</h3>
                     <div class="rule-item">
                         <i class="fa fa-info-circle"></i>
                         <p>Vous pouvez changer la couleur de l'<u>UI</u> et de
@@ -193,6 +190,36 @@
                     </div>
 
                     <h3 class="rules-section-title"><i
+                            class="fa-solid fa-coins"></i> Système éco</h3>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Farming : accumulez des <u>clicks</u> en jouant ou en
+                            interagissant, puis convertissez-les en
+                            <u>monnaie</u> (5 clicks = 1 monnaie). La monnaie
+                            peut être dépensée sur le site ou convertie en
+                            <u>tokens</u> pour les jeux casino.</p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Taux de conversion : <br>• 5 clicks = 1 monnaie<br>•
+                            50 monnaie = 1 token<br>• 1 token = 50 monnaie
+                            (reconversion possible)<br>Conversions <a
+                                href="./conversion.html">ici</a>
+                        </p>
+                    </div>
+
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Limite quotidienne : conversion monnaie → tokens
+                            limitée à <strong>750 tokens</strong> par jour
+                            (équivalent <strong>37 500</strong> monnaie). Les
+                            conversions minimales sont 5 clicks → 1 monnaie et
+                            50 monnaie → 1 token.</p>
+                    </div>
+
+                    <h3 class="rules-section-title"><i
                             class="fa-solid fa-gamepad"></i> Jeux</h3>
                     <div class="rule-item">
                         <i class="fa fa-info-circle"></i>
@@ -212,7 +239,7 @@
                         <i class="fa fa-bug"></i>
                         <p>Si vous trouvez un <u>BUG</u> (exploit, erreur,
                             affichage...), signalez-le à l'Admin. Il sera
-                            corrigé au plus vite. (contre quelque heures de
+                            corrigé au plus vite. (contre quelques heures de
                             sommeil...)</p>
                     </div>
 
@@ -221,6 +248,24 @@
                         <p>Toute tentative de <u>TRICHE</u> entraînera un
                             bannissement indéterminé et votre compte sera marqué
                             comme <u>TRICHEUR</u>.</p>
+                    </div>
+
+                    <h4 style="margin-top:12px;">Jeux — Charte de gains</h4>
+                    <div class="rule-item">
+                        <i class="fa fa-info-circle"></i>
+                        <p>Les jeux peuvent attribuer des gains en
+                            <u>monnaie</u> et/ou en <u>tokens</u> selon les
+                            événements et performances. Les récompenses exactes
+                            dépendent du jeu et des règles propres à chaque jeu
+                            (voir l'interface du jeu pour le détail).</p>
+                    </div>
+                    <div class="rule-item">
+                        <i class="fa fa-warning"></i>
+                        <p>Les gains distribués dans les jeux respectent le
+                            principe suivant : pas de gains pour les
+                            comportements frauduleux (macros, exploits...). Les
+                            admins peuvent ajuster/annuler des gains en cas
+                            d'abus.</p>
                     </div>
 
                     <h3 class="rules-section-title"><i
@@ -248,7 +293,8 @@
                         <i class="fa-solid fa-handshake"></i>
                         <p>Vous avez déjà accepté le règlement. Se fesant, vous
                             ne pouvez plus le contester et serez considéré comme
-                            ayant <u>lu</u> toutes les règles ci-présentes.</p>
+                            consentent et au courant de <u>toutes</u> les règles
+                            ci-présentes.</p>
                     </div>
                 </div>
                 <center>
@@ -259,8 +305,8 @@
                 <p
                     style="font-size: 1rem; text-align: center; margin-top: 10px;">
                     Dernière mise à jour du règlement : <br><br> <mark
-                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">8
-                        Février 2026 - 2H54</mark></p>
+                        style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block;">1<sup>er</sup>
+                        Mars 2026 - 2H46</mark></p>
             </div>
         </div>
 

@@ -43,6 +43,118 @@ export function initBlockBlast(socket) {
     // Temps écoulé en millisecondes (persisté avec la sauvegarde)
     elapsedMs: 0,
   };
+  let availableReviveLives = 0;
+
+  function normalizeLives(value) {
+    return Math.max(0, Math.floor(Number(value) || 0));
+  }
+
+  function requestReviveLives() {
+    try {
+      socket.emit("revive:getLives");
+    } catch {}
+  }
+
+  function computeRevivePrice() {
+    const multiplier = 25;
+    const escalation = 1 + state.revivesUsed * 0.75;
+    let price = Math.floor(state.score * multiplier * escalation);
+    price = Math.max(5000, Math.min(5000000, price));
+    return price;
+  }
+
+  function updateReviveSectionContent() {
+    if (!ui.reviveSection || ui.reviveSection.style.display !== "block") return;
+    const remainingRevives = 3 - state.revivesUsed;
+    if (ui.reviveCount) ui.reviveCount.textContent = remainingRevives;
+
+    const hasShopLife = availableReviveLives > 0;
+    const price = computeRevivePrice();
+    let modeEl = ui.reviveSection.querySelector(".blockblast-revive-mode");
+    if (!modeEl) {
+      modeEl = document.createElement("p");
+      modeEl.className = "blockblast-revive-mode";
+      modeEl.style.margin = "5px 0";
+      modeEl.style.fontSize = "0.95rem";
+      const priceEl = ui.reviveSection.querySelector(
+        ".blockblast-revive-price",
+      );
+      if (priceEl && priceEl.parentNode) {
+        priceEl.parentNode.insertBefore(modeEl, priceEl);
+      }
+    }
+    if (modeEl) {
+      modeEl.textContent = hasShopLife
+        ? "Choix: vie du shop ou paiement en monnaie"
+        : "Choix: paiement en monnaie";
+    }
+
+    let payBtnEl = ui.reviveSection.querySelector(".blockblast-revive-pay-btn");
+    if (!payBtnEl) {
+      payBtnEl = document.createElement("button");
+      payBtnEl.className = "blockblast-revive-pay-btn";
+      payBtnEl.style.display = "none";
+      payBtnEl.style.marginTop = "8px";
+      payBtnEl.style.padding = "8px 12px";
+      payBtnEl.style.cursor = "pointer";
+      payBtnEl.style.background = "transparent";
+      payBtnEl.style.border = "1px solid #fff";
+      payBtnEl.style.color = "#fff";
+      const cancelLike = ui.reviveSection.querySelector(
+        ".blockblast-revive-btn",
+      );
+      if (cancelLike && cancelLike.parentNode) {
+        cancelLike.parentNode.insertBefore(payBtnEl, cancelLike.nextSibling);
+      }
+    }
+
+    if (ui.revivePrice) {
+      ui.revivePrice.textContent = hasShopLife
+        ? "0"
+        : price.toLocaleString("fr-FR");
+    }
+
+    if (ui.reviveBtn) {
+      ui.reviveBtn.innerHTML = hasShopLife
+        ? `Utiliser 1 vie (<span class="revive-count">${remainingRevives}</span> restants)`
+        : `Payer ${price
+            .toLocaleString("fr-FR")
+            .replace(
+              /\s/g,
+              "\u00a0",
+            )} monnaie (<span class="revive-count">${remainingRevives}</span> restants)`;
+      ui.reviveBtn.onclick = () => {
+        socket.emit("blockblast:payToContinue", {
+          price,
+          mode: hasShopLife ? "life" : "pay",
+        });
+        toggleScrollLock(false);
+      };
+    }
+
+    if (payBtnEl) {
+      if (hasShopLife) {
+        payBtnEl.style.display = "inline-block";
+        payBtnEl.disabled = false;
+        payBtnEl.style.opacity = "1";
+        payBtnEl.style.cursor = "pointer";
+        payBtnEl.textContent = `Payer ${price
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
+        payBtnEl.onclick = () => {
+          socket.emit("blockblast:payToContinue", { price, mode: "pay" });
+          toggleScrollLock(false);
+        };
+      } else {
+        payBtnEl.style.display = "inline-block";
+        payBtnEl.disabled = true;
+        payBtnEl.style.opacity = "0.6";
+        payBtnEl.style.cursor = "default";
+        payBtnEl.textContent = "Pas de vie disponible";
+        payBtnEl.onclick = null;
+      }
+    }
+  }
 
   // --- Shutdown resume glue (fallback score-only) ---
   let resumeScoreBlockblast = null;
@@ -213,6 +325,11 @@ export function initBlockBlast(socket) {
       );
       scoreAttente = null;
     }
+  });
+
+  socket.on("revive:lives", ({ lives } = {}) => {
+    availableReviveLives = normalizeLives(lives);
+    updateReviveSectionContent();
   });
 
   // Chargement de la sauvegarde au connect (si présente) - permet restore au reload
@@ -1273,22 +1390,8 @@ export function initBlockBlast(socket) {
     if (state.revivesUsed < 3) {
       if (ui.reviveSection) {
         ui.reviveSection.style.display = "block";
-        if (ui.reviveCount) ui.reviveCount.textContent = 3 - state.revivesUsed;
-
-        const multiplier = 25;
-        const escalation = 1 + state.revivesUsed * 0.75;
-        let price = Math.floor(state.score * multiplier * escalation);
-        price = Math.max(5000, Math.min(5000000, price));
-
-        if (ui.revivePrice)
-          ui.revivePrice.textContent = price.toLocaleString("fr-FR");
-
-        if (ui.reviveBtn) {
-          ui.reviveBtn.onclick = () => {
-            socket.emit("blockblast:payToContinue", { price });
-            toggleScrollLock(false);
-          };
-        }
+        updateReviveSectionContent();
+        requestReviveLives();
       }
     } else {
       if (ui.reviveSection) ui.reviveSection.style.display = "none";
@@ -1671,9 +1774,12 @@ export function initBlockBlast(socket) {
     }
   } catch (e) {}
 
-  socket.on("blockblast:reviveSuccess", () => {
+  socket.on("blockblast:reviveSuccess", ({ usedLife, remainingLives } = {}) => {
     state.gameOver = false;
     state.revivesUsed++;
+    if (typeof remainingLives !== "undefined") {
+      availableReviveLives = normalizeLives(remainingLives);
+    }
     ui.gameoverEl.classList.remove("active");
     toggleScrollLock(false);
 
@@ -1686,7 +1792,11 @@ export function initBlockBlast(socket) {
     // Reprendre le timer
     startTimer();
 
-    showNotif("Partie continuée !");
+    showNotif(
+      usedLife
+        ? `Partie continuée ! (vie restante: ${availableReviveLives})`
+        : "Partie continuée !",
+    );
   });
 
   socket.on("blockblast:reviveError", (msg) => {

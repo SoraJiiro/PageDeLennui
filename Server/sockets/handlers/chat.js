@@ -5,6 +5,12 @@ const fs = require("fs");
 const config = require("../../config");
 const { markStepByCode } = require("../../services/easterEggs");
 
+// Global in-memory recent messages map used for basic anti-spam
+const recentMessages = new Map(); // pseudo -> [timestamps]
+const SPAM_WINDOW_MS = 10 * 1000; // 10s window
+const SPAM_MAX_MESSAGES = 5; // max messages in window before auto-mute
+const SPAM_AUTO_MUTE_MS = 30 * 1000; // auto-mute duration (30s)
+
 function registerChatHandlers({
   io,
   socket,
@@ -58,6 +64,13 @@ function registerChatHandlers({
       return u && u.pseudo ? u.pseudo : null;
     }
     return raw;
+  }
+
+  // Envoyer la liste des mutes actuels au client connecté
+  try {
+    socket.emit("chat:muted:update", FileService.data.chatMuted || {});
+  } catch (e) {
+    // ignore
   }
 
   function isUserOnline(targetPseudo) {
@@ -196,6 +209,151 @@ function registerChatHandlers({
   socket.on("chat:message", ({ text }) => {
     let msg = String(text || "").trim();
     if (!msg) return;
+
+    // Vérifier mute côté serveur (persisté)
+    try {
+      FileService.data.chatMuted = FileService.data.chatMuted || {};
+      const muteEntry = FileService.data.chatMuted[pseudo];
+      if (muteEntry) {
+        const now = Date.now();
+        if (muteEntry.until) {
+          const untilTs = new Date(muteEntry.until).getTime();
+          if (untilTs > now && pseudo !== "Admin") {
+            socket.emit("chat:muted", {
+              until: muteEntry.until,
+              by: muteEntry.by || "Admin",
+            });
+            return;
+          }
+          // expired => cleanup
+          delete FileService.data.chatMuted[pseudo];
+          FileService.save("chatMuted", FileService.data.chatMuted);
+          io.emit("chat:muted:update", FileService.data.chatMuted);
+        } else {
+          // indefinite mute
+          if (pseudo !== "Admin") {
+            socket.emit("chat:muted", {
+              until: null,
+              by: muteEntry.by || "Admin",
+            });
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // Anti-spam simple: window-based counting
+    try {
+      const now = Date.now();
+      const arr = Array.isArray(recentMessages.get(pseudo))
+        ? recentMessages.get(pseudo)
+        : [];
+      const filtered = arr.filter((t) => now - t < SPAM_WINDOW_MS);
+      filtered.push(now);
+      recentMessages.set(pseudo, filtered);
+      if (filtered.length > SPAM_MAX_MESSAGES && pseudo !== "Admin") {
+        // auto-mute
+        FileService.data.chatMuted = FileService.data.chatMuted || {};
+        const until = new Date(now + SPAM_AUTO_MUTE_MS).toISOString();
+        FileService.data.chatMuted[pseudo] = { until, by: "AutoSpam" };
+        FileService.save("chatMuted", FileService.data.chatMuted);
+        io.emit("chat:muted:update", FileService.data.chatMuted);
+        // Supprimer les 4 derniers messages de l'utilisateur pour atténuer le spam
+        try {
+          FileService.data.historique = Array.isArray(
+            FileService.data.historique,
+          )
+            ? FileService.data.historique
+            : [];
+          // Trouver indices des messages de l'utilisateur (par ordre chronologique)
+          const userMsgIndices = [];
+          for (let i = FileService.data.historique.length - 1; i >= 0; i--) {
+            const m = FileService.data.historique[i];
+            if (m && m.name === pseudo && typeof m.id === "string") {
+              userMsgIndices.push(i);
+            }
+            if (userMsgIndices.length >= 4) break;
+          }
+
+          const removedIds = [];
+          if (userMsgIndices.length) {
+            // Supprimer du tableau en partant des indices les plus élevés
+            userMsgIndices.sort((a, b) => b - a);
+            for (const idx of userMsgIndices) {
+              const removed = FileService.data.historique.splice(idx, 1);
+              if (removed && removed[0] && removed[0].id)
+                removedIds.push(removed[0].id);
+            }
+            // Sauvegarde
+            if (FileService.data.historique.length > 200)
+              FileService.data.historique =
+                FileService.data.historique.slice(-200);
+            FileService.save("historique", FileService.data.historique);
+          }
+
+          // Emettre événements de suppression pour que les clients retirent les messages
+          for (const id of removedIds) {
+            try {
+              io.emit("chat:delete", { id });
+            } catch (e) {}
+          }
+
+          // Envoi message système indiquant l'action
+          const sysPayload = {
+            id:
+              "sys-" +
+              Date.now().toString(36) +
+              Math.random().toString(36).substr(2),
+            name: "Système",
+            text: `${pseudo} a été mis en sourdine automatiquement pour spam (${SPAM_AUTO_MUTE_MS / 1000}s). ${removedIds.length ? `${removedIds.length} message(s) supprimé(s).` : ""}`,
+            at: new Date().toISOString(),
+            tag: null,
+            pfp: null,
+            badges: [],
+          };
+          FileService.data.historique.push(sysPayload);
+          if (FileService.data.historique.length > 200)
+            FileService.data.historique =
+              FileService.data.historique.slice(-200);
+          FileService.save("historique", FileService.data.historique);
+          FileService.appendLog(sysPayload);
+          io.emit("chat:message", sysPayload);
+        } catch (e) {
+          // Si erreur, on continue quand même
+          try {
+            const sysPayload = {
+              id:
+                "sys-" +
+                Date.now().toString(36) +
+                Math.random().toString(36).substr(2),
+              name: "Système",
+              text: `${pseudo} a été mis en sourdine automatiquement pour spam (${SPAM_AUTO_MUTE_MS / 1000}s).`,
+              at: new Date().toISOString(),
+              tag: null,
+              pfp: null,
+              badges: [],
+            };
+            FileService.data.historique = Array.isArray(
+              FileService.data.historique,
+            )
+              ? FileService.data.historique
+              : [];
+            FileService.data.historique.push(sysPayload);
+            if (FileService.data.historique.length > 200)
+              FileService.data.historique =
+                FileService.data.historique.slice(-200);
+            FileService.save("historique", FileService.data.historique);
+            FileService.appendLog(sysPayload);
+            io.emit("chat:message", sysPayload);
+          } catch (e2) {}
+        }
+        return;
+      }
+    } catch (e) {
+      // ignore spam check on error
+    }
 
     if (msg.toLowerCase() === "/rainbow") {
       markStepByCode(pseudo, "r1", FileService);

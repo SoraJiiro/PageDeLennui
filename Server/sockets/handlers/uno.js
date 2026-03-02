@@ -23,6 +23,7 @@ function registerUnoHandlers({
   withGame,
   colors,
 }) {
+  const { addMoney } = require("../../services/wallet");
   function ensureGame() {
     if (!getUnoGame()) setUnoGame(new UnoGame());
     return getUnoGame();
@@ -263,6 +264,9 @@ function registerUnoHandlers({
 
     if (res.winner) {
       const participants = gameActuelle.joueurs.map((p) => p.pseudo);
+      const moneyByPlayer = Object.fromEntries(
+        participants.map((p) => [p, p === res.winner ? 250 : 0]),
+      );
       console.log(
         withGame(
           `\n🏆 [${colors.orange}${res.winner}${colors.violet}] a gagné la partie de UNO !\n`,
@@ -279,7 +283,32 @@ function registerUnoHandlers({
           applyAutoBadges({ pseudo: p, FileService });
         } catch {}
       });
-      io.emit("uno:gameEnd", { winner: res.winner });
+
+      const winnerWallet = addMoney(
+        FileService,
+        res.winner,
+        250,
+        FileService.data.clicks[res.winner] || 0,
+      );
+      io.to("user:" + res.winner).emit("economy:wallet", winnerWallet);
+      io.to("user:" + res.winner).emit("economy:gameMoney", {
+        game: "uno",
+        gained: 250,
+        total: 250,
+        final: true,
+      });
+      try {
+        FileService.appendLog({
+          type: "GAME_MONEY_REWARD",
+          pseudo: res.winner,
+          game: "uno",
+          gained: 250,
+          total: 250,
+          at: new Date().toISOString(),
+        });
+      } catch {}
+
+      io.emit("uno:gameEnd", { winner: res.winner, moneyByPlayer });
       leaderboardManager.broadcastUnoLB(io);
       setUnoGame(new UnoGame());
       uno_broadcastLobby();

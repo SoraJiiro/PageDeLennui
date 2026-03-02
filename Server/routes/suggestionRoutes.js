@@ -13,6 +13,8 @@ const transporter = nodemailer.createTransport({
     user: "pde.suggestions@gmail.com",
     pass: process.env.APP_PSWD,
   },
+  family: 4, // Forcer IPV4 contre le proxy
+  secured: false,
 });
 
 // Verify connection configuration

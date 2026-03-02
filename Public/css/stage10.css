@@ -15,6 +15,7 @@
   align-items: center;
   gap: 12px;
   width: min(92vw, 650px);
+  height: 100%;
   position: relative;
 }
 

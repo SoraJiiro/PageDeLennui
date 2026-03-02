@@ -36,17 +36,6 @@
   width: fit-content;
 }
 
-.coinflip-header h2::after {
-  content: "(Vous savez quoi faire, bande d'addictes)";
-  position: absolute;
-  bottom: 50%;
-  left: 107.5%;
-  transform: translateY(50%);
-  font-size: 0.8rem;
-  color: var(--primary-color);
-  width: max-content;
-}
-
 .coin-container {
   perspective: 1000px;
   width: 200px;

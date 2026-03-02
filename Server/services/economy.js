@@ -66,6 +66,8 @@ function applyDailyProfitCap({ FileService, pseudo, profit, currentClicks }) {
     return { allowedProfit: 0, capped: false, cap: 0, earned: 0, remaining: 0 };
   }
 
+  // NOTE: Cap disabled — on enregistre simplement le profit complet
+  // pour monitoring journalier, sans le restreindre.
   const dailyEarnings = ensureDailyEarningsBucket(FileService);
   const today = getTodayKey();
 
@@ -80,36 +82,27 @@ function applyDailyProfitCap({ FileService, pseudo, profit, currentClicks }) {
 
   const bucket = dailyEarnings[pseudo];
   bucket.earned = Math.max(0, Math.floor(Number(bucket.earned) || 0));
-  bucket.baseClicks = Math.max(0, Math.floor(Number(bucket.baseClicks) || 0));
 
-  const cap = Math.floor(bucket.baseClicks * 0.55);
-  const remaining = Math.max(0, cap - bucket.earned);
+  // Autorise la totalité du profit demandé
+  const allowedProfit = p;
+  const capped = false;
+  const cap = 0;
 
-  const allowedProfit = Math.min(p, remaining);
-  const capped = allowedProfit !== p;
-
-  if (allowedProfit > 0) {
-    bucket.earned += allowedProfit;
-    FileService.save("dailyEarnings", dailyEarnings);
-  } else {
-    // Même si rien n'est ajouté, on persiste le reset journalier éventuel
-    // (utile pour fixer baseClicks + date au 1er passage)
-    if (!existing || existing.date !== today) {
-      FileService.save("dailyEarnings", dailyEarnings);
-    }
-  }
+  bucket.earned += Math.max(0, Math.floor(allowedProfit));
+  FileService.save("dailyEarnings", dailyEarnings);
 
   return {
     allowedProfit,
     capped,
     cap,
     earned: bucket.earned,
-    remaining: Math.max(0, cap - bucket.earned),
+    remaining: Infinity,
   };
 }
 
 function getDailyProfitCapInfo({ FileService, pseudo, currentClicks }) {
-  if (!pseudo) return { cap: 0, earned: 0, remaining: 0, baseClicks: 0 };
+  if (!pseudo)
+    return { cap: null, earned: 0, remaining: Infinity, baseClicks: 0 };
 
   const dailyEarnings = ensureDailyEarningsBucket(FileService);
   const today = getTodayKey();
@@ -117,25 +110,55 @@ function getDailyProfitCapInfo({ FileService, pseudo, currentClicks }) {
   const existing = dailyEarnings[pseudo];
   if (!existing || existing.date !== today) {
     const baseClicks = Math.max(0, Math.floor(Number(currentClicks) || 0));
-    const cap = Math.floor(baseClicks * 0.55);
-    return { cap, earned: 0, remaining: cap, baseClicks, active: false };
+    return {
+      cap: null,
+      earned: 0,
+      remaining: Infinity,
+      baseClicks,
+      active: false,
+    };
   }
 
   const bucket = existing;
   bucket.earned = Math.max(0, Math.floor(Number(bucket.earned) || 0));
   bucket.baseClicks = Math.max(0, Math.floor(Number(bucket.baseClicks) || 0));
 
-  const cap = Math.floor(bucket.baseClicks * 0.55);
-  const remaining = Math.max(0, cap - bucket.earned);
-
+  // Cap disabled — ne retourne plus de valeur de cap/remaining.
   return {
-    cap,
+    cap: null,
     earned: bucket.earned,
-    remaining,
+    remaining: Infinity,
     baseClicks: bucket.baseClicks,
     active: true,
     date: bucket.date,
   };
+}
+
+/**
+ * Enregistre un gain (tokens) dans le suivi dailyEarnings pour monitoring.
+ * amount doit être un entier >= 0.
+ */
+function recordDailyEarned({ FileService, pseudo, amount, currentClicks }) {
+  const a = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!pseudo || a <= 0) return null;
+
+  const dailyEarnings = ensureDailyEarningsBucket(FileService);
+  const today = getTodayKey();
+
+  const existing = dailyEarnings[pseudo];
+  if (!existing || existing.date !== today) {
+    dailyEarnings[pseudo] = {
+      date: today,
+      earned: 0,
+      baseClicks: Math.max(0, Math.floor(Number(currentClicks) || 0)),
+    };
+  }
+
+  const bucket = dailyEarnings[pseudo];
+  bucket.earned = Math.max(0, Math.floor(Number(bucket.earned) || 0)) + a;
+  FileService.save("dailyEarnings", dailyEarnings);
+
+  return bucket;
 }
 
 function ensureReviveContext(socket) {
@@ -218,4 +241,5 @@ module.exports = {
   computeReviveCost,
   REVIVE_PRICING,
   getDailyProfitCapInfo,
+  recordDailyEarned,
 };

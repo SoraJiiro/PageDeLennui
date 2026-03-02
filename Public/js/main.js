@@ -1,5 +1,6 @@
-import { keyBind } from "./util.js";
+import { keyBind, showNotif } from "./util.js";
 import { initCanvasResizer } from "./canvas_resize.js";
+import { initSiteMoneyAverageWidget } from "./site_money_average.js";
 
 (async () => {
   // ---------- Conexion Socket ----------
@@ -47,14 +48,13 @@ import { initCanvasResizer } from "./canvas_resize.js";
     const modules = await Promise.all([
       import("./chat.js"),
       import("./clicker.js"),
-      import("./clicker_leaderboard.js"),
+      import("./economie_leaderboard.js"),
       import("./dino.js"),
       import("./dino_leaderboard.js"),
       import("./uno.js"),
       import("./flappy.js"),
       import("./flappy_leaderboard.js"),
       import("./uno_leaderboard.js"),
-
       import("./puissance4.js"),
       import("./p4_leaderboard.js"),
       import("./blockblast.js"),
@@ -75,12 +75,18 @@ import { initCanvasResizer } from "./canvas_resize.js";
       import("./coinflip_leaderboard.js"),
       import("./pixelwar.js"),
       import("./pixelwar_leaderboard.js"),
+      import("./roulette.js"),
+      import("./slots.js"),
+      import("./roulette_leaderboard.js"),
+      import("./slots_leaderboard.js"),
+      import("./sudoku.js"),
+      import("./sudoku_leaderboard.js"),
     ]);
 
     const [
       chat,
       clicker,
-      clickerLeaderboard,
+      economieLeaderboard,
       dino,
       dinoLeaderboard,
       uno,
@@ -107,6 +113,12 @@ import { initCanvasResizer } from "./canvas_resize.js";
       coinflipLeaderboard,
       pixelwar,
       pixelwarLeaderboard,
+      roulette,
+      slots,
+      rouletteLeaderboard,
+      slotsLeaderboard,
+      sudoku,
+      sudokuLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -156,6 +168,23 @@ import { initCanvasResizer } from "./canvas_resize.js";
       }
     });
 
+    socket.on("economy:gameMoney", (payload = {}) => {
+      if (payload.final !== true) return;
+      const gained = Number(payload.gained || 0);
+      const total = Number(payload.total || gained || 0);
+      if (gained <= 0 && total <= 0) return;
+      const game = String(payload.game || "jeu");
+      showNotif(
+        `💰 ${game} : +${gained.toLocaleString(
+          "fr-FR",
+        )} monnaie (total gagné: ${total.toLocaleString("fr-FR")})`,
+      );
+    });
+
+    initSiteMoneyAverageWidget(socket, {
+      elementId: "hub-site-money-average",
+    });
+
     if (
       !subPageName.endsWith("demande-tag.html") &&
       !subPageName.endsWith("suggestions.html") &&
@@ -167,8 +196,8 @@ import { initCanvasResizer } from "./canvas_resize.js";
     ) {
       if (chat?.initChat) chat.initChat(socket);
       if (clicker?.initClicker) clicker.initClicker(socket);
-      if (clickerLeaderboard?.initClickerLeaderboard)
-        clickerLeaderboard.initClickerLeaderboard(socket);
+      if (economieLeaderboard?.initEconomieLeaderboard)
+        economieLeaderboard.initEconomieLeaderboard(socket);
       if (dino?.initDino) dino.initDino(socket);
       if (dinoLeaderboard?.initDinoLeaderboard)
         dinoLeaderboard.initDinoLeaderboard(socket);
@@ -206,6 +235,15 @@ import { initCanvasResizer } from "./canvas_resize.js";
       if (pixelwar?.initPixelWar) pixelwar.initPixelWar(socket);
       if (pixelwarLeaderboard?.initPixelwarLeaderboard)
         pixelwarLeaderboard.initPixelwarLeaderboard(socket);
+      if (roulette?.initRoulette) roulette.initRoulette(socket);
+      if (slots?.initSlots) slots.initSlots(socket);
+      if (rouletteLeaderboard?.initRouletteLeaderboard)
+        rouletteLeaderboard.initRouletteLeaderboard(socket);
+      if (slotsLeaderboard?.initSlotsLeaderboard)
+        slotsLeaderboard.initSlotsLeaderboard(socket);
+      if (sudoku?.initSudoku) sudoku.initSudoku(socket);
+      if (sudokuLeaderboard?.initSudokuLeaderboard)
+        sudokuLeaderboard.initSudokuLeaderboard(socket);
       if (passwordChange?.setupPasswordChange)
         passwordChange.setupPasswordChange(socket);
     } else {
@@ -226,24 +264,7 @@ import { initCanvasResizer } from "./canvas_resize.js";
       socket.emit("blackjack:state");
       socket.emit("coinflip:state");
       socket.emit("mash:state");
-
-      try {
-        socket.emit("economy:getProfitCap");
-      } catch (e) {}
-    });
-
-    socket.on("economy:profitCap", (capInfo) => {
-      try {
-        const el = document.getElementById("sb-cap-info");
-        if (!el) return;
-        const rem = Number(capInfo?.remaining || 0);
-        if (rem <= 0) {
-          el.innerHTML = `<i class="fa-solid fa-lock"></i> Quota de gains atteint aujourd'hui.`;
-          el.style.color = "#ff6666";
-        } else {
-          el.innerHTML = `<i class="fa-solid fa-lock"></i> Quota quotidien : ${rem.toLocaleString("fr-FR")}`;
-        }
-      } catch (e) {}
+      socket.emit("economy:getWallet");
     });
 
     socket.connect();

@@ -8,6 +8,7 @@ const { exec } = require("child_process");
 const { recalculateMedals } = require("../moduleGetter");
 const { EGG_DEFS } = require("../services/easterEggs");
 const { ensureShopCatalog } = require("../services/shopCatalog");
+const { getWallet } = require("../services/wallet");
 const words = require("../constants/words");
 
 const CUSTOM_BADGE_PRICE = 200000;
@@ -56,6 +57,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       case "coinflipStats":
         leaderboardManager.broadcastCoinflipLB(io);
         break;
+      case "rouletteStats":
+        leaderboardManager.broadcastRouletteLB(io);
+        break;
+      case "slotsStats":
+        leaderboardManager.broadcastSlotsLB(io);
+        break;
+      case "sudokuScores":
+        leaderboardManager.broadcastSudokuLB(io);
+        break;
     }
   }
 
@@ -89,6 +99,46 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       Object.assign(payload, extra);
     }
     io.to("admins").emit("admin:data:refresh", payload);
+  }
+
+  function emitUserStatsRealtimeUpdate(pseudo, statType) {
+    if (!io) return;
+    const p = String(pseudo || "").trim();
+    if (!p) return;
+
+    const clicks = Number(
+      (FileService.data.clicks && FileService.data.clicks[p]) || 0,
+    );
+
+    io.to("user:" + p).emit("clicker:you", { score: clicks });
+    io.to("user:" + p).emit(
+      "economy:wallet",
+      getWallet(FileService, p, clicks),
+    );
+    io.to("user:" + p).emit("admin:statsUpdated", {
+      statType: String(statType || "unknown"),
+      at: new Date().toISOString(),
+    });
+  }
+
+  function emitClickerUpgradesRealtimeUpdate(pseudo) {
+    if (!io) return;
+    const p = String(pseudo || "").trim();
+    if (!p) return;
+
+    try {
+      const {
+        getUserUpgrades,
+        getUpgradePayload,
+      } = require("../sockets/handlers/clicker");
+      getUserUpgrades(FileService, p);
+      io.to("user:" + p).emit(
+        "clicker:upgrades",
+        getUpgradePayload(FileService, p),
+      );
+    } catch (e) {
+      console.warn("[ADMIN] emit clicker:upgrades failed", e);
+    }
   }
 
   // Middleware pour vérifier que l'utilisateur est Admin
@@ -640,9 +690,11 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     const pseudos = new Set([...Object.keys(clicks), ...Object.keys(daily)]);
 
     const rows = Array.from(pseudos).map((pseudo) => {
-      const currentClicks = Math.max(
+      const currentTokens = Math.max(
         0,
-        Math.floor(Number(clicks[pseudo]) || 0),
+        Math.floor(
+          Number((FileService.data.wallets || {})[pseudo]?.tokens) || 0,
+        ),
       );
       const bucket = daily[pseudo];
 
@@ -653,18 +705,16 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       const earned = hasToday
         ? Math.max(0, Math.floor(Number(bucket.earned) || 0))
         : 0;
-      const cap = baseClicks == null ? null : Math.floor(baseClicks * 0.25);
-      const remaining = cap == null ? null : Math.max(0, cap - earned);
-
+      // Cap removed — on conserve le monitoring (baseClicks / earned)
       return {
         pseudo,
         date: hasToday ? today : bucket?.date || null,
-        currentClicks,
+        currentTokens,
         baseClicks,
-        cap,
+        cap: null,
         earned,
-        remaining,
-        capPotential: Math.floor(currentClicks * 0.25),
+        remaining: null,
+        capPotential: null,
         hasToday,
       };
     });
@@ -753,6 +803,58 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     res.json(transactions);
   });
 
+  router.get("/game-money-rewards", requireAdmin, (req, res) => {
+    try {
+      const limit = Math.max(1, Math.min(1000, Number(req.query.limit) || 200));
+      const gameFilter = String(req.query.game || "")
+        .trim()
+        .toLowerCase();
+      const pseudoFilter = String(req.query.pseudo || "")
+        .trim()
+        .toLowerCase();
+
+      const logPath = FileService.files.chatLogs;
+      if (!logPath || !fs.existsSync(logPath)) {
+        return res.json([]);
+      }
+
+      const lines = fs.readFileSync(logPath, "utf-8").split("\n");
+      const rows = [];
+
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = String(lines[i] || "").trim();
+        if (!line) continue;
+        try {
+          const entry = JSON.parse(line);
+          if (entry.type !== "GAME_MONEY_REWARD") continue;
+
+          const game = String(entry.game || "").toLowerCase();
+          const pseudo = String(entry.pseudo || "").toLowerCase();
+
+          if (gameFilter && game !== gameFilter) continue;
+          if (pseudoFilter && !pseudo.includes(pseudoFilter)) continue;
+
+          rows.push({
+            at: entry.at || null,
+            pseudo: entry.pseudo || null,
+            game: entry.game || null,
+            gained: Number(entry.gained || 0),
+            total: Number(entry.total || 0),
+            score: Number(entry.score || 0),
+            maxTile: Number(entry.maxTile || 0),
+          });
+
+          if (rows.length >= limit) break;
+        } catch {}
+      }
+
+      return res.json(rows);
+    } catch (e) {
+      console.error("[ADMIN] /game-money-rewards error:", e);
+      return res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
   router.post("/transactions/approve", requireAdmin, (req, res) => {
     const { id } = req.body;
     if (!FileService.data.transactions)
@@ -766,13 +868,17 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     if (tx.status !== "pending")
       return res.status(400).json({ message: "Transaction déjà traitée" });
 
-    // Effectuer le transfert
-    if (!FileService.data.clicks[tx.to]) FileService.data.clicks[tx.to] = 0;
-    FileService.data.clicks[tx.to] += tx.amount;
-    FileService.save("clicks", FileService.data.clicks);
-
-    // Recalculer médailles destinataire
-    recalculateMedals(tx.to, FileService.data.clicks[tx.to], io);
+    // Effectuer le transfert (monnaie)
+    const recipientWallet = getWallet(
+      FileService,
+      tx.to,
+      (FileService.data.clicks && FileService.data.clicks[tx.to]) || 0,
+    );
+    FileService.data.wallets[tx.to].money = Math.max(
+      0,
+      Number(recipientWallet.money || 0) + Number(tx.amount || 0),
+    );
+    FileService.save("wallets", FileService.data.wallets);
 
     // Mettre à jour statut
     tx.status = "approved";
@@ -781,12 +887,19 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     // Notifier
     broadcastSystemMessage(
-      `Don de ${tx.amount} clicks de ${tx.from} à ${tx.to} approuvé par l'Admin.`,
+      `Don de ${tx.amount} monnaie de ${tx.from} à ${tx.to} approuvé par l'Admin.`,
       true,
     );
 
     // Update destinataire si connecté
-    refreshLeaderboard("clicks");
+    io.to("user:" + tx.to).emit(
+      "economy:wallet",
+      getWallet(
+        FileService,
+        tx.to,
+        (FileService.data.clicks && FileService.data.clicks[tx.to]) || 0,
+      ),
+    );
 
     emitAdminRefresh("transactions");
 
@@ -815,14 +928,17 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       }
     }
 
-    // Rembourser l'expéditeur
-    if (!FileService.data.clicks[senderPseudo])
-      FileService.data.clicks[senderPseudo] = 0;
-    FileService.data.clicks[senderPseudo] += tx.amount;
-    FileService.save("clicks", FileService.data.clicks);
-
-    // Recalculer médailles expéditeur
-    recalculateMedals(senderPseudo, FileService.data.clicks[senderPseudo], io);
+    // Rembourser l'expéditeur (monnaie)
+    const senderWallet = getWallet(
+      FileService,
+      senderPseudo,
+      (FileService.data.clicks && FileService.data.clicks[senderPseudo]) || 0,
+    );
+    FileService.data.wallets[senderPseudo].money = Math.max(
+      0,
+      Number(senderWallet.money || 0) + Number(tx.amount || 0),
+    );
+    FileService.save("wallets", FileService.data.wallets);
 
     // Mettre à jour statut
     tx.status = "rejected";
@@ -830,10 +946,17 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     FileService.save("transactions", FileService.data.transactions);
 
     broadcastSystemMessage(
-      `Don de ${tx.amount} clicks de ${senderPseudo} à ${tx.to} refusé par l'Admin.`,
+      `Don de ${tx.amount} monnaie de ${senderPseudo} à ${tx.to} refusé par l'Admin.`,
       true,
     );
-    refreshLeaderboard("clicks");
+    io.to("user:" + senderPseudo).emit(
+      "economy:wallet",
+      getWallet(
+        FileService,
+        senderPseudo,
+        (FileService.data.clicks && FileService.data.clicks[senderPseudo]) || 0,
+      ),
+    );
 
     emitAdminRefresh("transactions");
 
@@ -849,10 +972,24 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
 
     try {
+      const { getWallet, peekWallet } = require("../services/wallet");
+      const wallet = peekWallet(
+        FileService,
+        pseudo,
+        (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
+      );
+
+      const pixelUser =
+        pixelWarGame && typeof pixelWarGame.peekUserState === "function"
+          ? pixelWarGame.peekUserState(pseudo)
+          : null;
+
       const data = {
         pseudo,
         clicks:
           (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
+        money: Number(wallet.money || 0),
+        tokens: Number(wallet.tokens || 0),
         dinoScore:
           (FileService.data.dinoScores &&
             FileService.data.dinoScores[pseudo]) ||
@@ -876,6 +1013,16 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         score2048: FileService.data.scores2048
           ? FileService.data.scores2048[pseudo] || 0
           : 0,
+        sudokuCompleted:
+          (FileService.data.sudokuScores &&
+            FileService.data.sudokuScores[pseudo]) ||
+          0,
+        rouletteStats: FileService.data.rouletteStats
+          ? FileService.data.rouletteStats[pseudo] || null
+          : null,
+        slotsStats: FileService.data.slotsStats
+          ? FileService.data.slotsStats[pseudo] || null
+          : null,
         motusScores: FileService.data.motusScores
           ? FileService.data.motusScores[pseudo]
           : null,
@@ -883,7 +1030,28 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         medals:
           (FileService.data.medals && FileService.data.medals[pseudo]) || [],
         tag: FileService.data.tags ? FileService.data.tags[pseudo] || "" : "",
+        customPixelColors:
+          pixelUser && Array.isArray(pixelUser.unlockedCustomColors)
+            ? pixelUser.unlockedCustomColors
+            : [],
+        clickerUpgrades: {},
+        clickerUpgradeCatalog: [],
       };
+
+      try {
+        const { getUpgradePayload } = require("../sockets/handlers/clicker");
+        const upgradesPayload = getUpgradePayload(FileService, pseudo);
+        data.clickerUpgrades =
+          upgradesPayload && typeof upgradesPayload.upgrades === "object"
+            ? upgradesPayload.upgrades
+            : {};
+        data.clickerUpgradeCatalog = Array.isArray(upgradesPayload?.catalog)
+          ? upgradesPayload.catalog
+          : [];
+      } catch (e) {
+        data.clickerUpgrades = {};
+        data.clickerUpgradeCatalog = [];
+      }
 
       const userRec = dbUsers.findByPseudoExact
         ? dbUsers.findByPseudoExact(pseudo)
@@ -1046,6 +1214,134 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
   });
 
+  // --- Clicker: gestion admin des niveaux d'upgrades ---
+  router.post("/clicker/upgrades/level", requireAdmin, (req, res) => {
+    const { pseudo, upgradeId, action } = req.body || {};
+    const p = String(pseudo || "").trim();
+    const id = String(upgradeId || "").trim();
+    const mode = String(action || "")
+      .trim()
+      .toLowerCase();
+
+    if (!p) return res.status(400).json({ message: "Pseudo manquant" });
+    if (!id) return res.status(400).json({ message: "Upgrade manquant" });
+    if (!["increase", "decrease", "reset"].includes(mode)) {
+      return res.status(400).json({ message: "Action invalide" });
+    }
+
+    try {
+      const {
+        getUserUpgrades,
+        getUpgradePayload,
+      } = require("../sockets/handlers/clicker");
+
+      const payload = getUpgradePayload(FileService, p);
+      const catalog = Array.isArray(payload?.catalog) ? payload.catalog : [];
+      const def = catalog.find((entry) => entry && entry.id === id);
+      if (!def) {
+        return res.status(404).json({ message: "Upgrade introuvable" });
+      }
+
+      const maxLevel = Math.max(0, Math.floor(Number(def.maxLevel || 0)));
+      const userUpgrades = getUserUpgrades(FileService, p);
+      const currentLevel = Math.max(
+        0,
+        Math.floor(Number(userUpgrades[id] || 0)),
+      );
+
+      let nextLevel = currentLevel;
+      if (mode === "increase") nextLevel = Math.min(maxLevel, currentLevel + 1);
+      if (mode === "decrease") nextLevel = Math.max(0, currentLevel - 1);
+      if (mode === "reset") nextLevel = 0;
+
+      if (nextLevel <= 0) {
+        delete userUpgrades[id];
+      } else {
+        userUpgrades[id] = nextLevel;
+      }
+
+      FileService.save("clickerUpgrades", FileService.data.clickerUpgrades);
+
+      emitClickerUpgradesRealtimeUpdate(p);
+
+      return res.json({
+        success: true,
+        pseudo: p,
+        upgradeId: id,
+        previousLevel: currentLevel,
+        level: nextLevel,
+        maxLevel,
+      });
+    } catch (e) {
+      console.error("[ADMIN] clicker upgrade level error", e);
+      return res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  router.post("/clicker/upgrades/reset-all", requireAdmin, (req, res) => {
+    const { pseudo } = req.body || {};
+    const p = String(pseudo || "").trim();
+
+    if (!p) return res.status(400).json({ message: "Pseudo manquant" });
+
+    try {
+      const { getUserUpgrades } = require("../sockets/handlers/clicker");
+      const userUpgrades = getUserUpgrades(FileService, p);
+
+      for (const key of Object.keys(userUpgrades)) {
+        delete userUpgrades[key];
+      }
+
+      FileService.save("clickerUpgrades", FileService.data.clickerUpgrades);
+      emitClickerUpgradesRealtimeUpdate(p);
+
+      return res.json({
+        success: true,
+        pseudo: p,
+      });
+    } catch (e) {
+      console.error("[ADMIN] clicker upgrade reset-all error", e);
+      return res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  router.post("/clicker/upgrades/max-all", requireAdmin, (req, res) => {
+    const { pseudo } = req.body || {};
+    const p = String(pseudo || "").trim();
+
+    if (!p) return res.status(400).json({ message: "Pseudo manquant" });
+
+    try {
+      const {
+        getUserUpgrades,
+        getUpgradePayload,
+      } = require("../sockets/handlers/clicker");
+
+      const userUpgrades = getUserUpgrades(FileService, p);
+      const payload = getUpgradePayload(FileService, p);
+      const catalog = Array.isArray(payload?.catalog) ? payload.catalog : [];
+
+      for (const def of catalog) {
+        if (!def || !def.id) continue;
+        const maxLevel = Math.max(0, Math.floor(Number(def.maxLevel || 0)));
+        if (maxLevel > 0) {
+          userUpgrades[def.id] = maxLevel;
+        }
+      }
+
+      FileService.save("clickerUpgrades", FileService.data.clickerUpgrades);
+      emitClickerUpgradesRealtimeUpdate(p);
+
+      return res.json({
+        success: true,
+        pseudo: p,
+      });
+    } catch (e) {
+      console.error("[ADMIN] clicker upgrade max-all error", e);
+      return res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
   // Reset Motus: mots trouvés (score) + mots déjà trouvés (state)
   router.post("/motus/reset-found-words", requireAdmin, (req, res) => {
     const { pseudo } = req.body || {};
@@ -1097,6 +1393,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const validStats = [
       "clicks",
+      "wallets",
       "dinoScores",
       "flappyScores",
       "unoWins",
@@ -1104,10 +1401,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "sudokuScores",
       "scores2048",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "rouletteStats",
+      "slotsStats",
       "pixelwar",
     ];
 
@@ -1136,6 +1436,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           message: `Modification PixelWar: ${pseudo} - ${field} = ${value}`,
         });
 
+        emitUserStatsRealtimeUpdate(pseudo, statType);
+
         return res.json({
           message: `PixelWar ${field} de ${pseudo} mis à jour à ${value}`,
         });
@@ -1144,11 +1446,22 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       }
     }
 
-    if (statType === "blackjackStats" || statType === "coinflipStats") {
+    if (
+      statType === "blackjackStats" ||
+      statType === "coinflipStats" ||
+      statType === "rouletteStats" ||
+      statType === "slotsStats" ||
+      statType === "wallets"
+    ) {
       if (!field) {
         return res
           .status(400)
           .json({ message: "Le champ (field) est requis pour " + statType });
+      }
+      if (statType === "wallets" && field !== "money" && field !== "tokens") {
+        return res
+          .status(400)
+          .json({ message: "Field invalide pour wallets (money|tokens)" });
       }
 
       if (!FileService.data[statType]) FileService.data[statType] = {};
@@ -1164,6 +1477,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         level: "action",
         message: `Modification: ${pseudo} - ${statType}.${field} = ${value}`,
       });
+
+      emitUserStatsRealtimeUpdate(pseudo, statType);
 
       return res.json({
         message: `Statistique ${statType}.${field} de ${pseudo} mise à jour à ${value}`,
@@ -1185,6 +1500,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       FileService.save("motusScores", FileService.data.motusScores);
       refreshLeaderboard(statType);
 
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
       return res.json({
         message: `Statistique ${statType} (mots) de ${pseudo} mise à jour à ${value}`,
       });
@@ -1204,6 +1521,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       level: "action",
       message: `Modification: ${pseudo} - ${statType} = ${value}`,
     });
+
+    emitUserStatsRealtimeUpdate(pseudo, statType);
 
     res.json({
       message: `Statistique ${statType} de ${pseudo} mise à jour à ${value}`,
@@ -1317,6 +1636,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       const validStats = [
         "clicks",
+        "wallets",
         "dinoScores",
         "flappyScores",
         "unoWins",
@@ -1324,8 +1644,11 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "blockblastScores",
         "snakeScores",
         "motusScores",
+        "sudokuScores",
         "scores2048",
         "mashWins",
+        "rouletteStats",
+        "slotsStats",
       ];
 
       if (!validStats.includes(statType)) {
@@ -1348,6 +1671,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       });
     }
 
+    emitUserStatsRealtimeUpdate(pseudo, "modify-all-stats");
+
     res.json({
       message: `Toutes les statistiques de ${pseudo} ont été mises à jour`,
     });
@@ -1362,6 +1687,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const validStats = [
       "clicks",
+      "wallets",
       "dinoScores",
       "flappyScores",
       "unoWins",
@@ -1369,10 +1695,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "sudokuScores",
       "scores2048",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "rouletteStats",
+      "slotsStats",
       "pixelwar",
     ];
 
@@ -1381,12 +1710,21 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
 
     if (
-      (statType === "blackjackStats" || statType === "coinflipStats") &&
+      (statType === "blackjackStats" ||
+        statType === "coinflipStats" ||
+        statType === "rouletteStats" ||
+        statType === "slotsStats" ||
+        statType === "wallets") &&
       !field
     ) {
       return res
         .status(400)
         .json({ message: "Le champ (field) est requis pour " + statType });
+    }
+    if (statType === "wallets" && field !== "money" && field !== "tokens") {
+      return res
+        .status(400)
+        .json({ message: "Field invalide pour wallets (money|tokens)" });
     }
 
     if (statType === "pixelwar") {
@@ -1422,6 +1760,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         message: `Modification massive PixelWar: ${field} = ${value} pour ${users.length} joueurs`,
       });
 
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
       return res.json({
         message: `PixelWar.${field} mis à ${value} pour ${users.length} joueurs`,
       });
@@ -1429,7 +1769,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      if (statType === "blackjackStats" || statType === "coinflipStats") {
+      if (
+        statType === "blackjackStats" ||
+        statType === "coinflipStats" ||
+        statType === "rouletteStats" ||
+        statType === "slotsStats" ||
+        statType === "wallets"
+      ) {
         if (!FileService.data[statType][pseudo])
           FileService.data[statType][pseudo] = {};
         FileService.data[statType][pseudo][field] = value;
@@ -1460,6 +1806,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       message: `Modification massive: ${statType} = ${value} pour ${users.length} joueurs`,
     });
 
+    users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
     res.json({
       message: `${statType} de ${users.length} joueurs mis à ${value}`,
     });
@@ -1475,6 +1823,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const validStats = [
       "clicks",
+      "wallets",
       "dinoScores",
       "flappyScores",
       "unoWins",
@@ -1482,10 +1831,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "sudokuScores",
       "scores2048",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "rouletteStats",
+      "slotsStats",
       "pixelwar",
     ];
 
@@ -1494,10 +1846,19 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
 
     if (
-      (statType === "blackjackStats" || statType === "coinflipStats") &&
+      (statType === "blackjackStats" ||
+        statType === "coinflipStats" ||
+        statType === "rouletteStats" ||
+        statType === "slotsStats" ||
+        statType === "wallets") &&
       !field
     ) {
       return res.status(400).json({ message: "Field required" });
+    }
+    if (statType === "wallets" && field !== "money" && field !== "tokens") {
+      return res
+        .status(400)
+        .json({ message: "Field invalide pour wallets (money|tokens)" });
     }
 
     if (statType === "pixelwar") {
@@ -1526,6 +1887,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         message: `Ajout massif PixelWar: ${field} +${value} pour ${users.length} joueurs`,
       });
 
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
       return res.json({
         message: `${value} ajouté à PixelWar.${field} de ${users.length} joueurs`,
       });
@@ -1533,7 +1896,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      if (statType === "blackjackStats" || statType === "coinflipStats") {
+      if (
+        statType === "blackjackStats" ||
+        statType === "coinflipStats" ||
+        statType === "rouletteStats" ||
+        statType === "slotsStats" ||
+        statType === "wallets"
+      ) {
         if (!FileService.data[statType][pseudo])
           FileService.data[statType][pseudo] = {};
         const current = FileService.data[statType][pseudo][field] || 0;
@@ -1569,6 +1938,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       message: `Ajout massif: ${statType} +${value} pour ${users.length} joueurs`,
     });
 
+    users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
     res.json({
       message: `${value} ajouté à ${statType} de ${users.length} joueurs`,
     });
@@ -1584,6 +1955,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const validStats = [
       "clicks",
+      "wallets",
       "dinoScores",
       "flappyScores",
       "unoWins",
@@ -1591,10 +1963,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "sudokuScores",
       "scores2048",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "rouletteStats",
+      "slotsStats",
       "pixelwar",
     ];
 
@@ -1603,10 +1978,19 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
 
     if (
-      (statType === "blackjackStats" || statType === "coinflipStats") &&
+      (statType === "blackjackStats" ||
+        statType === "coinflipStats" ||
+        statType === "rouletteStats" ||
+        statType === "slotsStats" ||
+        statType === "wallets") &&
       !field
     ) {
       return res.status(400).json({ message: "Field required" });
+    }
+    if (statType === "wallets" && field !== "money" && field !== "tokens") {
+      return res
+        .status(400)
+        .json({ message: "Field invalide pour wallets (money|tokens)" });
     }
 
     if (statType === "pixelwar") {
@@ -1642,7 +2026,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
-      if (statType === "blackjackStats" || statType === "coinflipStats") {
+      if (
+        statType === "blackjackStats" ||
+        statType === "coinflipStats" ||
+        statType === "rouletteStats" ||
+        statType === "slotsStats" ||
+        statType === "wallets"
+      ) {
         if (!FileService.data[statType][pseudo])
           FileService.data[statType][pseudo] = {};
         const current = FileService.data[statType][pseudo][field] || 0;
@@ -1681,6 +2071,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       message: `Retrait massif: ${statType} -${value} pour ${users.length} joueurs`,
     });
 
+    users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
     res.json({
       message: `${value} retiré de ${statType} de ${users.length} joueurs`,
     });
@@ -1696,6 +2088,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const validStats = [
       "clicks",
+      "wallets",
       "dinoScores",
       "flappyScores",
       "unoWins",
@@ -1703,10 +2096,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "sudokuScores",
       "scores2048",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "rouletteStats",
+      "slotsStats",
       "pixelwar",
     ];
 
@@ -1740,13 +2136,26 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         message: `Ajout PixelWar: ${pseudo} (${field} + ${value}) -> ${next}`,
       });
 
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
       return res.json({
         message: `PixelWar.${field} de ${pseudo} augmenté de ${value} (total: ${next})`,
       });
     }
 
-    if (statType === "blackjackStats" || statType === "coinflipStats") {
+    if (
+      statType === "blackjackStats" ||
+      statType === "coinflipStats" ||
+      statType === "rouletteStats" ||
+      statType === "slotsStats" ||
+      statType === "wallets"
+    ) {
       if (!field) return res.status(400).json({ message: "Field required" });
+      if (statType === "wallets" && field !== "money" && field !== "tokens") {
+        return res
+          .status(400)
+          .json({ message: "Field invalide pour wallets (money|tokens)" });
+      }
 
       if (!FileService.data[statType]) FileService.data[statType] = {};
       if (!FileService.data[statType][pseudo])
@@ -1758,6 +2167,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       FileService.save(statType, FileService.data[statType]);
       refreshLeaderboard(statType);
+
+      emitUserStatsRealtimeUpdate(pseudo, statType);
 
       return res.json({
         message: `Statistique ${statType}.${field} de ${pseudo} augmentée de ${value} (total: ${newVal})`,
@@ -1783,6 +2194,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       FileService.save("motusScores", FileService.data.motusScores);
       refreshLeaderboard(statType);
 
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
       return res.json({
         message: `Statistique ${statType} (mots) de ${pseudo} augmentée de ${value} (total: ${newWords})`,
       });
@@ -1805,6 +2218,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       level: "action",
       message: `Ajout: ${pseudo} (${statType} + ${value}) -> ${newValue}`,
     });
+
+    emitUserStatsRealtimeUpdate(pseudo, statType);
 
     res.json({
       message: `Statistique ${statType} de ${pseudo} augmentée de ${value} (total: ${newValue})`,
@@ -1936,6 +2351,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const validStats = [
       "clicks",
+      "wallets",
       "dinoScores",
       "flappyScores",
       "unoWins",
@@ -1943,10 +2359,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "blockblastScores",
       "snakeScores",
       "motusScores",
+      "sudokuScores",
       "scores2048",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
+      "rouletteStats",
+      "slotsStats",
       "pixelwar",
     ];
 
@@ -1980,24 +2399,39 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         message: `Retrait PixelWar: ${pseudo} (${field} - ${value}) -> ${next}`,
       });
 
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
       return res.json({
         message: `PixelWar.${field} de ${pseudo} diminué de ${value} (total: ${next})`,
       });
     }
 
-    if (statType === "blackjackStats" || statType === "coinflipStats") {
+    if (
+      statType === "blackjackStats" ||
+      statType === "coinflipStats" ||
+      statType === "rouletteStats" ||
+      statType === "slotsStats" ||
+      statType === "wallets"
+    ) {
       if (!field) return res.status(400).json({ message: "Field required" });
+      if (statType === "wallets" && field !== "money" && field !== "tokens") {
+        return res
+          .status(400)
+          .json({ message: "Field invalide pour wallets (money|tokens)" });
+      }
 
       if (!FileService.data[statType]) FileService.data[statType] = {};
       if (!FileService.data[statType][pseudo])
         FileService.data[statType][pseudo] = {};
 
       const current = FileService.data[statType][pseudo][field] || 0;
-      const newVal = current - value;
+      const newVal = Math.max(0, current - value);
       FileService.data[statType][pseudo][field] = newVal;
 
       FileService.save(statType, FileService.data[statType]);
       refreshLeaderboard(statType);
+
+      emitUserStatsRealtimeUpdate(pseudo, statType);
 
       return res.json({
         message: `Statistique ${statType}.${field} de ${pseudo} diminuée de ${value} (total: ${newVal})`,
@@ -2022,6 +2456,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       FileService.save("motusScores", FileService.data.motusScores);
       refreshLeaderboard(statType);
 
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
       return res.json({
         message: `Statistique ${statType} (mots) de ${pseudo} diminuée de ${value} (total: ${newWords})`,
       });
@@ -2044,6 +2480,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       level: "action",
       message: `Retrait: ${pseudo} (${statType} - ${value}) -> ${newValue}`,
     });
+
+    emitUserStatsRealtimeUpdate(pseudo, statType);
 
     res.json({
       message: `Statistique ${statType} de ${pseudo} diminuée de ${value} (total: ${newValue})`,
@@ -2084,6 +2522,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       delete FileService.data.blackjackStats[pseudo];
     if (FileService.data.coinflipStats)
       delete FileService.data.coinflipStats[pseudo];
+    if (FileService.data.rouletteStats)
+      delete FileService.data.rouletteStats[pseudo];
+    if (FileService.data.slotsStats) delete FileService.data.slotsStats[pseudo];
+    if (FileService.data.sudokuScores)
+      delete FileService.data.sudokuScores[pseudo];
+    if (FileService.data.wallets) delete FileService.data.wallets[pseudo];
     delete FileService.data.medals[pseudo];
     delete FileService.data.blockblastSaves[pseudo];
     if (FileService.data.motusScores)
@@ -2123,6 +2567,14 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       FileService.save("blackjackStats", FileService.data.blackjackStats);
     if (FileService.data.coinflipStats)
       FileService.save("coinflipStats", FileService.data.coinflipStats);
+    if (FileService.data.rouletteStats)
+      FileService.save("rouletteStats", FileService.data.rouletteStats);
+    if (FileService.data.slotsStats)
+      FileService.save("slotsStats", FileService.data.slotsStats);
+    if (FileService.data.sudokuScores)
+      FileService.save("sudokuScores", FileService.data.sudokuScores);
+    if (FileService.data.wallets)
+      FileService.save("wallets", FileService.data.wallets);
     if (FileService.data.motusScores)
       FileService.save("motusScores", FileService.data.motusScores);
     if (FileService.data.motusState)
@@ -2283,6 +2735,18 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       clearSimple("coinflipStats", "coinflip");
     };
 
+    const clearRoulette = () => {
+      clearSimple("rouletteStats", "roulette");
+    };
+
+    const clearSlots = () => {
+      clearSimple("slotsStats", "slots");
+    };
+
+    const clearSudoku = () => {
+      clearSimple("sudokuScores", "sudoku");
+    };
+
     try {
       switch (type) {
         case "clicker":
@@ -2321,6 +2785,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         case "coinflip":
           clearCoinflip();
           break;
+        case "roulette":
+          clearRoulette();
+          break;
+        case "slots":
+          clearSlots();
+          break;
+        case "sudoku":
+          clearSudoku();
+          break;
         case "all":
         default:
           clearClicker();
@@ -2335,6 +2808,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           clearMotus();
           clearBlackjack();
           clearCoinflip();
+          clearRoulette();
+          clearSlots();
+          clearSudoku();
           break;
       }
 
@@ -2376,6 +2852,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
             break;
           case "coinflip":
             refreshLeaderboard("coinflipStats");
+            break;
+          case "roulette":
+            refreshLeaderboard("rouletteStats");
+            break;
+          case "slots":
+            refreshLeaderboard("slotsStats");
+            break;
+          case "sudoku":
+            refreshLeaderboard("sudokuScores");
             break;
         }
       });
@@ -2443,6 +2928,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "mash_wins.json",
         "blackjack_stats.json",
         "coinflip_stats.json",
+        "roulette_stats.json",
+        "slots_stats.json",
+        "sudoku_scores.json",
       ];
 
       filesToBackup.forEach((file) => {
@@ -2501,6 +2989,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         FileService.data.coinflipStats = {};
         FileService.save("coinflipStats", {});
 
+        FileService.data.rouletteStats = {};
+        FileService.save("rouletteStats", {});
+
+        FileService.data.slotsStats = {};
+        FileService.save("slotsStats", {});
+
+        FileService.data.sudokuScores = {};
+        FileService.save("sudokuScores", {});
+
         // Refresh all leaderboards
         refreshLeaderboard("dinoScores");
         refreshLeaderboard("flappyScores");
@@ -2513,6 +3010,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         refreshLeaderboard("mashWins");
         refreshLeaderboard("blackjackStats");
         refreshLeaderboard("coinflipStats");
+        refreshLeaderboard("rouletteStats");
+        refreshLeaderboard("slotsStats");
+        refreshLeaderboard("sudokuScores");
 
         message = `Tous les leaderboards (sauf clicks) ont été réinitialisés. Backup créé : ${backupId}`;
       } else {
@@ -2546,26 +3046,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       const currentBackupPath = path.join(backupDir, timestamp);
       fs.mkdirSync(currentBackupPath, { recursive: true });
 
-      const filesToBackup = [
-        "clicks.json", // Inclus explicitement pour le backup manuel
-        "dino_scores.json",
-        "flappy_scores.json",
-        "uno_wins.json",
-        "p4_wins.json",
-        "blockblast_scores.json",
-        "blockblast_best_times.json",
-        "blockblast_saves.json",
-        "snake_scores.json",
-        "snake_best_times.json",
-        "motus_scores.json",
-        "2048_scores.json",
-        "mash_wins.json",
-        "blackjack_stats.json",
-        "coinflip_stats.json",
-      ];
-
-      filesToBackup.forEach((file) => {
-        const src = path.join(__dirname, "..", "data", file);
+      // Sauvegarder tous les fichiers JSON du dossier data (aucune exclusion)
+      const dataDir = path.join(__dirname, "..", "data");
+      const files = fs.readdirSync(dataDir);
+      files.forEach((file) => {
+        if (!file.endsWith(".json")) return;
+        const src = path.join(dataDir, file);
         if (fs.existsSync(src)) {
           fs.copyFileSync(src, path.join(currentBackupPath, file));
         }

@@ -12,10 +12,16 @@ function registerReviveHandlers({
     getReviveCostForSocket,
     incrementReviveUsed,
   } = require("../../services/economy");
-  const { consumeLife } = require("../../services/reviveLives");
+  const { consumeLife, getLivesCount } = require("../../services/reviveLives");
+  const { spendMoney } = require("../../services/wallet");
+
+  socket.on("revive:getLives", () => {
+    const lives = getLivesCount(FileService, pseudo);
+    socket.emit("revive:lives", { lives });
+  });
 
   function handleRevive(game, label, successEvent, errorEvent, color) {
-    return () => {
+    return ({ mode } = {}) => {
       const info = getReviveCostForSocket(socket, game);
       if (!info || info.cost == null) {
         socket.emit(
@@ -29,10 +35,20 @@ function registerReviveHandlers({
         return;
       }
 
-      const lifeResult = consumeLife(FileService, pseudo);
-      if (lifeResult.used) {
+      const requestedMode = mode === "life" || mode === "pay" ? mode : "auto";
+
+      if (requestedMode === "life") {
+        const lifeResult = consumeLife(FileService, pseudo);
+        if (!lifeResult.used) {
+          socket.emit(errorEvent, "Tu n'as plus de vie disponible.");
+          return;
+        }
+
         incrementReviveUsed(socket, game);
-        socket.emit(successEvent);
+        socket.emit(successEvent, {
+          usedLife: true,
+          remainingLives: lifeResult.remaining,
+        });
         console.log(
           withGame(
             `[${label}] ${pseudo} a utilise une vie de reanimation.`,
@@ -42,7 +58,23 @@ function registerReviveHandlers({
         return;
       }
 
-      const userClicks = FileService.data.clicks[pseudo] || 0;
+      if (requestedMode === "auto") {
+        const lifeResult = consumeLife(FileService, pseudo);
+        if (lifeResult.used) {
+          incrementReviveUsed(socket, game);
+          socket.emit(successEvent, {
+            usedLife: true,
+            remainingLives: lifeResult.remaining,
+          });
+          console.log(
+            withGame(
+              `[${label}] ${pseudo} a utilise une vie de reanimation.`,
+              color,
+            ),
+          );
+          return;
+        }
+      }
 
       const cost = Number(info.cost);
       if (!Number.isFinite(cost) || cost < 0) {
@@ -50,34 +82,29 @@ function registerReviveHandlers({
         return;
       }
 
-      if (userClicks >= cost) {
-        FileService.data.clicks[pseudo] = userClicks - cost;
-        FileService.save("clicks", FileService.data.clicks);
+      const spend = spendMoney(
+        FileService,
+        pseudo,
+        cost,
+        FileService.data.clicks?.[pseudo] || 0,
+      );
 
-        recalculateMedals(
-          pseudo,
-          FileService.data.clicks[pseudo],
-          io,
-          false,
-          true,
-        );
-
-        socket.emit("clicker:you", {
-          score: FileService.data.clicks[pseudo],
-        });
-        leaderboardManager.broadcastClickerLB(io);
-
+      if (spend.ok) {
+        socket.emit("economy:wallet", spend.wallet);
         incrementReviveUsed(socket, game);
-        socket.emit(successEvent);
+        socket.emit(successEvent, {
+          usedLife: false,
+          remainingLives: getLivesCount(FileService, pseudo),
+        });
 
         console.log(
           withGame(
-            `[${label}] ${pseudo} a payé ${cost} clicks pour continuer.`,
+            `[${label}] ${pseudo} a payé ${cost} monnaie pour continuer.`,
             color,
           ),
         );
       } else {
-        socket.emit(errorEvent, "Pas assez de clicks !");
+        socket.emit(errorEvent, "Pas assez de monnaie !");
       }
     };
   }

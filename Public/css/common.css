@@ -400,6 +400,41 @@ button.reset:not(:disabled):hover,
   outline: 2px solid var(--primary-color);
 }
 
+.snake-revive-pay-btn,
+.blockblast-revive-pay-btn,
+.dino-revive-pay-btn,
+.flappy-revive-pay-btn,
+.game-2048-revive-overlay .revive-pay-btn {
+  display: block !important;
+  margin: 8px auto 0 auto !important;
+  background: color-mix(
+    in srgb,
+    var(--bg-color) 92%,
+    var(--primary-color) 8%
+  ) !important;
+  color: var(--primary-color) !important;
+  border: 2px dashed var(--primary-color) !important;
+  padding: clamp(8px, 1vh, 12px) clamp(12px, 2vw, 22px) !important;
+  min-height: clamp(36px, 5vh, 50px);
+  font-size: clamp(0.75rem, 0.75vw + 0.5rem, 1.05rem);
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 220ms ease-out;
+  outline: 2px solid var(--bg-color);
+}
+
+.snake-revive-pay-btn:hover,
+.blockblast-revive-pay-btn:hover,
+.dino-revive-pay-btn:hover,
+.flappy-revive-pay-btn:hover,
+.game-2048-revive-overlay .revive-pay-btn:hover {
+  background: var(--primary-color) !important;
+  color: var(--bg-color) !important;
+  border: 2px solid var(--bg-color) !important;
+  outline: 2px solid var(--primary-color);
+}
+
 .snake-cancle-btn,
 .blockblast-cancel-btn,
 .dino-cancel-btn,
@@ -715,4 +750,33 @@ audio::-webkit-media-controls-panel {
 
 #x::selection {
   background-color: rgb(38, 38, 40);
+}
+
+button.sidebar-close:hover {
+  transform: rotate(90deg);
+  background: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  color: var(--primary-color);
+  scale: 1.35;
+  filter: brightness(1.75);
+}
+
+.annex-back-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 1200;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--primary-color);
+  background: var(--bg-color);
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.annex-back-btn:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
 }

@@ -1,5 +1,4 @@
 const { MashGame } = require("../../moduleGetter");
-const { getDailyProfitCapInfo } = require("../../services/economy");
 
 function registerMashHandlers({
   io,
@@ -21,16 +20,19 @@ function registerMashHandlers({
 
   if (mashGame && !mashGame.emitState) {
     mashGame.setEmitter((state) => io.emit("mash:state", state));
-    mashGame.setPayoutCallback((winnerPseudo, score) => {
+    mashGame.setPayoutCallback((winnerPseudo, score, extra = null) => {
       io.to("user:" + winnerPseudo).emit("clicker:you", { score });
-      try {
-        const capInfo = getDailyProfitCapInfo({
-          FileService,
-          pseudo: winnerPseudo,
-          currentClicks: score,
+      if (extra && extra.wallet) {
+        io.to("user:" + winnerPseudo).emit("economy:wallet", extra.wallet);
+      }
+      if (extra && Number(extra.moneyGain || 0) > 0) {
+        io.to("user:" + winnerPseudo).emit("economy:gameMoney", {
+          game: extra.game || "mash",
+          gained: Number(extra.moneyGain || 0),
+          total: Number(extra.moneyGain || 0),
+          final: extra.final === true,
         });
-        io.to("user:" + winnerPseudo).emit("economy:profitCap", capInfo);
-      } catch (e) {}
+      }
     });
   }
 

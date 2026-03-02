@@ -1,4 +1,8 @@
 const DEFAULT_DURATION = 4000;
+const NOTIFICATION_GAP_MS = 350;
+
+const notificationQueue = [];
+let isQueueProcessing = false;
 
 function createNotificationElement(text, variant = "info") {
   const notif = document.createElement("div");
@@ -44,12 +48,42 @@ function displayNotification(text, options = {}) {
   return notif;
 }
 
+function getDisplayDuration(options = {}) {
+  const duration = Number(options.duration) || DEFAULT_DURATION;
+  return options.withCountdown ? duration + 4800 : duration;
+}
+
+async function processNotificationQueue() {
+  if (isQueueProcessing) return;
+  isQueueProcessing = true;
+
+  while (notificationQueue.length > 0) {
+    const { text, options, resolve } = notificationQueue.shift();
+    const notif = displayNotification(text, options);
+    resolve(notif);
+
+    const totalDuration = getDisplayDuration(options);
+    await new Promise((done) =>
+      setTimeout(done, totalDuration + NOTIFICATION_GAP_MS),
+    );
+  }
+
+  isQueueProcessing = false;
+}
+
+function enqueueNotification(text, options = {}) {
+  return new Promise((resolve) => {
+    notificationQueue.push({ text, options, resolve });
+    processNotificationQueue();
+  });
+}
+
 export function showNotif(
   text,
   duration = DEFAULT_DURATION,
   withCountdown = false,
 ) {
-  return displayNotification(text, {
+  return enqueueNotification(text, {
     duration,
     withCountdown,
     variant: "info",
@@ -63,7 +97,7 @@ export function showStatusNotification(
 ) {
   const variant =
     type === "error" ? "error" : type === "success" ? "success" : "info";
-  return displayNotification(text, { duration, variant });
+  return enqueueNotification(text, { duration, variant });
 }
 
 const exported = {

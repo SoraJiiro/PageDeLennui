@@ -10,6 +10,7 @@
         <link rel="stylesheet" href="css/sidebar.css">
         <link rel="stylesheet" href="css/dons.css">
         <script defer src="/socket.io/socket.io.js"></script>
+        <script defer src="js/annexBack.js"></script>
         <script defer type="text/javascript" src="js/uiColor.js"></script>
         <script defer type="text/javascript" src="js/nav.js"></script>
         <script defer type="text/javascript" src="js/auto_reload.js"></script>
@@ -35,16 +36,14 @@
                 <label for="amountInput"><i class="fa-solid fa-coins"></i>
                     Montant</label>
                 <input type="number" id="amountInput"
-                    placeholder="Quantité de clicks" min="1">
+                    placeholder="Quantité de monnaie" min="1">
             </div>
 
-            <button class="btn-submit" id="btnSendDonation">Envoyer les
-                Clicks</button>
-            <button class="btn-back"
-                onclick="window.location.href='/'">Annuler</button>
+            <button class="btn-submit" id="btnSendDonation">Envoyer la
+                Monnaie</button>
 
-            <p class="info-msg"><i class="fa-solid fa-circle-info"></i> Les dons
-                > 250k requièrent une validation.</p>
+            <p class="info-msg"><i class="fa-solid fa-circle-info"></i> Tous les
+                dons requièrent une validation admin.</p>
         </div>
 
         <script>
@@ -84,18 +83,14 @@
                     return;
                 }
 
-                if (confirm(`Envoyer ${amount} clicks à ${recipient} ?`)) {
+                if (confirm(`Envoyer ${amount} monnaie à ${recipient} ?`)) {
                     // Utiliser le socket global s'il existe pour éviter de multiples connexions
                     const socketToSend = window.socket || socket;
                     socketToSend.emit("user:donate", { recipient, amount });
                     
                     // Petit délai pour s'assurer que le paquet part avant la redirection
                     setTimeout(() => {
-                        if (amount > 250000) {
-                            alert("Demande de don > 250k envoyée pour validation.");
-                        } else {
-                            alert("Don envoyé avec succès !");
-                        }
+                        alert("Demande de don envoyée pour validation admin.");
                         
                         window.location.href = "/";
                     }, 300);

@@ -95,6 +95,7 @@
   border: none;
   color: var(--primary-color);
   font-size: 1rem;
+  padding: 7.5px;
 }
 
 .search-box input::placeholder {
@@ -239,7 +240,6 @@
 .badge-emoji {
   font-size: 1.6rem;
   background: rgba(0, 255, 0, 0.1);
-  padding: 6px 10px;
   border-radius: 10px;
 }
 
@@ -300,6 +300,29 @@
 .card-actions {
   display: flex;
   gap: 10px;
+}
+
+.card-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.card-color-row label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--primary-color);
+}
+
+.shop-color-picker {
+  width: 52px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--primary-color);
+  background: transparent;
+  cursor: pointer;
 }
 
 .card-actions button {
@@ -453,6 +476,13 @@
   border: 1px solid var(--primary-color);
   background: transparent;
   color: var(--primary-color);
+}
+
+.color-personalization-modal input[type="color"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px;
+  cursor: pointer;
 }
 
 .personalization-status {

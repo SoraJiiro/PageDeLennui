@@ -29,10 +29,66 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => notif.remove(), duration);
   }
 
-  const surveysLink = document.querySelector('a[href="sondages.html"]');
-  const patchNotesLink = document.querySelector('a[href="patch_notes.html"]');
-  const annoncesLink = document.querySelector('a[href="annonces.html"]');
+  const surveysLink = document.querySelector(
+    '[data-external-url="sondages.html"], a[href="sondages.html"]',
+  );
+  const patchNotesLink = document.querySelector(
+    '[data-external-url="patch_notes.html"], a[href="patch_notes.html"]',
+  );
+  const annoncesLink = document.querySelector(
+    '[data-external-url="annonces.html"], a[href="annonces.html"]',
+  );
   const chatBtn = document.querySelector(".sec3");
+  const stageNavUp = document.getElementById("stage-nav-up");
+  const stageNavDown = document.getElementById("stage-nav-down");
+
+  const sectionIds = [
+    "hubStage",
+    "stage1",
+    "stage2",
+    "stage3",
+    "stage4",
+    "stage5",
+    "stage6",
+    "stage8",
+    "stage9",
+    "stage10",
+    "stage11",
+    "stage12",
+    "stage13",
+    "stage14",
+    "stage15",
+    "stage16",
+    "stage17",
+    "stage18",
+    "stage19",
+    "stage20",
+  ];
+  const stageSections = sectionIds
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  const quickNavStageIds = [
+    "hubStage",
+    "stage1",
+    "stage2",
+    "stage3",
+    "stage4",
+    "stage5",
+    "stage6",
+    "stage8",
+    "stage9",
+    "stage10",
+    "stage11",
+    "stage12",
+    "stage13",
+    "stage14",
+    "stage15",
+    "stage16",
+    "stage17",
+    "stage18",
+    "stage19",
+    "stage20",
+  ];
 
   let lastSurveyActiveIds = [];
 
@@ -118,6 +174,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function markSeenNow(base) {
     await setSeenIso(base, new Date().toISOString());
+  }
+
+  // Sauvegarde / restauration du dernier stage actif (par utilisateur si connecté)
+  async function getLastActiveStage() {
+    const k = await storageKey("lastActiveStage");
+    try {
+      const v = localStorage.getItem(k);
+      return v && typeof v === "string" ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function setLastActiveStage(stageId) {
+    const k = await storageKey("lastActiveStage");
+    try {
+      if (!stageId) {
+        localStorage.removeItem(k);
+        return;
+      }
+      localStorage.setItem(k, String(stageId));
+    } catch (e) {}
   }
 
   async function getPatchNoteVersions() {
@@ -399,16 +477,151 @@ document.addEventListener("DOMContentLoaded", () => {
   const sidebarClose = document.getElementById("sidebar-close");
   const sidebarOverlay = document.getElementById("sidebar-overlay");
 
+  function activateSection(sectionId) {
+    const found = stageSections.find((el) => el.id === sectionId);
+    if (!found) return;
+
+    if (!canLeaveCurrentStage(sectionId)) return;
+
+    stageSections.forEach((el) => {
+      el.classList.toggle("is-active", el.id === sectionId);
+    });
+    try {
+      window.dispatchEvent(
+        new CustomEvent("pde:section-activated", {
+          detail: { sectionId },
+        }),
+      );
+    } catch {}
+    // Sauvegarder le dernier stage actif pour restauration après refresh
+    try {
+      // Ne pas await pour ne pas bloquer l'UI
+      setLastActiveStage(sectionId);
+    } catch (e) {}
+    requestAnimationFrame(() => {
+      fitActiveSectionToViewport();
+      updateArrowButtonsState();
+    });
+    closeSidebar();
+  }
+
+  function canLeaveCurrentStage(nextSectionId) {
+    const active = document.querySelector("section.is-active");
+    const currentSectionId = active && active.id ? active.id : "hubStage";
+    if (!currentSectionId || currentSectionId === nextSectionId) return true;
+
+    const guardedStages = ["stage2", "stage6", "stage10"];
+    if (!guardedStages.includes(currentSectionId)) return true;
+
+    const guardDetail = {
+      action: "pause",
+      stageId: currentSectionId,
+      running: false,
+      pausedNow: false,
+    };
+
+    try {
+      window.dispatchEvent(
+        new CustomEvent("pde:stage-nav-guard", { detail: guardDetail }),
+      );
+    } catch {}
+
+    if (!guardDetail.running) return true;
+
+    const ok = window.confirm(
+      "Une partie est en cours. Le jeu a été mis en pause.\nVeux-tu vraiment changer de stage ?",
+    );
+
+    if (ok) return true;
+
+    if (guardDetail.pausedNow) {
+      try {
+        window.dispatchEvent(
+          new CustomEvent("pde:stage-nav-guard", {
+            detail: {
+              action: "resume",
+              stageId: currentSectionId,
+            },
+          }),
+        );
+      } catch {}
+    }
+
+    return false;
+  }
+
+  function getCurrentQuickStageIndex() {
+    const active = document.querySelector("section.is-active");
+    if (!active || !active.id) return 0;
+    const idx = quickNavStageIds.indexOf(active.id);
+    return idx >= 0 ? idx : 0;
+  }
+
+  function updateArrowButtonsState() {
+    const idx = getCurrentQuickStageIndex();
+    if (stageNavUp) stageNavUp.disabled = idx <= 0;
+    if (stageNavDown)
+      stageNavDown.disabled = idx >= quickNavStageIds.length - 1;
+  }
+
+  function goToAdjacentStage(direction) {
+    const idx = getCurrentQuickStageIndex();
+    const nextIdx = idx + direction;
+    if (nextIdx < 0 || nextIdx >= quickNavStageIds.length) return;
+    activateSection(quickNavStageIds[nextIdx]);
+  }
+
+  function ensureViewportWrapper(section) {
+    if (!section) return null;
+    if (section.id === "hubStage" || section.id === "stage1") return null;
+
+    let wrapper = section.querySelector(":scope > .vp-fit-inner");
+    if (wrapper) return wrapper;
+
+    wrapper = document.createElement("div");
+    wrapper.className = "vp-fit-inner";
+    while (section.firstChild) {
+      wrapper.appendChild(section.firstChild);
+    }
+    section.appendChild(wrapper);
+    return wrapper;
+  }
+
+  function fitSectionToViewport(section) {
+    if (!section || !section.classList.contains("is-active")) return;
+    const wrapper = ensureViewportWrapper(section);
+    if (!wrapper) return;
+
+    wrapper.style.transform = "scale(1)";
+
+    const viewportW = Math.max(320, window.innerWidth - 24);
+    const viewportH = Math.max(320, window.innerHeight - 24);
+    const contentW = Math.max(1, wrapper.scrollWidth);
+    const contentH = Math.max(1, wrapper.scrollHeight);
+
+    const scale = Math.min(viewportW / contentW, viewportH / contentH, 1);
+    wrapper.style.transform = `scale(${scale})`;
+  }
+
+  function fitActiveSectionToViewport() {
+    const active = document.querySelector("section.is-active");
+    if (!active) return;
+    fitSectionToViewport(active);
+  }
+
+  function openExternalStage(url, title) {
+    if (!url) return;
+    window.location.href = url;
+  }
+
   function openSidebar() {
     if (sidebar) sidebar.classList.add("active");
     if (sidebarOverlay) sidebarOverlay.classList.add("active");
-    if (sidebar && sidebarOverlay) document.body.style.overflow = "hidden";
   }
 
   function closeSidebar() {
     if (sidebar) sidebar.classList.remove("active");
     if (sidebarOverlay) sidebarOverlay.classList.remove("active");
-    document.body.style.overflow = "";
   }
 
   if (sidebarToggle) {
@@ -432,11 +645,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Logique de navigation
   function goTo(section) {
-    const el = document.querySelector("#" + section);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-      closeSidebar(); // Fermer la barre latérale après la navigation sur mobile
-    }
+    activateSection(section);
   }
 
   // Marquer comme "vu" lorsqu'on clique sur certains items
@@ -460,6 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Attacher les écouteurs d'événements aux boutons
   const navButtons = {
+    ".secHub": "hubStage",
     ".sec1": "stage1",
     ".sec2": "stage2",
     ".sec3": "stage3",
@@ -476,14 +686,61 @@ document.addEventListener("DOMContentLoaded", () => {
     ".sec14": "stage14",
     ".sec15": "stage15",
     ".sec16": "stage16",
+    ".sec17": "stage17",
+    ".sec18": "stage18",
+    ".sec19": "stage19",
+    ".sec20": "stage20",
   };
 
   for (const [selector, target] of Object.entries(navButtons)) {
-    const btn = document.querySelector(selector);
-    if (btn) {
+    document.querySelectorAll(selector).forEach((btn) => {
       btn.addEventListener("click", () => goTo(target));
-    }
+    });
   }
+
+  document.querySelectorAll(".ext-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const url = String(btn.dataset.externalUrl || "").trim();
+      const title = String(btn.dataset.externalTitle || "").trim();
+      if (!url) return;
+
+      if (url.includes("patch_notes.html")) {
+        await checkPatchNotes({ markSeen: true });
+      }
+      if (url.includes("annonces.html")) {
+        await checkAnnonces({ markSeen: true });
+      }
+      if (url.includes("sondages.html")) {
+        await markSurveysSeen();
+      }
+
+      openExternalStage(url, title);
+    });
+  });
+
+  if (stageNavUp) {
+    stageNavUp.addEventListener("click", () => goToAdjacentStage(-1));
+  }
+  if (stageNavDown) {
+    stageNavDown.addEventListener("click", () => goToAdjacentStage(1));
+  }
+
+  (async () => {
+    try {
+      const saved = await getLastActiveStage();
+      if (saved && document.getElementById(saved)) {
+        activateSection(saved);
+      } else {
+        activateSection("hubStage");
+      }
+    } catch (e) {
+      activateSection("hubStage");
+    }
+  })();
+
+  window.addEventListener("resize", () => {
+    fitActiveSectionToViewport();
+  });
 
   // Chat: click -> vu
   if (chatBtn) {

@@ -84,6 +84,9 @@ function renderStats(stats) {
 
   const rows = [
     ["Clicks", s.clicks],
+    ["Money", s.money],
+    ["Tokens", s.tokens],
+    ["Peak CPS", s.peakHumanCps ? Number(s.peakHumanCps).toFixed(1) : 0],
     ["Dino", s.dinoScore],
     ["Flappy", s.flappyScore],
     ["Snake", s.snakeScore],
@@ -92,6 +95,19 @@ function renderStats(stats) {
     ["BlockBlast", s.blockblastScore],
     ["2048", s.score2048],
     ["Mash (victoires)", s.mashWins],
+    ["Sudoku (grilles complétées)", s.sudokuCompleted],
+    [
+      "Roulette (W/L)",
+      s.roulette
+        ? `${Number(s.roulette.wins || 0)} / ${Number(s.roulette.losses || 0)}`
+        : "0 / 0",
+    ],
+    [
+      "Slots (W/L)",
+      s.slots
+        ? `${Number(s.slots.wins || 0)} / ${Number(s.slots.losses || 0)}`
+        : "0 / 0",
+    ],
     [
       "Motus (mots trouvés)",
       s.motus && typeof s.motus.words === "number" ? s.motus.words : "—",
@@ -106,6 +122,25 @@ function renderStats(stats) {
       value ?? 0
     }</div>`;
     container.appendChild(el);
+  });
+}
+
+function renderCustomColors(colors) {
+  const container = qs("customColors");
+  if (!container) return;
+
+  const list = Array.isArray(colors) ? colors : [];
+  if (!list.length) {
+    container.innerHTML = '<span style="opacity:.75;">Aucune</span>';
+    return;
+  }
+
+  container.innerHTML = "";
+  list.forEach((hex) => {
+    const chip = document.createElement("div");
+    chip.className = "custom-color-chip";
+    chip.innerHTML = `<span class="custom-color-swatch" style="background:${hex}"></span><span>${hex}</span>`;
+    container.appendChild(chip);
   });
 }
 
@@ -257,6 +292,7 @@ async function main() {
   );
   renderMedals(qs("medalsWrap"), data.medals || []);
   renderStats(data.stats);
+  renderCustomColors(data.customPixelColors || []);
   const birthDateDisplay = qs("birthDateValue");
   if (birthDateDisplay)
     birthDateDisplay.textContent = formatBirthDate(data.birthDate);

@@ -44,19 +44,11 @@ class SnakeGame {
     this.cellSize = 23;
     this.uiColor = "#00ff00";
     this.pauseKeyText = "P";
-    this.myBest = 0;
-    this.globalBestScore = 0;
-    this.revivesUsed = 0;
+    this.availableReviveLives = 0;
     this.scoreAttente = null;
     this.resumeScore = null;
-
-    this.initSettings();
-    this.bindEvents();
-    this.resize();
-    this.drawStartScreen();
-    if (this.ui.stopBtn) this.ui.stopBtn.style.display = "none";
+    this.revivesUsed = 0;
   }
-
   drawStartScreen() {
     try {
       this.resize();
@@ -127,6 +119,114 @@ class SnakeGame {
     } catch {}
   }
 
+  normalizeLives(value) {
+    return Math.max(0, Math.floor(Number(value) || 0));
+  }
+
+  requestReviveLives() {
+    try {
+      this.socket.emit("revive:getLives");
+    } catch {}
+  }
+
+  computeRevivePrice() {
+    const multiplier = 75;
+    const escalation = 1 + this.revivesUsed * 0.75;
+    let price = Math.floor(this.state.score * multiplier * escalation);
+    price = Math.max(5000, Math.min(5000000, price));
+    return price;
+  }
+
+  updateReviveOverlayContent() {
+    if (
+      !this.ui.reviveOverlay ||
+      this.ui.reviveOverlay.style.display !== "block"
+    )
+      return;
+    const remainingRevives = 3 - this.revivesUsed;
+    if (this.ui.reviveCount) this.ui.reviveCount.textContent = remainingRevives;
+
+    const hasShopLife = this.availableReviveLives > 0;
+    const price = this.computeRevivePrice();
+    let modeEl = this.ui.reviveOverlay.querySelector(".snake-revive-mode");
+    if (!modeEl) {
+      modeEl = document.createElement("p");
+      modeEl.className = "snake-revive-mode";
+      modeEl.style.color = "#fff";
+      modeEl.style.marginBottom = "10px";
+      modeEl.style.fontSize = "0.95rem";
+      const priceEl = this.ui.reviveOverlay.querySelector(
+        ".snake-revive-price",
+      );
+      if (priceEl && priceEl.parentNode) {
+        priceEl.parentNode.insertBefore(modeEl, priceEl);
+      }
+    }
+    if (modeEl) {
+      modeEl.textContent = hasShopLife
+        ? "Choix: vie du shop ou paiement en clicks"
+        : "Choix: paiement en clicks";
+    }
+
+    let payBtnEl = this.ui.reviveOverlay.querySelector(".snake-revive-pay-btn");
+    if (!payBtnEl) {
+      payBtnEl = document.createElement("button");
+      payBtnEl.className = "snake-revive-pay-btn";
+      payBtnEl.style.display = "none";
+      payBtnEl.style.marginTop = "8px";
+      payBtnEl.style.padding = "8px 12px";
+      payBtnEl.style.cursor = "pointer";
+      payBtnEl.style.background = "transparent";
+      payBtnEl.style.border = "1px solid #fff";
+      payBtnEl.style.color = "#fff";
+      const cancelBtn =
+        this.ui.reviveOverlay.querySelector(".snake-cancel-btn");
+      if (cancelBtn && cancelBtn.parentNode) {
+        cancelBtn.parentNode.insertBefore(payBtnEl, cancelBtn);
+      }
+    }
+
+    if (this.ui.revivePrice) {
+      this.ui.revivePrice.textContent = hasShopLife
+        ? "0"
+        : price.toLocaleString("fr-FR");
+    }
+
+    if (this.ui.reviveBtn) {
+      this.ui.reviveBtn.innerHTML = hasShopLife
+        ? `Utiliser 1 vie (<span class="snake-revive-count">${remainingRevives}</span> restants)`
+        : `Payer ${price
+            .toLocaleString("fr-FR")
+            .replace(
+              /\s/g,
+              "\u00a0",
+            )} clicks (<span class="snake-revive-count">${remainingRevives}</span> restants)`;
+      this.ui.reviveBtn.onclick = () => {
+        this.socket.emit("snake:payToContinue", {
+          price,
+          mode: hasShopLife ? "life" : "pay",
+        });
+        toggleScrollLock(false);
+      };
+    }
+
+    if (payBtnEl) {
+      if (hasShopLife) {
+        payBtnEl.style.display = "block";
+        payBtnEl.textContent = `Payer ${price
+          .toLocaleString("fr-FR")
+          .replace(/\s/g, "\u00a0")} clicks (${remainingRevives} restants)`;
+        payBtnEl.onclick = () => {
+          this.socket.emit("snake:payToContinue", { price, mode: "pay" });
+          toggleScrollLock(false);
+        };
+      } else {
+        payBtnEl.style.display = "none";
+        payBtnEl.onclick = null;
+      }
+    }
+  }
+
   initSettings() {
     // Couleur UI
     const computedStyle = getComputedStyle(document.documentElement);
@@ -169,6 +269,11 @@ class SnakeGame {
       } catch (e) {}
     });
 
+    this.socket.on("revive:lives", ({ lives } = {}) => {
+      this.availableReviveLives = this.normalizeLives(lives);
+      this.updateReviveOverlayContent();
+    });
+
     // Refresh / fermeture onglet: pousser un snapshot (best-effort)
     if (!this._leaveProgressBound) {
       this._leaveProgressBound = true;
@@ -191,37 +296,47 @@ class SnakeGame {
       } catch (e) {}
     }
 
-    this.socket.on("snake:reviveSuccess", () => {
-      this.state.gameActive = true;
-      this.revivesUsed++;
-      if (this.ui.reviveOverlay) {
-        this.ui.reviveOverlay.style.display = "none";
-        toggleScrollLock(false);
-      }
-      this.removeDOMGameOverOverlay();
+    this.socket.on(
+      "snake:reviveSuccess",
+      ({ usedLife, remainingLives } = {}) => {
+        this.state.gameActive = true;
+        this.revivesUsed++;
+        if (typeof remainingLives !== "undefined") {
+          this.availableReviveLives = this.normalizeLives(remainingLives);
+        }
+        if (this.ui.reviveOverlay) {
+          this.ui.reviveOverlay.style.display = "none";
+          toggleScrollLock(false);
+        }
+        this.removeDOMGameOverOverlay();
 
-      // Réinitialiser la position du serpent au centre mais garder la longueur
-      const centerX = Math.floor(CONSTANTS.GRID_SIZE / 2);
-      const centerY = Math.floor(CONSTANTS.GRID_SIZE / 2);
+        // Réinitialiser la position du serpent au centre mais garder la longueur
+        const centerX = Math.floor(CONSTANTS.GRID_SIZE / 2);
+        const centerY = Math.floor(CONSTANTS.GRID_SIZE / 2);
 
-      // Reconstruire le corps du serpent en ligne droite vers la gauche
-      const newSnake = [];
-      for (let i = 0; i < this.state.snake.length; i++) {
-        newSnake.push({ x: centerX - i, y: centerY });
-      }
-      this.state.snake = newSnake;
-      this.state.direction = { x: 1, y: 0 };
-      this.state.nextDirection = { x: 1, y: 0 };
+        // Reconstruire le corps du serpent en ligne droite vers la gauche
+        const newSnake = [];
+        for (let i = 0; i < this.state.snake.length; i++) {
+          newSnake.push({ x: centerX - i, y: centerY });
+        }
+        this.state.snake = newSnake;
+        this.state.direction = { x: 1, y: 0 };
+        this.state.nextDirection = { x: 1, y: 0 };
 
-      // Réinitialiser le timing pour éviter le rattrapage de ticks
-      this.state.lastFrameTime = 0;
-      this.state.tickAccumulator = 0;
+        // Réinitialiser le timing pour éviter le rattrapage de ticks
+        this.state.lastFrameTime = 0;
+        this.state.tickAccumulator = 0;
 
-      // Reprendre la boucle
-      this.state.rafId = requestAnimationFrame((t) => this.loop(t));
-      this.startTimer();
-      showNotif("Partie continuée !");
-    });
+        // Reprendre la boucle
+        this.state.rafId = requestAnimationFrame((t) => this.loop(t));
+        this.startTimer();
+        showNotif(
+          usedLife
+            ? `Partie continuée ! (vie restante: ${this.availableReviveLives})`
+            : "Partie continuée !",
+        );
+      },
+    );
 
     this.socket.on("snake:reviveError", (msg) => {
       showNotif(msg || "Erreur lors du paiement");
@@ -252,11 +367,26 @@ class SnakeGame {
   resize() {
     if (!this.canvas) return;
     try {
-      const rect = this.canvas.getBoundingClientRect();
+      const stage = document.getElementById("stage10");
+      const wrap = this.canvas.closest(".snake-wrap");
+      const wrapRect = wrap
+        ? wrap.getBoundingClientRect()
+        : this.canvas.getBoundingClientRect();
+      const stageRect = stage ? stage.getBoundingClientRect() : null;
       const ratio = window.devicePixelRatio || 1;
 
-      const clientW = Math.max(1, Math.round(rect.width));
-      const clientH = Math.max(1, Math.round(rect.height));
+      const availableW = Math.max(1, Math.round(wrapRect.width || 0));
+      const availableH = Math.max(
+        1,
+        Math.round(
+          (stageRect && stageRect.height
+            ? stageRect.height
+            : window.innerHeight) - 220,
+        ),
+      );
+
+      const clientW = Math.max(1, availableW);
+      const clientH = Math.max(1, availableH);
 
       this.cellSize =
         Math.floor(Math.min(clientW, clientH) / CONSTANTS.GRID_SIZE) || 1;
@@ -298,6 +428,63 @@ class SnakeGame {
     this.ui.resetBtn?.addEventListener("click", () => this.handleReset());
 
     document.addEventListener("keydown", (e) => this.handleInput(e));
+
+    window.addEventListener("pde:stage-nav-guard", (e) => {
+      const detail = e && e.detail ? e.detail : null;
+      if (!detail || detail.stageId !== "stage10") return;
+
+      if (detail.action === "pause") {
+        const running = this.state.gameStarted && this.state.gameActive;
+        if (!running) {
+          detail.running = false;
+          detail.pausedNow = false;
+          return;
+        }
+
+        if (this.state.paused || this.state.countdown > 0) {
+          detail.running = true;
+          detail.pausedNow = false;
+          return;
+        }
+
+        this.state.paused = true;
+        try {
+          if (this.socket) {
+            this.socket.emit("snake:score", {
+              score: this.state.score,
+              elapsedMs: this.state.elapsedMs,
+              final: false,
+            });
+            this.scoreAttente = this.state.score;
+          }
+        } catch {}
+
+        detail.running = true;
+        detail.pausedNow = true;
+      }
+
+      if (detail.action === "resume") {
+        if (this.state.paused && this.state.countdown === 0) {
+          this.state.countdown = 3;
+          this.state.frameCount = 0;
+        }
+      }
+    });
+
+    window.addEventListener("pde:section-activated", (e) => {
+      try {
+        const sectionId = e && e.detail ? e.detail.sectionId : null;
+        if (sectionId !== "stage10") return;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            this.resize();
+            if (!this.state.gameStarted) {
+              this.drawStartScreen();
+            }
+          });
+        });
+      } catch {}
+    });
   }
 
   handleInput(e) {
@@ -724,23 +911,8 @@ class SnakeGame {
       if (this.ui.reviveOverlay) {
         this.ui.reviveOverlay.style.display = "block";
         toggleScrollLock(true);
-        if (this.ui.reviveCount)
-          this.ui.reviveCount.textContent = 3 - this.revivesUsed;
-
-        const multiplier = 75;
-        const escalation = 1 + this.revivesUsed * 0.75;
-        let price = Math.floor(this.state.score * multiplier * escalation);
-        price = Math.max(5000, Math.min(5000000, price));
-
-        if (this.ui.revivePrice)
-          this.ui.revivePrice.textContent = price.toLocaleString("fr-FR");
-
-        if (this.ui.reviveBtn) {
-          this.ui.reviveBtn.onclick = () => {
-            this.socket.emit("snake:payToContinue", { price });
-            toggleScrollLock(false);
-          };
-        }
+        this.updateReviveOverlayContent();
+        this.requestReviveLives();
         if (this.ui.cancelBtn) {
           this.ui.cancelBtn.onclick = () => {
             this.ui.reviveOverlay.style.display = "none";

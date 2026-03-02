@@ -1,0 +1,147 @@
+#stage17 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+}
+
+.roulette-card {
+  width: min(700px, 95vw);
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.roulette-header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.roulette-header h2 {
+  margin: 0;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  padding: 5px 15px;
+  font-size: 1.5rem;
+}
+
+.roulette-scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.roulette-wheel-wrap {
+  position: relative;
+  width: 360px;
+  height: 360px;
+}
+
+#roulette-wheel {
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--primary-color);
+  border-radius: 50%;
+  background: var(--bg-color);
+  transition: transform 4.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.roulette-pointer {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 18px solid var(--primary-color);
+  margin-bottom: -8px;
+  z-index: 2;
+}
+
+.roulette-ball {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -170px);
+  transition: transform 4.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 10px var(--primary-color);
+}
+
+.roulette-last {
+  font-weight: 700;
+}
+
+.roulette-controls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.roulette-input-group {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.roulette-input {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 10px;
+  width: 100%;
+  max-width: 300px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.roulette-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.roulette-btn {
+  flex: 1;
+  max-width: 180px;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+  min-height: 46px;
+  cursor: pointer;
+}
+
+.roulette-btn:hover {
+  background: var(--primary-color);
+  color: var(--bg-color);
+}
+
+.roulette-result {
+  min-height: 1.4rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.roulette-result.win {
+  color: var(--primary-color);
+  text-shadow: 0 0 10px var(--primary-color);
+}
+
+.roulette-result.lose {
+  color: var(--red-color);
+  text-shadow: 0 0 10px var(--red-color);
+}

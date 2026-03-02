@@ -4,22 +4,25 @@ function showLeaderboard(name) {
   });
 
   const idMap = {
-    clicker: "#clicker-leaderboard",
+    economie: "#economie-leaderboard",
     dino: "#dino-leaderboard",
     flappy: "#flappy-leaderboard",
     uno: "#uno-leaderboard",
     p4: "#p4-leaderboard",
     blockblast: "#blockblast-leaderboard",
     snake: "#snake-leaderboard",
-    motus: "#motus-leaderboard",
     2048: "#leaderboard-2048",
     mash: "#mash-leaderboard",
     blackjack: "#blackjack-leaderboard",
     coinflip: "#coinflip-leaderboard",
+    roulette: "#roulette-leaderboard",
+    slots: "#slots-leaderboard",
+    sudoku: "#sudoku-leaderboard",
     pixelwar: "#pixelwar-leaderboard",
   };
 
-  const table = document.querySelector(idMap[name]);
+  const key = idMap[name] ? name : "economie";
+  const table = document.querySelector(idMap[key]);
   if (table) {
     const card = table.closest(".leaderboard-card");
     card.style.display = "block";
@@ -30,17 +33,17 @@ function showLeaderboard(name) {
   });
 
   document.querySelectorAll(".leaderboard-buttons button").forEach((btn) => {
-    if (btn.dataset.board === name) {
+    if (btn.dataset.board === key) {
       btn.classList.add("active");
     }
   });
 
-  localStorage.setItem("activeLeaderboard", name);
+  localStorage.setItem("activeLeaderboard", key);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const savedLeaderboard =
-    localStorage.getItem("activeLeaderboard") || "clicker";
+    localStorage.getItem("activeLeaderboard") || "economie";
 
   document.querySelectorAll(".leaderboard-buttons button").forEach((btn) => {
     btn.addEventListener("click", () => {

@@ -72,3 +72,34 @@
   border-color: #aaa;
   box-shadow: 0 0 10px #aaa;
 }
+
+@keyframes bj-deal-in {
+  from {
+    transform: translateY(-24px) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bj-reveal {
+  0% {
+    transform: rotateY(180deg);
+    opacity: 0.5;
+  }
+  100% {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+.bj-card.bj-deal-in {
+  animation: bj-deal-in 0.28s ease-out forwards;
+}
+
+.bj-card.bj-reveal {
+  transform-origin: center;
+  animation: bj-reveal 0.35s ease-out forwards;
+}

@@ -10,6 +10,8 @@ function registerPuissance4Handlers({
   withGame,
   colors,
 }) {
+  const { addMoney } = require("../../services/wallet");
+  const { applyAutoBadges } = require("../../services/badgesAuto");
   function ensureGame() {
     if (!getP4Game()) setP4Game(new Puissance4Game());
     return getP4Game();
@@ -35,7 +37,7 @@ function registerPuissance4Handlers({
       if (!clientUser || !clientUser.pseudo) return;
       const clientUsername = clientUser.pseudo;
       const estAuLobby = p4Game.joueurs.some(
-        (p) => p.pseudo === clientUsername
+        (p) => p.pseudo === clientUsername,
       );
       clientSocket.emit("p4:lobby", {
         ...lobbyState,
@@ -83,8 +85,8 @@ function registerPuissance4Handlers({
         console.log(
           withGame(
             `⚠️  [${colors.orange}${pseudo}${colors.red}] est déjà dans le lobby PUISSANCE 4`,
-            colors.red
-          )
+            colors.red,
+          ),
         );
       } else if (res.reason === "full") {
         socket.emit("p4:error", "Le lobby est plein (2/2)");
@@ -95,8 +97,8 @@ function registerPuissance4Handlers({
     console.log(
       withGame(
         `\n➡️ [${colors.orange}${pseudo}${colors.red}] a rejoint le lobby PUISSANCE 4 (${p4Game.joueurs.length}/2)`,
-        colors.red
-      )
+        colors.red,
+      ),
     );
     p4_broadcastLobby();
   });
@@ -109,12 +111,12 @@ function registerPuissance4Handlers({
       console.log(
         withGame(
           `⬅️ [${colors.orange}${pseudo}${colors.red}] a quitté le lobby PUISSANCE 4`,
-          colors.red
-        )
+          colors.red,
+        ),
       );
       if (p4Game.gameStarted) {
         console.log(
-          withGame(`⚠️  Partie Puissance4 annulée (joueur parti)`, colors.red)
+          withGame(`⚠️  Partie Puissance4 annulée (joueur parti)`, colors.red),
         );
         io.emit("p4:gameEnd", {
           winner: "Partie annulée !",
@@ -138,15 +140,15 @@ function registerPuissance4Handlers({
     if (!p4Game.canStart())
       return socket.emit(
         "p4:error",
-        "Impossible de démarrer (2 joueurs requis)"
+        "Impossible de démarrer (2 joueurs requis)",
       );
 
     p4Game.startGame();
     console.log(
       withGame(
         `\n🎮 Partie Puissance4 démarrée avec ${p4Game.joueurs.length} joueurs`,
-        colors.red
-      )
+        colors.red,
+      ),
     );
     p4_majSocketIds();
 
@@ -179,20 +181,53 @@ function registerPuissance4Handlers({
     if (!res.success) return socket.emit("p4:error", res.message);
 
     if (res.winner) {
+      const participants = p4Game.joueurs.map((p) => p.pseudo);
+      const moneyByPlayer = Object.fromEntries(
+        participants.map((p) => [p, p === res.winner ? 250 : 0]),
+      );
+
       console.log(
         withGame(
           `\n🏆 [${colors.orange}${res.winner}${colors.red}] a gagné la partie de Puissance4 !\n`,
-          colors.red
-        )
+          colors.red,
+        ),
       );
       FileService.data.p4Wins[res.winner] =
         (FileService.data.p4Wins[res.winner] || 0) + 1;
       FileService.save("p4Wins", FileService.data.p4Wins);
+      try {
+        applyAutoBadges({ pseudo: res.winner, FileService });
+      } catch {}
+
+      const winnerWallet = addMoney(
+        FileService,
+        res.winner,
+        250,
+        FileService.data.clicks[res.winner] || 0,
+      );
+      io.to("user:" + res.winner).emit("economy:wallet", winnerWallet);
+      io.to("user:" + res.winner).emit("economy:gameMoney", {
+        game: "puissance4",
+        gained: 250,
+        total: 250,
+        final: true,
+      });
+      try {
+        FileService.appendLog({
+          type: "GAME_MONEY_REWARD",
+          pseudo: res.winner,
+          game: "puissance4",
+          gained: 250,
+          total: 250,
+          at: new Date().toISOString(),
+        });
+      } catch {}
+
       leaderboardManager.broadcastP4LB(io);
 
       p4_broadcastGame();
       setTimeout(() => {
-        io.emit("p4:gameEnd", { winner: res.winner });
+        io.emit("p4:gameEnd", { winner: res.winner, moneyByPlayer });
         setP4Game(new Puissance4Game());
         p4_broadcastLobby();
       }, 100);
@@ -223,8 +258,8 @@ function registerPuissance4Handlers({
         console.log(
           withGame(
             `⚠️  Partie Puissance4 annulée ([${colors.orange}${pseudo}${colors.red}] déconnecté)`,
-            colors.red
-          )
+            colors.red,
+          ),
         );
         io.emit("p4:gameEnd", {
           winner: "Partie annulée !",

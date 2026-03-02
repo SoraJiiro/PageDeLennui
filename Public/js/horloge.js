@@ -1,20 +1,41 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const display =
-    document.getElementById("main-clock") || document.querySelector("h1");
+  const display = document.getElementById("main-clock");
 
-  const hourHand = document.getElementById("hour");
-  const minuteHand = document.getElementById("minute");
-  const secondHand = document.getElementById("second");
+  function placeNumbers(clockEl) {
+    if (!clockEl) return;
+    const size = clockEl.clientWidth || 260;
+    const center = size / 2;
+    const radius = size * 0.42;
 
-  // Placement des nombres
-  document.querySelectorAll(".number").forEach((num) => {
-    const n = num.dataset.n;
-    const angle = (n - 3) * (Math.PI / 6);
-    const r = 110;
+    clockEl.querySelectorAll(".number").forEach((num) => {
+      const n = Number(num.dataset.n || 0);
+      const angle = (n - 3) * (Math.PI / 6);
+      num.style.left = `${center + radius * Math.cos(angle)}px`;
+      num.style.top = `${center + radius * Math.sin(angle)}px`;
+    });
+  }
 
-    num.style.left = 130 + r * Math.cos(angle) - 2.5 + "px";
-    num.style.top = 130 + r * Math.sin(angle) - 2.5 + "px";
-  });
+  function updateClockHands(clockEl, h, m, s) {
+    if (!clockEl) return;
+    const hourHand = clockEl.querySelector(".hour");
+    const minuteHand = clockEl.querySelector(".minute");
+    const secondHand = clockEl.querySelector(".second");
+    if (!hourHand || !minuteHand || !secondHand) return;
+
+    const seconds = s;
+    const minutes = m + seconds / 60;
+    const hours = (h % 12) + minutes / 60;
+
+    secondHand.style.transform = `translateX(-50%) rotate(${seconds * 6}deg)`;
+    minuteHand.style.transform = `translateX(-50%) rotate(${minutes * 6}deg)`;
+    hourHand.style.transform = `translateX(-50%) rotate(${hours * 30}deg)`;
+  }
+
+  function getAllClocks() {
+    return Array.from(document.querySelectorAll(".clock"));
+  }
+
+  getAllClocks().forEach((clock) => placeNumbers(clock));
 
   function horloge() {
     let mtn = new Date();
@@ -27,16 +48,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let mm = m < 10 ? "0" + m : m;
     let ss = s < 10 ? "0" + s : s;
 
-    display.textContent = `[${hh}:${mm}:${ss}]`;
+    if (display) {
+      display.textContent = `[${hh}:${mm}:${ss}]`;
+    }
 
-    // ----- Horloge analogique -----
-    const seconds = s;
-    const minutes = m + seconds / 60;
-    const hours = (h % 12) + minutes / 60;
-
-    secondHand.style.transform = `translateX(-50%) rotate(${seconds * 6}deg)`;
-    minuteHand.style.transform = `translateX(-50%) rotate(${minutes * 6}deg)`;
-    hourHand.style.transform = `translateX(-50%) rotate(${hours * 30}deg)`;
+    getAllClocks().forEach((clock) => {
+      updateClockHands(clock, h, m, s);
+    });
   }
 
   horloge();

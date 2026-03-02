@@ -52,7 +52,7 @@ export function initPixelwarLeaderboard(socket) {
         entry.favColor < COLORS.length
       ) {
         const colorHex = COLORS[entry.favColor];
-        colorCell.innerHTML = `<div style="width:20px;height:20px;background:${colorHex};border:1px solid #fff;margin:auto;"></div>`;
+        colorCell.innerHTML = `<div style="width:20px;height:20px;background:${colorHex};border:2px solid #fff;"></div>`;
       } else {
         colorCell.textContent = "-";
       }

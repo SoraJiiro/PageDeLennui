@@ -28,10 +28,7 @@ function ensureBlackjackGameConfigured({
   recalculateMedals,
   leaderboardManager,
 }) {
-  const {
-    applyDailyProfitCap,
-    getDailyProfitCapInfo,
-  } = require("../../services/economy");
+  const { addTokens, getWallet } = require("../../services/wallet");
 
   // Init émetteur blackjack si non défini
   if (blackjackGame && !blackjackGame.emitState) {
@@ -40,56 +37,40 @@ function ensureBlackjackGameConfigured({
     blackjackGame.setRoundEndCallback((roundStats) => {
       blackjackGame.joueurs.forEach((p) => {
         const totalPayout = p.bet + p.winnings;
-        if (!FileService.data.clicks[p.pseudo])
-          FileService.data.clicks[p.pseudo] = 0;
-
         if (totalPayout > 0) {
-          // Décomposer: remboursement (non cap) + profit (cap)
-          const refundPart = Math.min(p.bet, totalPayout);
-          const profitPart = Math.max(0, totalPayout - refundPart);
-          const capInfo = applyDailyProfitCap({
+          addTokens(
             FileService,
-            pseudo: p.pseudo,
-            profit: profitPart,
-            currentClicks: FileService.data.clicks[p.pseudo],
-          });
-
-          const amountToAdd = refundPart + capInfo.allowedProfit;
-          if (amountToAdd > 0) {
-            FileService.data.clicks[p.pseudo] += amountToAdd;
-            recalculateMedals(p.pseudo, FileService.data.clicks[p.pseudo], io);
-          }
-
-          // Informer le client du statut du cap quotidien
-          try {
-            const sock = io.sockets.sockets.get(p.socketId);
-            if (sock) sock.emit("economy:profitCap", capInfo);
-          } catch (e) {}
-        } else {
-          // Perte: si le quota est déjà atteint, rembourser la mise
-          try {
-            const capInfo = getDailyProfitCapInfo({
-              FileService,
-              pseudo: p.pseudo,
-              currentClicks: FileService.data.clicks[p.pseudo],
-            });
-            if (capInfo && Number(capInfo.remaining) === 0) {
-              FileService.data.clicks[p.pseudo] += p.bet;
-              recalculateMedals(
-                p.pseudo,
-                FileService.data.clicks[p.pseudo],
-                io,
-              );
-            }
-            try {
-              const sock = io.sockets.sockets.get(p.socketId);
-              if (sock) sock.emit("economy:profitCap", capInfo);
-            } catch (e) {}
-          } catch (e) {}
+            p.pseudo,
+            totalPayout,
+            FileService.data.clicks[p.pseudo] || 0,
+          );
         }
-      });
 
-      FileService.save("clicks", FileService.data.clicks);
+        try {
+          const sock = io.sockets.sockets.get(p.socketId);
+          if (sock) {
+            sock.emit(
+              "economy:wallet",
+              getWallet(
+                FileService,
+                p.pseudo,
+                FileService.data.clicks[p.pseudo] || 0,
+              ),
+            );
+          }
+        } catch (e) {}
+
+        try {
+          FileService.appendLog({
+            type: "BLACKJACK_RESULT",
+            pseudo: p.pseudo,
+            currency: "token",
+            bet: p.bet,
+            netChange: Number(p.winnings || 0),
+            timestamp: new Date().toISOString(),
+          });
+        } catch {}
+      });
 
       // Update Blackjack Stats
       if (roundStats && Array.isArray(roundStats)) {
@@ -125,17 +106,22 @@ function ensureBlackjackGameConfigured({
         leaderboardManager.broadcastBlackjackLB(io);
       }
 
-      // Update all players with new scores
+      // Update all players with new wallet
       blackjackGame.joueurs.forEach((p) => {
         const socketId = p.socketId;
         if (io.sockets.sockets.get(socketId)) {
-          io.sockets.sockets.get(socketId).emit("clicker:you", {
-            score: FileService.data.clicks[p.pseudo],
-          });
+          io.sockets.sockets
+            .get(socketId)
+            .emit(
+              "economy:wallet",
+              getWallet(
+                FileService,
+                p.pseudo,
+                FileService.data.clicks[p.pseudo] || 0,
+              ),
+            );
         }
       });
-
-      leaderboardManager.broadcastClickerLB(io);
       io.emit("blackjack:state", blackjackGame.getState());
     });
   }
@@ -149,6 +135,19 @@ function registerBlackjackHandlers({
   recalculateMedals,
   blackjackGame,
 }) {
+  const {
+    getWallet,
+    spendTokens,
+    canSpendTokens,
+  } = require("../../services/wallet");
+
+  function emitWalletFor(p) {
+    io.to("user:" + p).emit(
+      "economy:wallet",
+      getWallet(FileService, p, FileService.data.clicks[p] || 0),
+    );
+  }
+
   socket.on("blackjack:join", () => {
     const res = blackjackGame.addPlayer(pseudo, socket.id);
     if (!res.success) {
@@ -184,37 +183,29 @@ function registerBlackjackHandlers({
     let bet = parseInt(amount);
     if (isNaN(bet) || bet <= 0) return;
 
-    const currentClicks = FileService.data.clicks[pseudo] || 0;
-
-    // Limite 50% de la richesse
-    const maxBet = Math.floor(currentClicks * 0.5);
-    if (bet > maxBet) {
-      bet = maxBet;
-    }
-
-    if (bet <= 0) {
-      socket.emit("blackjack:error", "Mise impossible (fonds insuffisants)");
-      return;
-    }
-
-    /* Redondant avec le cap mais securité */
-    if (currentClicks < bet) {
-      socket.emit("blackjack:error", "Pas assez de clicks !");
+    const hasFunds = canSpendTokens(
+      FileService,
+      pseudo,
+      bet,
+      FileService.data.clicks[pseudo] || 0,
+    );
+    if (!hasFunds) {
+      socket.emit("blackjack:error", "Pas assez de tokens !");
       return;
     }
 
     if (blackjackGame.placeBet(pseudo, bet)) {
-      // Deduct bet immediately
-      FileService.data.clicks[pseudo] = currentClicks - bet;
-      FileService.save("clicks", FileService.data.clicks);
+      spendTokens(
+        FileService,
+        pseudo,
+        bet,
+        FileService.data.clicks[pseudo] || 0,
+      );
       trackBlackjackBet(pseudo, bet, FileService);
       try {
         applyAutoBadges({ pseudo, FileService });
       } catch {}
-      recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
-      io.to("user:" + pseudo).emit("clicker:you", {
-        score: FileService.data.clicks[pseudo],
-      });
+      emitWalletFor(pseudo);
 
       io.emit("blackjack:state", blackjackGame.getState());
     }
@@ -240,25 +231,30 @@ function registerBlackjackHandlers({
     if (!hand) return;
 
     const cost = hand.bet;
-    const currentClicks = FileService.data.clicks[pseudo] || 0;
-
-    if (currentClicks < cost) {
-      socket.emit("blackjack:error", "Pas assez de clicks pour doubler !");
+    const hasFunds = canSpendTokens(
+      FileService,
+      pseudo,
+      cost,
+      FileService.data.clicks[pseudo] || 0,
+    );
+    if (!hasFunds) {
+      socket.emit("blackjack:error", "Pas assez de tokens pour doubler !");
       return;
     }
 
     const res = blackjackGame.double(pseudo);
     if (res.success) {
-      FileService.data.clicks[pseudo] = currentClicks - res.cost;
-      FileService.save("clicks", FileService.data.clicks);
+      spendTokens(
+        FileService,
+        pseudo,
+        res.cost,
+        FileService.data.clicks[pseudo] || 0,
+      );
       trackBlackjackBet(pseudo, res.cost, FileService);
       try {
         applyAutoBadges({ pseudo, FileService });
       } catch {}
-      recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
-      io.to("user:" + pseudo).emit("clicker:you", {
-        score: FileService.data.clicks[pseudo],
-      });
+      emitWalletFor(pseudo);
       io.emit("blackjack:state", blackjackGame.getState());
     }
   });
@@ -270,25 +266,30 @@ function registerBlackjackHandlers({
     if (!hand) return;
 
     const cost = hand.bet;
-    const currentClicks = FileService.data.clicks[pseudo] || 0;
-
-    if (currentClicks < cost) {
-      socket.emit("blackjack:error", "Pas assez de clicks pour spliter !");
+    const hasFunds = canSpendTokens(
+      FileService,
+      pseudo,
+      cost,
+      FileService.data.clicks[pseudo] || 0,
+    );
+    if (!hasFunds) {
+      socket.emit("blackjack:error", "Pas assez de tokens pour spliter !");
       return;
     }
 
     const res = blackjackGame.split(pseudo);
     if (res.success) {
-      FileService.data.clicks[pseudo] = currentClicks - res.cost;
-      FileService.save("clicks", FileService.data.clicks);
+      spendTokens(
+        FileService,
+        pseudo,
+        res.cost,
+        FileService.data.clicks[pseudo] || 0,
+      );
       trackBlackjackBet(pseudo, res.cost, FileService);
       try {
         applyAutoBadges({ pseudo, FileService });
       } catch {}
-      recalculateMedals(pseudo, FileService.data.clicks[pseudo], io);
-      io.to("user:" + pseudo).emit("clicker:you", {
-        score: FileService.data.clicks[pseudo],
-      });
+      emitWalletFor(pseudo);
       io.emit("blackjack:state", blackjackGame.getState());
     } else {
       if (res.reason === "max_splits") {
