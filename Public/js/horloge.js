@@ -3,7 +3,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function placeNumbers(clockEl) {
     if (!clockEl) return;
-    const size = clockEl.clientWidth || 260;
+    const computedWidth = Number.parseFloat(
+      window.getComputedStyle(clockEl).width,
+    );
+    const size =
+      clockEl.clientWidth ||
+      clockEl.offsetWidth ||
+      (Number.isFinite(computedWidth) ? computedWidth : 260);
     const center = size / 2;
     const radius = size * 0.42;
 
@@ -53,10 +59,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     getAllClocks().forEach((clock) => {
+      placeNumbers(clock);
       updateClockHands(clock, h, m, s);
     });
   }
 
   horloge();
   setInterval(horloge, 1000);
+  window.addEventListener("resize", () => {
+    getAllClocks().forEach((clock) => placeNumbers(clock));
+  });
 });

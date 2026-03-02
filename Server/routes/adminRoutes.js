@@ -9,6 +9,7 @@ const { recalculateMedals } = require("../moduleGetter");
 const { EGG_DEFS } = require("../services/easterEggs");
 const { ensureShopCatalog } = require("../services/shopCatalog");
 const { getWallet } = require("../services/wallet");
+const { resetUserBadgesProgress } = require("../services/badgesAuto");
 const words = require("../constants/words");
 
 const CUSTOM_BADGE_PRICE = 200000;
@@ -573,6 +574,34 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     FileService.save("chatBadges", data);
     emitAdminRefresh("badges");
     res.json({ success: true });
+  });
+
+  router.post("/badges/reset-user", requireAdmin, (req, res) => {
+    const { pseudo } = req.body || {};
+    const p = String(pseudo || "").trim();
+    if (!p) {
+      return res.status(400).json({ message: "Pseudo manquant" });
+    }
+
+    const userRec = dbUsers.findBypseudo(p);
+    if (!userRec) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    const canonicalPseudo = userRec.pseudo;
+    const out = resetUserBadgesProgress({
+      pseudo: canonicalPseudo,
+      FileService,
+    });
+
+    emitAdminRefresh("badges");
+    res.json({
+      success: true,
+      pseudo: canonicalPseudo,
+      resetAt: out.resetAt || new Date().toISOString(),
+      message:
+        "Tous les badges ont été retirés et les conditions auto ont été réinitialisées.",
+    });
   });
 
   // --- Shop: Catalog ---

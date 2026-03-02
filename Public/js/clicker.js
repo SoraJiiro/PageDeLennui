@@ -22,7 +22,7 @@ export function initClicker(socket) {
     clicksManuels: [],
     cpsHumain: 0,
     peakCpsHumain: 0,
-    cpsHumainAt14Start: null,
+    cpsHumainAtThresholdStart: null,
     clickerFouDone: false,
     timerHumain: null,
     myPseudo: null,
@@ -587,22 +587,23 @@ export function initClicker(socket) {
         });
       }
 
-      if (state.cpsHumain >= 14) {
-        if (!state.cpsHumainAt14Start) state.cpsHumainAt14Start = mtn;
-        if (!state.clickerFouDone && mtn - state.cpsHumainAt14Start >= 6700) {
+      if (state.cpsHumain >= 12) {
+        if (!state.cpsHumainAtThresholdStart)
+          state.cpsHumainAtThresholdStart = mtn;
+        if (
+          !state.clickerFouDone &&
+          mtn - state.cpsHumainAtThresholdStart >= 6700
+        ) {
           state.clickerFouDone = true;
-          socket.emit("clicker:humanCpsChallengeComplete", {
-            peakCps: state.peakCpsHumain,
-          });
         }
       } else {
-        state.cpsHumainAt14Start = null;
+        state.cpsHumainAtThresholdStart = null;
       }
 
       clearTimeout(state.timerHumain);
       state.timerHumain = setTimeout(() => {
         state.cpsHumain = 0;
-        state.cpsHumainAt14Start = null;
+        state.cpsHumainAtThresholdStart = null;
       }, 1100);
     });
   }

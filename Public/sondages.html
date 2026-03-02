@@ -196,6 +196,14 @@
         }
 
         async function vote(surveyId, choiceIndex) {
+            const card = document.getElementById(`survey-${surveyId}`);
+            const choiceButtons = card ? card.querySelectorAll('.survey-choice-btn') : [];
+            const selectedChoice = choiceButtons[choiceIndex]?.textContent?.trim() || `option #${choiceIndex + 1}`;
+            const question = card?.querySelector('.survey-question')?.textContent?.trim() || 'ce sondage';
+
+            const ok = confirm(`Confirmer votre vote ?\n\nSondage: ${question}\nChoix: ${selectedChoice}`);
+            if (!ok) return;
+
             try {
                 const res = await fetch('/api/surveys/vote', {
                     method: 'POST',

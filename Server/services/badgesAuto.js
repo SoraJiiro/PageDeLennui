@@ -99,25 +99,29 @@ const AUTO_BADGES = [
     id: "CoinflipTag",
     emoji: "🪙",
     name: "Coinflip Addict",
-    isEligible: ({ coinflipGames }) => coinflipGames >= 50,
+    isEligible: ({ coinflipGames, coinflipTotalBet }) =>
+      coinflipGames >= 50 && coinflipTotalBet >= 5000,
   },
   {
     id: "BlackjackTag",
     emoji: "🃏",
     name: "Blackjack Grinder",
-    isEligible: ({ blackjackHands }) => blackjackHands >= 50,
+    isEligible: ({ blackjackHands, blackjackTotalBet }) =>
+      blackjackHands >= 50 && blackjackTotalBet >= 5000,
   },
   {
     id: "RouletteTag",
     emoji: "🎯",
     name: "Roulette Veteran",
-    isEligible: ({ rouletteGames }) => rouletteGames >= 40,
+    isEligible: ({ rouletteGames, rouletteTotalBet }) =>
+      rouletteGames >= 40 && rouletteTotalBet >= 4000,
   },
   {
     id: "SlotsTag",
     emoji: "🎰",
     name: "Slots Spinner",
-    isEligible: ({ slotsGames }) => slotsGames >= 40,
+    isEligible: ({ slotsGames, slotsTotalBet }) =>
+      slotsGames >= 40 && slotsTotalBet >= 4000,
   },
   {
     id: "CM",
@@ -163,9 +167,85 @@ function ensureUserBucket(badgesData, pseudo) {
 function getCasinoTotalFor(pseudo, FileService) {
   const coinflip = FileService.data.coinflipStats || {};
   const blackjack = FileService.data.blackjackStats || {};
+  const roulette = FileService.data.rouletteStats || {};
+  const slots = FileService.data.slotsStats || {};
   const coinBet = coinflip[pseudo] && coinflip[pseudo].totalBet;
   const blackjackBet = blackjack[pseudo] && blackjack[pseudo].totalBet;
-  return (Number(coinBet) || 0) + (Number(blackjackBet) || 0);
+  const rouletteBet = roulette[pseudo] && roulette[pseudo].totalBet;
+  const slotsBet = slots[pseudo] && slots[pseudo].totalBet;
+  return (
+    (Number(coinBet) || 0) +
+    (Number(blackjackBet) || 0) +
+    (Number(rouletteBet) || 0) +
+    (Number(slotsBet) || 0)
+  );
+}
+
+function getEligibilitySnapshot(p, FileService) {
+  return {
+    unoGames: readNum(FileService.data.unoStats, p),
+    score2048: readNum(FileService.data.scores2048, p),
+    maxTile2048: readNum(FileService.data.scores2048MaxTile, p),
+    dinoBest: readNum(FileService.data.dinoScores, p),
+    flappyBest: readNum(FileService.data.flappyScores, p),
+    snakeBest: readNum(FileService.data.snakeScores, p),
+    blockblastBest: readNum(FileService.data.blockblastScores, p),
+    sudokuCompleted: readNum(FileService.data.sudokuScores, p),
+    p4Wins: readNum(FileService.data.p4Wins, p),
+    mashWins: readNum(FileService.data.mashWins, p),
+    coinflipGames: readNum(FileService.data.coinflipStats, p, "gamesPlayed"),
+    coinflipTotalBet: readNum(FileService.data.coinflipStats, p, "totalBet"),
+    blackjackHands: readNum(FileService.data.blackjackStats, p, "handsPlayed"),
+    blackjackTotalBet: readNum(FileService.data.blackjackStats, p, "totalBet"),
+    rouletteGames: readNum(FileService.data.rouletteStats, p, "gamesPlayed"),
+    rouletteTotalBet: readNum(FileService.data.rouletteStats, p, "totalBet"),
+    slotsGames: readNum(FileService.data.slotsStats, p, "gamesPlayed"),
+    slotsTotalBet: readNum(FileService.data.slotsStats, p, "totalBet"),
+    casinoTotal: getCasinoTotalFor(p, FileService),
+  };
+}
+
+function getProgressSinceBaseline(current, baseline = {}) {
+  const keys = Object.keys(current || {});
+  const out = {};
+  keys.forEach((key) => {
+    out[key] = Math.max(0, toInt(current[key]) - toInt(baseline[key]));
+  });
+  return out;
+}
+
+function resetUserBadgesProgress({ pseudo, FileService }) {
+  const p = String(pseudo || "").trim();
+  if (!p) return { changed: false, pseudo: p, resetAt: null };
+
+  const badgesData = ensureBadgesData(FileService);
+  const snapshot = getEligibilitySnapshot(p, FileService);
+  const nowIso = new Date().toISOString();
+
+  badgesData.users[p] = {
+    assigned: [],
+    selected: [],
+    autoBadgeBaseline: {
+      ...snapshot,
+      resetAt: nowIso,
+      lockOg: false,
+    },
+  };
+
+  if (
+    FileService.data.clickerFouChallenges &&
+    FileService.data.clickerFouChallenges[p]
+  ) {
+    delete FileService.data.clickerFouChallenges[p];
+    FileService.save(
+      "clickerFouChallenges",
+      FileService.data.clickerFouChallenges,
+    );
+  }
+
+  FileService.save("chatBadges", badgesData);
+
+  return { changed: true, pseudo: p, resetAt: nowIso };
 }
 
 function applyAutoBadges({ pseudo, FileService }) {
@@ -173,40 +253,43 @@ function applyAutoBadges({ pseudo, FileService }) {
   if (!p) return { changed: false, assigned: [] };
 
   const badgesData = ensureBadgesData(FileService);
-  const { assigned, selected } = ensureUserBucket(badgesData, p);
+  const { bucket, assigned, selected } = ensureUserBucket(badgesData, p);
   const assignedSet = new Set(assigned);
 
   const user = dbUsers.findBypseudo(p);
   const motus = FileService.data.motusScores
     ? FileService.data.motusScores[p]
     : null;
-  const unoGames = readNum(FileService.data.unoStats, p);
-  const score2048 = readNum(FileService.data.scores2048, p);
-  const maxTile2048 = readNum(FileService.data.scores2048MaxTile, p);
-  const dinoBest = readNum(FileService.data.dinoScores, p);
-  const flappyBest = readNum(FileService.data.flappyScores, p);
-  const snakeBest = readNum(FileService.data.snakeScores, p);
-  const blockblastBest = readNum(FileService.data.blockblastScores, p);
-  const sudokuCompleted = readNum(FileService.data.sudokuScores, p);
-  const p4Wins = readNum(FileService.data.p4Wins, p);
-  const mashWins = readNum(FileService.data.mashWins, p);
-  const coinflipGames = readNum(
-    FileService.data.coinflipStats,
-    p,
-    "gamesPlayed",
-  );
-  const blackjackHands = readNum(
-    FileService.data.blackjackStats,
-    p,
-    "handsPlayed",
-  );
-  const rouletteGames = readNum(
-    FileService.data.rouletteStats,
-    p,
-    "gamesPlayed",
-  );
-  const slotsGames = readNum(FileService.data.slotsStats, p, "gamesPlayed");
-  const casinoTotal = getCasinoTotalFor(p, FileService);
+  const baseline =
+    bucket &&
+    bucket.autoBadgeBaseline &&
+    typeof bucket.autoBadgeBaseline === "object"
+      ? bucket.autoBadgeBaseline
+      : null;
+  const currentProgress = getEligibilitySnapshot(p, FileService);
+  const progress = getProgressSinceBaseline(currentProgress, baseline || {});
+
+  const unoGames = progress.unoGames;
+  const score2048 = progress.score2048;
+  const maxTile2048 = progress.maxTile2048;
+  const dinoBest = progress.dinoBest;
+  const flappyBest = progress.flappyBest;
+  const snakeBest = progress.snakeBest;
+  const blockblastBest = progress.blockblastBest;
+  const sudokuCompleted = progress.sudokuCompleted;
+  const p4Wins = progress.p4Wins;
+  const mashWins = progress.mashWins;
+  const coinflipGames = progress.coinflipGames;
+  const coinflipTotalBet = progress.coinflipTotalBet;
+  const blackjackHands = progress.blackjackHands;
+  const blackjackTotalBet = progress.blackjackTotalBet;
+  const rouletteGames = progress.rouletteGames;
+  const rouletteTotalBet = progress.rouletteTotalBet;
+  const slotsGames = progress.slotsGames;
+  const slotsTotalBet = progress.slotsTotalBet;
+  const casinoTotal = progress.casinoTotal;
+
+  const isOgLocked = Boolean(baseline && baseline.lockOg);
   const clickerFouDone = Boolean(
     FileService.data.clickerFouChallenges &&
     FileService.data.clickerFouChallenges[p],
@@ -220,26 +303,33 @@ function applyAutoBadges({ pseudo, FileService }) {
       changed = true;
     }
 
-    const eligible = badge.isEligible({
-      user,
-      motus,
-      unoGames,
-      score2048,
-      maxTile2048,
-      dinoBest,
-      flappyBest,
-      snakeBest,
-      blockblastBest,
-      sudokuCompleted,
-      p4Wins,
-      mashWins,
-      coinflipGames,
-      blackjackHands,
-      rouletteGames,
-      slotsGames,
-      casinoTotal,
-      clickerFouDone,
-    });
+    const eligible =
+      badge.id === "OgTag" && isOgLocked
+        ? false
+        : badge.isEligible({
+            user,
+            motus,
+            unoGames,
+            score2048,
+            maxTile2048,
+            dinoBest,
+            flappyBest,
+            snakeBest,
+            blockblastBest,
+            sudokuCompleted,
+            p4Wins,
+            mashWins,
+            coinflipGames,
+            coinflipTotalBet,
+            blackjackHands,
+            blackjackTotalBet,
+            rouletteGames,
+            rouletteTotalBet,
+            slotsGames,
+            slotsTotalBet,
+            casinoTotal,
+            clickerFouDone,
+          });
     if (eligible && !assignedSet.has(badge.id)) {
       assignedSet.add(badge.id);
       changed = true;
@@ -257,4 +347,4 @@ function applyAutoBadges({ pseudo, FileService }) {
   return { changed, assigned: Array.from(assignedSet) };
 }
 
-module.exports = { applyAutoBadges };
+module.exports = { applyAutoBadges, resetUserBadgesProgress };

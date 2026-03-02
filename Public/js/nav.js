@@ -29,14 +29,25 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => notif.remove(), duration);
   }
 
-  const surveysLink = document.querySelector(
-    '[data-external-url="sondages.html"], a[href="sondages.html"]',
+  const surveysLinks = Array.from(
+    document.querySelectorAll(
+      '[data-external-url="sondages.html"], a[href="sondages.html"]',
+    ),
   );
-  const patchNotesLink = document.querySelector(
-    '[data-external-url="patch_notes.html"], a[href="patch_notes.html"]',
+  const patchNotesLinks = Array.from(
+    document.querySelectorAll(
+      '[data-external-url="patch_notes.html"], a[href="patch_notes.html"]',
+    ),
   );
-  const annoncesLink = document.querySelector(
-    '[data-external-url="annonces.html"], a[href="annonces.html"]',
+  const annoncesLinks = Array.from(
+    document.querySelectorAll(
+      '[data-external-url="annonces.html"], a[href="annonces.html"]',
+    ),
+  );
+  const reglementLinks = Array.from(
+    document.querySelectorAll(
+      '[data-external-url="reglement.html"], a[href="reglement.html"]',
+    ),
   );
   const chatBtn = document.querySelector(".sec3");
   const stageNavUp = document.getElementById("stage-nav-up");
@@ -115,11 +126,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Si on dépasse un certain seuil, on compacte.
     if (typeof text === "number" && text > 99) {
-      badge.textContent = "99+";
+      badge.innerHTML = "<b>99+</b>";
     } else {
-      badge.textContent = String(text);
+      badge.innerHTML = `<b>${String(text)}</b>`;
     }
-    badge.style.display = "inline-block";
+    badge.style.display = "flex";
+  }
+
+  function setBadgeAll(targetEls, text) {
+    if (!Array.isArray(targetEls) || targetEls.length === 0) return;
+    targetEls.forEach((el) => setBadge(el, text));
   }
 
   function parseIsoMs(iso) {
@@ -222,10 +238,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function checkPatchNotes({ markSeen = false } = {}) {
-    if (!patchNotesLink && page !== "patch_notes.html") return;
+    if (patchNotesLinks.length === 0 && page !== "patch_notes.html") return;
     const versions = await getPatchNoteVersions();
     if (versions.length === 0) {
-      setBadge(patchNotesLink, null);
+      setBadgeAll(patchNotesLinks, null);
       return;
     }
 
@@ -236,11 +252,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (markSeen || page === "patch_notes.html") {
       const merged = Array.from(new Set([...seen, ...versions]));
       await setSeenIds("seenPatchVersions", merged);
-      setBadge(patchNotesLink, null);
+      setBadgeAll(patchNotesLinks, null);
       return;
     }
 
-    setBadge(patchNotesLink, unseenCount > 0 ? unseenCount : null);
+    setBadgeAll(patchNotesLinks, unseenCount > 0 ? unseenCount : null);
   }
 
   async function fetchAnnonces(limit = 200) {
@@ -255,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function checkAnnonces({ markSeen = false } = {}) {
-    if (!annoncesLink && page !== "annonces.html") return;
+    if (annoncesLinks.length === 0 && page !== "annonces.html") return;
     const annonces = await fetchAnnonces(500);
     const ids = annonces
       .map((a) => (a && a.id ? String(a.id) : null))
@@ -268,11 +284,70 @@ document.addEventListener("DOMContentLoaded", () => {
     if (markSeen || page === "annonces.html") {
       const merged = Array.from(new Set([...seen, ...ids]));
       await setSeenIds("seenAnnonces", merged);
-      setBadge(annoncesLink, null);
+      setBadgeAll(annoncesLinks, null);
       return;
     }
 
-    setBadge(annoncesLink, unseenCount > 0 ? unseenCount : null);
+    setBadgeAll(annoncesLinks, unseenCount > 0 ? unseenCount : null);
+  }
+
+  async function getReglementFingerprint() {
+    try {
+      let doc = null;
+
+      if (page === "reglement.html") {
+        doc = document;
+      } else {
+        const res = await fetch("reglement.html", { cache: "no-store" });
+        if (!res.ok) return null;
+        const html = await res.text();
+        doc = new DOMParser().parseFromString(html, "text/html");
+      }
+
+      const root =
+        doc.querySelector(".rules-wrap") ||
+        doc.querySelector("main") ||
+        doc.body ||
+        doc.documentElement;
+
+      const text = String(root?.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 8000);
+
+      if (!text) return null;
+
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) {
+        hash = (hash << 5) - hash + text.charCodeAt(i);
+        hash |= 0;
+      }
+
+      return `reg_${Math.abs(hash)}_${text.length}`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function checkReglement({ markSeen = false } = {}) {
+    if (reglementLinks.length === 0 && page !== "reglement.html") return;
+
+    const fingerprint = await getReglementFingerprint();
+    if (!fingerprint) {
+      setBadgeAll(reglementLinks, null);
+      return;
+    }
+
+    const key = await storageKey("seenReglementFingerprint");
+    const seen = localStorage.getItem(key) || "";
+
+    if (markSeen || page === "reglement.html") {
+      localStorage.setItem(key, fingerprint);
+      setBadgeAll(reglementLinks, null);
+      return;
+    }
+
+    setBadgeAll(reglementLinks, seen === fingerprint ? null : 1);
   }
 
   async function fetchChatHistory(limit = 200) {
@@ -316,6 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function refreshAllBadges() {
     await Promise.all([
       checkPatchNotes(),
+      checkReglement(),
       checkAnnonces(),
       checkChat(),
       checkSurveys(),
@@ -336,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function checkSurveys({ markSeen = false } = {}) {
-    if (!surveysLink && page !== "sondages.html") return;
+    if (surveysLinks.length === 0 && page !== "sondages.html") return;
     const surveys = await fetchSurveys(300);
 
     const activeIds = surveys
@@ -353,15 +429,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (markSeen || page === "sondages.html") {
       const merged = Array.from(new Set([...seen, ...activeIds]));
       await setSeenIds("seenSurveys", merged);
-      setBadge(surveysLink, null);
+      setBadgeAll(surveysLinks, null);
       return;
     }
 
-    setBadge(surveysLink, unseenCount > 0 ? unseenCount : null);
+    setBadgeAll(surveysLinks, unseenCount > 0 ? unseenCount : null);
   }
 
   async function markSurveysSeen() {
-    if (!surveysLink) return;
+    if (surveysLinks.length === 0) return;
     if (lastSurveyActiveIds.length === 0) {
       await checkSurveys({ markSeen: true });
       return;
@@ -370,7 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const seen = await getSeenIds("seenSurveys");
     const merged = Array.from(new Set([...seen, ...lastSurveyActiveIds]));
     await setSeenIds("seenSurveys", merged);
-    setBadge(surveysLink, null);
+    setBadgeAll(surveysLinks, null);
   }
 
   function setupRealtimeSocket(socket) {
@@ -453,12 +529,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Init badges
   refreshAllBadges();
   const shouldPollBadges =
-    !!patchNotesLink ||
-    !!annoncesLink ||
-    !!surveysLink ||
+    patchNotesLinks.length > 0 ||
+    annoncesLinks.length > 0 ||
+    surveysLinks.length > 0 ||
+    reglementLinks.length > 0 ||
     !!chatBtn ||
     page === "patch_notes.html" ||
-    page === "annonces.html";
+    page === "annonces.html" ||
+    page === "reglement.html";
   if (shouldPollBadges) {
     setInterval(refreshAllBadges, 60_000);
   }
@@ -470,6 +548,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   if (page === "sondages.html") {
     checkSurveys({ markSeen: true });
+  }
+  if (page === "reglement.html") {
+    checkReglement({ markSeen: true });
   }
 
   const sidebar = document.getElementById("sidebar");
@@ -649,23 +730,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Marquer comme "vu" lorsqu'on clique sur certains items
-  if (patchNotesLink) {
-    patchNotesLink.addEventListener("click", async () => {
+  patchNotesLinks.forEach((link) => {
+    link.addEventListener("click", async () => {
       await checkPatchNotes({ markSeen: true });
     });
-  }
+  });
 
-  if (annoncesLink) {
-    annoncesLink.addEventListener("click", async () => {
+  annoncesLinks.forEach((link) => {
+    link.addEventListener("click", async () => {
       await checkAnnonces({ markSeen: true });
     });
-  }
+  });
 
-  if (surveysLink) {
-    surveysLink.addEventListener("click", async () => {
+  surveysLinks.forEach((link) => {
+    link.addEventListener("click", async () => {
       await markSurveysSeen();
     });
-  }
+  });
+
+  reglementLinks.forEach((link) => {
+    link.addEventListener("click", async () => {
+      await checkReglement({ markSeen: true });
+    });
+  });
 
   // Attacher les écouteurs d'événements aux boutons
   const navButtons = {
@@ -712,6 +799,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (url.includes("sondages.html")) {
         await markSurveysSeen();
+      }
+      if (url.includes("reglement.html")) {
+        await checkReglement({ markSeen: true });
       }
 
       openExternalStage(url, title);

@@ -90,12 +90,102 @@ function registerClickerHandlers({
   colors,
 }) {
   const { getWallet } = require("../../services/wallet");
+  const HUMAN_CPS_THRESHOLD = 12;
+  const HUMAN_CPS_REQUIRED_MS = 6700;
+  const HUMAN_CPS_INACTIVITY_MS = 1100;
 
   function emitWalletForUser() {
     io.to("user:" + pseudo).emit(
       "economy:wallet",
       getWallet(FileService, pseudo, FileService.data.clicks[pseudo] || 0),
     );
+  }
+
+  function ensureClickerFouAwarded() {
+    if (
+      !FileService.data.clickerFouChallenges ||
+      typeof FileService.data.clickerFouChallenges !== "object"
+    ) {
+      FileService.data.clickerFouChallenges = {};
+    }
+
+    if (FileService.data.clickerFouChallenges[pseudo]) {
+      return false;
+    }
+
+    FileService.data.clickerFouChallenges[pseudo] = {
+      completedAt: new Date().toISOString(),
+      requirement: "12cps_6.7s",
+    };
+    FileService.save(
+      "clickerFouChallenges",
+      FileService.data.clickerFouChallenges,
+    );
+
+    if (typeof applyAutoBadges === "function") {
+      applyAutoBadges({ pseudo, FileService });
+    }
+
+    return true;
+  }
+
+  function evaluateHumanCpsChallenge(now) {
+    if (!socket.data) socket.data = {};
+    if (!socket.data.clickerHumanChallenge) {
+      socket.data.clickerHumanChallenge = {
+        manualTimestamps: [],
+        aboveThresholdStart: null,
+        lastManualAt: null,
+        achieved: false,
+      };
+    }
+
+    const tracker = socket.data.clickerHumanChallenge;
+    const lastManualAt = Number(tracker.lastManualAt || 0);
+    if (lastManualAt > 0 && now - lastManualAt > HUMAN_CPS_INACTIVITY_MS) {
+      tracker.manualTimestamps = [];
+      tracker.aboveThresholdStart = null;
+    }
+
+    tracker.lastManualAt = now;
+    tracker.manualTimestamps.push(now);
+    const oneSecCut = now - 1000;
+    tracker.manualTimestamps = tracker.manualTimestamps.filter(
+      (t) => t >= oneSecCut,
+    );
+
+    const cpsHumain = tracker.manualTimestamps.length;
+
+    if (
+      !FileService.data.clickerHumanPeakCps ||
+      typeof FileService.data.clickerHumanPeakCps !== "object"
+    ) {
+      FileService.data.clickerHumanPeakCps = {};
+    }
+    const currentPeak =
+      Number(FileService.data.clickerHumanPeakCps[pseudo]) || 0;
+    if (cpsHumain > currentPeak) {
+      FileService.data.clickerHumanPeakCps[pseudo] = cpsHumain;
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      leaderboardManager.broadcastClickerLB(io);
+    }
+
+    if (cpsHumain >= HUMAN_CPS_THRESHOLD) {
+      if (!tracker.aboveThresholdStart) tracker.aboveThresholdStart = now;
+
+      if (
+        !tracker.achieved &&
+        now - tracker.aboveThresholdStart >= HUMAN_CPS_REQUIRED_MS
+      ) {
+        tracker.achieved = true;
+        ensureClickerFouAwarded();
+      }
+    } else {
+      tracker.aboveThresholdStart = null;
+    }
   }
 
   socket.on("clicker:getUpgrades", () => {
@@ -165,59 +255,12 @@ function registerClickerHandlers({
     }
   });
 
-  socket.on("clicker:humanCpsChallengeComplete", ({ peakCps } = {}) => {
-    try {
-      if (
-        !FileService.data.clickerFouChallenges ||
-        typeof FileService.data.clickerFouChallenges !== "object"
-      ) {
-        FileService.data.clickerFouChallenges = {};
-      }
-
-      if (!FileService.data.clickerFouChallenges[pseudo]) {
-        FileService.data.clickerFouChallenges[pseudo] = {
-          completedAt: new Date().toISOString(),
-          requirement: "14cps_6.7s",
-        };
-        FileService.save(
-          "clickerFouChallenges",
-          FileService.data.clickerFouChallenges,
-        );
-      }
-
-      const reportedPeak = Number(peakCps);
-      if (Number.isFinite(reportedPeak)) {
-        if (
-          !FileService.data.clickerHumanPeakCps ||
-          typeof FileService.data.clickerHumanPeakCps !== "object"
-        ) {
-          FileService.data.clickerHumanPeakCps = {};
-        }
-        const safePeak = Math.max(0, Math.min(100, reportedPeak));
-        const currentPeak =
-          Number(FileService.data.clickerHumanPeakCps[pseudo]) || 0;
-        if (safePeak > currentPeak) {
-          FileService.data.clickerHumanPeakCps[pseudo] = safePeak;
-          FileService.save(
-            "clickerHumanPeakCps",
-            FileService.data.clickerHumanPeakCps,
-          );
-          leaderboardManager.broadcastClickerLB(io);
-        }
-      }
-
-      if (typeof applyAutoBadges === "function") {
-        applyAutoBadges({ pseudo, FileService });
-      }
-    } catch (e) {
-      console.error("Erreur clicker:humanCpsChallengeComplete:", e);
-    }
-  });
-
   socket.on("clicker:click", () => {
     try {
       const ip = getIpFromSocket(socket);
       const now = Date.now();
+
+      evaluateHumanCpsChallenge(now);
 
       let track = cpsTracker.get(ip);
       if (!track) {
@@ -499,11 +542,6 @@ function registerClickerHandlers({
         `🏅 [${colors.orange}${pseudo}${colors.green}] a débloqué ${medalName}`,
         colors.green,
       ),
-    );
-    broadcastSystemMessage(
-      io,
-      `${pseudo} a débloqué la médaille ${medalName} !`,
-      true,
     );
 
     // Ré-émission normalisée (objets complets)

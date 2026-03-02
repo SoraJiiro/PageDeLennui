@@ -174,10 +174,12 @@ function registerCoinflipHandlers({
         biggestWin: 0,
         totalWon: 0,
         totalLost: 0,
+        totalBet: 0,
       };
     }
     const rouletteStats = FileService.data.rouletteStats[pseudo];
     rouletteStats.gamesPlayed++;
+    rouletteStats.totalBet = (rouletteStats.totalBet || 0) + bet;
     if (payout > 0) {
       rouletteStats.wins++;
       const net = Math.max(0, payout - bet);
@@ -259,10 +261,12 @@ function registerCoinflipHandlers({
         biggestWin: 0,
         totalWon: 0,
         totalLost: 0,
+        totalBet: 0,
       };
     }
     const slotsStats = FileService.data.slotsStats[pseudo];
     slotsStats.gamesPlayed++;
+    slotsStats.totalBet = (slotsStats.totalBet || 0) + bet;
     if (payout > 0) {
       slotsStats.wins++;
       const net = Math.max(0, payout - bet);

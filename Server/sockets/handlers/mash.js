@@ -9,6 +9,10 @@ function registerMashHandlers({
   getMashGame,
   setMashGame,
 }) {
+  const MASH_RATE_WINDOW_MS = 1000;
+  const MASH_RATE_MAX_ACTIONS = 80;
+  const MASH_RATE_MIN_INTERVAL_MS = 8;
+
   let mashGame = typeof getMashGame === "function" ? getMashGame() : null;
 
   if (!mashGame) {
@@ -64,7 +68,44 @@ function registerMashHandlers({
     }
   });
 
+  function isMashRateLimited() {
+    try {
+      if (!socket.data) socket.data = {};
+      if (!socket.data.mashRate) {
+        socket.data.mashRate = { timestamps: [], lastAt: 0 };
+      }
+
+      const now = Date.now();
+      const bucket = socket.data.mashRate;
+
+      if (
+        Number.isFinite(bucket.lastAt) &&
+        bucket.lastAt > 0 &&
+        now - bucket.lastAt < MASH_RATE_MIN_INTERVAL_MS
+      ) {
+        return true;
+      }
+
+      bucket.timestamps = Array.isArray(bucket.timestamps)
+        ? bucket.timestamps.filter((t) => now - t < MASH_RATE_WINDOW_MS)
+        : [];
+
+      if (bucket.timestamps.length >= MASH_RATE_MAX_ACTIONS) {
+        bucket.lastAt = now;
+        return true;
+      }
+
+      bucket.timestamps.push(now);
+      bucket.lastAt = now;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   socket.on("mash:mash", (key) => {
+    if (isMashRateLimited()) return;
+    if (typeof key !== "string" || key.length !== 1) return;
     mashGame.handleMash(pseudo, key);
   });
 

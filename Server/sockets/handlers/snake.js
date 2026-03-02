@@ -11,6 +11,7 @@ function registerSnakeHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const SNAKE_MAX_SCORE = 5000;
   let isAlreadyLogged_snake = false;
 
   function rewardSnakeFinal(score) {
@@ -77,9 +78,9 @@ function registerSnakeHandlers({
   socket.on("snake:resumeConsumed", () => consumeRunnerResume());
 
   socket.on("snake:score", ({ score, elapsedMs, final }) => {
-    const s = Number(score);
+    const s = Math.floor(Number(score));
 
-    if (isNaN(s) || s < 0) return;
+    if (!Number.isFinite(s) || s < 0 || s > SNAKE_MAX_SCORE) return;
 
     updateReviveContextFromScore(socket, "snake", s);
     setRunnerProgress(s);
@@ -89,9 +90,11 @@ function registerSnakeHandlers({
     if (s > current) {
       FileService.data.snakeScores[pseudo] = s;
       FileService.save("snakeScores", FileService.data.snakeScores);
-      try {
-        applyAutoBadges({ pseudo, FileService });
-      } catch {}
+      if (final === true) {
+        try {
+          applyAutoBadges({ pseudo, FileService });
+        } catch {}
+      }
 
       // Si score meilleur et indication finale, enregistrer le temps de run
       if (final === true && typeof elapsedMs === "number") {

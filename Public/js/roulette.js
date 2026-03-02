@@ -70,7 +70,19 @@ export function initRoulette(socket) {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
-  drawWheel();
+
+  function ensureWheelVisibleAndRedraw() {
+    if (!wheel) return;
+    if (wheel.width < 100 || wheel.height < 100) {
+      wheel.width = 360;
+      wheel.height = 360;
+      wheel.style.width = "360px";
+      wheel.style.height = "360px";
+    }
+    drawWheel();
+  }
+
+  ensureWheelVisibleAndRedraw();
 
   let tokens = 0;
   let spinning = false;
@@ -173,4 +185,12 @@ export function initRoulette(socket) {
     result.textContent = msg || "Erreur roulette";
     result.className = "roulette-result lose";
   });
+
+  window.addEventListener("pde:section-activated", (e) => {
+    const sectionId = e && e.detail ? e.detail.sectionId : null;
+    if (sectionId !== "stage17") return;
+    setTimeout(() => ensureWheelVisibleAndRedraw(), 0);
+  });
+
+  window.addEventListener("resize", ensureWheelVisibleAndRedraw);
 }

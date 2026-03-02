@@ -5,8 +5,6 @@ const { FileService } = require("../util");
 const profileRoutes = require("./profileRoutes");
 const { listShopItems } = require("../services/shopCatalog");
 
-const ACTION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-
 function setupRoutes(
   app,
   {
@@ -26,32 +24,6 @@ function setupRoutes(
 ) {
   app.locals.io = io;
   app.locals.pixelWarGame = pixelWarGame;
-
-  app.use("/api", (req, res, next) => {
-    if (!ACTION_METHODS.has(req.method)) return next();
-
-    const startedAt = Date.now();
-
-    res.on("finish", () => {
-      const pseudo =
-        req.session && req.session.user && req.session.user.pseudo
-          ? String(req.session.user.pseudo)
-          : null;
-
-      if (!pseudo) return;
-
-      const role = pseudo === "Admin" ? "admin" : "user";
-      const target = req.originalUrl || req.url || req.path || "/api";
-      const durationMs = Date.now() - startedAt;
-
-      console.log({
-        level: "action",
-        message: `[API_ACTION] ${role}:${pseudo} ${req.method} ${target} -> ${res.statusCode} (${durationMs}ms)`,
-      });
-    });
-
-    next();
-  });
 
   // API
   app.use("/api", authRoutes);

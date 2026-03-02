@@ -7,8 +7,68 @@ function registerSudokuHandlers({
 }) {
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+
+  socket.on("sudoku:saveState", (payload = {}) => {
+    try {
+      if (!payload || typeof payload !== "object") return;
+      if (payload.completed === true) return;
+
+      const puzzle = String(payload.puzzle || "");
+      const solution = String(payload.solution || "");
+      const board = Array.isArray(payload.board) ? payload.board : [];
+
+      if (puzzle.length !== 81 || solution.length !== 81) return;
+      if (board.length !== 81) return;
+
+      const normalizedBoard = board.map((cell) => {
+        const v = String(cell || "0");
+        return /^[0-9]$/.test(v) ? v : "0";
+      });
+
+      if (!FileService.data.sudokuState) FileService.data.sudokuState = {};
+
+      FileService.data.sudokuState[pseudo] = {
+        puzzle,
+        solution,
+        board: normalizedBoard,
+        selectedIndex: Number.isInteger(payload.selectedIndex)
+          ? Math.max(-1, Math.min(80, payload.selectedIndex))
+          : -1,
+        accumulatedMs: Math.max(0, Number(payload.accumulatedMs) || 0),
+        hasPlayerStarted: !!payload.hasPlayerStarted,
+        completed: false,
+        at: new Date().toISOString(),
+      };
+
+      FileService.save("sudokuState", FileService.data.sudokuState);
+    } catch (e) {
+      console.error("Erreur saveState Sudoku:", e);
+    }
+  });
+
+  socket.on("sudoku:loadState", () => {
+    try {
+      const save = FileService.data.sudokuState?.[pseudo] || null;
+      if (save) {
+        socket.emit("sudoku:state", { found: true, state: save });
+      } else {
+        socket.emit("sudoku:state", { found: false });
+      }
+    } catch (e) {
+      socket.emit("sudoku:state", { found: false });
+    }
+  });
+
+  socket.on("sudoku:clearState", () => {
+    if (FileService.data.sudokuState && FileService.data.sudokuState[pseudo]) {
+      delete FileService.data.sudokuState[pseudo];
+      FileService.save("sudokuState", FileService.data.sudokuState);
+    }
+  });
+
   socket.on("sudoku:completed", (payload = {}) => {
     if (!FileService.data.sudokuScores) FileService.data.sudokuScores = {};
+    if (!FileService.data.sudokuState) FileService.data.sudokuState = {};
 
     const timeMs = Number(payload.timeMs || 0);
     const clientIp =
@@ -104,6 +164,11 @@ function registerSudokuHandlers({
       moneyGained: gain,
       moneyTotal: gain,
     });
+
+    if (FileService.data.sudokuState[pseudo]) {
+      delete FileService.data.sudokuState[pseudo];
+      FileService.save("sudokuState", FileService.data.sudokuState);
+    }
   });
 
   socket.on("sudoku:requestLeaderboard", () => {

@@ -9,6 +9,13 @@ export function initCanvasResizer() {
     const maxH = Math.max(0, window.innerHeight - 160);
     const cssWidth = Math.min(rect.width, window.innerWidth - 32);
     const cssHeight = Math.min(rect.height || (cssWidth * 9) / 16, maxH);
+
+    // Ne pas écraser un canvas quand sa section est masquée (rect à 0x0).
+    // Sinon on perd le buffer et certains canvases restent invisibles jusqu'au prochain redraw.
+    if (cssWidth < 2 || cssHeight < 2) {
+      return false;
+    }
+
     const displayWidth = Math.floor(cssWidth * ratio);
     const displayHeight = Math.floor(cssHeight * ratio);
 
@@ -40,7 +47,7 @@ export function initCanvasResizer() {
     to = setTimeout(resizeAll, 120);
   });
   window.addEventListener("orientationchange", () =>
-    setTimeout(resizeAll, 200)
+    setTimeout(resizeAll, 200),
   );
 
   return { resizeAll };

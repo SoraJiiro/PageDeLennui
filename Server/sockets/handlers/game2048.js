@@ -10,6 +10,8 @@ function register2048Handlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const SCORE_2048_MAX = 2000000;
+  const TILE_2048_MAX = 65536;
 
   function normalizeMaxTile(value) {
     const n = Math.floor(Number(value) || 0);
@@ -100,9 +102,12 @@ function register2048Handlers({
 
   socket.on("2048:submit_score", (payload) => {
     const asObject = payload && typeof payload === "object" ? payload : null;
-    const s = Number(asObject ? asObject.score : payload);
-    const maxTile = asObject ? Number(asObject.maxTile) : 0;
-    if (isNaN(s)) return;
+    const s = Math.floor(Number(asObject ? asObject.score : payload));
+    const maxTile = Math.floor(Number(asObject ? asObject.maxTile : 0));
+    if (!Number.isFinite(s) || s < 0 || s > SCORE_2048_MAX) return;
+    if (!Number.isFinite(maxTile) || maxTile < 0 || maxTile > TILE_2048_MAX)
+      return;
+    if (maxTile > 0 && s > 0 && maxTile > s * 2) return;
 
     updateReviveContextFromScore(socket, "2048", s);
     setRunnerProgress(s);

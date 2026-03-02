@@ -109,6 +109,90 @@ body {
   min-width: 0;
 }
 
+.hub-links {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.hub-link-btn {
+  position: relative;
+  min-width: 170px;
+  padding: 10px 14px;
+  border: 2px solid var(--primary-color);
+  background: color-mix(in srgb, var(--bg-color) 86%, var(--primary-color) 14%);
+  color: var(--primary-color);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.hub-link-btn:hover,
+.hub-link-btn:focus-visible {
+  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--bg-color) 78%, var(--primary-color) 22%);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+.hub-link-btn .notification-badge {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  transform: none;
+  justify-content: center;
+  align-items: center;
+  animation: hubBadgePulse 1.5s ease-in-out infinite;
+  overflow: visible;
+}
+
+.hub-link-btn .notification-badge::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid rgba(255, 0, 0s, 0.65);
+  border-radius: 999px;
+  pointer-events: none;
+  animation: hubBadgeOutline 1.5s ease-out infinite;
+}
+
+.hub-link-btn .notification-badge b {
+  padding: 2px 4px;
+  margin: 0 auto;
+}
+
+@keyframes hubBadgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.35);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(255, 59, 48, 0);
+  }
+}
+
+@keyframes hubBadgeOutline {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
 .vp-fit-inner {
   transform-origin: top center;
   max-width: 100%;

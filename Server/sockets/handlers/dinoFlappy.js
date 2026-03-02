@@ -11,6 +11,8 @@ function registerDinoFlappyHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const DINO_MAX_SCORE = 250000;
+  const FLAPPY_MAX_SCORE = 10000;
 
   function rewardFinalRun(game, score) {
     const s = Math.max(0, Math.floor(Number(score) || 0));
@@ -91,8 +93,8 @@ function registerDinoFlappyHandlers({
 
   // ------- Dino -------
   socket.on("dino:score", ({ score, final } = {}) => {
-    const s = Number(score);
-    if (isNaN(s) || s < 0) return;
+    const s = Math.floor(Number(score));
+    if (!Number.isFinite(s) || s < 0 || s > DINO_MAX_SCORE) return;
 
     updateReviveContextFromScore(socket, "dino", s);
     setRunnerProgress("dino", s);
@@ -100,9 +102,11 @@ function registerDinoFlappyHandlers({
     if (s > current) {
       FileService.data.dinoScores[pseudo] = s;
       FileService.save("dinoScores", FileService.data.dinoScores);
-      try {
-        applyAutoBadges({ pseudo, FileService });
-      } catch {}
+      if (final === true) {
+        try {
+          applyAutoBadges({ pseudo, FileService });
+        } catch {}
+      }
       console.log(
         withGame(
           `\n🦖 Nouveau score Dino pour [${colors.orange}${pseudo}${colors.blue}] -> ${s}\n`,
@@ -136,8 +140,8 @@ function registerDinoFlappyHandlers({
 
   // ------- Flappy -------
   socket.on("flappy:score", ({ score, final } = {}) => {
-    const s = Number(score);
-    if (isNaN(s) || s < 0) return;
+    const s = Math.floor(Number(score));
+    if (!Number.isFinite(s) || s < 0 || s > FLAPPY_MAX_SCORE) return;
 
     updateReviveContextFromScore(socket, "flappy", s);
     setRunnerProgress("flappy", s);
@@ -145,9 +149,11 @@ function registerDinoFlappyHandlers({
     if (s > current) {
       FileService.data.flappyScores[pseudo] = s;
       FileService.save("flappyScores", FileService.data.flappyScores);
-      try {
-        applyAutoBadges({ pseudo, FileService });
-      } catch {}
+      if (final === true) {
+        try {
+          applyAutoBadges({ pseudo, FileService });
+        } catch {}
+      }
       console.log(
         withGame(
           `\n🐤 Nouveau score Flappy pour [${colors.orange}${pseudo}${colors.pink}] -> ${s}\n`,

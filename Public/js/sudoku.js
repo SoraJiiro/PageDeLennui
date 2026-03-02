@@ -37,6 +37,10 @@ export function initSudoku(socket) {
   let timerInterval = null;
   let completed = false;
   let hasPlayerStarted = false;
+  let lastServerSaveAt = 0;
+
+  const SERVER_SAVE_THROTTLE_MS = 1200;
+  const LOCAL_SAVE_KEY = "sudoku_local_save_v1";
 
   function isSudokuStageActive() {
     const stage = document.getElementById("stage19");
@@ -50,8 +54,104 @@ export function initSudoku(socket) {
     return `${mm}:${ss}`;
   }
 
+  function buildSavePayload() {
+    if (!current || !Array.isArray(board) || board.length !== 81) return null;
+
+    return {
+      puzzle: String(current.puzzle || ""),
+      solution: String(current.solution || ""),
+      board: board.slice(0, 81).map((v) => String(v || "0")),
+      selectedIndex,
+      accumulatedMs: getElapsedMs(),
+      hasPlayerStarted,
+      completed,
+    };
+  }
+
+  function saveLocalState() {
+    try {
+      const payload = buildSavePayload();
+      if (!payload || payload.completed) return;
+      localStorage.setItem(LOCAL_SAVE_KEY, JSON.stringify(payload));
+    } catch (e) {}
+  }
+
+  function loadLocalState() {
+    try {
+      const raw = localStorage.getItem(LOCAL_SAVE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearSavedState() {
+    try {
+      socket.emit("sudoku:clearState");
+    } catch (e) {}
+    try {
+      localStorage.removeItem(LOCAL_SAVE_KEY);
+    } catch (e) {}
+  }
+
+  function saveStateToServer(force = false) {
+    const payload = buildSavePayload();
+    if (!payload || payload.completed) return;
+
+    const now = Date.now();
+    if (!force && now - lastServerSaveAt < SERVER_SAVE_THROTTLE_MS) {
+      return;
+    }
+    lastServerSaveAt = now;
+
+    try {
+      socket.emit("sudoku:saveState", payload);
+    } catch (e) {}
+
+    saveLocalState();
+  }
+
+  function restoreFromState(save) {
+    if (!save || typeof save !== "object") return false;
+
+    const puzzle = String(save.puzzle || "");
+    const solution = String(save.solution || "");
+    const savedBoard = Array.isArray(save.board) ? save.board : [];
+
+    if (
+      puzzle.length !== 81 ||
+      solution.length !== 81 ||
+      savedBoard.length !== 81
+    ) {
+      return false;
+    }
+
+    current = { puzzle, solution };
+    board = savedBoard.map((v) => {
+      const s = String(v || "0");
+      return /^[0-9]$/.test(s) ? s : "0";
+    });
+    selectedIndex = Number.isInteger(save.selectedIndex)
+      ? Math.max(-1, Math.min(80, save.selectedIndex))
+      : -1;
+    accumulatedMs = Math.max(0, Number(save.accumulatedMs) || 0);
+    runningSince = 0;
+    completed = false;
+    hasPlayerStarted = !!save.hasPlayerStarted;
+
+    setMessage("");
+    stopTimerLoop();
+    tickTimer();
+    renderGrid();
+    return true;
+  }
+
   function tickTimer() {
     timerEl.textContent = fmtTime(getElapsedMs());
+    if (!completed && hasPlayerStarted) {
+      saveStateToServer(false);
+    }
   }
 
   function getElapsedMs() {
@@ -130,6 +230,7 @@ export function initSudoku(socket) {
         startOnPlayerAction();
         selectedIndex = i;
         renderGrid();
+        saveStateToServer(false);
       });
 
       gridEl.appendChild(cell);
@@ -153,11 +254,15 @@ export function initSudoku(socket) {
       const elapsed = getElapsedMs();
       pauseTimer();
       setMessage(`Grille complétée ! (${fmtTime(elapsed)})`, true);
+      clearSavedState();
       socket.emit("sudoku:completed", {
         difficulty: "normal",
         timeMs: elapsed,
       });
+      return;
     }
+
+    saveStateToServer(false);
   }
 
   function renderPad() {
@@ -186,6 +291,7 @@ export function initSudoku(socket) {
     tickTimer();
 
     renderGrid();
+    saveStateToServer(true);
   }
 
   clearBtn.addEventListener("click", () => applyValue("0"));
@@ -236,11 +342,48 @@ export function initSudoku(socket) {
         )} monnaie (total gagné: ${moneyTotal.toLocaleString("fr-FR")})`,
         true,
       );
+      clearSavedState();
     }
   });
 
+  socket.on("connect", () => {
+    try {
+      socket.emit("sudoku:loadState");
+    } catch (e) {}
+  });
+
+  socket.on("sudoku:state", (payload) => {
+    if (payload && payload.found && payload.state) {
+      const restored = restoreFromState(payload.state);
+      if (!restored) newGame();
+      return;
+    }
+
+    const local = loadLocalState();
+    if (!restoreFromState(local)) {
+      newGame();
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      pauseTimer();
+      saveStateToServer(true);
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    pauseTimer();
+    saveStateToServer(true);
+  });
+
   renderPad();
-  newGame();
+  try {
+    socket.emit("sudoku:loadState");
+  } catch (e) {
+    const local = loadLocalState();
+    if (!restoreFromState(local)) newGame();
+  }
   if (!isSudokuStageActive()) {
     pauseTimer();
   }

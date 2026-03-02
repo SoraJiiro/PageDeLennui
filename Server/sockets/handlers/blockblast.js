@@ -24,6 +24,7 @@ function registerBlockblastHandlers({
   } = require("../../services/economy");
   const { consumeLife, getLivesCount } = require("../../services/reviveLives");
   const { spendMoney } = require("../../services/wallet");
+  const BLOCKBLAST_MAX_SCORE = 1000000;
 
   function rewardBlockblastFinal(score) {
     const s = Math.max(0, Math.floor(Number(score) || 0));
@@ -88,9 +89,9 @@ function registerBlockblastHandlers({
   socket.on("blockblast:progress", ({ score }) => setRunnerProgress(score));
   socket.on("blockblast:resumeConsumed", () => consumeRunnerResume());
   socket.on("blockblast:score", ({ score, elapsedMs, final }) => {
-    const s = Number(score);
+    const s = Math.floor(Number(score));
 
-    if (isNaN(s) || s < 0) return;
+    if (!Number.isFinite(s) || s < 0 || s > BLOCKBLAST_MAX_SCORE) return;
 
     updateReviveContextFromScore(socket, "blockblast", s);
     setRunnerProgress(s);
@@ -100,9 +101,11 @@ function registerBlockblastHandlers({
     if (s > current) {
       FileService.data.blockblastScores[pseudo] = s;
       FileService.save("blockblastScores", FileService.data.blockblastScores);
-      try {
-        applyAutoBadges({ pseudo, FileService });
-      } catch {}
+      if (final === true) {
+        try {
+          applyAutoBadges({ pseudo, FileService });
+        } catch {}
+      }
       // Si score meilleur et indication finale, enregistrer le temps de run
       if (final === true && typeof elapsedMs === "number") {
         if (!FileService.data.blockblastBestTimes)

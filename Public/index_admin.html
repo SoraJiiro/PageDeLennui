@@ -106,6 +106,8 @@
 
                                 </tbody>
                             </table>
+                            <div id="transactions-pagination"
+                                style="margin-top:10px;display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap;"></div>
                             <center>
                                 <button onclick="refreshTransactions()"
                                     class="refresh-btn"><i
@@ -133,6 +135,8 @@
                                 </thead>
                                 <tbody id="game-money-rewards-list"></tbody>
                             </table>
+                            <div id="game-money-rewards-pagination"
+                                style="margin-top:10px;display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap;"></div>
                             <center>
                                 <button onclick="refreshGameMoneyRewards()"
                                     class="refresh-btn"><i
@@ -278,12 +282,38 @@
                                     </div>
                                     <div class="form-field">
                                         <label>&nbsp;</label>
+                                        <button onclick="resetUserBadges()"
+                                            class="btn btn-red"><i
+                                                class="fa-solid fa-rotate-left"></i>
+                                            Reset badges joueur</button>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
                                         <button onclick="refreshBadges()"
                                             class="btn"><i
                                                 class="fa-solid fa-rotate"></i>
                                             Refresh</button>
                                     </div>
                                 </div>
+
+                                <div class="form-row"
+                                    style="grid-template-columns: minmax(200px, 1fr) auto; align-items:end;">
+                                    <div class="form-field">
+                                        <label for="badgeLookupPseudo">Lookup
+                                            badges joueur</label>
+                                        <input id="badgeLookupPseudo"
+                                            placeholder="Pseudo" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label>&nbsp;</label>
+                                        <button onclick="lookupUserBadges()"
+                                            class="btn"><i
+                                                class="fa-solid fa-magnifying-glass"></i>
+                                            Rechercher badges</button>
+                                    </div>
+                                </div>
+                                <div id="badge-user-lookup-result"
+                                    style="margin-top:10px;"></div>
                             </div>
 
                             <table class="admin-table">
@@ -297,6 +327,8 @@
                                 </thead>
                                 <tbody id="badges-catalog-list"></tbody>
                             </table>
+                            <div id="badges-catalog-pagination"
+                                style="margin-top:10px;display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap;"></div>
                         </div>
                     </section>
 
@@ -1226,6 +1258,8 @@
                         <div class="admin-card" style="margin-top: 20px;">
                             <h3>Gestion des sondages</h3>
                             <div id="adminSurveyList"></div>
+                            <div id="admin-surveys-pagination"
+                                style="margin-top:10px;display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap;"></div>
                         </div>
                     </section>
 
@@ -1636,6 +1670,117 @@
             });
         });
 
+        const _adminPagers = {
+            transactions: { page: 1, pageSize: 5 },
+            gameMoneyRewards: { page: 1, pageSize: 5 },
+            badgesCatalog: { page: 1, pageSize: 5 },
+            adminSurveys: { page: 1, pageSize: 5 },
+        };
+
+        function getAdminPager(key) {
+            if (!_adminPagers[key]) {
+                _adminPagers[key] = { page: 1, pageSize: 5 };
+            }
+            return _adminPagers[key];
+        }
+
+        function changeAdminPage(key, delta) {
+            const pager = getAdminPager(key);
+            pager.page = Math.max(1, (pager.page || 1) + Number(delta || 0));
+
+            if (key === 'transactions') return refreshTransactions();
+            if (key === 'gameMoneyRewards') return refreshGameMoneyRewards();
+            if (key === 'badgesCatalog') return refreshBadges();
+            if (key === 'adminSurveys') return loadAdminSurveys();
+        }
+
+        function renderAdminPaginatedNodes({
+            key,
+            listId,
+            paginationId,
+            nodes,
+            emptyHtml,
+        }) {
+            const list = document.getElementById(listId);
+            const pagerNode = document.getElementById(paginationId);
+            if (!list) return;
+
+            const allNodes = Array.isArray(nodes) ? nodes : [];
+            if (allNodes.length === 0) {
+                list.innerHTML = emptyHtml || '<div style="text-align:center">Aucune donnée</div>';
+                if (pagerNode) pagerNode.innerHTML = '';
+                return;
+            }
+
+            const pager = getAdminPager(key);
+            const pageSize = Math.max(1, Number(pager.pageSize || 5));
+            const pageCount = Math.max(1, Math.ceil(allNodes.length / pageSize));
+            pager.page = Math.min(Math.max(1, Number(pager.page || 1)), pageCount);
+
+            const start = (pager.page - 1) * pageSize;
+            const end = start + pageSize;
+            const visibleNodes = allNodes.slice(start, end);
+
+            list.innerHTML = '';
+            visibleNodes.forEach((node) => list.appendChild(node));
+
+            if (pagerNode) {
+                pagerNode.innerHTML = `
+                    <button class="btn" onclick="changeAdminPage('${key}', -1)" ${pager.page <= 1 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span style="font-size:0.9rem;">Page ${pager.page} / ${pageCount} (${allNodes.length} entrées)</span>
+                    <button class="btn" onclick="changeAdminPage('${key}', 1)" ${pager.page >= pageCount ? 'disabled' : ''}>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                `;
+            }
+        }
+
+        function renderAdminPaginatedRows({
+            key,
+            tbodyId,
+            paginationId,
+            rows,
+            emptyHtml,
+            emptyColspan,
+        }) {
+            const tbody = document.getElementById(tbodyId);
+            const pagerNode = document.getElementById(paginationId);
+            if (!tbody) return;
+
+            const allRows = Array.isArray(rows) ? rows : [];
+            if (allRows.length === 0) {
+                tbody.innerHTML = emptyHtml || `<tr><td colspan="${emptyColspan || 1}" style="text-align:center">Aucune donnée</td></tr>`;
+                if (pagerNode) pagerNode.innerHTML = '';
+                return;
+            }
+
+            const pager = getAdminPager(key);
+            const pageSize = Math.max(1, Number(pager.pageSize || 5));
+            const pageCount = Math.max(1, Math.ceil(allRows.length / pageSize));
+            pager.page = Math.min(Math.max(1, Number(pager.page || 1)), pageCount);
+
+            const start = (pager.page - 1) * pageSize;
+            const end = start + pageSize;
+            const visibleRows = allRows.slice(start, end);
+
+            tbody.innerHTML = '';
+            visibleRows.forEach((tr) => tbody.appendChild(tr));
+
+            if (pagerNode) {
+                pagerNode.innerHTML = `
+                    <button class="btn" onclick="changeAdminPage('${key}', -1)" ${pager.page <= 1 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span style="font-size:0.9rem;">Page ${pager.page} / ${pageCount} (${allRows.length} entrées)</span>
+                    <button class="btn" onclick="changeAdminPage('${key}', 1)" ${pager.page >= pageCount ? 'disabled' : ''}>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                `;
+            }
+        }
+
         // --- Transactions ---
         async function refreshTransactions() {
             try {
@@ -1643,14 +1788,8 @@
                 if (!res.ok) return;
                 const transactions = await res.json();
                 const pending = transactions.filter(t => t.status === 'pending');
-                
-                const tbody = document.getElementById('transactions-list');
-                tbody.innerHTML = '';
-                
-                if (pending.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucune transaction en attente</td></tr>';
-                    return;
-                }
+
+                const rows = [];
 
                 pending.forEach(tx => {
                     // Gestion affichage ancien format vs nouveau format + IP
@@ -1670,7 +1809,16 @@
                             <button onclick="rejectTransaction('${tx.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;"><i class="fa-solid fa-times"></i></button>
                         </td>
                     `;
-                    tbody.appendChild(tr);
+                    rows.push(tr);
+                });
+
+                renderAdminPaginatedRows({
+                    key: 'transactions',
+                    tbodyId: 'transactions-list',
+                    paginationId: 'transactions-pagination',
+                    rows,
+                    emptyHtml: '<tr><td colspan="5" style="text-align:center">Aucune transaction en attente</td></tr>',
+                    emptyColspan: 5,
                 });
             } catch (e) {
                 console.error(e);
@@ -1682,14 +1830,7 @@
                 const res = await fetch('/api/admin/game-money-rewards?limit=200');
                 if (!res.ok) return;
                 const rows = await res.json();
-                const tbody = document.getElementById('game-money-rewards-list');
-                if (!tbody) return;
-                tbody.innerHTML = '';
-
-                if (!Array.isArray(rows) || rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Aucun gain enregistré</td></tr>';
-                    return;
-                }
+                const tableRows = [];
 
                 rows.forEach((entry) => {
                     const tr = document.createElement('tr');
@@ -1709,7 +1850,16 @@
                         <td>${total.toLocaleString('fr-FR')}</td>
                         <td>${detail}</td>
                     `;
-                    tbody.appendChild(tr);
+                    tableRows.push(tr);
+                });
+
+                renderAdminPaginatedRows({
+                    key: 'gameMoneyRewards',
+                    tbodyId: 'game-money-rewards-list',
+                    paginationId: 'game-money-rewards-pagination',
+                    rows: tableRows,
+                    emptyHtml: '<tr><td colspan="6" style="text-align:center">Aucun gain enregistré</td></tr>',
+                    emptyColspan: 6,
                 });
             } catch (e) {
                 console.error(e);
@@ -1950,29 +2100,34 @@
 
                 const tbody = document.getElementById('badges-catalog-list');
                 if (tbody) {
-                    tbody.innerHTML = '';
+                    const rows = [];
                     const entries = Object.entries(catalog).sort((a,b)=>a[0].localeCompare(b[0]));
-                    if (entries.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Aucun badge</td></tr>';
-                    } else {
-                        entries.forEach(([id, def]) => {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${id}</td>
-                                <td>${def.emoji || ''}</td>
-                                <td>${def.name || ''}</td>
-                                <td>
-                                    <button class="btn" onclick="updateBadge('${id}')" title="Modifier">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </button>
-                                    <button onclick="deleteBadge('${id}')" class="btn btn-red" title="Supprimer">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </td>
-                            `;
-                            tbody.appendChild(tr);
-                        });
-                    }
+                    entries.forEach(([id, def]) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${id}</td>
+                            <td>${def.emoji || ''}</td>
+                            <td>${def.name || ''}</td>
+                            <td>
+                                <button class="btn" onclick="updateBadge('${id}')" title="Modifier">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteBadge('${id}')" class="btn btn-red" title="Supprimer">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        rows.push(tr);
+                    });
+
+                    renderAdminPaginatedRows({
+                        key: 'badgesCatalog',
+                        tbodyId: 'badges-catalog-list',
+                        paginationId: 'badges-catalog-pagination',
+                        rows,
+                        emptyHtml: '<tr><td colspan="4" style="text-align:center">Aucun badge</td></tr>',
+                        emptyColspan: 4,
+                    });
                 }
 
                 const select = document.getElementById('assignBadgeId');
@@ -1985,8 +2140,107 @@
                         select.appendChild(opt);
                     });
                 }
+
+                const lookupInput = document.getElementById('badgeLookupPseudo');
+                if (lookupInput && lookupInput.value.trim()) {
+                    await lookupUserBadges(lookupInput.value.trim(), { skipRefresh: true });
+                }
             } catch (e) {
                 console.error('Erreur refreshBadges', e);
+            }
+        }
+
+        async function lookupUserBadges(forcePseudo = '', options = {}) {
+            const input = document.getElementById('badgeLookupPseudo');
+            const resultNode = document.getElementById('badge-user-lookup-result');
+            const skipRefresh = Boolean(options && options.skipRefresh);
+
+            const rawPseudo = String(forcePseudo || input?.value || '').trim();
+            if (!rawPseudo) {
+                if (resultNode) resultNode.innerHTML = '';
+                showNotification('Pseudo manquant', 'error');
+                return;
+            }
+
+            if (!_badgesCache || !skipRefresh) {
+                await refreshBadges();
+            }
+
+            let canonicalPseudo = rawPseudo;
+            try {
+                const infoRes = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(rawPseudo)}`);
+                if (infoRes.ok) {
+                    const info = await infoRes.json();
+                    if (info && info.pseudo) canonicalPseudo = String(info.pseudo).trim();
+                }
+            } catch (e) {
+                console.warn('Lookup badges: user-info indisponible', e);
+            }
+
+            const users = (_badgesCache && _badgesCache.users && typeof _badgesCache.users === 'object') ? _badgesCache.users : {};
+            const catalog = (_badgesCache && _badgesCache.catalog && typeof _badgesCache.catalog === 'object') ? _badgesCache.catalog : {};
+            const matchedPseudo = Object.keys(users).find((p) => String(p).toLowerCase() === canonicalPseudo.toLowerCase()) || canonicalPseudo;
+            const bucket = users[matchedPseudo] || { assigned: [] };
+            const assigned = Array.isArray(bucket.assigned) ? Array.from(new Set(bucket.assigned)) : [];
+
+            if (input) input.value = canonicalPseudo;
+            if (!resultNode) return;
+
+            resultNode.innerHTML = '';
+
+            const title = document.createElement('div');
+            title.style.marginBottom = '8px';
+            title.style.fontSize = '0.95rem';
+            title.innerHTML = `<strong>${matchedPseudo}</strong> — ${assigned.length} badge(s)`;
+            resultNode.appendChild(title);
+
+            if (assigned.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.color = 'var(--primary-color)';
+                empty.textContent = 'Aucun badge attribué.';
+                resultNode.appendChild(empty);
+                return;
+            }
+
+            const wrap = document.createElement('div');
+            wrap.style.display = 'flex';
+            wrap.style.flexWrap = 'wrap';
+            wrap.style.gap = '8px';
+
+            assigned.forEach((badgeId) => {
+                const def = catalog[badgeId] || {};
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-red';
+                btn.title = `Retirer ${badgeId}`;
+                btn.innerHTML = `${def.emoji || '🏷️'} ${def.name || badgeId} <i class="fa-solid fa-xmark"></i>`;
+                btn.addEventListener('click', () => removeLookupBadge(matchedPseudo, badgeId));
+                wrap.appendChild(btn);
+            });
+
+            resultNode.appendChild(wrap);
+        }
+
+        async function removeLookupBadge(pseudo, badgeId) {
+            const p = String(pseudo || '').trim();
+            const id = String(badgeId || '').trim();
+            if (!p || !id) return;
+
+            if (!confirm(`Retirer le badge ${id} de ${p} ?`)) return;
+
+            try {
+                const { res, data } = await adminPostJson('/api/admin/badges/assign', { pseudo: p, badgeId: id, action: 'remove' });
+                if (!res.ok) {
+                    showNotification(data.message || 'Erreur', 'error');
+                    return;
+                }
+                showNotification('Badge retiré', 'success');
+                await refreshBadges();
+                await refreshUserInfoPanel(p);
+                await lookupUserBadges(p, { skipRefresh: true });
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur serveur', 'error');
             }
         }
 
@@ -2103,6 +2357,32 @@
                 const { res, data } = await adminPostJson('/api/admin/badges/assign', { pseudo, badgeId, action });
                 if (res.ok) {
                     showNotification(action === 'remove' ? 'Badge retiré' : 'Badge donné', 'success');
+                    await refreshUserInfoPanel(pseudo);
+                } else {
+                    showNotification(data.message || 'Erreur', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification('Erreur serveur', 'error');
+            }
+        }
+
+        async function resetUserBadges() {
+            const pseudo = (document.getElementById('assignPseudo')?.value || '').trim();
+            if (!pseudo) {
+                showNotification('Pseudo manquant', 'error');
+                return;
+            }
+
+            if (!confirm(`Retirer TOUS les badges de ${pseudo} et reset ses conditions auto ?`)) {
+                return;
+            }
+
+            try {
+                const { res, data } = await adminPostJson('/api/admin/badges/reset-user', { pseudo });
+                if (res.ok) {
+                    showNotification('Badges du joueur réinitialisés', 'success');
+                    await refreshBadges();
                     await refreshUserInfoPanel(pseudo);
                 } else {
                     showNotification(data.message || 'Erreur', 'error');
@@ -4077,9 +4357,15 @@ async function modifyTries() {
                 const res = await fetch('/api/surveys/list');
                 const surveys = await res.json();
                 const list = document.getElementById('adminSurveyList');
-                list.innerHTML = '';
+                if (!list) return;
 
-                surveys.forEach(s => {
+                const orderedSurveys = (Array.isArray(surveys) ? surveys : [])
+                    .slice()
+                    .reverse();
+
+                const nodes = [];
+
+                orderedSurveys.forEach(s => {
                     const div = document.createElement('div');
                     div.className = 'admin-item';
                     
@@ -4125,7 +4411,15 @@ async function modifyTries() {
                             <button class="btn btn-red" onclick="deleteSurvey('${s.id}')" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     `;
-                    list.appendChild(div);
+                    nodes.push(div);
+                });
+
+                renderAdminPaginatedNodes({
+                    key: 'adminSurveys',
+                    listId: 'adminSurveyList',
+                    paginationId: 'admin-surveys-pagination',
+                    nodes,
+                    emptyHtml: '<p style="color:#aaa">Aucun sondage.</p>',
                 });
             } catch (e) {
                 console.error(e);
