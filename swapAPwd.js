@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const bcrypt = require("bcryptjs");
 const readline = require("readline");
 const dbUsers = require("./Server/db/dbUsers");
@@ -72,3 +70,4 @@ async function main() {
 }
 
 main();
+// !/node swapAPwd.js
