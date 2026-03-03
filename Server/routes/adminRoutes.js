@@ -542,45 +542,98 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     const p = String(pseudo || "").trim();
     const id = String(badgeId || "").trim();
     const act = String(action || "add").trim();
+    const isAllTarget = p.toLowerCase() === "all";
     if (!p || !id)
       return res.status(400).json({ message: "Paramètres manquants" });
-
-    const userRec = dbUsers.findBypseudo(p);
-    if (!userRec)
-      return res.status(404).json({ message: "Utilisateur introuvable" });
 
     const data = ensureBadgesData();
     if (!data.catalog[id]) {
       return res.status(404).json({ message: "Badge introuvable" });
     }
-    const canonicalPseudo = userRec.pseudo;
-    const bucket = data.users[canonicalPseudo] || {
-      assigned: [],
-      selected: [],
-    };
-    const assigned = Array.isArray(bucket.assigned) ? bucket.assigned : [];
-    const selected = Array.isArray(bucket.selected) ? bucket.selected : [];
 
-    if (act === "remove") {
-      data.users[canonicalPseudo] = {
-        assigned: assigned.filter((x) => x !== id),
-        selected: selected.filter((x) => x !== id),
+    const applyForPseudo = (canonicalPseudo) => {
+      const bucket = data.users[canonicalPseudo] || {
+        assigned: [],
+        selected: [],
       };
+      const assigned = Array.isArray(bucket.assigned) ? bucket.assigned : [];
+      const selected = Array.isArray(bucket.selected) ? bucket.selected : [];
+
+      if (act === "remove") {
+        data.users[canonicalPseudo] = {
+          assigned: assigned.filter((x) => x !== id),
+          selected: selected.filter((x) => x !== id),
+        };
+      } else {
+        const nextAssigned = assigned.includes(id)
+          ? assigned
+          : [...assigned, id];
+        data.users[canonicalPseudo] = { assigned: nextAssigned, selected };
+      }
+    };
+
+    if (isAllTarget) {
+      const allUsers = dbUsers.readAll();
+      const pseudos = Array.isArray(allUsers && allUsers.users)
+        ? allUsers.users
+            .map((u) => String(u && u.pseudo ? u.pseudo : "").trim())
+            .filter(Boolean)
+        : [];
+
+      if (pseudos.length === 0) {
+        return res.status(404).json({ message: "Aucun utilisateur trouvé" });
+      }
+
+      pseudos.forEach(applyForPseudo);
     } else {
-      const nextAssigned = assigned.includes(id) ? assigned : [...assigned, id];
-      data.users[canonicalPseudo] = { assigned: nextAssigned, selected };
+      const userRec = dbUsers.findBypseudo(p);
+      if (!userRec)
+        return res.status(404).json({ message: "Utilisateur introuvable" });
+
+      const canonicalPseudo = userRec.pseudo;
+      applyForPseudo(canonicalPseudo);
     }
 
     FileService.save("chatBadges", data);
     emitAdminRefresh("badges");
-    res.json({ success: true });
+    res.json({ success: true, target: isAllTarget ? "ALL" : p });
   });
 
   router.post("/badges/reset-user", requireAdmin, (req, res) => {
     const { pseudo } = req.body || {};
     const p = String(pseudo || "").trim();
+    const isAllTarget = p.toLowerCase() === "all";
     if (!p) {
       return res.status(400).json({ message: "Pseudo manquant" });
+    }
+
+    if (isAllTarget) {
+      const allUsers = dbUsers.readAll();
+      const pseudos = Array.isArray(allUsers && allUsers.users)
+        ? allUsers.users
+            .map((u) => String(u && u.pseudo ? u.pseudo : "").trim())
+            .filter(Boolean)
+        : [];
+
+      if (pseudos.length === 0) {
+        return res.status(404).json({ message: "Aucun utilisateur trouvé" });
+      }
+
+      pseudos.forEach((canonicalPseudo) => {
+        resetUserBadgesProgress({
+          pseudo: canonicalPseudo,
+          FileService,
+        });
+      });
+
+      emitAdminRefresh("badges");
+      return res.json({
+        success: true,
+        pseudo: "ALL",
+        resetAt: new Date().toISOString(),
+        message:
+          "Tous les badges ont été retirés et les conditions auto ont été réinitialisées pour tous les joueurs.",
+      });
     }
 
     const userRec = dbUsers.findBypseudo(p);
@@ -1109,6 +1162,70 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         .json({ message: "Erreur serveur lors de la récupération des infos" });
     }
   });
+
+  // --- Clicker: réglages anti-cheat runtime ---
+  router.get("/clicker/anti-cheat/settings", requireAdmin, (req, res) => {
+    try {
+      const {
+        getClickerAntiCheatSettings,
+        setClickerAntiCheatSettings,
+      } = require("../sockets/handlers/clicker");
+
+      setClickerAntiCheatSettings({}, FileService);
+      res.json({ settings: getClickerAntiCheatSettings() });
+    } catch (err) {
+      console.error("[ADMIN] Erreur GET /clicker/anti-cheat/settings", err);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  router.post("/clicker/anti-cheat/settings", requireAdmin, (req, res) => {
+    try {
+      const {
+        setClickerAntiCheatSettings,
+      } = require("../sockets/handlers/clicker");
+      const nextSettings = setClickerAntiCheatSettings(
+        req.body || {},
+        FileService,
+      );
+
+      if (io) {
+        io.emit("clicker:antiCheatSettings", nextSettings);
+      }
+      emitAdminRefresh("clicker-anti-cheat", { settings: nextSettings });
+
+      res.json({ success: true, settings: nextSettings });
+    } catch (err) {
+      console.error("[ADMIN] Erreur POST /clicker/anti-cheat/settings", err);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  router.post(
+    "/clicker/anti-cheat/settings/reset",
+    requireAdmin,
+    (req, res) => {
+      try {
+        const {
+          resetClickerAntiCheatSettings,
+        } = require("../sockets/handlers/clicker");
+        const nextSettings = resetClickerAntiCheatSettings(FileService);
+
+        if (io) {
+          io.emit("clicker:antiCheatSettings", nextSettings);
+        }
+        emitAdminRefresh("clicker-anti-cheat", { settings: nextSettings });
+
+        res.json({ success: true, settings: nextSettings });
+      } catch (err) {
+        console.error(
+          "[ADMIN] Erreur POST /clicker/anti-cheat/settings/reset",
+          err,
+        );
+        res.status(500).json({ message: "Erreur serveur" });
+      }
+    },
+  );
 
   // --- Clicker: bonus CPS auto admin (distinct des médailles) ---
   // Ajouter un bonus CPS auto à un utilisateur

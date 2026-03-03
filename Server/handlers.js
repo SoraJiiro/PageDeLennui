@@ -2,6 +2,7 @@ const {
   FileService,
   getIpFromSocket,
   persistBanIp,
+  persistBanPseudo,
   isPseudoBlacklisted,
 } = require("./util");
 const dbUsers = require("./db/dbUsers");
@@ -378,8 +379,27 @@ const leaderboardManager = {
   },
   broadcastSudokuLB(io) {
     const data = FileService.data.sudokuScores || {};
+
+    const readCompletedCount = (rawValue) => {
+      if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+        return Math.max(0, Math.floor(rawValue));
+      }
+
+      if (typeof rawValue === "string") {
+        const parsed = Number(rawValue);
+        return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+      }
+
+      if (rawValue && typeof rawValue === "object") {
+        const parsed = Number(rawValue.completed);
+        return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+      }
+
+      return 0;
+    };
+
     const arr = Object.entries(data)
-      .map(([u, s]) => ({ pseudo: u, completed: Number(s) || 0 }))
+      .map(([u, s]) => ({ pseudo: u, completed: readCompletedCount(s) }))
       .sort(
         (a, b) => b.completed - a.completed || a.pseudo.localeCompare(b.pseudo),
       );
@@ -720,6 +740,7 @@ function initSocketHandlers(io, socket, gameState) {
     leaderboardManager,
     getIpFromSocket,
     persistBanIp,
+    persistBanPseudo,
     recalculateMedals,
     broadcastSystemMessage,
     applyAutoBadges,

@@ -12,6 +12,7 @@ export function initClicker(socket) {
     cpsHumainEl: document.querySelector(".cps-humain"),
     regenBtn: document.querySelector(".regen-colors-btn"),
     sidebarMoneyEl: document.querySelector("h3.money"),
+    antiCheatTextEl: document.getElementById("clicker-anti-cheat-text"),
   };
 
   const state = {
@@ -31,9 +32,27 @@ export function initClicker(socket) {
     money: 0,
     tokens: 0,
     upgradeEffects: { perClickBonus: 0, autoCpsBonus: 0 },
+    antiCheatSettings: null,
   };
 
   const upgradesListEl = document.getElementById("clicker-upgrade-list");
+
+  function renderAntiCheatSettings() {
+    if (!ui.antiCheatTextEl) return;
+    const s = state.antiCheatSettings;
+    if (!s || typeof s !== "object") {
+      ui.antiCheatTextEl.textContent = "Réglages anti-cheat indisponibles.";
+      return;
+    }
+
+    const sampleMin = Number(s.humanPatternMinSamples || 0);
+    const fastAvg = Number(s.humanFastConstAvgMs || 0);
+    const fastStd = Number(s.humanFastConstStdMs || 0);
+    const veryAvg = Number(s.humanVeryConstAvgMs || 0);
+    const veryStd = Number(s.humanVeryConstStdMs || 0);
+
+    ui.antiCheatTextEl.innerHTML = `<strong>Challenge Clicker Fou:</strong> 12 CPS pendant 6.7s (fixe)<br><strong>Anti-cheat pattern:</strong> min ${sampleMin} samples • fast ≤ ${fastAvg}ms/${fastStd}ms • very ≤ ${veryAvg}ms/${veryStd}ms`;
+  }
 
   function renderSidebarWallet() {
     if (!ui.sidebarMoneyEl) return;
@@ -788,6 +807,12 @@ export function initClicker(socket) {
 
   socket.on("clicker:upgrades", (payload) => {
     renderUpgrades(payload);
+  });
+
+  socket.on("clicker:antiCheatSettings", (settings) => {
+    state.antiCheatSettings =
+      settings && typeof settings === "object" ? settings : null;
+    renderAntiCheatSettings();
   });
 
   socket.on("clicker:upgradeError", (msg) => {

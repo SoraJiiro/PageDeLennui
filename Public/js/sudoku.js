@@ -47,6 +47,12 @@ export function initSudoku(socket) {
     return !!stage && stage.classList.contains("is-active");
   }
 
+  function setPlayUiVisible(visible) {
+    gridEl.style.display = visible ? "" : "none";
+    padEl.style.display = visible ? "" : "none";
+    clearBtn.style.display = visible ? "" : "none";
+  }
+
   function fmtTime(ms) {
     const total = Math.max(0, Math.floor(ms / 1000));
     const mm = String(Math.floor(total / 60)).padStart(2, "0");
@@ -139,11 +145,13 @@ export function initSudoku(socket) {
     runningSince = 0;
     completed = false;
     hasPlayerStarted = !!save.hasPlayerStarted;
+    setPlayUiVisible(true);
 
     setMessage("");
     stopTimerLoop();
     tickTimer();
     renderGrid();
+    resumeTimer();
     return true;
   }
 
@@ -253,7 +261,11 @@ export function initSudoku(socket) {
       completed = true;
       const elapsed = getElapsedMs();
       pauseTimer();
-      setMessage(`Grille complétée ! (${fmtTime(elapsed)})`, true);
+      setPlayUiVisible(false);
+      setMessage(
+        `Grille complétée ! (${fmtTime(elapsed)}) • Clique sur "Nouvelle grille" pour continuer.`,
+        true,
+      );
       clearSavedState();
       socket.emit("sudoku:completed", {
         difficulty: "normal",
@@ -285,6 +297,7 @@ export function initSudoku(socket) {
     hasPlayerStarted = false;
     accumulatedMs = 0;
     runningSince = 0;
+    setPlayUiVisible(true);
     setMessage("");
 
     stopTimerLoop();
@@ -339,10 +352,11 @@ export function initSudoku(socket) {
       setMessage(
         `Bravo ! Total grilles complétées: ${total} • +${moneyGained.toLocaleString(
           "fr-FR",
-        )} monnaie (total gagné: ${moneyTotal.toLocaleString("fr-FR")})`,
+        )} monnaie (total gagné: ${moneyTotal.toLocaleString("fr-FR")}) • Clique sur "Nouvelle grille" pour continuer.`,
         true,
       );
       clearSavedState();
+      socket.emit("sudoku:requestLeaderboard");
     }
   });
 

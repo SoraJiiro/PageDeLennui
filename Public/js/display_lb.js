@@ -19,6 +19,7 @@ function showLeaderboard(name) {
     slots: "#slots-leaderboard",
     sudoku: "#sudoku-leaderboard",
     pixelwar: "#pixelwar-leaderboard",
+    "clicks-cps": "#clicks-cps-leaderboard",
   };
 
   const key = idMap[name] ? name : "economie";

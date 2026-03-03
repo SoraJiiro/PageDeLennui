@@ -151,9 +151,9 @@ function registerCoinflipHandlers({
 
     let multiplier = 0;
     if (landed === color) {
-      multiplier = landed === "green" ? 14 : 2;
+      multiplier = landed === "green" ? 12 : 1.8;
     }
-    const payout = bet * multiplier;
+    const payout = Math.floor(bet * multiplier);
     if (payout > 0) {
       addTokens(
         FileService,
@@ -205,10 +205,27 @@ function registerCoinflipHandlers({
       currency: "token",
       pick: color,
       landed,
+      multiplier,
+      payout,
       result: payout > 0 ? "WIN" : "LOSS",
       netChange: payout > 0 ? payout - bet : -bet,
       timestamp: new Date().toISOString(),
     });
+
+    if (payout > 0) {
+      FileService.appendLog({
+        type: "GAME_GAIN_ROULETTE",
+        pseudo,
+        bet,
+        pick: color,
+        landed,
+        multiplier,
+        payout,
+        netGain: payout - bet,
+        currency: "token",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     socket.emit("roulette:result", {
       roll,
@@ -235,12 +252,12 @@ function registerCoinflipHandlers({
 
     let multiplier = 0;
     if (reels[0] === reels[1] && reels[1] === reels[2]) {
-      multiplier = reels[0] === "7️⃣" ? 8 : 5;
-    } else if (new Set(reels).size === 2) {
-      multiplier = 2;
+      multiplier = reels[0] === "7️⃣" ? 6 : 4;
+    } else if (reels[0] === reels[1] && reels[1] !== reels[2]) {
+      multiplier = 1.5;
     }
 
-    const payout = bet * multiplier;
+    const payout = Math.floor(bet * multiplier);
     if (payout > 0) {
       addTokens(
         FileService,
@@ -291,10 +308,26 @@ function registerCoinflipHandlers({
       bet,
       currency: "token",
       reels,
+      multiplier,
+      payout,
       result: payout > 0 ? "WIN" : "LOSS",
       netChange: payout > 0 ? payout - bet : -bet,
       timestamp: new Date().toISOString(),
     });
+
+    if (payout > 0) {
+      FileService.appendLog({
+        type: "GAME_GAIN_SLOTS",
+        pseudo,
+        bet,
+        reels,
+        multiplier,
+        payout,
+        netGain: payout - bet,
+        currency: "token",
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     socket.emit("slots:result", {
       reels,

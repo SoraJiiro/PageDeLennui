@@ -63,6 +63,28 @@
   font-size: 1rem;
 }
 
+.clicker-anti-cheat-box {
+  position: absolute;
+  left: 50%;
+  top: calc(10% + 330px);
+  transform: translateX(-50%);
+  width: min(380px, calc(100vw - 70px));
+  border: var(--border-width) solid var(--primary-color);
+  padding: 10px 12px;
+  background: var(--bg-color);
+}
+
+.clicker-anti-cheat-box h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.clicker-anti-cheat-box p {
+  margin: 0;
+  font-size: 0.86rem;
+  opacity: 0.9;
+}
+
 #clicker-upgrade-list {
   max-height: 260px;
   overflow-y: auto;
@@ -795,4 +817,10 @@ p.cps-humain {
 /* Uniformisation: chiffres des médailles de base en blanc */
 .medals-wrap .medal.shown::after {
   color: #fff !important;
+}
+
+#clicker-anti-cheat-text::before {
+  content: "> ";
+  font-weight: bold;
+  color: var(--primary-color);
 }

@@ -56,9 +56,9 @@
 
 #snake-canvas {
   width: 100%;
-  max-width: 67.5dvw;
+  max-width: 76dvw;
   aspect-ratio: 1/1;
-  max-height: calc(100vh - 220px);
+  max-height: calc(100vh - 140px);
   height: auto;
   outline: 2px solid var(--primary-color);
   background: #000;

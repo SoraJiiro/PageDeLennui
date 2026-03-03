@@ -260,7 +260,7 @@
                                     <div class="form-field">
                                         <label for="assignPseudo">Pseudo</label>
                                         <input id="assignPseudo"
-                                            placeholder="Pseudo" />
+                                            placeholder="Pseudo (ou ALL)" />
                                     </div>
                                     <div class="form-field">
                                         <label for="assignBadgeId">Badge</label>
@@ -568,19 +568,19 @@
                                 <button class="lb-tab"
                                     data-board="dino">Dino</button>
                                 <button class="lb-tab"
-                                    data-board="flappy">Flappy
+                                    data-board="flappy">Flappy Bird
                                 </button>
                                 <button class="lb-tab"
                                     data-board="uno">UNO</button>
                                 <button class="lb-tab"
-                                    data-board="p4">P4</button>
+                                    data-board="p4">Puissance 4</button>
                                 <button class="lb-tab"
                                     data-board="blockblast">Block
                                     Blast</button>
                                 <button class="lb-tab"
                                     data-board="snake">Snake</button>
                                 <button class="lb-tab"
-                                    data-board="motus">Motus</button>
+                                    data-board="mash">Mash</button>
                                 <button class="lb-tab"
                                     data-board="2048">2048</button>
                                 <button class="lb-tab"
@@ -588,7 +588,16 @@
                                 <button class="lb-tab"
                                     data-board="coinflip">Coin Flip</button>
                                 <button class="lb-tab"
-                                    data-board="mash">Mash</button>
+                                    data-board="roulette">Roulette</button>
+                                <button class="lb-tab"
+                                    data-board="slots">Slots</button>
+                                <button class="lb-tab"
+                                    data-board="sudoku">Sudoku</button>
+                                <button class="lb-tab"
+                                    data-board="pixelwar">PixelWar</button>
+                                <button class="lb-tab"
+                                    data-board="clicks-cps">Clicks + Peak
+                                    CPS</button>
                             </div>
                         </center>
 
@@ -687,20 +696,6 @@
                             </table>
                         </div>
 
-                        <div class="leaderboard-content" data-board="motus">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Rang</th>
-                                        <th>Pseudo</th>
-                                        <th>Mots trouvés</th>
-                                        <th>Essais</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="lb-motus"></tbody>
-                            </table>
-                        </div>
-
                         <div class="leaderboard-content" data-board="2048">
                             <table>
                                 <thead>
@@ -744,6 +739,81 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lb-coinflip"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="roulette">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Parties</th>
+                                        <th>W/L</th>
+                                        <th>Max Bet</th>
+                                        <th>Max Win</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-roulette"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="slots">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Parties</th>
+                                        <th>W/L</th>
+                                        <th>Max Bet</th>
+                                        <th>Max Win</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-slots"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="sudoku">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Grilles complétées</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-sudoku"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="pixelwar">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Pixels Placés</th>
+                                        <th>Couleur Fav</th>
+                                        <th>Overrided</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-pixelwar"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content"
+                            data-board="clicks-cps">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Clicks</th>
+                                        <th>Peak CPS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-clicks-cps"></tbody>
                             </table>
                         </div>
 
@@ -791,6 +861,96 @@
                                 <ul id="cheaters-list"
                                     style="list-style-type: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #333; padding: 10px;">
                                 </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- CLICKER ANTI-CHEAT SETTINGS -->
+                    <section class="admin-section" style="order: 5;">
+                        <h2><i class="fa-solid fa-shield-halved"></i>
+                            /Réglages Anti-Cheat Clicker</h2>
+                        <div class="transactions-container">
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field"
+                                        style="grid-column: 1 / -1;">
+                                        <label>Challenge Clicker Fou</label>
+                                        <div
+                                            style="padding: 10px; border: 1px solid var(--primary-color);">
+                                            Fixe à <strong>12 CPS</strong>
+                                            pendant <strong>6.7
+                                                secondes</strong> (non
+                                            modifiable depuis le panel).
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label
+                                            for="ac-humanPatternWindowMs">Fenêtre
+                                            pattern (ms)</label>
+                                        <input type="number"
+                                            id="ac-humanPatternWindowMs"
+                                            min="500" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label
+                                            for="ac-humanPatternMinSamples">Samples
+                                            min</label>
+                                        <input type="number"
+                                            id="ac-humanPatternMinSamples"
+                                            min="3" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="ac-humanFastConstAvgMs">Fast
+                                            avg max (ms)</label>
+                                        <input type="number"
+                                            id="ac-humanFastConstAvgMs"
+                                            min="10" />
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="ac-humanFastConstStdMs">Fast
+                                            std max (ms)</label>
+                                        <input type="number"
+                                            id="ac-humanFastConstStdMs"
+                                            min="1" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="ac-humanVeryConstAvgMs">Very
+                                            avg max (ms)</label>
+                                        <input type="number"
+                                            id="ac-humanVeryConstAvgMs"
+                                            min="10" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="ac-humanVeryConstStdMs">Very
+                                            std max (ms)</label>
+                                        <input type="number"
+                                            id="ac-humanVeryConstStdMs"
+                                            min="1" />
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="action-buttons">
+                                        <button class="btn"
+                                            onclick="refreshClickerAntiCheatSettings()"><i
+                                                class="fa-solid fa-rotate"></i>
+                                            Charger</button>
+                                        <button class="btn"
+                                            onclick="saveClickerAntiCheatSettings()"><i
+                                                class="fa-solid fa-floppy-disk"></i>
+                                            Sauvegarder</button>
+                                        <button class="btn btn-red"
+                                            onclick="resetClickerAntiCheatSettings()"><i
+                                                class="fa-solid fa-rotate-left"></i>
+                                            Reset défaut</button>
+                                    </div>
+                                </div>
+                                <div id="ac-settings-status"
+                                    style="font-size:12px;color:#9a9a9a;">État:
+                                    en attente...</div>
                             </div>
                         </div>
                     </section>
@@ -1372,6 +1532,7 @@
             'tag-requests': () => loadTagRequests(),
             'surveys': () => loadAdminSurveys(),
             'cheaters': () => loadCheaters(),
+            'clicker-anti-cheat': () => refreshClickerAntiCheatSettings(),
         };
 
         const adminRefreshTimers = new Map();
@@ -1465,6 +1626,10 @@
                 scheduleAdminRefresh(types);
             });
 
+            socket.on('clicker:antiCheatSettings', (settings) => {
+                renderClickerAntiCheatSettings(settings || {});
+            });
+
             socket.on('admin:new_transaction', () => {
                 scheduleAdminRefresh('transactions');
             });
@@ -1476,18 +1641,25 @@
             socket.on('survey:deleted', onSurveyChange);
 
             // Leaderboards
-            socket.on('economie:leaderboard', (data) => updateLeaderboard('economie', data, 'score'));
+            socket.on('economie:leaderboard', (data) => {
+                updateLeaderboard('economie', data, 'score');
+                updateLeaderboard('clicks-cps', data, 'score');
+            });
             socket.on('dino:leaderboard', (data) => updateLeaderboard('dino', data, 'score'));
             socket.on('flappy:leaderboard', (data) => updateLeaderboard('flappy', data, 'score'));
             socket.on('uno:leaderboard', (data) => updateLeaderboard('uno', data, 'wins'));
             socket.on('p4:leaderboard', (data) => updateLeaderboard('p4', data, 'wins'));
             socket.on('blockblast:leaderboard', (data) => updateLeaderboard('blockblast', data, 'score'));
             socket.on('snake:leaderboard', (data) => updateLeaderboard('snake', data, 'score'));
-            socket.on('motus:leaderboard', (data) => updateLeaderboard('motus', data, 'words'));
             socket.on('2048:leaderboard', (data) => updateLeaderboard('2048', data, 'score'));
             socket.on('mash:leaderboard', (data) => updateLeaderboard('mash', data, 'wins'));
             socket.on('blackjack:leaderboard', (data) => updateLeaderboard('blackjack', data, 'handsWon'));
             socket.on('coinflip:leaderboard', (data) => updateLeaderboard('coinflip', data, 'wins'));
+            socket.on('roulette:leaderboard', (data) => updateLeaderboard('roulette', data, 'wins'));
+            socket.on('slots:leaderboard', (data) => updateLeaderboard('slots', data, 'wins'));
+            socket.on('sudoku:leaderboard', (data) => updateLeaderboard('sudoku', data, 'completed'));
+            socket.on('pixelwar:leaderboard', (data) => updateLeaderboard('pixelwar', data, 'pixelsPlaced'));
+            socket.emit('pixelwar:get_leaderboard');
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {
@@ -1596,11 +1768,6 @@
                      extraTd = `<td>${timeTxt}</td>`;
                 }
 
-                if (type === 'motus') {
-                    const tries = item.tries || 0;
-                    extraTd = `<td>${tries}</td>`;
-                }
-
                 if (type === 'blackjack') {
                     // Mots clés: Mains | W/L | Max Bet | Double/BJ
                     const hands = item.handsPlayed || 0;
@@ -1645,6 +1812,58 @@
                     `;
                     tbody.appendChild(tr);
                     return; // Skip default row construction
+                }
+
+                if (type === 'roulette' || type === 'slots') {
+                    const games = item.gamesPlayed || 0;
+                    const won = item.wins || 0;
+                    const lost = item.losses || 0;
+                    const maxBet = (item.biggestBet || 0).toLocaleString('fr-FR');
+                    const maxWin = (item.biggestWin || 0).toLocaleString('fr-FR');
+
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${games}</td>
+                        <td>${won} / ${lost}</td>
+                        <td>${maxBet}</td>
+                        <td>${maxWin}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return;
+                }
+
+                if (type === 'pixelwar') {
+                    const pixels = Number(item.pixelsPlaced || 0).toLocaleString('fr-FR');
+                    const favColor = Number.isFinite(Number(item.favColor)) ? item.favColor : '-';
+                    const overridden = Number(item.pixelsOverridden || 0).toLocaleString('fr-FR');
+
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${pixels}</td>
+                        <td>${favColor}</td>
+                        <td>${overridden}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return;
+                }
+
+                if (type === 'clicks-cps') {
+                    const clicks = Number(item.score || 0).toLocaleString('fr-FR');
+                    const peakCps = Number(item.peakHumanCps || 0).toLocaleString('fr-FR', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 1,
+                    });
+
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${clicks}</td>
+                        <td>${peakCps}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return;
                 }
 
                 tr.innerHTML = `
@@ -2349,6 +2568,7 @@
         async function assignBadge(action) {
             const pseudo = (document.getElementById('assignPseudo')?.value || '').trim();
             const badgeId = (document.getElementById('assignBadgeId')?.value || '').trim();
+            const isAllTarget = pseudo.toLowerCase() === 'all';
             if (!pseudo || !badgeId) {
                 showNotification('Pseudo/Badge manquants', 'error');
                 return;
@@ -2356,8 +2576,16 @@
             try {
                 const { res, data } = await adminPostJson('/api/admin/badges/assign', { pseudo, badgeId, action });
                 if (res.ok) {
-                    showNotification(action === 'remove' ? 'Badge retiré' : 'Badge donné', 'success');
-                    await refreshUserInfoPanel(pseudo);
+                    showNotification(
+                        action === 'remove'
+                            ? (isAllTarget ? 'Badge retiré pour tous les joueurs' : 'Badge retiré')
+                            : (isAllTarget ? 'Badge donné à tous les joueurs' : 'Badge donné'),
+                        'success'
+                    );
+                    await refreshBadges();
+                    if (!isAllTarget) {
+                        await refreshUserInfoPanel(pseudo);
+                    }
                 } else {
                     showNotification(data.message || 'Erreur', 'error');
                 }
@@ -2369,21 +2597,33 @@
 
         async function resetUserBadges() {
             const pseudo = (document.getElementById('assignPseudo')?.value || '').trim();
+            const isAllTarget = pseudo.toLowerCase() === 'all';
             if (!pseudo) {
                 showNotification('Pseudo manquant', 'error');
                 return;
             }
 
-            if (!confirm(`Retirer TOUS les badges de ${pseudo} et reset ses conditions auto ?`)) {
+            const confirmText = isAllTarget
+                ? 'Retirer TOUS les badges et reset les conditions auto pour TOUS les joueurs ?'
+                : `Retirer TOUS les badges de ${pseudo} et reset ses conditions auto ?`;
+
+            if (!confirm(confirmText)) {
                 return;
             }
 
             try {
                 const { res, data } = await adminPostJson('/api/admin/badges/reset-user', { pseudo });
                 if (res.ok) {
-                    showNotification('Badges du joueur réinitialisés', 'success');
+                    showNotification(
+                        isAllTarget
+                            ? 'Badges réinitialisés pour tous les joueurs'
+                            : 'Badges du joueur réinitialisés',
+                        'success'
+                    );
                     await refreshBadges();
-                    await refreshUserInfoPanel(pseudo);
+                    if (!isAllTarget) {
+                        await refreshUserInfoPanel(pseudo);
+                    }
                 } else {
                     showNotification(data.message || 'Erreur', 'error');
                 }
@@ -2740,6 +2980,7 @@
         refreshCustomBadgeRequests();
         refreshBadges();
         refreshShopCatalog();
+        refreshClickerAntiCheatSettings();
 
         const shopSelect = document.getElementById('shopItemSelect');
         if (shopSelect) {
@@ -4190,6 +4431,97 @@ async function modifyTries() {
                 });
             } catch (err) {
                 console.error("Erreur chargement tricheurs", err);
+            }
+        }
+
+        function getAntiCheatFieldMap() {
+            return {
+                humanPatternWindowMs: document.getElementById('ac-humanPatternWindowMs'),
+                humanPatternMinSamples: document.getElementById('ac-humanPatternMinSamples'),
+                humanFastConstAvgMs: document.getElementById('ac-humanFastConstAvgMs'),
+                humanFastConstStdMs: document.getElementById('ac-humanFastConstStdMs'),
+                humanVeryConstAvgMs: document.getElementById('ac-humanVeryConstAvgMs'),
+                humanVeryConstStdMs: document.getElementById('ac-humanVeryConstStdMs'),
+            };
+        }
+
+        function renderClickerAntiCheatSettings(settings) {
+            const map = getAntiCheatFieldMap();
+            Object.entries(map).forEach(([key, input]) => {
+                if (!input) return;
+                const val = Number(settings && settings[key]);
+                input.value = Number.isFinite(val) ? Math.floor(val) : '';
+            });
+            const status = document.getElementById('ac-settings-status');
+            if (status) {
+                status.textContent = `État: synchronisé (${new Date().toLocaleTimeString('fr-FR')})`;
+            }
+        }
+
+        function collectClickerAntiCheatSettingsPayload() {
+            const map = getAntiCheatFieldMap();
+            const payload = {};
+            Object.entries(map).forEach(([key, input]) => {
+                const val = Number(input?.value);
+                if (Number.isFinite(val)) payload[key] = Math.floor(val);
+            });
+            return payload;
+        }
+
+        async function refreshClickerAntiCheatSettings() {
+            try {
+                const res = await fetch('/api/admin/clicker/anti-cheat/settings');
+                const data = await res.json();
+                if (!res.ok) {
+                    showNotification(`❌ ${data?.message || 'Erreur chargement anti-cheat'}`, 'error');
+                    return;
+                }
+                renderClickerAntiCheatSettings(data?.settings || {});
+            } catch (err) {
+                console.error('Erreur refresh anti-cheat clicker', err);
+                showNotification('❌ Erreur serveur anti-cheat', 'error');
+            }
+        }
+
+        async function saveClickerAntiCheatSettings() {
+            const payload = collectClickerAntiCheatSettingsPayload();
+            try {
+                const res = await fetch('/api/admin/clicker/anti-cheat/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showNotification(`❌ ${data?.message || 'Erreur sauvegarde anti-cheat'}`, 'error');
+                    return;
+                }
+                renderClickerAntiCheatSettings(data?.settings || payload);
+                showNotification('✅ Réglages anti-cheat mis à jour', 'success');
+            } catch (err) {
+                console.error('Erreur save anti-cheat clicker', err);
+                showNotification('❌ Erreur serveur anti-cheat', 'error');
+            }
+        }
+
+        async function resetClickerAntiCheatSettings() {
+            if (!confirm('Réinitialiser les réglages anti-cheat clicker aux valeurs par défaut ?')) return;
+
+            try {
+                const res = await fetch('/api/admin/clicker/anti-cheat/settings/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showNotification(`❌ ${data?.message || 'Erreur reset anti-cheat'}`, 'error');
+                    return;
+                }
+                renderClickerAntiCheatSettings(data?.settings || {});
+                showNotification('✅ Réglages anti-cheat remis par défaut', 'success');
+            } catch (err) {
+                console.error('Erreur reset anti-cheat clicker', err);
+                showNotification('❌ Erreur serveur anti-cheat', 'error');
             }
         }
 

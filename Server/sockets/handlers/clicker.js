@@ -3,7 +3,136 @@ const cpsTracker = new Map();
 const CPS_THRESHOLD = Number(process.env.CPS_THRESHOLD) || 50; // clicks/sec
 const CPS_DURATION_MS = Number(process.env.CPS_DURATION_MS) || 3000; // ms
 const CPS_PENALTY = Number(process.env.CPS_PENALTY) || 1000; // clicks to remove
+const CLICKER_FOU_CPS_THRESHOLD = 12;
+const CLICKER_FOU_REQUIRED_MS = 6700;
+const CLICKER_FOU_INACTIVITY_MS = 1100;
+const DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS = {
+  humanPatternWindowMs: Number(process.env.HUMAN_PATTERN_WINDOW_MS) || 5000,
+  humanPatternMinSamples: Number(process.env.HUMAN_PATTERN_MIN_SAMPLES) || 16,
+  humanFastConstAvgMs: Number(process.env.HUMAN_FAST_CONST_AVG_MS) || 125,
+  humanFastConstStdMs: Number(process.env.HUMAN_FAST_CONST_STD_MS) || 14,
+  humanVeryConstAvgMs: Number(process.env.HUMAN_VERY_CONST_AVG_MS) || 260,
+  humanVeryConstStdMs: Number(process.env.HUMAN_VERY_CONST_STD_MS) || 5,
+};
+const clickerAntiCheatRuntimeSettings = {
+  ...DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS,
+};
+let clickerAntiCheatHydrated = false;
 const CLICKER_UPGRADE_GROWTH = 1.8;
+
+function clampInt(value, fallback, min = 0, max = Number.MAX_SAFE_INTEGER) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(n)));
+}
+
+function normalizeClickerAntiCheatSettings(input = {}) {
+  const src = input && typeof input === "object" ? input : {};
+  return {
+    humanPatternWindowMs: clampInt(
+      src.humanPatternWindowMs,
+      DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS.humanPatternWindowMs,
+      500,
+      120000,
+    ),
+    humanPatternMinSamples: clampInt(
+      src.humanPatternMinSamples,
+      DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS.humanPatternMinSamples,
+      3,
+      1000,
+    ),
+    humanFastConstAvgMs: clampInt(
+      src.humanFastConstAvgMs,
+      DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS.humanFastConstAvgMs,
+      10,
+      5000,
+    ),
+    humanFastConstStdMs: clampInt(
+      src.humanFastConstStdMs,
+      DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS.humanFastConstStdMs,
+      1,
+      1000,
+    ),
+    humanVeryConstAvgMs: clampInt(
+      src.humanVeryConstAvgMs,
+      DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS.humanVeryConstAvgMs,
+      10,
+      10000,
+    ),
+    humanVeryConstStdMs: clampInt(
+      src.humanVeryConstStdMs,
+      DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS.humanVeryConstStdMs,
+      1,
+      1000,
+    ),
+  };
+}
+
+function getClickerAntiCheatSettings() {
+  return { ...clickerAntiCheatRuntimeSettings };
+}
+
+function getDefaultClickerAntiCheatSettings() {
+  return { ...DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS };
+}
+
+function setClickerAntiCheatSettings(nextPartial = {}, FileService) {
+  const merged = {
+    ...clickerAntiCheatRuntimeSettings,
+    ...(nextPartial && typeof nextPartial === "object" ? nextPartial : {}),
+  };
+  const normalized = normalizeClickerAntiCheatSettings(merged);
+  Object.assign(clickerAntiCheatRuntimeSettings, normalized);
+
+  if (FileService && FileService.data) {
+    FileService.data.clickerAntiCheatSettings = {
+      ...clickerAntiCheatRuntimeSettings,
+    };
+    if (typeof FileService.save === "function") {
+      FileService.save(
+        "clickerAntiCheatSettings",
+        FileService.data.clickerAntiCheatSettings,
+      );
+    }
+  }
+
+  return getClickerAntiCheatSettings();
+}
+
+function resetClickerAntiCheatSettings(FileService) {
+  Object.assign(
+    clickerAntiCheatRuntimeSettings,
+    getDefaultClickerAntiCheatSettings(),
+  );
+
+  if (FileService && FileService.data) {
+    FileService.data.clickerAntiCheatSettings = {
+      ...clickerAntiCheatRuntimeSettings,
+    };
+    if (typeof FileService.save === "function") {
+      FileService.save(
+        "clickerAntiCheatSettings",
+        FileService.data.clickerAntiCheatSettings,
+      );
+    }
+  }
+
+  return getClickerAntiCheatSettings();
+}
+
+function hydrateClickerAntiCheatSettings(FileService) {
+  if (clickerAntiCheatHydrated) return;
+  clickerAntiCheatHydrated = true;
+
+  const stored = FileService?.data?.clickerAntiCheatSettings;
+  if (!stored || typeof stored !== "object") return;
+
+  const normalized = normalizeClickerAntiCheatSettings(stored);
+  Object.assign(clickerAntiCheatRuntimeSettings, normalized);
+  if (FileService && FileService.data) {
+    FileService.data.clickerAntiCheatSettings = { ...normalized };
+  }
+}
 
 const CLICKER_UPGRADES = {
   per_click_1: {
@@ -83,6 +212,7 @@ function registerClickerHandlers({
   leaderboardManager,
   getIpFromSocket,
   persistBanIp,
+  persistBanPseudo,
   recalculateMedals,
   broadcastSystemMessage,
   applyAutoBadges,
@@ -90,9 +220,8 @@ function registerClickerHandlers({
   colors,
 }) {
   const { getWallet } = require("../../services/wallet");
-  const HUMAN_CPS_THRESHOLD = 12;
-  const HUMAN_CPS_REQUIRED_MS = 6700;
-  const HUMAN_CPS_INACTIVITY_MS = 1100;
+  hydrateClickerAntiCheatSettings(FileService);
+  socket.emit("clicker:antiCheatSettings", getClickerAntiCheatSettings());
 
   function emitWalletForUser() {
     io.to("user:" + pseudo).emit(
@@ -142,7 +271,7 @@ function registerClickerHandlers({
 
     const tracker = socket.data.clickerHumanChallenge;
     const lastManualAt = Number(tracker.lastManualAt || 0);
-    if (lastManualAt > 0 && now - lastManualAt > HUMAN_CPS_INACTIVITY_MS) {
+    if (lastManualAt > 0 && now - lastManualAt > CLICKER_FOU_INACTIVITY_MS) {
       tracker.manualTimestamps = [];
       tracker.aboveThresholdStart = null;
     }
@@ -173,18 +302,179 @@ function registerClickerHandlers({
       leaderboardManager.broadcastClickerLB(io);
     }
 
-    if (cpsHumain >= HUMAN_CPS_THRESHOLD) {
+    if (cpsHumain >= CLICKER_FOU_CPS_THRESHOLD) {
       if (!tracker.aboveThresholdStart) tracker.aboveThresholdStart = now;
 
       if (
         !tracker.achieved &&
-        now - tracker.aboveThresholdStart >= HUMAN_CPS_REQUIRED_MS
+        now - tracker.aboveThresholdStart >= CLICKER_FOU_REQUIRED_MS
       ) {
         tracker.achieved = true;
         ensureClickerFouAwarded();
       }
     } else {
       tracker.aboveThresholdStart = null;
+    }
+  }
+
+  function evaluateHumanConstancySuspicion(now) {
+    if (!socket.data) socket.data = {};
+    if (!socket.data.clickerHumanPattern) {
+      socket.data.clickerHumanPattern = {
+        samples: [],
+        lastClickAt: 0,
+      };
+    }
+
+    const tracker = socket.data.clickerHumanPattern;
+    const lastClickAt = Number(tracker.lastClickAt || 0);
+    tracker.lastClickAt = now;
+
+    if (lastClickAt > 0) {
+      const delta = now - lastClickAt;
+      if (delta > 0) {
+        if (delta > 2000) {
+          tracker.samples = [];
+        } else {
+          tracker.samples.push({ at: now, delta });
+        }
+      }
+    }
+
+    const cutoff = now - clickerAntiCheatRuntimeSettings.humanPatternWindowMs;
+    tracker.samples = tracker.samples.filter((s) => Number(s.at) >= cutoff);
+
+    if (
+      tracker.samples.length <
+      clickerAntiCheatRuntimeSettings.humanPatternMinSamples
+    ) {
+      return null;
+    }
+
+    const deltas = tracker.samples.map((s) => Number(s.delta) || 0);
+    const sampleCount = deltas.length;
+    if (sampleCount === 0) return null;
+
+    const avgMs = deltas.reduce((a, b) => a + b, 0) / sampleCount;
+    const variance =
+      deltas.reduce((a, d) => a + Math.pow(d - avgMs, 2), 0) / sampleCount;
+    const stdMs = Math.sqrt(Math.max(0, variance));
+    const minMs = Math.min(...deltas);
+    const maxMs = Math.max(...deltas);
+    const approxCps = avgMs > 0 ? 1000 / avgMs : 0;
+
+    if (
+      avgMs <= clickerAntiCheatRuntimeSettings.humanFastConstAvgMs &&
+      stdMs <= clickerAntiCheatRuntimeSettings.humanFastConstStdMs
+    ) {
+      return {
+        reason: "FAST_CONSTANT_HUMAN_CLICKS",
+        sampleCount,
+        avgMs,
+        stdMs,
+        minMs,
+        maxMs,
+        approxCps,
+      };
+    }
+
+    if (
+      avgMs <= clickerAntiCheatRuntimeSettings.humanVeryConstAvgMs &&
+      stdMs <= clickerAntiCheatRuntimeSettings.humanVeryConstStdMs
+    ) {
+      return {
+        reason: "VERY_CONSTANT_HUMAN_CLICKS",
+        sampleCount,
+        avgMs,
+        stdMs,
+        minMs,
+        maxMs,
+        approxCps,
+      };
+    }
+
+    return null;
+  }
+
+  function banPseudoForSuspiciousPattern(pattern) {
+    try {
+      const ip = getIpFromSocket(socket);
+
+      try {
+        FileService.appendLog({
+          type: "CLICKER_SUSPECT_PATTERN",
+          pseudo,
+          ip,
+          reason: pattern.reason,
+          sampleCount: pattern.sampleCount,
+          avgMs: Number(pattern.avgMs.toFixed(2)),
+          stdMs: Number(pattern.stdMs.toFixed(2)),
+          minMs: pattern.minMs,
+          maxMs: pattern.maxMs,
+          approxCps: Number(pattern.approxCps.toFixed(2)),
+          at: new Date().toISOString(),
+        });
+      } catch (e) {}
+
+      if (!FileService.data.cheaters) FileService.data.cheaters = [];
+      if (!FileService.data.cheaters.includes(pseudo)) {
+        FileService.data.cheaters.push(pseudo);
+        FileService.save("cheaters", FileService.data.cheaters);
+      }
+
+      const current = FileService.data.clicks[pseudo] || 0;
+      FileService.data.clicks[pseudo] = current - CPS_PENALTY;
+      FileService.save("clicks", FileService.data.clicks);
+
+      try {
+        recalculateMedals(
+          pseudo,
+          FileService.data.clicks[pseudo],
+          io,
+          false,
+          true,
+        );
+      } catch (e) {}
+
+      if (typeof persistBanPseudo === "function") {
+        persistBanPseudo(pseudo);
+      }
+
+      io.emit(
+        "system:info",
+        `${pseudo} a été banni pour triche (pattern de clics suspects) !`,
+      );
+
+      io.sockets.sockets.forEach((s) => {
+        const sp =
+          (s.handshake && s.handshake.session && s.handshake.session.user
+            ? s.handshake.session.user.pseudo
+            : null) || (s.data ? s.data.pseudo : null);
+
+        if (String(sp || "").toLowerCase() !== String(pseudo).toLowerCase())
+          return;
+
+        try {
+          s.emit("system:notification", {
+            message: "🚫 Votre pseudo a été banni pour clics anormaux",
+            duration: 9000,
+          });
+        } catch (e) {}
+        try {
+          s.disconnect(true);
+        } catch (e) {}
+      });
+
+      leaderboardManager.broadcastClickerLB(io);
+
+      console.log({
+        level: "action",
+        message: `[CLICKER_ANTICHEAT] Ban pseudo ${pseudo} (${ip}) - ${pattern.reason} - avg=${pattern.avgMs.toFixed(
+          2,
+        )}ms std=${pattern.stdMs.toFixed(2)}ms cps=${pattern.approxCps.toFixed(2)}`,
+      });
+    } catch (e) {
+      console.error("Erreur banPseudoForSuspiciousPattern:", e);
     }
   }
 
@@ -261,6 +551,11 @@ function registerClickerHandlers({
       const now = Date.now();
 
       evaluateHumanCpsChallenge(now);
+      const suspiciousPattern = evaluateHumanConstancySuspicion(now);
+      if (suspiciousPattern) {
+        banPseudoForSuspiciousPattern(suspiciousPattern);
+        return;
+      }
 
       let track = cpsTracker.get(ip);
       if (!track) {
@@ -609,4 +904,8 @@ module.exports = {
   registerClickerHandlers,
   getUserUpgrades,
   getUpgradePayload,
+  getClickerAntiCheatSettings,
+  getDefaultClickerAntiCheatSettings,
+  setClickerAntiCheatSettings,
+  resetClickerAntiCheatSettings,
 };

@@ -129,8 +129,20 @@ const expressSession = session({
 // ------- Blacklist + Middleware -------
 const alreadyTriedToConnect = [];
 const alreadyTriedToConnectPseudos = [];
+const ALLOWED_403_ASSET_PATHS = new Set([
+  "/403.html",
+  "/css/403.css",
+  "/imgs/icon_d.png",
+  "/imgs/icon_l.png",
+  "/js/uiColor.js",
+  "/js/auto_reload.js",
+]);
 
 const blacklistMiddleware = (req, res, next) => {
+  if (ALLOWED_403_ASSET_PATHS.has(req.path)) {
+    return next();
+  }
+
   const ip = (
     req.headers["x-forwarded-for"] ||
     req.socket.remoteAddress ||
@@ -220,6 +232,10 @@ class FileService {
       clickerFouChallenges: path.join(
         config.DATA,
         "clicker_fou_challenges.json",
+      ),
+      clickerAntiCheatSettings: path.join(
+        config.DATA,
+        "clicker_anti_cheat_settings.json",
       ),
       clickerUpgrades: path.join(config.DATA, "clicker_upgrades.json"),
       fileActions: path.join(config.DATA, "file_actions.log"),
@@ -380,6 +396,10 @@ class FileService {
       reviveLives: this.readJSON(this.files.reviveLives, { users: {} }),
       clickerHumanPeakCps: this.readJSON(this.files.clickerHumanPeakCps, {}),
       clickerFouChallenges: this.readJSON(this.files.clickerFouChallenges, {}),
+      clickerAntiCheatSettings: this.readJSON(
+        this.files.clickerAntiCheatSettings,
+        {},
+      ),
       clickerUpgrades: this.readJSON(this.files.clickerUpgrades, {}),
       // fileActions is an append-only log, don't try to parse as JSON here
     };
@@ -503,6 +523,7 @@ class FileService {
       reviveLives: this.files.reviveLives,
       clickerHumanPeakCps: this.files.clickerHumanPeakCps,
       clickerFouChallenges: this.files.clickerFouChallenges,
+      clickerAntiCheatSettings: this.files.clickerAntiCheatSettings,
       clickerUpgrades: this.files.clickerUpgrades,
       chatMuted: this.files.chatMuted,
     };

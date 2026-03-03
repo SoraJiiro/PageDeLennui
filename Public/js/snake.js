@@ -48,6 +48,16 @@ class SnakeGame {
     this.scoreAttente = null;
     this.resumeScore = null;
     this.revivesUsed = 0;
+
+    this.initSettings();
+    this.bindEvents();
+    this.resize();
+    this.drawStartScreen();
+
+    try {
+      this.socket.emit("snake:requestLeaderboard");
+      this.requestReviveLives();
+    } catch {}
   }
   drawStartScreen() {
     try {
@@ -369,11 +379,21 @@ class SnakeGame {
     try {
       const stage = document.getElementById("stage10");
       const wrap = this.canvas.closest(".snake-wrap");
+      const controls = wrap ? wrap.querySelector(".snake-btns-wrap") : null;
+      const pauseInfo = wrap ? wrap.querySelector(".pause-info") : null;
       const wrapRect = wrap
         ? wrap.getBoundingClientRect()
         : this.canvas.getBoundingClientRect();
       const stageRect = stage ? stage.getBoundingClientRect() : null;
       const ratio = window.devicePixelRatio || 1;
+
+      const controlsH = controls
+        ? Math.round(controls.getBoundingClientRect().height)
+        : 0;
+      const pauseInfoH = pauseInfo
+        ? Math.round(pauseInfo.getBoundingClientRect().height)
+        : 0;
+      const reserveH = Math.max(90, controlsH + pauseInfoH + 40);
 
       const availableW = Math.max(1, Math.round(wrapRect.width || 0));
       const availableH = Math.max(
@@ -381,7 +401,7 @@ class SnakeGame {
         Math.round(
           (stageRect && stageRect.height
             ? stageRect.height
-            : window.innerHeight) - 220,
+            : window.innerHeight) - reserveH,
         ),
       );
 

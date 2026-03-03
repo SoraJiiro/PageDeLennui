@@ -8,6 +8,24 @@ function registerSudokuHandlers({
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
 
+  function readCompletedCount(rawValue) {
+    if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+      return Math.max(0, Math.floor(rawValue));
+    }
+
+    if (typeof rawValue === "string") {
+      const parsed = Number(rawValue);
+      return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+    }
+
+    if (rawValue && typeof rawValue === "object") {
+      const parsed = Number(rawValue.completed);
+      return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+    }
+
+    return 0;
+  }
+
   socket.on("sudoku:saveState", (payload = {}) => {
     try {
       if (!payload || typeof payload !== "object") return;
@@ -78,7 +96,7 @@ function registerSudokuHandlers({
         socket.request.connection &&
         socket.request.connection.remoteAddress) ||
       null;
-    const MIN_TIME_MS = 150000; // 2 minutes 30 seconds
+    const MIN_TIME_MS = 90000; // 1 minute 30 seconds
 
     // If completed too fast, ignore the attempt for leaderboard/rewards
     if (timeMs > 0 && timeMs < MIN_TIME_MS) {
@@ -99,7 +117,7 @@ function registerSudokuHandlers({
 
       // Ack without incrementing or rewarding
       socket.emit("sudoku:ack", {
-        completed: Number(FileService.data.sudokuScores[pseudo] || 0),
+        completed: readCompletedCount(FileService.data.sudokuScores[pseudo]),
         skipped: true,
         reason: "TOO_FAST",
         timeMs,
@@ -108,7 +126,7 @@ function registerSudokuHandlers({
       return;
     }
 
-    const current = Number(FileService.data.sudokuScores[pseudo] || 0);
+    const current = readCompletedCount(FileService.data.sudokuScores[pseudo]);
     const next = current + 1;
     FileService.data.sudokuScores[pseudo] = next;
     FileService.save("sudokuScores", FileService.data.sudokuScores);

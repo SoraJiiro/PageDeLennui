@@ -22,8 +22,11 @@ const AUTO_BADGES = [
     emoji: "🤍",
     name: "OG",
     isEligible: ({ user }) => {
-      if (!user || !user.createdAt) return false;
-      const createdAt = Date.parse(user.createdAt);
+      if (!user || typeof user !== "object") return false;
+      const createdRaw =
+        user.createdAt || user.creeAt || user.created_at || user.created;
+      if (!createdRaw) return false;
+      const createdAt = Date.parse(String(createdRaw));
       return Number.isFinite(createdAt) && createdAt <= OG_CUTOFF;
     },
   },
@@ -205,6 +208,61 @@ function getEligibilitySnapshot(p, FileService) {
   };
 }
 
+function getBadgeUnlockCondition({
+  badgeId,
+  progress,
+  user,
+  motus,
+  clickerFouDone,
+}) {
+  switch (badgeId) {
+    case "OgTag": {
+      const createdRaw =
+        user &&
+        (user.createdAt ||
+          user.creeAt ||
+          user.created_at ||
+          user.created ||
+          null);
+      return `createdAt <= ${new Date(OG_CUTOFF).toISOString()} (value=${createdRaw || "unknown"})`;
+    }
+    case "MotusTag":
+      return `motus.words >= 45 (value=${Number(motus?.words || 0)})`;
+    case "UNO":
+      return `unoGames >= 50 (value=${Number(progress.unoGames || 0)})`;
+    case "Tag2048":
+      return `maxTile2048 >= 1024 OR score2048 >= 5000 (values=${Number(progress.maxTile2048 || 0)} / ${Number(progress.score2048 || 0)})`;
+    case "DinoTag":
+      return `dinoBest >= 7500 (value=${Number(progress.dinoBest || 0)})`;
+    case "FlappyTag":
+      return `flappyBest >= 100 (value=${Number(progress.flappyBest || 0)})`;
+    case "SnakeTag":
+      return `snakeBest >= 120 (value=${Number(progress.snakeBest || 0)})`;
+    case "BlockBlastTag":
+      return `blockblastBest >= 10000 (value=${Number(progress.blockblastBest || 0)})`;
+    case "SudokuTag":
+      return `sudokuCompleted >= 20 (value=${Number(progress.sudokuCompleted || 0)})`;
+    case "P4Tag":
+      return `p4Wins >= 15 (value=${Number(progress.p4Wins || 0)})`;
+    case "MashTag":
+      return `mashWins >= 15 (value=${Number(progress.mashWins || 0)})`;
+    case "CoinflipTag":
+      return `coinflipGames >= 50 AND coinflipTotalBet >= 5000 (values=${Number(progress.coinflipGames || 0)} / ${Number(progress.coinflipTotalBet || 0)})`;
+    case "BlackjackTag":
+      return `blackjackHands >= 50 AND blackjackTotalBet >= 5000 (values=${Number(progress.blackjackHands || 0)} / ${Number(progress.blackjackTotalBet || 0)})`;
+    case "RouletteTag":
+      return `rouletteGames >= 40 AND rouletteTotalBet >= 4000 (values=${Number(progress.rouletteGames || 0)} / ${Number(progress.rouletteTotalBet || 0)})`;
+    case "SlotsTag":
+      return `slotsGames >= 40 AND slotsTotalBet >= 4000 (values=${Number(progress.slotsGames || 0)} / ${Number(progress.slotsTotalBet || 0)})`;
+    case "CM":
+      return `casinoTotal >= 100000 (value=${Number(progress.casinoTotal || 0)})`;
+    case "ClickerFou":
+      return `clickerFouDone === true (value=${Boolean(clickerFouDone)})`;
+    default:
+      return "condition unknown";
+  }
+}
+
 function getProgressSinceBaseline(current, baseline = {}) {
   const keys = Object.keys(current || {});
   const out = {};
@@ -333,6 +391,22 @@ function applyAutoBadges({ pseudo, FileService }) {
     if (eligible && !assignedSet.has(badge.id)) {
       assignedSet.add(badge.id);
       changed = true;
+      try {
+        FileService.appendLog({
+          type: "AUTO_BADGE_UNLOCKED",
+          pseudo: p,
+          badgeId: badge.id,
+          badgeName: badge.name,
+          condition: getBadgeUnlockCondition({
+            badgeId: badge.id,
+            progress,
+            user,
+            motus,
+            clickerFouDone,
+          }),
+          at: new Date().toISOString(),
+        });
+      } catch {}
     }
   });
 
