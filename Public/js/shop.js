@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let socket = null;
   let customStatusTimer = null;
   let pendingColorCard = null;
+  const CUSTOM_BADGE_DEFAULT_PRICE = 180000;
+  let customBadgePrice = CUSTOM_BADGE_DEFAULT_PRICE;
   const CART_STORAGE_KEY = "pde_shop_cart_v1";
   let cartStorageKey = CART_STORAGE_KEY;
   let catalogMap = new Map();
@@ -64,6 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function formatPrice(value) {
     return `${value.toLocaleString("fr-FR")} M`;
+  }
+
+  function getPersonalizeBtnLabel() {
+    return `<i class="fa-solid fa-pen"></i> Personnaliser un badge (${formatPrice(customBadgePrice)})`;
   }
 
   function isRepeatableItem(item) {
@@ -417,8 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (catalog && !catalog.querySelector(".badge-personalizer-container")) {
       const personalizerInner = `
                     <button id="personalize-badge-btn" class="btn">
-                        <i class="fa-solid fa-pen"></i> Personnaliser
-                        un badge
+                ${getPersonalizeBtnLabel()}
                     </button>`;
       const personalizerDiv = document.createElement("div");
       personalizerDiv.className = "badge-personalizer-container";
@@ -662,8 +667,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     personalizeBtn.disabled = false;
-    personalizeBtn.innerHTML =
-      '<i class="fa-solid fa-pen"></i> Personnaliser un badge';
+    personalizeBtn.innerHTML = getPersonalizeBtnLabel();
     stopCustomStatusPolling();
   }
 
@@ -796,6 +800,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (!res.ok) return;
       const data = await res.json();
+      if (Number.isFinite(data?.price)) {
+        customBadgePrice = Math.max(0, Math.floor(Number(data.price)));
+      }
       pendingCustomRequest = data && data.hasPending ? data.request : null;
       lastCustomDecision = data && data.lastDecision ? data.lastDecision : null;
       syncPersonalizeButton();

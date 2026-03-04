@@ -12,7 +12,7 @@ const { getWallet } = require("../services/wallet");
 const { resetUserBadgesProgress } = require("../services/badgesAuto");
 const words = require("../constants/words");
 
-const CUSTOM_BADGE_PRICE = 200000;
+const CUSTOM_BADGE_PRICE = 180000;
 
 // Fonction pour créer le router avec accès à io
 function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
@@ -154,15 +154,64 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     next();
   }
 
+  function resolveCanonicalPseudo(rawPseudo) {
+    const input = String(rawPseudo || "").trim();
+    if (!input) return null;
+    if (input.toLowerCase() === "all") return "ALL";
+    const found = dbUsers.findBypseudo(input);
+    return found && found.pseudo ? found.pseudo : null;
+  }
+
+  function validatePseudoTarget(req, res, next) {
+    const bodyPseudo =
+      req.body && Object.prototype.hasOwnProperty.call(req.body, "pseudo")
+        ? req.body.pseudo
+        : undefined;
+    const queryPseudo =
+      req.query && Object.prototype.hasOwnProperty.call(req.query, "pseudo")
+        ? req.query.pseudo
+        : undefined;
+
+    const raw = bodyPseudo != null ? bodyPseudo : queryPseudo;
+    if (raw == null) return next();
+
+    const trimmed = String(raw || "").trim();
+    if (!trimmed) return next();
+
+    const canonical = resolveCanonicalPseudo(trimmed);
+    if (!canonical) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    if (canonical !== "ALL") {
+      if (
+        req.body &&
+        Object.prototype.hasOwnProperty.call(req.body, "pseudo")
+      ) {
+        req.body.pseudo = canonical;
+      }
+      if (
+        req.query &&
+        Object.prototype.hasOwnProperty.call(req.query, "pseudo")
+      ) {
+        req.query.pseudo = canonical;
+      }
+    }
+
+    next();
+  }
+
+  router.use(requireAdmin, validatePseudoTarget);
+
   // --- Profils: PFP Requests ---
-  router.get("/pfp/requests", requireAdmin, (req, res) => {
+  router.get("/pfp/requests", (req, res) => {
     const reqs = Array.isArray(FileService.data.pfpRequests)
       ? FileService.data.pfpRequests
       : [];
     res.json(reqs);
   });
 
-  router.post("/pfp/requests/approve", requireAdmin, (req, res) => {
+  router.post("/pfp/requests/approve", (req, res) => {
     const { id } = req.body || {};
     if (!id) return res.status(400).json({ message: "id manquant" });
 
@@ -194,7 +243,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     res.json({ success: true });
   });
 
-  router.post("/pfp/requests/reject", requireAdmin, (req, res) => {
+  router.post("/pfp/requests/reject", (req, res) => {
     const { id, reason } = req.body || {};
     if (!id) return res.status(400).json({ message: "id manquant" });
 
@@ -239,12 +288,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     return candidate;
   }
 
-  router.get("/custom-badges/requests", requireAdmin, (req, res) => {
+  router.get("/custom-badges/requests", (req, res) => {
     const requests = ensureCustomBadgeRequests();
     res.json(requests);
   });
 
-  router.post("/custom-badges/requests/approve", requireAdmin, (req, res) => {
+  router.post("/custom-badges/requests/approve", (req, res) => {
     const { id } = req.body || {};
     if (!id) return res.status(400).json({ message: "id manquant" });
 
@@ -327,7 +376,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     });
   });
 
-  router.post("/custom-badges/requests/reject", requireAdmin, (req, res) => {
+  router.post("/custom-badges/requests/reject", (req, res) => {
     const { id, reason } = req.body || {};
     if (!id) return res.status(400).json({ message: "id manquant" });
 
@@ -348,9 +397,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     const refundAmount =
       typeof item.price === "number" ? item.price : CUSTOM_BADGE_PRICE;
-    const currentClicks = FileService.data.clicks[item.pseudo] || 0;
-    FileService.data.clicks[item.pseudo] = currentClicks + refundAmount;
-    FileService.save("clicks", FileService.data.clicks);
+    if (!FileService.data.wallets) FileService.data.wallets = {};
+    if (!FileService.data.wallets[item.pseudo]) {
+      FileService.data.wallets[item.pseudo] = { money: 0, tokens: 0 };
+    }
+    FileService.data.wallets[item.pseudo].money =
+      Number(FileService.data.wallets[item.pseudo].money || 0) + refundAmount;
+    FileService.save("wallets", FileService.data.wallets);
 
     const targetSocket = io ? io.to("user:" + item.pseudo) : null;
     if (targetSocket) {
@@ -361,11 +414,19 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "system:info",
         "Ton badge personnalise a ete refuse. Remboursement effectue.",
       );
+      targetSocket.emit(
+        "economy:wallet",
+        getWallet(
+          FileService,
+          item.pseudo,
+          FileService.data.clicks[item.pseudo] || 0,
+        ),
+      );
       targetSocket.emit("customBadge:status", {
         status: "rejected",
         reason: item.reason || null,
         processedAt: item.processedAt,
-        balance: FileService.data.clicks[item.pseudo],
+        balance: Number(FileService.data.wallets[item.pseudo].money || 0),
       });
     }
 
@@ -382,7 +443,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
   });
 
   // --- DMs ---
-  router.get("/dms/between", requireAdmin, (req, res) => {
+  router.get("/dms/between", (req, res) => {
     const u1 = String(req.query.u1 || "").trim();
     const u2 = String(req.query.u2 || "").trim();
     if (!u1 || !u2) {
@@ -419,12 +480,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     return FileService.data.chatBadges;
   }
 
-  router.get("/badges", requireAdmin, (req, res) => {
+  router.get("/badges", (req, res) => {
     const data = ensureBadgesData();
     res.json(data);
   });
 
-  router.post("/badges/create", requireAdmin, (req, res) => {
+  router.post("/badges/create", (req, res) => {
     const { id, emoji, name } = req.body || {};
     const badgeId = String(id || "").trim();
     if (!badgeId || badgeId.length > 32 || !/^[a-zA-Z0-9_-]+$/.test(badgeId)) {
@@ -451,7 +512,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     res.json({ success: true });
   });
 
-  router.post("/badges/delete", requireAdmin, (req, res) => {
+  router.post("/badges/delete", (req, res) => {
     const { id } = req.body || {};
     const badgeId = String(id || "").trim();
     if (!badgeId) return res.status(400).json({ message: "id manquant" });
@@ -477,7 +538,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     res.json({ success: true });
   });
 
-  router.post("/badges/update", requireAdmin, (req, res) => {
+  router.post("/badges/update", (req, res) => {
     const { id, newId, emoji, name } = req.body || {};
     const badgeId = String(id || "").trim();
     const nextIdRaw = newId == null ? badgeId : String(newId || "").trim();
@@ -956,11 +1017,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       tx.to,
       (FileService.data.clicks && FileService.data.clicks[tx.to]) || 0,
     );
-    FileService.data.wallets[tx.to].money = Math.max(
+    const newRecipientMoney = Math.max(
       0,
       Number(recipientWallet.money || 0) + Number(tx.amount || 0),
     );
+    FileService.data.wallets[tx.to].money = newRecipientMoney;
     FileService.save("wallets", FileService.data.wallets);
+    console.log(
+      `[GAIN_MONNAIE] ${tx.to} +${tx.amount} monnaie via don approuvé de ${tx.from} (total: ${newRecipientMoney})`,
+    );
 
     // Mettre à jour statut
     tx.status = "approved";

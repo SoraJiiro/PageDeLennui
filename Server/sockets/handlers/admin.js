@@ -25,6 +25,16 @@ function registerAdminHandlers({
   const getSocketPseudo = (s) => {
     return s?.data?.pseudo || s?.handshake?.session?.user?.pseudo || null;
   };
+
+  const resolveExistingPseudo = (raw) => {
+    const target = String(raw || "").trim();
+    if (!target) return null;
+    const rec =
+      dbUsers && typeof dbUsers.findBypseudo === "function"
+        ? dbUsers.findBypseudo(target)
+        : null;
+    return rec && rec.pseudo ? rec.pseudo : null;
+  };
   // ------- Admin Events -------
   // ------- Reset complet -------
   socket.on("admin:server:softReset", async () => {
@@ -290,11 +300,18 @@ function registerAdminHandlers({
         success: false,
         message: "Pseudo manquant",
       });
+    const canonicalPseudo = resolveExistingPseudo(targetPseudo);
+    if (!canonicalPseudo) {
+      return socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Utilisateur introuvable",
+      });
+    }
     try {
       if (!Array.isArray(config.BLACKLIST_PSEUDOS))
         config.BLACKLIST_PSEUDOS = [];
-      if (!listHasPseudo(config.BLACKLIST_PSEUDOS, targetPseudo)) {
-        config.BLACKLIST_PSEUDOS.push(targetPseudo);
+      if (!listHasPseudo(config.BLACKLIST_PSEUDOS, canonicalPseudo)) {
+        config.BLACKLIST_PSEUDOS.push(canonicalPseudo);
       }
       const data = {
         alwaysBlocked: Array.isArray(config.BLACKLIST)
@@ -310,7 +327,7 @@ function registerAdminHandlers({
             if (
               sPseudo &&
               normalizePseudoValue(sPseudo) ===
-                normalizePseudoValue(targetPseudo)
+                normalizePseudoValue(canonicalPseudo)
             ) {
               try {
                 s.emit("system:notification", {
@@ -426,6 +443,14 @@ function registerAdminHandlers({
         success: false,
         message: "Pseudo manquant",
       });
+    const canonicalPseudo = resolveExistingPseudo(targetPseudo);
+    if (!canonicalPseudo) {
+      return socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Utilisateur introuvable",
+      });
+    }
+
     try {
       const forcedList = Array.isArray(config.FORCED_ALWAYS_BLOCKED_PSEUDOS)
         ? config.FORCED_ALWAYS_BLOCKED_PSEUDOS
@@ -440,7 +465,8 @@ function registerAdminHandlers({
       if (!Array.isArray(config.BLACKLIST_PSEUDOS))
         config.BLACKLIST_PSEUDOS = [];
       config.BLACKLIST_PSEUDOS = config.BLACKLIST_PSEUDOS.filter(
-        (v) => normalizePseudoValue(v) !== normalizePseudoValue(targetPseudo),
+        (v) =>
+          normalizePseudoValue(v) !== normalizePseudoValue(canonicalPseudo),
       );
 
       const data = {
@@ -492,17 +518,25 @@ function registerAdminHandlers({
   socket.on("admin:chat:mute", ({ target, durationMs }) => {
     if (pseudo !== "Admin") return;
     if (!target) return;
+    const canonicalTarget = resolveExistingPseudo(target);
+    if (!canonicalTarget) {
+      socket.emit("system:notification", {
+        message: "❌ Utilisateur introuvable",
+        duration: 4000,
+      });
+      return;
+    }
     try {
       FileService.data.chatMuted = FileService.data.chatMuted || {};
       const dur = Number(durationMs) || 0;
       const until = dur > 0 ? new Date(Date.now() + dur).toISOString() : null;
-      FileService.data.chatMuted[target] = { until, by: pseudo };
+      FileService.data.chatMuted[canonicalTarget] = { until, by: pseudo };
       FileService.save("chatMuted", FileService.data.chatMuted);
       io.emit("chat:muted:update", FileService.data.chatMuted);
 
       const text = until
-        ? `${target} a été mis en sourdine par l'Admin pendant ${Math.round(dur / 1000)}s.`
-        : `${target} a été mis en sourdine indéfiniment par l'Admin.`;
+        ? `${canonicalTarget} a été mis en sourdine par l'Admin pendant ${Math.round(dur / 1000)}s.`
+        : `${canonicalTarget} a été mis en sourdine indéfiniment par l'Admin.`;
       broadcastSystemMessage(io, text, true);
     } catch (e) {
       // ignore
@@ -512,15 +546,23 @@ function registerAdminHandlers({
   socket.on("admin:chat:unmute", ({ target }) => {
     if (pseudo !== "Admin") return;
     if (!target) return;
+    const canonicalTarget = resolveExistingPseudo(target);
+    if (!canonicalTarget) {
+      socket.emit("system:notification", {
+        message: "❌ Utilisateur introuvable",
+        duration: 4000,
+      });
+      return;
+    }
     try {
       FileService.data.chatMuted = FileService.data.chatMuted || {};
-      if (FileService.data.chatMuted[target]) {
-        delete FileService.data.chatMuted[target];
+      if (FileService.data.chatMuted[canonicalTarget]) {
+        delete FileService.data.chatMuted[canonicalTarget];
         FileService.save("chatMuted", FileService.data.chatMuted);
         io.emit("chat:muted:update", FileService.data.chatMuted);
         broadcastSystemMessage(
           io,
-          `${target} a été rétabli du mute par l'Admin.`,
+          `${canonicalTarget} a été rétabli du mute par l'Admin.`,
           true,
         );
       }

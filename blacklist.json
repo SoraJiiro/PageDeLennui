@@ -7,5 +7,8 @@
     "192.168.197.254",
     "192.168.193.254"
   ],
-  "alwaysBlockedPseudos": []
+  "alwaysBlockedPseudos": [
+    "T",
+    "TOM"
+  ]
 }

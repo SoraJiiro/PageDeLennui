@@ -181,18 +181,60 @@ class BlackjackGame {
     ];
     this.deck = [];
 
-    for (let i = 0; i < 8; i++) {
-      suits.forEach((suit) => {
-        values.forEach((value) => {
-          this.deck.push({ suit, value });
-        });
+    suits.forEach((suit) => {
+      values.forEach((value) => {
+        this.deck.push({ suit, value });
       });
-    }
+    });
 
     for (let i = this.deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
     }
+  }
+
+  drawCard() {
+    if (this.deck.length === 0) {
+      this.createDeck();
+    }
+    return this.deck.pop();
+  }
+
+  dealCardToHand(hand) {
+    const card = this.drawCard();
+    if (card) hand.push(card);
+    return card;
+  }
+
+  dealInitialCards() {
+    this.phase = "playing";
+    this.currentPlayerIndex = 0;
+
+    this.joueurs.forEach((p) => {
+      const cards = [this.drawCard(), this.drawCard()].filter(Boolean);
+      const score = this.calculateScore(cards);
+      let status = "playing";
+
+      if (score === 21) {
+        status = "blackjack";
+      }
+
+      p.hands = [
+        {
+          cards: cards,
+          bet: p.bet,
+          score: score,
+          status: status,
+        },
+      ];
+      p.activeHandIndex = 0;
+    });
+
+    this.dealerHand = [];
+    this.dealCardToHand(this.dealerHand);
+    this.dealCardToHand(this.dealerHand);
+
+    this.checkTurn();
   }
 
   calculateScore(hand) {
@@ -266,36 +308,6 @@ class BlackjackGame {
     return true;
   }
 
-  dealInitialCards() {
-    this.phase = "playing";
-    this.currentPlayerIndex = 0;
-
-    this.joueurs.forEach((p) => {
-      const cards = [this.deck.pop(), this.deck.pop()];
-      const score = this.calculateScore(cards);
-      let status = "playing";
-
-      if (score === 21) {
-        status = "blackjack";
-      }
-
-      p.hands = [
-        {
-          cards: cards,
-          bet: p.bet,
-          score: score,
-          status: status,
-        },
-      ];
-      p.activeHandIndex = 0;
-    });
-
-    this.dealerHand.push(this.deck.pop());
-    this.dealerHand.push(this.deck.pop());
-
-    this.checkTurn();
-  }
-
   checkTurn() {
     if (this.turnTimer) clearTimeout(this.turnTimer);
 
@@ -346,7 +358,7 @@ class BlackjackGame {
     const hand = player.hands[player.activeHandIndex];
     if (!hand || hand.status !== "playing") return false;
 
-    hand.cards.push(this.deck.pop());
+    this.dealCardToHand(hand.cards);
     hand.score = this.calculateScore(hand.cards);
 
     if (hand.score > 21) {
@@ -388,7 +400,7 @@ class BlackjackGame {
     hand.bet += cost;
     hand.doubled = true;
 
-    hand.cards.push(this.deck.pop());
+    this.dealCardToHand(hand.cards);
     hand.score = this.calculateScore(hand.cards);
 
     if (hand.score > 21) {
@@ -420,16 +432,18 @@ class BlackjackGame {
     const card1 = hand.cards[0];
     const card2 = hand.cards[1];
 
-    hand.cards = [card1, this.deck.pop()];
+    hand.cards = [card1];
+    this.dealCardToHand(hand.cards);
     hand.score = this.calculateScore(hand.cards);
     if (hand.score === 21) hand.status = "stand";
 
     const newHand = {
-      cards: [card2, this.deck.pop()],
+      cards: [card2],
       bet: splitBet,
       status: "playing",
       score: 0,
     };
+    this.dealCardToHand(newHand.cards);
     newHand.score = this.calculateScore(newHand.cards);
     if (newHand.score === 21) newHand.status = "stand";
 
@@ -449,19 +463,22 @@ class BlackjackGame {
   async startDealerTurn() {
     this.phase = "dealer";
 
+    // Reveal de la carte cachée et on laisse le temps du suspense (match animation CSS)
     if (this.emitState) this.emitState(this.getState());
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 2600));
 
     let dealerScore = this.calculateScore(this.dealerHand);
 
+    // Si le croupier a déjà 21 (Blackjack naturel), il n'a pas besoin de tirer.
     while (dealerScore < 17) {
-      this.dealerHand.push(this.deck.pop());
+      this.dealCardToHand(this.dealerHand);
       dealerScore = this.calculateScore(this.dealerHand);
 
       if (this.emitState) this.emitState(this.getState());
       await new Promise((r) => setTimeout(r, 1000));
     }
 
+    // Le croupier arrête de tirer, on passe au Payout
     this.endRound();
     if (this.emitState) this.emitState(this.getState());
   }

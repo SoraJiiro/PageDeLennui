@@ -33,7 +33,118 @@ export function initClicker(socket) {
     tokens: 0,
     upgradeEffects: { perClickBonus: 0, autoCpsBonus: 0 },
     antiCheatSettings: null,
+    clickerFouDeadline: null,
+    cpsUiTickTimer: null,
+    cpsUiTickRunning: false,
+    lastRenderedCpsHumain: null,
+    zoneLocked: false,
+    zoneLockTimer: null,
   };
+
+  const clickerFouTimerEl = document.createElement("div");
+  clickerFouTimerEl.className = "clicker-fou-timer";
+  clickerFouTimerEl.style.position = "absolute";
+  clickerFouTimerEl.style.top = "8px";
+  clickerFouTimerEl.style.right = "10px";
+  clickerFouTimerEl.style.padding = "4px 8px";
+  clickerFouTimerEl.style.border = "1px solid var(--primary-color)";
+  clickerFouTimerEl.style.fontSize = "0.85rem";
+  clickerFouTimerEl.style.background = "rgba(0,0,0,.55)";
+  clickerFouTimerEl.style.color = "#fff";
+  clickerFouTimerEl.style.zIndex = "3";
+  clickerFouTimerEl.style.display = "block";
+  clickerFouTimerEl.style.userSelect = "none";
+  if (ui.zone) {
+    try {
+      const zoneStyle = window.getComputedStyle(ui.zone);
+      if (zoneStyle.position === "static") {
+        ui.zone.style.position = "relative";
+      }
+    } catch {}
+    ui.zone.appendChild(clickerFouTimerEl);
+  }
+
+  function renderClickerFouTimer() {
+    if (!clickerFouTimerEl) return;
+    clickerFouTimerEl.style.display = "block";
+    if (!state.clickerFouDeadline) {
+      clickerFouTimerEl.textContent = state.clickerFouDone
+        ? "CF OK"
+        : "CF prêt";
+      return;
+    }
+    const remainingMs = Math.max(0, state.clickerFouDeadline - Date.now());
+    const remainingSec = (remainingMs / 1000).toFixed(1);
+    clickerFouTimerEl.textContent = `CF ${remainingSec}s`;
+  }
+
+  function renderHumanCpsText() {
+    if (!ui.cpsHumainEl) return;
+    const nextText =
+      state.cpsHumain >= 0 ? `${state.cpsHumain.toFixed(1)} CPS` : "0.0 CPS";
+    if (state.lastRenderedCpsHumain === nextText) return;
+    ui.cpsHumainEl.textContent = nextText;
+    state.lastRenderedCpsHumain = nextText;
+  }
+
+  function renderZoneScore(score) {
+    if (!ui.zone) return;
+    const formatted = Number(score)
+      .toLocaleString("fr-FR")
+      .replace(/\s/g, "\u00a0");
+    let scoreEl = ui.zone.querySelector(".clicker-zone-score");
+    if (!scoreEl) {
+      scoreEl = document.createElement("i");
+      scoreEl.className = "clicker-zone-score";
+      ui.zone.insertBefore(scoreEl, clickerFouTimerEl || null);
+    }
+    scoreEl.textContent = formatted;
+    if (clickerFouTimerEl && clickerFouTimerEl.parentNode !== ui.zone) {
+      ui.zone.appendChild(clickerFouTimerEl);
+    }
+  }
+
+  function stopCpsUiTick() {
+    if (state.cpsUiTickTimer) {
+      clearTimeout(state.cpsUiTickTimer);
+      state.cpsUiTickTimer = null;
+    }
+    state.cpsUiTickRunning = false;
+  }
+
+  function scheduleCpsUiTick() {
+    if (state.cpsUiTickRunning) return;
+    state.cpsUiTickRunning = true;
+
+    const tick = () => {
+      renderHumanCpsText();
+      renderClickerFouTimer();
+
+      if (
+        state.clickerFouDeadline &&
+        Date.now() >= state.clickerFouDeadline &&
+        !state.clickerFouDone
+      ) {
+        state.clickerFouDone = true;
+        state.clickerFouDeadline = null;
+        state.cpsHumainAtThresholdStart = null;
+        renderClickerFouTimer();
+      }
+
+      const shouldContinue =
+        state.cpsHumain > 0 ||
+        (state.clickerFouDeadline && Date.now() < state.clickerFouDeadline);
+
+      if (!shouldContinue || document.visibilityState === "hidden") {
+        stopCpsUiTick();
+        return;
+      }
+
+      state.cpsUiTickTimer = setTimeout(tick, 100);
+    };
+
+    tick();
+  }
 
   const upgradesListEl = document.getElementById("clicker-upgrade-list");
 
@@ -41,17 +152,15 @@ export function initClicker(socket) {
     if (!ui.antiCheatTextEl) return;
     const s = state.antiCheatSettings;
     if (!s || typeof s !== "object") {
-      ui.antiCheatTextEl.textContent = "Réglages anti-cheat indisponibles.";
+      ui.antiCheatTextEl.textContent = "👁️ Anticheat: indisponible";
       return;
     }
 
-    const sampleMin = Number(s.humanPatternMinSamples || 0);
-    const fastAvg = Number(s.humanFastConstAvgMs || 0);
-    const fastStd = Number(s.humanFastConstStdMs || 0);
-    const veryAvg = Number(s.humanVeryConstAvgMs || 0);
-    const veryStd = Number(s.humanVeryConstStdMs || 0);
-
-    ui.antiCheatTextEl.innerHTML = `<strong>Challenge Clicker Fou:</strong> 12 CPS pendant 6.7s (fixe)<br><strong>Anti-cheat pattern:</strong> min ${sampleMin} samples • fast ≤ ${fastAvg}ms/${fastStd}ms • very ≤ ${veryAvg}ms/${veryStd}ms`;
+    const hasExplicitToggle = typeof s.enabled === "boolean";
+    const isActive = hasExplicitToggle ? s.enabled : true;
+    ui.antiCheatTextEl.textContent = isActive
+      ? "👁️ Anticheat: actif"
+      : "👁️ Anticheat: désactivé";
   }
 
   function renderSidebarWallet() {
@@ -591,6 +700,7 @@ export function initClicker(socket) {
 
   if (ui.zone) {
     ui.zone.addEventListener("click", () => {
+      if (state.zoneLocked) return;
       socket.emit("clicker:click");
       bumpZone();
 
@@ -598,6 +708,7 @@ export function initClicker(socket) {
       state.clicksManuels.push(mtn);
       state.clicksManuels = state.clicksManuels.filter((t) => mtn - t < 1000);
       state.cpsHumain = state.clicksManuels.length;
+      renderHumanCpsText();
 
       if (state.cpsHumain > state.peakCpsHumain) {
         state.peakCpsHumain = state.cpsHumain;
@@ -607,22 +718,26 @@ export function initClicker(socket) {
       }
 
       if (state.cpsHumain >= 12) {
-        if (!state.cpsHumainAtThresholdStart)
+        if (!state.clickerFouDeadline) {
           state.cpsHumainAtThresholdStart = mtn;
-        if (
-          !state.clickerFouDone &&
-          mtn - state.cpsHumainAtThresholdStart >= 6700
-        ) {
-          state.clickerFouDone = true;
+          state.clickerFouDeadline = mtn + 6700;
         }
       } else {
         state.cpsHumainAtThresholdStart = null;
+        state.clickerFouDeadline = null;
       }
+
+      renderClickerFouTimer();
+      scheduleCpsUiTick();
 
       clearTimeout(state.timerHumain);
       state.timerHumain = setTimeout(() => {
         state.cpsHumain = 0;
         state.cpsHumainAtThresholdStart = null;
+        state.clickerFouDeadline = null;
+        renderHumanCpsText();
+        renderClickerFouTimer();
+        scheduleCpsUiTick();
       }, 1100);
     });
   }
@@ -706,10 +821,7 @@ export function initClicker(socket) {
   socket.on("clicker:you", ({ score }) => {
     state.scoreActuel = score;
     bumpZone();
-    if (ui.zone)
-      ui.zone.innerHTML = `<i>${Number(score)
-        .toLocaleString("fr-FR")
-        .replace(/\s/g, "\u00a0")}</i>`;
+    renderZoneScore(score);
     renderSidebarWallet();
     if (ui.yourScoreEl)
       ui.yourScoreEl.textContent = Number(score)
@@ -809,6 +921,25 @@ export function initClicker(socket) {
     renderUpgrades(payload);
   });
 
+  socket.on("clicker:lockArea", ({ durationMs } = {}) => {
+    const duration = Number(durationMs) || 10000;
+    clearTimeout(state.zoneLockTimer);
+    state.zoneLocked = true;
+    if (ui.zone) {
+      ui.zone.style.pointerEvents = "none";
+      ui.zone.style.opacity = "0.4";
+      ui.zone.title = `Zone désactivée ${Math.round(duration / 1000)}s`;
+    }
+    state.zoneLockTimer = setTimeout(() => {
+      state.zoneLocked = false;
+      if (ui.zone) {
+        ui.zone.style.pointerEvents = "";
+        ui.zone.style.opacity = "";
+        ui.zone.title = "";
+      }
+    }, duration);
+  });
+
   socket.on("clicker:antiCheatSettings", (settings) => {
     state.antiCheatSettings =
       settings && typeof settings === "object" ? settings : null;
@@ -828,7 +959,7 @@ export function initClicker(socket) {
     state.medalsDebloquees.clear();
     if (ui.yourScoreEl) ui.yourScoreEl.textContent = "0";
     if (ui.acpsEl) ui.acpsEl.textContent = "";
-    if (ui.zone) ui.zone.innerHTML = `<i>0</i>`;
+    renderZoneScore(0);
     ui.medalsWrap?.querySelectorAll(".medal").forEach((m) => {
       m.classList.remove("shown");
       m.classList.add("hidden");
@@ -839,12 +970,18 @@ export function initClicker(socket) {
     showNotif("⚠️ Tes stats Clicker ont été réinitialisées par un admin");
   });
 
-  // ---------- Affichage CPS humain ----------
-  setInterval(() => {
-    if (ui.cpsHumainEl)
-      ui.cpsHumainEl.textContent =
-        state.cpsHumain >= 0 ? `${state.cpsHumain.toFixed(1)} CPS` : "0.0 CPS";
-  }, 750);
+  // ---------- Affichage CPS humain (optimisé) ----------
+  renderHumanCpsText();
+  renderClickerFouTimer();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      renderHumanCpsText();
+      renderClickerFouTimer();
+      scheduleCpsUiTick();
+    } else {
+      stopCpsUiTick();
+    }
+  });
 
   // ---------- Pénalité Tricheur ----------
   setInterval(() => {

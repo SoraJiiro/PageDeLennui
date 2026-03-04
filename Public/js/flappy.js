@@ -143,10 +143,11 @@ export function initFlappy(socket) {
   }
 
   function computeRevivePrice() {
-    const multiplier = 150;
-    const escalation = 1 + revivesUsed * 0.75;
-    let price = Math.floor(score * multiplier * escalation);
-    price = Math.max(5000, Math.min(5000000, price));
+    const base = 3000;
+    const multiplier = 35;
+    const escalation = 1 + revivesUsed * 0.5;
+    let price = Math.floor(base + score * multiplier * escalation);
+    price = Math.max(3000, Math.min(1800000, price));
     return price;
   }
 

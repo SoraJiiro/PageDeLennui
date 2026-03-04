@@ -8,6 +8,7 @@ export function initChat(socket) {
   const submit = document.querySelector(".submit");
   let myPseudo = null;
   let onlineUsers = [];
+  const knownUsersByLower = new Map();
   let lastDmFrom = null;
   let dmSuggestState = { matches: [], index: -1, needle: "" };
 
@@ -179,6 +180,35 @@ export function initChat(socket) {
     return String(value || "").replace(/[&<>"']/g, (char) => htmlEscapes[char]);
   }
 
+  function registerKnownUsers(list) {
+    const arr = Array.isArray(list) ? list : [];
+    arr.forEach((raw) => {
+      const name = String(raw || "").trim();
+      if (!name) return;
+      knownUsersByLower.set(name.toLowerCase(), name);
+    });
+  }
+
+  function resolveMentionPseudo(rawName) {
+    const key = String(rawName || "")
+      .trim()
+      .toLowerCase();
+    if (!key) return null;
+    return knownUsersByLower.get(key) || null;
+  }
+
+  function extractMentionedPseudos(text) {
+    const found = new Set();
+    const content = String(text || "");
+    const mentionRegex = /(^|\s)@([A-Za-z0-9_À-ÖØ-öø-ÿ.-]+)/g;
+    content.replace(mentionRegex, (match, prefix, mentionName) => {
+      const canonical = resolveMentionPseudo(mentionName);
+      if (canonical) found.add(canonical.toLowerCase());
+      return match;
+    });
+    return found;
+  }
+
   function formatChatText(text) {
     const normalized = String(text || "");
     let lastIndex = 0;
@@ -186,7 +216,7 @@ export function initChat(socket) {
 
     // URLs (http(s):// ou www.) ou mentions @Pseudo (au début ou après un espace)
     const tokenPattern = new RegExp(
-      `${linkPattern.source}|(^|\\s)@([A-Za-z0-9_À-ÖØ-öø-ÿ-]+)`,
+      `${linkPattern.source}|(^|\\s)@([A-Za-z0-9_À-ÖØ-öø-ÿ.-]+)`,
       "gi",
     );
 
@@ -196,9 +226,14 @@ export function initChat(socket) {
       // Mention
       if (typeof mentionName === "string" && mentionName.length) {
         const safePrefix = escapeHtml(prefix || "");
-        const safeName = escapeHtml(mentionName);
-        const href = `/profil.html?pseudo=${encodeURIComponent(mentionName)}`;
-        formatted += `${safePrefix}<a class="mention-link" href="${href}">@${safeName}</a>`;
+        const canonical = resolveMentionPseudo(mentionName);
+        if (canonical) {
+          const safeName = escapeHtml(canonical);
+          const href = `/profil.html?pseudo=${encodeURIComponent(canonical)}`;
+          formatted += `${safePrefix}<a class="mention-link" href="${href}">@${safeName}</a>`;
+        } else {
+          formatted += `${safePrefix}@${escapeHtml(mentionName)}`;
+        }
         lastIndex = offset + match.length;
         return match;
       }
@@ -641,6 +676,7 @@ export function initChat(socket) {
 
   socket.on("you:name", (name) => {
     myPseudo = name;
+    registerKnownUsers([name]);
   });
 
   const renderDmMessage = (payload, { notify = true } = {}) => {
@@ -750,10 +786,15 @@ export function initChat(socket) {
 
   socket.on("users:list", (l) => {
     onlineUsers = l || [];
+    registerKnownUsers(onlineUsers);
     if (usersCount) {
       usersCount.innerHTML = `En ligne: <b>${l.length}</b>`;
       usersCount.title = `‣ ${l.join("\n‣ ")}`;
     }
+  });
+
+  socket.on("chat:knownUsers", (list) => {
+    registerKnownUsers(list);
   });
 
   // Recevoir la liste des utilisateurs muets
@@ -790,8 +831,10 @@ export function initChat(socket) {
       file: payload.file,
     });
 
+    const mentioned = extractMentionedPseudos(payload.text);
     if (
-      payload.text.toLowerCase().includes(`@${myPseudo.toLowerCase()}`) &&
+      myPseudo &&
+      mentioned.has(myPseudo.toLowerCase()) &&
       payload.name !== myPseudo
     ) {
       showNotif(`💬 Vous avez été mentionné par ${payload.name} dans le Chat`);

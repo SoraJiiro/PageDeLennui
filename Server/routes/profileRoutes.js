@@ -14,7 +14,7 @@ const { canPurchaseLives, addLives } = require("../services/reviveLives");
 const { getWallet } = require("../services/wallet");
 
 const router = express.Router();
-const CUSTOM_BADGE_PRICE = 200000;
+const CUSTOM_BADGE_PRICE = 180000;
 
 function normalizePseudo(pseudo) {
   const p = String(pseudo || "").trim();

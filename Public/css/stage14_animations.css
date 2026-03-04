@@ -86,7 +86,7 @@
 
 @keyframes bj-reveal {
   0% {
-    transform: rotateY(180deg);
+    transform: rotateY(-180deg);
     opacity: 0.5;
   }
   100% {

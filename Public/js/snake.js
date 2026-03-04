@@ -140,10 +140,11 @@ class SnakeGame {
   }
 
   computeRevivePrice() {
-    const multiplier = 75;
-    const escalation = 1 + this.revivesUsed * 0.75;
-    let price = Math.floor(this.state.score * multiplier * escalation);
-    price = Math.max(5000, Math.min(5000000, price));
+    const base = 4000;
+    const multiplier = 45;
+    const escalation = 1 + this.revivesUsed * 0.5;
+    let price = Math.floor(base + this.state.score * multiplier * escalation);
+    price = Math.max(4000, Math.min(2200000, price));
     return price;
   }
 
@@ -174,8 +175,8 @@ class SnakeGame {
     }
     if (modeEl) {
       modeEl.textContent = hasShopLife
-        ? "Choix: vie du shop ou paiement en clicks"
-        : "Choix: paiement en clicks";
+        ? "Choix: vie du shop ou paiement en monnaie"
+        : "Choix: paiement en monnaie";
     }
 
     let payBtnEl = this.ui.reviveOverlay.querySelector(".snake-revive-pay-btn");
@@ -210,7 +211,7 @@ class SnakeGame {
             .replace(
               /\s/g,
               "\u00a0",
-            )} clicks (<span class="snake-revive-count">${remainingRevives}</span> restants)`;
+            )} monnaie (<span class="snake-revive-count">${remainingRevives}</span> restants)`;
       this.ui.reviveBtn.onclick = () => {
         this.socket.emit("snake:payToContinue", {
           price,
@@ -225,7 +226,7 @@ class SnakeGame {
         payBtnEl.style.display = "block";
         payBtnEl.textContent = `Payer ${price
           .toLocaleString("fr-FR")
-          .replace(/\s/g, "\u00a0")} clicks (${remainingRevives} restants)`;
+          .replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
         payBtnEl.onclick = () => {
           this.socket.emit("snake:payToContinue", { price, mode: "pay" });
           toggleScrollLock(false);

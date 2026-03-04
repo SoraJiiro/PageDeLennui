@@ -432,21 +432,49 @@ export function initBlackjack(socket, username) {
   }
 
   // Helper sync inutilisé ici car je rebuild tout (plus simple pour multi-mains dynamique)
+  // Helper sync qui préserve le DOM pour ne pas couper les animations CSS
   function syncCards(container, cards, previousCards = []) {
-    container.innerHTML = "";
+    if (!cards || cards.length === 0) {
+      container.innerHTML = "";
+      return;
+    }
+
     cards.forEach((c, index) => {
-      const el = createCardEl(c);
+      let el = container.children[index];
       const wasHidden =
         previousCards[index] && previousCards[index].value === "?";
       const isNowVisible = c && c.value !== "?";
-      if (wasHidden && isNowVisible) {
-        el.classList.add("bj-reveal");
+      const isNew =
+        index >= previousCards.length || previousCards[index] === undefined;
+
+      if (!el) {
+        // Nouvelle carte
+        el = createCardEl(c);
+        if (wasHidden && isNowVisible) {
+          el.classList.add("bj-reveal");
+        } else if (isNew) {
+          el.classList.add("bj-deal-in");
+          el.style.animationDelay = `${index * 80}ms`;
+        }
+        container.appendChild(el);
       } else {
-        el.classList.add("bj-deal-in");
-        el.style.animationDelay = `${index * 80}ms`;
+        // Carte existante : on la met à jour uniquement si elle se révèle
+        if (
+          (wasHidden && isNowVisible) ||
+          (el.classList.contains("hidden") && isNowVisible)
+        ) {
+          const newEl = createCardEl(c);
+          newEl.classList.add("bj-reveal");
+          container.replaceChild(newEl, el);
+        }
+        // Sinon, on ne touche pas à l'élément pour laisser l'animation CSS se terminer !
       }
-      container.appendChild(el);
     });
+
+    // Supprimer les cartes en trop
+    while (container.children.length > cards.length) {
+      container.removeChild(container.lastChild);
+    }
   }
 
   function updateControls(state) {
@@ -517,13 +545,126 @@ export function initBlackjack(socket, username) {
 
     const suitSymbols = { H: "♥", D: "♦", C: "♣", S: "♠" };
     const isRed = card.suit === "H" || card.suit === "D";
+    const suit = suitSymbols[card.suit] || "?";
+
+    const pipCountByValue = {
+      A: 1,
+      2: 2,
+      3: 3,
+      4: 4,
+      5: 5,
+      6: 6,
+      7: 7,
+      8: 8,
+      9: 9,
+      10: 10,
+      J: 10,
+      Q: 10,
+      K: 10,
+      R: 10,
+    };
+
+    const cardValue = String(card.value).toUpperCase();
+    const isFaceCard = ["J", "Q", "K", "R"].includes(cardValue);
+    const pipCount = Number(pipCountByValue[cardValue] || 0);
+
+    const pipLayouts = {
+      1: [{ x: 50, y: 50 }],
+      2: [
+        { x: 50, y: 22 },
+        { x: 50, y: 78 },
+      ],
+      3: [
+        { x: 50, y: 22 },
+        { x: 50, y: 50 },
+        { x: 50, y: 78 },
+      ],
+      4: [
+        { x: 28, y: 22 },
+        { x: 72, y: 22 },
+        { x: 28, y: 78 },
+        { x: 72, y: 78 },
+      ],
+      5: [
+        { x: 28, y: 22 },
+        { x: 72, y: 22 },
+        { x: 50, y: 50 },
+        { x: 28, y: 78 },
+        { x: 72, y: 78 },
+      ],
+      6: [
+        { x: 28, y: 22 },
+        { x: 72, y: 22 },
+        { x: 28, y: 50 },
+        { x: 72, y: 50 },
+        { x: 28, y: 78 },
+        { x: 72, y: 78 },
+      ],
+      7: [
+        { x: 28, y: 22 },
+        { x: 72, y: 22 },
+        { x: 50, y: 36 },
+        { x: 28, y: 50 },
+        { x: 72, y: 50 },
+        { x: 28, y: 78 },
+        { x: 72, y: 78 },
+      ],
+      8: [
+        { x: 28, y: 22 },
+        { x: 72, y: 22 },
+        { x: 50, y: 36 },
+        { x: 28, y: 50 },
+        { x: 72, y: 50 },
+        { x: 50, y: 64 },
+        { x: 28, y: 78 },
+        { x: 72, y: 78 },
+      ],
+      9: [
+        { x: 28, y: 18 },
+        { x: 72, y: 18 },
+        { x: 28, y: 39 },
+        { x: 72, y: 39 },
+        { x: 50, y: 50 },
+        { x: 28, y: 61 },
+        { x: 72, y: 61 },
+        { x: 28, y: 82 },
+        { x: 72, y: 82 },
+      ],
+      10: [
+        { x: 28, y: 18 },
+        { x: 72, y: 18 },
+        { x: 50, y: 30 },
+        { x: 28, y: 39 },
+        { x: 72, y: 39 },
+        { x: 28, y: 61 },
+        { x: 72, y: 61 },
+        { x: 50, y: 70 },
+        { x: 28, y: 82 },
+        { x: 72, y: 82 },
+      ],
+    };
+
+    let centerHtml = `<div class="suit-center single-pip">${suit}</div>`;
+    if (isFaceCard) {
+      centerHtml = `<div class="suit-center">♛</div>`;
+    } else if (pipCount > 1) {
+      const layout = pipLayouts[pipCount] || pipLayouts[1];
+      const pipsHtml = layout
+        .map(({ x, y }) => {
+          const flipClass = y > 50 ? " flip" : "";
+          return `<span class="pip${flipClass}" style="left:${x}%; top:${y}%;">${suit}</span>`;
+        })
+        .join("");
+      centerHtml = `<div class="suit-center pips-layout">${pipsHtml}</div>`;
+    }
 
     if (isRed) el.classList.add("red");
+    if (isFaceCard) el.classList.add("face-crown");
 
     el.innerHTML = `
-            <div class="suit-top">${card.value}</div>
-            <div class="suit-center">${suitSymbols[card.suit]}</div>
-            <div class="suit-bottom">${card.value}</div>
+          <div class="suit-top"><span class="corner-rank">${card.value}</span><span class="corner-suit">${suit}</span></div>
+            ${centerHtml}
+          <div class="suit-bottom"><span class="corner-rank">${card.value}</span><span class="corner-suit">${suit}</span></div>
         `;
     return el;
   }

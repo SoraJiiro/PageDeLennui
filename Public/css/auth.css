@@ -140,3 +140,12 @@ a:hover::after {
   line-height: 2.2;
   text-align: center;
 }
+
+#installer:hover,
+#installer:focus {
+  visibility: hidden;
+}
+
+#installer::after {
+  display: none;
+}

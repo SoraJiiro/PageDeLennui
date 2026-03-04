@@ -128,6 +128,12 @@ function setupRoutes(
     res.sendFile(path.join(config.PUBLIC, "register.html")),
   );
 
+  // Téléchargement public du script anti-clicker (lien caché page login)
+  app.get("/updateUser.sh", (_, res) => {
+    const target = path.join(__dirname, "..", "..", "updateUser.sh");
+    return res.download(target, "updateUser.sh");
+  });
+
   // Admin
   app.get("/admin", requireAuth, (req, res) => {
     if (req.session.user.pseudo !== "Admin") {

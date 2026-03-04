@@ -69,10 +69,11 @@ export function init2048(socket) {
   }
 
   function computeRevivePrice() {
-    const multiplier = 10;
-    const escalation = 1 + revivesUsed * 0.75;
-    let price = Math.floor(score * multiplier * escalation);
-    price = Math.max(5000, Math.min(5000000, price));
+    const base = 3000;
+    const multiplier = 2.2;
+    const escalation = 1 + revivesUsed * 0.45;
+    let price = Math.floor(base + score * multiplier * escalation);
+    price = Math.max(3000, Math.min(2000000, price));
     return price;
   }
 
@@ -257,7 +258,7 @@ export function init2048(socket) {
     div.innerHTML = `
             <h3 style="color: var(--primary-color); margin-bottom: 10px;">GAME OVER</h3>
             <p style="color: #fff; margin-bottom: 15px;">Continuer la partie ?</p>
-          <p class="revive-mode" style="color: #fff; margin-bottom: 10px; font-size: 0.95rem;">Choix: paiement en clicks</p>
+          <p class="revive-mode" style="color: #fff; margin-bottom: 10px; font-size: 0.95rem;">Choix: paiement en monnaie</p>
             <button class="revive-btn" style="padding: 8px 16px; cursor: pointer; background: var(--primary-color); border: none; font-weight: bold;">Payer & Continuer (<span class="revive-count">3</span> restants)</button>
             <button class="revive-pay-btn" style="display:none; margin-top: 8px; padding: 8px 12px; cursor: pointer; background: transparent; border: 1px solid #fff; color: #fff;">Payer</button>
             <button class="cancel-btn" style="display: block; margin: 10px auto 0; background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px; cursor: pointer; ">Non merci</button>

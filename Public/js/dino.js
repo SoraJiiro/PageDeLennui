@@ -25,15 +25,16 @@ export function initDino(socket) {
   if (ui.yourScoreEl) ui.yourScoreEl.textContent = "0";
 
   // ---------- Constantes Gameplay ----------
-  const GRAVITY = 1.1;
+  const GRAVITY_ASCENT = 0.8;
+  const GRAVITY_DESCENT = 1.35;
   const MIN_JUMP_VELOCITY = 19;
-  const MAX_JUMP_VELOCITY = 21;
+  const MAX_JUMP_VELOCITY = 20;
   const INITIAL_SPEED = 6;
-  const SPEED_INCREMENT = 0.3;
-  const MAX_SPEED = 14;
-  const MIN_OBSTACLE_DISTANCE = 300;
-  const MAX_OBSTACLE_DISTANCE = 600;
-  const OBSTACLES_BETWEEN_SPEED_UP = 2;
+  const SPEED_INCREMENT = 0.22;
+  const MAX_SPEED = 18;
+  const MIN_OBSTACLE_DISTANCE = 310;
+  const MAX_OBSTACLE_DISTANCE = 610;
+  const OBSTACLES_BETWEEN_SPEED_UP = 3;
   const CACTUS_SPACING = 32;
 
   // ---------- Etat local ----------
@@ -66,10 +67,11 @@ export function initDino(socket) {
 
   function computeRevivePrice() {
     const score = Math.floor(state.score);
-    const multiplier = 50;
-    const escalation = 1 + state.revivesUsed * 0.75;
-    let price = Math.floor(score * multiplier * escalation);
-    price = Math.max(5000, Math.min(5000000, price));
+    const base = 3500;
+    const multiplier = 28;
+    const escalation = 1 + state.revivesUsed * 0.45;
+    let price = Math.floor(base + score * multiplier * escalation);
+    price = Math.max(3500, Math.min(1500000, price));
     return price;
   }
 
@@ -372,6 +374,7 @@ export function initDino(socket) {
     dy: 0,
     jumping: false,
     jumpVelocity: MIN_JUMP_VELOCITY,
+    bounceCount: 0,
 
     draw() {
       c.fillStyle = uiColor;
@@ -385,13 +388,22 @@ export function initDino(socket) {
 
     update() {
       if (this.jumping) {
-        this.dy -= GRAVITY;
+        const gravity = this.dy > 0 ? GRAVITY_ASCENT : GRAVITY_DESCENT;
+        this.dy -= gravity;
         this.y += this.dy;
       }
       if (this.y <= 0) {
+        const impact = Math.abs(this.dy);
         this.y = 0;
-        this.dy = 0;
-        this.jumping = false;
+        if (impact > 6 && this.bounceCount < 1) {
+          this.dy = Math.max(2.1, impact * 0.2);
+          this.jumping = true;
+          this.bounceCount += 1;
+        } else {
+          this.dy = 0;
+          this.jumping = false;
+          this.bounceCount = 0;
+        }
       }
       this.draw();
     },
@@ -401,6 +413,7 @@ export function initDino(socket) {
         this.jumpVelocity = velocity;
         this.dy = velocity;
         this.jumping = true;
+        this.bounceCount = 0;
       }
     },
 
@@ -409,6 +422,7 @@ export function initDino(socket) {
       this.dy = 0;
       this.jumping = false;
       this.jumpVelocity = MIN_JUMP_VELOCITY;
+      this.bounceCount = 0;
     },
   };
 
@@ -642,7 +656,7 @@ export function initDino(socket) {
       return group.getRightmostX() > 0;
     });
 
-    state.score += Math.floor(state.gameSpeed * 0.2);
+    state.score += state.gameSpeed * 0.2;
 
     c.fillStyle = uiColor;
     c.font = "bold 24px monospace";

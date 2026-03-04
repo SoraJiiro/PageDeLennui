@@ -73,6 +73,18 @@ function registerChatHandlers({
     // ignore
   }
 
+  try {
+    if (dbUsers && typeof dbUsers.readAll === "function") {
+      const all = dbUsers.readAll();
+      const known = Array.isArray(all?.users)
+        ? all.users.map((u) => String(u?.pseudo || "").trim()).filter(Boolean)
+        : [];
+      socket.emit("chat:knownUsers", known);
+    }
+  } catch (e) {
+    // ignore
+  }
+
   function isUserOnline(targetPseudo) {
     try {
       const room = io.sockets.adapter.rooms.get("user:" + targetPseudo);

@@ -177,6 +177,9 @@ function convertClicksToMoney({
   logger.action(
     `[convertClicksToMoney] ${pseudo} converted ${usableClicks} clicks -> +${moneyGain} money (remainingClicks:${result.clicks})`,
   );
+  console.log(
+    `[GAIN_MONNAIE] ${pseudo} +${moneyGain} monnaie via conversion clicks (${usableClicks} clicks dépensés, total: ${result.wallet.money})`,
+  );
   return result;
 }
 
@@ -271,6 +274,9 @@ function convertTokensToMoney({
   logger.action(
     `[convertTokensToMoney] ${pseudo} converted ${amount} tokens -> +${moneyGain} money (remainingTokens:${result.wallet.tokens})`,
   );
+  console.log(
+    `[GAIN_MONNAIE] ${pseudo} +${moneyGain} monnaie via conversion tokens (${amount} tokens dépensés, total: ${result.wallet.money})`,
+  );
   return result;
 }
 
@@ -295,6 +301,9 @@ function addTokens(FileService, pseudo, amount, currentClicks = 0) {
   if (gain > 0) {
     wallet.tokens += gain;
     FileService.save("wallets", ensureWalletStore(FileService));
+    console.log(
+      `[GAIN_TOKENS] ${pseudo} +${gain} tokens (total: ${wallet.tokens})`,
+    );
     try {
       // Met à jour le monitoring des gains journaliers (tokens earned)
       const { recordDailyEarned } = require("./economy");
@@ -310,6 +319,9 @@ function addMoney(FileService, pseudo, amount, currentClicks = 0) {
   if (gain > 0) {
     wallet.money += gain;
     FileService.save("wallets", ensureWalletStore(FileService));
+    console.log(
+      `[GAIN_MONNAIE] ${pseudo} +${gain} monnaie (total: ${wallet.money})`,
+    );
   }
   return getWalletView(wallet);
 }

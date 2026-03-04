@@ -9,7 +9,7 @@ const CLICKER_FOU_INACTIVITY_MS = 1100;
 const DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS = {
   humanPatternWindowMs: Number(process.env.HUMAN_PATTERN_WINDOW_MS) || 5000,
   humanPatternMinSamples: Number(process.env.HUMAN_PATTERN_MIN_SAMPLES) || 16,
-  humanFastConstAvgMs: Number(process.env.HUMAN_FAST_CONST_AVG_MS) || 125,
+  humanFastConstAvgMs: Number(process.env.HUMAN_FAST_CONST_AVG_MS) || 60,
   humanFastConstStdMs: Number(process.env.HUMAN_FAST_CONST_STD_MS) || 14,
   humanVeryConstAvgMs: Number(process.env.HUMAN_VERY_CONST_AVG_MS) || 260,
   humanVeryConstStdMs: Number(process.env.HUMAN_VERY_CONST_STD_MS) || 5,
@@ -436,40 +436,17 @@ function registerClickerHandlers({
         );
       } catch (e) {}
 
-      if (typeof persistBanPseudo === "function") {
-        persistBanPseudo(pseudo);
-      }
-
-      io.emit(
-        "system:info",
-        `${pseudo} a été banni pour triche (pattern de clics suspects) !`,
-      );
-
-      io.sockets.sockets.forEach((s) => {
-        const sp =
-          (s.handshake && s.handshake.session && s.handshake.session.user
-            ? s.handshake.session.user.pseudo
-            : null) || (s.data ? s.data.pseudo : null);
-
-        if (String(sp || "").toLowerCase() !== String(pseudo).toLowerCase())
-          return;
-
-        try {
-          s.emit("system:notification", {
-            message: "🚫 Votre pseudo a été banni pour clics anormaux",
-            duration: 9000,
-          });
-        } catch (e) {}
-        try {
-          s.disconnect(true);
-        } catch (e) {}
+      socket.emit("clicker:lockArea", { durationMs: 10000 });
+      socket.emit("system:notification", {
+        message: "⚠️ Clics anormaux détectés — zone désactivée 10 secondes.",
+        duration: 10000,
       });
 
       leaderboardManager.broadcastClickerLB(io);
 
       console.log({
         level: "action",
-        message: `[CLICKER_ANTICHEAT] Ban pseudo ${pseudo} (${ip}) - ${pattern.reason} - avg=${pattern.avgMs.toFixed(
+        message: `[CLICKER_ANTICHEAT] Tricheur marqué : ${pseudo} (${ip}) - ${pattern.reason} - avg=${pattern.avgMs.toFixed(
           2,
         )}ms std=${pattern.stdMs.toFixed(2)}ms cps=${pattern.approxCps.toFixed(2)}`,
       });
@@ -589,18 +566,14 @@ function registerClickerHandlers({
         if (now - track.violationStart >= CPS_DURATION_MS) {
           track.banned = true;
           const current = FileService.data.clicks[pseudo] || 0;
-          // Autoriser score négatif pour marquer le tricheur
           const penalized = current - CPS_PENALTY;
           FileService.data.clicks[pseudo] = penalized;
           FileService.save("clicks", FileService.data.clicks);
 
-          // Si score négatif, ajouter aux tricheurs
-          if (penalized < 0) {
-            if (!FileService.data.cheaters) FileService.data.cheaters = [];
-            if (!FileService.data.cheaters.includes(pseudo)) {
-              FileService.data.cheaters.push(pseudo);
-              FileService.save("cheaters", FileService.data.cheaters);
-            }
+          if (!FileService.data.cheaters) FileService.data.cheaters = [];
+          if (!FileService.data.cheaters.includes(pseudo)) {
+            FileService.data.cheaters.push(pseudo);
+            FileService.save("cheaters", FileService.data.cheaters);
           }
 
           try {
@@ -609,40 +582,20 @@ function registerClickerHandlers({
             console.warn("Erreur recalcul médailles après pénalité", e);
           }
 
-          // Persister ban dans blacklist.json
-          persistBanIp(ip);
-
           console.log({
             level: "action",
-            message: `IP ${ip} bannie automatiquement pour CPS élevé. ${CPS_PENALTY} clicks retirés à ${pseudo}`,
+            message: `[CLICKER_ANTICHEAT] CPS élevé pour ${pseudo} (${ip}). ${CPS_PENALTY} clicks retirés.`,
           });
 
-          io.emit(
-            "system:info",
-            `${pseudo} a été banni pour triche (CPS trop élevé) !`,
-          );
-
-          // Notifier et déconnecter sockets de cette IP
-          io.sockets.sockets.forEach((s) => {
-            const sIp = getIpFromSocket(s);
-            if (sIp === ip) {
-              try {
-                s.emit("system:notification", {
-                  message: "🚫 Votre IP a été bannie pour CPS anormal",
-                  duration: 8000,
-                });
-              } catch (e) {}
-              try {
-                s.disconnect(true);
-              } catch (e) {}
-            }
+          socket.emit("clicker:lockArea", { durationMs: 10000 });
+          socket.emit("system:notification", {
+            message: "⚠️ CPS anormal détecté — zone désactivée 10 secondes.",
+            duration: 10000,
           });
 
-          // Diffuser mise à jour classement
           leaderboardManager.broadcastClickerLB(io);
         }
       } else {
-        // reset violationStart si sous seuil
         track.violationStart = null;
       }
     } catch (e) {
@@ -692,12 +645,10 @@ function registerClickerHandlers({
           FileService.data.clicks[pseudo] = penalized;
           FileService.save("clicks", FileService.data.clicks);
 
-          if (penalized < 0) {
-            if (!FileService.data.cheaters) FileService.data.cheaters = [];
-            if (!FileService.data.cheaters.includes(pseudo)) {
-              FileService.data.cheaters.push(pseudo);
-              FileService.save("cheaters", FileService.data.cheaters);
-            }
+          if (!FileService.data.cheaters) FileService.data.cheaters = [];
+          if (!FileService.data.cheaters.includes(pseudo)) {
+            FileService.data.cheaters.push(pseudo);
+            FileService.save("cheaters", FileService.data.cheaters);
           }
 
           try {
@@ -706,31 +657,15 @@ function registerClickerHandlers({
             console.warn("Erreur recalcul médailles après pénalité", e);
           }
 
-          persistBanIp(ip);
-
           console.log({
             level: "action",
-            message: `IP ${ip} bannie automatiquement pour CPS élevé. ${CPS_PENALTY} clicks retirés à ${pseudo}`,
+            message: `[CLICKER_ANTICHEAT] CPS élevé (auto) pour ${pseudo} (${ip}). ${CPS_PENALTY} clicks retirés.`,
           });
 
-          io.emit(
-            "system:info",
-            `${pseudo} a été banni pour triche (CPS trop élevé) !`,
-          );
-
-          io.sockets.sockets.forEach((s) => {
-            const sIp = getIpFromSocket(s);
-            if (sIp === ip) {
-              try {
-                s.emit("system:notification", {
-                  message: "🚫 Votre IP a été bannie pour CPS anormal",
-                  duration: 8000,
-                });
-              } catch (e) {}
-              try {
-                s.disconnect(true);
-              } catch (e) {}
-            }
+          socket.emit("clicker:lockArea", { durationMs: 10000 });
+          socket.emit("system:notification", {
+            message: "⚠️ CPS anormal détecté — zone désactivée 10 secondes.",
+            duration: 10000,
           });
 
           leaderboardManager.broadcastClickerLB(io);
