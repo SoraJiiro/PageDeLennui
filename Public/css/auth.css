@@ -79,7 +79,7 @@ input {
   top: 50%;
   transform: translateY(-50%);
   color: var(--primary-color);
-  cursor: pointer;
+  
   font-size: 16px;
   line-height: 1;
 }
@@ -90,7 +90,7 @@ button {
   border: none;
   padding: 10px;
   font-weight: bold;
-  cursor: pointer;
+  
   border: 2px solid var(--primary-color);
   transition: 0.2s;
 }

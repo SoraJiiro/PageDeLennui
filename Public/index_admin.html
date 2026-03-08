@@ -78,13 +78,30 @@
                         <button class="deco"
                             onclick="localStorage.removeItem('uiColor'); window.location.replace('/login');">Se
                             déconnecter</button>
+                        <button id="shutdown-bonus-toggle-btn"
+                            class="shutdown-bonus-toggle-btn shutdown-admin-only"
+                            onclick="toggleShutdownBonusMode()">Bonus:
+                            activé</button>
+                        <button class="reset-shutdown-bonus shutdown-admin-only"
+                            onclick="resetShutdownBonusState()">Reset
+                            bonus</button>
                         <button class="shutdown"
                             onclick="shutdownServer()">OFF</button>
                     </div>
                 </div>
-                <div id="admin-site-money-average"
-                    class="admin-site-money-average">
-                    Avg monnaie: ...
+                <div class="admin-site-meta">
+                    <div id="admin-site-money-average"
+                        class="admin-site-money-average">
+                        Avg monnaie: ...
+                    </div>
+                    <label class="admin-ui-color-control"
+                        for="mainColorPicker"
+                        title="Changer la couleur de l'UI">
+                        <span>UI</span>
+                        <input type="color" id="mainColorPicker"
+                            class="admin-ui-color-picker"
+                            aria-label="Choisir la couleur de l'interface" />
+                    </label>
                 </div>
                 <div class="admin-sections">
                     <!-- TRANSACTIONS -->
@@ -542,6 +559,12 @@
                                             BOARD</button>
                                         <div style="height:10px;"></div>
                                         <button
+                                            onclick="pixelWarResetBoardAndParams()"
+                                            class="btn btn-red"
+                                            style="width:100%;">RESET
+                                            BOARD + PARAMS</button>
+                                        <div style="height:10px;"></div>
+                                        <button
                                             onclick="pixelWarClearSelection()"
                                             class="btn btn-red"
                                             style="width:100%;">CLEAR
@@ -580,6 +603,8 @@
                                 <button class="lb-tab"
                                     data-board="snake">Snake</button>
                                 <button class="lb-tab"
+                                    data-board="motus">Motus</button>
+                                <button class="lb-tab"
                                     data-board="mash">Mash</button>
                                 <button class="lb-tab"
                                     data-board="2048">2048</button>
@@ -609,6 +634,8 @@
                                         <th>Rang</th>
                                         <th>Pseudo</th>
                                         <th>Clicks</th>
+                                        <th>Monnaie</th>
+                                        <th>Tokens</th>
                                     </tr>
                                 </thead>
                                 <tbody id="lb-economie"></tbody>
@@ -696,6 +723,21 @@
                             </table>
                         </div>
 
+                        <div class="leaderboard-content" data-board="motus">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Nb essais</th>
+                                        <th>Nb mots trouvés</th>
+                                        <th>Nb mots totaux</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-motus"></tbody>
+                            </table>
+                        </div>
+
                         <div class="leaderboard-content" data-board="2048">
                             <table>
                                 <thead>
@@ -718,7 +760,8 @@
                                         <th>Mains</th>
                                         <th>W/L</th>
                                         <th>Max Bet</th>
-                                        <th>Double/BJ</th>
+                                        <th>Double</th>
+                                        <th>BlackJacks</th>
                                     </tr>
                                 </thead>
                                 <tbody id="lb-blackjack"></tbody>
@@ -1137,6 +1180,36 @@
                                 </div>
                             </div>
 
+                            <div class="control-group">
+                                <h3><i class="fa-solid fa-heart"></i> /Vies
+                                    Revive</h3>
+                                <div class="control-form">
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label>Pseudo</label>
+                                            <input type="text"
+                                                id="reviveLivesUser"
+                                                placeholder="Pseudo" />
+                                        </div>
+                                        <div class="form-field">
+                                            <label>Nombre de vies</label>
+                                            <input type="number"
+                                                id="reviveLivesAmount"
+                                                min="1" step="1"
+                                                value="1" />
+                                        </div>
+                                        <div class="action-buttons">
+                                            <button class="btn"
+                                                onclick="giveReviveLives()">
+                                                <i
+                                                    class="fa-solid fa-heart-circle-plus"></i>
+                                                Donner des vies
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Gestion des Tags -->
                             <div class="control-group">
                                 <h3><i class="fa-solid fa-tag"></i> /Tags</h3>
@@ -1490,6 +1563,83 @@
         let socket;
         let currentUser = null;
         let chatModule = null;
+        let shutdownBonusEnabled = true;
+        let isModeratorPanel = window.location.search.includes('view=mod');
+
+        function updateShutdownBonusToggleUi() {
+            const btn = document.getElementById('shutdown-bonus-toggle-btn');
+            if (!btn) return;
+            if (shutdownBonusEnabled) {
+                btn.textContent = 'Bonus: activé';
+                btn.classList.remove('is-off');
+                btn.title = 'Cliquer pour désactiver les bonus au prochain shutdown';
+            } else {
+                btn.textContent = 'Bonus: désactivé';
+                btn.classList.add('is-off');
+                btn.title = 'Cliquer pour réactiver les bonus au prochain shutdown';
+            }
+        }
+
+        function toggleShutdownBonusMode() {
+            shutdownBonusEnabled = !shutdownBonusEnabled;
+            updateShutdownBonusToggleUi();
+            showNotification(`✅ Bonus shutdown ${shutdownBonusEnabled ? 'activé' : 'désactivé'}`, 'success');
+        }
+
+        function normalizePanelText(value) {
+            return String(value || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function applyModeratorView() {
+            document.title = 'Moderation - PDE';
+
+            const title = document.querySelector('.admin-header h1');
+            if (title) {
+                title.innerHTML = '<i class="fa-solid fa-shield-halved"></i> PANEL MODERATEUR';
+            }
+
+            document.querySelectorAll('.reset-rules, .del-other-admins, .shutdown, .shutdown-admin-only').forEach((btn) => {
+                btn.style.display = 'none';
+            });
+
+            const allowedSectionKeys = [
+                'transactions (monnaie) en attente',
+                'gains money (jeux)',
+                'demandes de mot de passe',
+                'demandes de pfp',
+                'badges perso',
+                'gestion tricheurs',
+                'blacklist',
+                'sondages',
+                'chat lan',
+                'dms entre 2 users',
+                'monitoring gains (casino)',
+                'leaderboards',
+                'logs',
+                'commandes',
+            ];
+
+            document.querySelectorAll('.admin-section').forEach((section) => {
+                const h2 = section.querySelector('h2');
+                const text = normalizePanelText(h2 ? h2.textContent : '');
+                const keep = allowedSectionKeys.some((key) => text.includes(key));
+                section.style.display = keep ? '' : 'none';
+
+                if (!keep) return;
+                if (!text.includes('commandes')) return;
+
+                section.querySelectorAll('.control-group').forEach((group) => {
+                    const h3 = normalizePanelText(group.querySelector('h3')?.textContent || '');
+                    const keepGroup = h3.includes('demandes de tag') || h3.includes('/notif');
+                    group.style.display = keepGroup ? '' : 'none';
+                });
+            });
+        }
 
         async function checkSes() {
             const res = await fetch('/api/session');
@@ -1499,10 +1649,18 @@
             }
             const data = await res.json();
             currentUser = data.pseudo;
+            isModeratorPanel = currentUser === 'Moderateur';
             
-            if (currentUser !== 'Admin') {
+            if (currentUser !== 'Admin' && currentUser !== 'Moderateur') {
                 window.location.href = '/';
                 return;
+            }
+
+            if (isModeratorPanel) {
+                applyModeratorView();
+                ['badges', 'shop-catalog', 'ee-completions', 'clicker-anti-cheat'].forEach((key) => {
+                    adminRefreshHandlers[key] = () => {};
+                });
             }
 
             try {
@@ -1517,6 +1675,10 @@
             }
             loadTagRequests();
             loadAdminSurveys();
+            updateShutdownBonusToggleUi();
+            if (isModeratorPanel) {
+                loadCheaters();
+            }
         }
 
         const adminRefreshHandlers = {
@@ -1651,6 +1813,7 @@
             socket.on('p4:leaderboard', (data) => updateLeaderboard('p4', data, 'wins'));
             socket.on('blockblast:leaderboard', (data) => updateLeaderboard('blockblast', data, 'score'));
             socket.on('snake:leaderboard', (data) => updateLeaderboard('snake', data, 'score'));
+            socket.on('motus:leaderboard', (data) => updateLeaderboard('motus', data, 'words'));
             socket.on('2048:leaderboard', (data) => updateLeaderboard('2048', data, 'score'));
             socket.on('mash:leaderboard', (data) => updateLeaderboard('mash', data, 'wins'));
             socket.on('blackjack:leaderboard', (data) => updateLeaderboard('blackjack', data, 'handsWon'));
@@ -1786,10 +1949,43 @@
                         <td>${hands}</td>
                         <td>${won} / ${lost}</td>
                         <td>${maxBet}</td>
-                        <td>${dbl} / ${bj}</td>
+                        <td>${dbl}</td>
+                        <td>${bj}</td>
                     `;
                     tbody.appendChild(tr);
                     return; // Skip default row construction
+                }
+
+                if (type === 'economie') {
+                    const clicks = Number(item.score || 0).toLocaleString('fr-FR');
+                    const money = Number(item.money || 0).toLocaleString('fr-FR');
+                    const tokens = Number(item.tokens || 0).toLocaleString('fr-FR');
+
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${clicks}</td>
+                        <td>${money}</td>
+                        <td>${tokens}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return;
+                }
+
+                if (type === 'motus') {
+                    const tries = Number(item.tries || 0).toLocaleString('fr-FR');
+                    const words = Number(item.words || 0).toLocaleString('fr-FR');
+                    const totalWords = Number(item.totalWords || 0).toLocaleString('fr-FR');
+
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${tries}</td>
+                        <td>${words}</td>
+                        <td>${totalWords}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return;
                 }
 
                 if (type === 'coinflip') {
@@ -2024,8 +2220,8 @@
                         <td>${tx.amount.toLocaleString()} M</td>
                         <td>${new Date(tx.date).toLocaleString()}</td>
                         <td>
-                            <button onclick="approveTransaction('${tx.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-check"></i></button>
-                            <button onclick="rejectTransaction('${tx.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;"><i class="fa-solid fa-times"></i></button>
+                            <button onclick="approveTransaction('${tx.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; margin-right:5px;"><i class="fa-solid fa-check"></i></button>
+                            <button onclick="rejectTransaction('${tx.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px;"><i class="fa-solid fa-times"></i></button>
                         </td>
                     `;
                     rows.push(tr);
@@ -2141,12 +2337,12 @@
                         <td>${new Date(req.date).toLocaleString()}</td>
                         <td>
                             <button onclick="handlePasswordRequest('${req.id}', true)" class="btn-approve" 
-                                style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;"
+                                style="background:#4CAF50; color:white; border:none; padding:5px 10px; margin-right:5px;"
                                 title="Approuver et changer le mot de passe">
                                 <i class="fa-solid fa-check"></i>
                             </button>
                             <button onclick="handlePasswordRequest('${req.id}', false)" class="btn-reject" 
-                                style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;"
+                                style="background:#f44336; color:white; border:none; padding:5px 10px;"
                                 title="Rejeter">
                                 <i class="fa-solid fa-times"></i>
                             </button>
@@ -2186,10 +2382,10 @@
                         </td>
                         <td>${new Date(req.createdAt || req.date || Date.now()).toLocaleString()}</td>
                         <td>
-                            <button onclick="approvePfp('${req.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;" title="Approuver">
+                            <button onclick="approvePfp('${req.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; margin-right:5px;" title="Approuver">
                                 <i class="fa-solid fa-check"></i>
                             </button>
-                            <button onclick="rejectPfp('${req.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;" title="Refuser">
+                            <button onclick="rejectPfp('${req.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px;" title="Refuser">
                                 <i class="fa-solid fa-times"></i>
                             </button>
                         </td>
@@ -2259,10 +2455,10 @@
                         <td>${req.name || ''}</td>
                         <td>${new Date(req.createdAt || Date.now()).toLocaleString()}</td>
                         <td>
-                            <button onclick="approveCustomBadge('${req.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; cursor:pointer; margin-right:5px;" title="Approuver">
+                            <button onclick="approveCustomBadge('${req.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; margin-right:5px;" title="Approuver">
                                 <i class="fa-solid fa-check"></i>
                             </button>
-                            <button onclick="rejectCustomBadge('${req.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px; cursor:pointer;" title="Refuser">
+                            <button onclick="rejectCustomBadge('${req.id}')" class="btn-reject" style="background:#f44336; color:white; border:none; padding:5px 10px;" title="Refuser">
                                 <i class="fa-solid fa-times"></i>
                             </button>
                         </td>
@@ -2978,9 +3174,13 @@
         refreshPasswordRequests();
         refreshPfpRequests();
         refreshCustomBadgeRequests();
-        refreshBadges();
-        refreshShopCatalog();
-        refreshClickerAntiCheatSettings();
+
+        if (!isModeratorPanel) {
+            refreshBadges();
+            refreshShopCatalog();
+            refreshClickerAntiCheatSettings();
+            refreshEeCompletions();
+        }
 
         const shopSelect = document.getElementById('shopItemSelect');
         if (shopSelect) {
@@ -2991,7 +3191,6 @@
             });
         }
         refreshDailyCap();
-        refreshEeCompletions();
 
         // Recherche utilisateur
         document.getElementById('userSearchInput').addEventListener('input', async (e) => {
@@ -3004,7 +3203,6 @@
             try {
                 const res = await fetch(`/api/admin/user-info?pseudo=${encodeURIComponent(pseudo)}`);
                 if (!res.ok) {
-                    showNotification('❌ Utilisateur non trouvé', 'error');
                     document.getElementById('userInfoDisplay').classList.remove('visible');
                     return;
                 }
@@ -3106,6 +3304,10 @@
                 <div class="user-stat">
                     <span class="label">Tokens:</span>
                     <span class="value">${data.tokens || 0}</span>
+                </div>
+                <div class="user-stat">
+                    <span class="label">Vies Revive:</span>
+                    <span class="value">${data.reviveLives || 0}</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">CPS auto (bonus admin):</span>
@@ -3390,6 +3592,41 @@
             });
             const data = await res.json().catch(() => ({}));
             return { res, data };
+        }
+
+        async function giveReviveLives() {
+            const pseudo = String(document.getElementById('reviveLivesUser')?.value || '').trim();
+            const amount = Number.parseInt(document.getElementById('reviveLivesAmount')?.value, 10);
+
+            if (!pseudo) {
+                showNotification('Pseudo manquant', 'error');
+                return;
+            }
+            if (!Number.isFinite(amount) || amount <= 0) {
+                showNotification('Nombre de vies invalide', 'error');
+                return;
+            }
+
+            const ok = confirm(`Donner ${amount} vie(s) de revive à ${pseudo} ?`);
+            if (!ok) return;
+
+            try {
+                const { res, data } = await adminPostJson('/api/admin/revive/give-lives', {
+                    pseudo,
+                    amount,
+                });
+
+                if (!res.ok) {
+                    showNotification(data?.message || 'Erreur', 'error');
+                    return;
+                }
+
+                showNotification(`✅ ${data?.message || 'Vies ajoutées'}`, 'success');
+                await refreshUserInfoPanel(pseudo);
+            } catch (err) {
+                console.error(err);
+                showNotification('Erreur serveur', 'error');
+            }
         }
 
         async function manageClickerUpgradeLevel({ pseudo, upgradeId, upgradeName, action }) {
@@ -4525,7 +4762,9 @@ async function modifyTries() {
             }
         }
 
-        loadCheaters();
+        if (!isModeratorPanel || currentUser === 'Moderateur') {
+            loadCheaters();
+        }
 
         async function addCheater() {
             const pseudo = document.getElementById('cheater-pseudo').value.trim();
@@ -4579,7 +4818,8 @@ async function modifyTries() {
             try {
                 const res = await fetch('/api/admin/shutdown', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ awardLeaderboardBonus: shutdownBonusEnabled })
                 });
                 const data = await res.json();
                 if (data.redirect) {
@@ -4588,6 +4828,26 @@ async function modifyTries() {
             } catch (err) {
                 console.error(err);
                 showNotification('❌ Erreur lors de l\'arrêt', 'error');
+            }
+        }
+
+        async function resetShutdownBonusState() {
+            if (!confirm("Reset l'état des récompenses shutdown ?\nCela réactive les bonus leaderboard pour le prochain arrêt.")) return;
+
+            try {
+                const res = await fetch('/api/admin/shutdown/bonus/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showNotification('❌ ' + (data.message || 'Erreur reset bonus shutdown'), 'error');
+                    return;
+                }
+                showNotification('✅ État bonus shutdown reset', 'success');
+            } catch (err) {
+                console.error(err);
+                showNotification('❌ Erreur lors du reset bonus shutdown', 'error');
             }
         }
 
@@ -5062,4 +5322,5 @@ async function modifyTries() {
             </div>
         </div>
     </body>
+    <style>.header-btns, .admin-item {background: transparent;}</style>
 </html>

@@ -11,6 +11,7 @@ function showLeaderboard(name) {
     p4: "#p4-leaderboard",
     blockblast: "#blockblast-leaderboard",
     snake: "#snake-leaderboard",
+    motus: "#motus-leaderboard",
     2048: "#leaderboard-2048",
     mash: "#mash-leaderboard",
     blackjack: "#blackjack-leaderboard",
@@ -18,6 +19,7 @@ function showLeaderboard(name) {
     roulette: "#roulette-leaderboard",
     slots: "#slots-leaderboard",
     sudoku: "#sudoku-leaderboard",
+    subway: "#subway-leaderboard",
     pixelwar: "#pixelwar-leaderboard",
     "clicks-cps": "#clicks-cps-leaderboard",
   };

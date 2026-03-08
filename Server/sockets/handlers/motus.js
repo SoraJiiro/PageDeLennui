@@ -82,11 +82,13 @@ function registerMotusHandlers({
   }
 
   function emitMotusLeaderboard() {
+    const totalWords = Number(motusGame.getWordListLength()) || 0;
     const lb = Object.entries(FileService.data.motusScores || {})
       .map(([u, s]) => ({
         pseudo: u,
         words: s.words || 0,
         tries: s.tries || 0,
+        totalWords,
       }))
       .sort(
         (a, b) =>

@@ -90,22 +90,32 @@ function mergeProgressIntoResume(resume, pseudo, game, score) {
   if (s > prev) resume[pseudo][game] = s;
 }
 
+function isRunnerActive(state, game) {
+  return !!(state && state[game] && state[game].active === true);
+}
+
 function persistRunnerResumeFromSocket(socket, pseudo) {
   try {
     if (!pseudo || !socket?.data) return;
 
     const rp = socket.data.runnerProgress || {};
     const rc = socket.data.reviveContext || {};
+    const rs = socket.data.runnerState || {};
+
+    const dinoInRun = isRunnerActive(rs, "dino");
+    const flappyInRun = isRunnerActive(rs, "flappy");
+    const snakeInRun = isRunnerActive(rs, "snake");
+    const subwayInRun = isRunnerActive(rs, "subway");
+    const game2048InRun = safeNumber(rp?.["2048"]) > 0;
+    const blockblastInRun = safeNumber(rp?.blockblast) > 0;
 
     const hasAnyProgress =
-      safeNumber(rp?.dino) > 0 ||
-      safeNumber(rp?.flappy) > 0 ||
-      safeNumber(rp?.snake) > 0 ||
-      safeNumber(rp?.["2048"]) > 0 ||
-      safeNumber(rp?.blockblast) > 0 ||
-      safeNumber(rc?.dino?.lastScore) > 0 ||
-      safeNumber(rc?.flappy?.lastScore) > 0 ||
-      safeNumber(rc?.snake?.lastScore) > 0 ||
+      (dinoInRun && safeNumber(rp?.dino) > 0) ||
+      (flappyInRun && safeNumber(rp?.flappy) > 0) ||
+      (snakeInRun && safeNumber(rp?.snake) > 0) ||
+      (subwayInRun && safeNumber(rp?.subway) > 0) ||
+      game2048InRun ||
+      blockblastInRun ||
       safeNumber(rc?.["2048"]?.lastScore) > 0 ||
       safeNumber(rc?.blockblast?.lastScore) > 0;
 
@@ -116,16 +126,18 @@ function persistRunnerResumeFromSocket(socket, pseudo) {
       60 * 60 * 1000,
     );
 
-    mergeProgressIntoResume(existing, pseudo, "dino", rp?.dino);
-    mergeProgressIntoResume(existing, pseudo, "flappy", rp?.flappy);
-    mergeProgressIntoResume(existing, pseudo, "snake", rp?.snake);
+    if (dinoInRun) mergeProgressIntoResume(existing, pseudo, "dino", rp?.dino);
+    if (flappyInRun)
+      mergeProgressIntoResume(existing, pseudo, "flappy", rp?.flappy);
+    if (snakeInRun)
+      mergeProgressIntoResume(existing, pseudo, "snake", rp?.snake);
+    if (subwayInRun)
+      mergeProgressIntoResume(existing, pseudo, "subway", rp?.subway);
     mergeProgressIntoResume(existing, pseudo, "2048", rp?.["2048"]);
     mergeProgressIntoResume(existing, pseudo, "blockblast", rp?.blockblast);
 
-    // Fallback: reviveContext (au moins le dernier score validé)
-    mergeProgressIntoResume(existing, pseudo, "dino", rc?.dino?.lastScore);
-    mergeProgressIntoResume(existing, pseudo, "flappy", rc?.flappy?.lastScore);
-    mergeProgressIntoResume(existing, pseudo, "snake", rc?.snake?.lastScore);
+    // Fallback reviveContext conservé uniquement pour les jeux qui n'envoient
+    // pas toujours un progress explicite en live.
     mergeProgressIntoResume(existing, pseudo, "2048", rc?.["2048"]?.lastScore);
     mergeProgressIntoResume(
       existing,
@@ -204,6 +216,21 @@ const colors = { orange, reset, blue, green, pink, violet, red };
 
 // ------- LB manager -------
 const leaderboardManager = {
+  _throttleTimers: new Map(),
+  scheduleThrottledBroadcast(key, delayMs, emitter) {
+    if (this._throttleTimers.has(key)) return;
+    const timer = setTimeout(
+      () => {
+        this._throttleTimers.delete(key);
+        try {
+          emitter();
+        } catch (e) {}
+      },
+      Math.max(50, Math.floor(Number(delayMs) || 200)),
+    );
+    this._throttleTimers.set(key, timer);
+    if (typeof timer.unref === "function") timer.unref();
+  },
   broadcastClickerLB(io) {
     const peakMap = FileService.data.clickerHumanPeakCps || {};
     const wallets = FileService.data.wallets || {};
@@ -224,17 +251,32 @@ const leaderboardManager = {
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("economie:leaderboard", arr);
   },
+  broadcastClickerLBThrottled(io, delayMs = 300) {
+    this.scheduleThrottledBroadcast("economie:leaderboard", delayMs, () => {
+      this.broadcastClickerLB(io);
+    });
+  },
   broadcastDinoLB(io) {
     const arr = Object.entries(FileService.data.dinoScores)
       .map(([u, s]) => ({ pseudo: u, score: s }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("dino:leaderboard", arr);
   },
+  broadcastDinoLBThrottled(io, delayMs = 200) {
+    this.scheduleThrottledBroadcast("dino:leaderboard", delayMs, () => {
+      this.broadcastDinoLB(io);
+    });
+  },
   broadcastFlappyLB(io) {
     const arr = Object.entries(FileService.data.flappyScores)
       .map(([u, s]) => ({ pseudo: u, score: s }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("flappy:leaderboard", arr);
+  },
+  broadcastFlappyLBThrottled(io, delayMs = 200) {
+    this.scheduleThrottledBroadcast("flappy:leaderboard", delayMs, () => {
+      this.broadcastFlappyLB(io);
+    });
   },
   broadcastUnoLB(io) {
     const arr = Object.entries(FileService.data.unoWins)
@@ -249,11 +291,13 @@ const leaderboardManager = {
     io.emit("p4:leaderboard", arr);
   },
   broadcastMotusLB(io) {
+    const totalWords = Number(motusGame.getWordListLength()) || 0;
     const arr = Object.entries(FileService.data.motusScores || {})
       .map(([u, s]) => ({
         pseudo: u,
         words: s.words || 0,
         tries: s.tries || 0,
+        totalWords,
       }))
       .sort(
         (a, b) =>
@@ -298,6 +342,11 @@ const leaderboardManager = {
       }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("snake:leaderboard", arr);
+  },
+  broadcastSnakeLBThrottled(io, delayMs = 200) {
+    this.scheduleThrottledBroadcast("snake:leaderboard", delayMs, () => {
+      this.broadcastSnakeLB(io);
+    });
   },
   broadcastBlackjackLB(io) {
     const data = FileService.data.blackjackStats || {};
@@ -405,6 +454,12 @@ const leaderboardManager = {
       );
     io.emit("sudoku:leaderboard", arr);
   },
+  broadcastSubwayLB(io) {
+    const arr = Object.entries(FileService.data.subwayScores || {})
+      .map(([u, s]) => ({ pseudo: u, score: Number(s) || 0 }))
+      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    io.emit("subway:leaderboard", arr);
+  },
 };
 
 // ------- Handler Socket -------
@@ -457,6 +512,8 @@ function initSocketHandlers(io, socket, gameState) {
           socket.emit("flappy:resume", { score: entry.flappy });
         if (entry.snake != null)
           socket.emit("snake:resume", { score: entry.snake });
+        if (entry.subway != null)
+          socket.emit("subway:resume", { score: entry.subway });
         if (entry["2048"] != null)
           socket.emit("2048:resume", { score: entry["2048"] });
         if (entry.blockblast != null)
@@ -493,8 +550,8 @@ function initSocketHandlers(io, socket, gameState) {
     return normalized;
   }
 
-  // Joindre la room admin si Admin
-  if (pseudo === "Admin") {
+  // Joindre la room admin si Admin ou Moderateur
+  if (pseudo === "Admin" || pseudo === "Moderateur") {
     try {
       socket.join("admins");
       // Envoyer l'historique récent des logs au nouvel admin connecté
@@ -844,6 +901,7 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastRouletteLB(io);
   leaderboardManager.broadcastSlotsLB(io);
   leaderboardManager.broadcastSudokuLB(io);
+  leaderboardManager.broadcastSubwayLB(io);
 
   io.emit("users:list", gameState.getUniqueUsers());
 

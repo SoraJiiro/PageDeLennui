@@ -11,6 +11,8 @@ function registerAdminHandlers({
   gameState,
   pixelWarGame,
 }) {
+  const isAdmin = pseudo === "Admin";
+  const canModerate = pseudo === "Admin" || pseudo === "Moderateur";
   const normalizePseudoValue = (p) => {
     const raw = String(p || "").trim();
     return raw ? raw.toLowerCase() : "";
@@ -38,7 +40,7 @@ function registerAdminHandlers({
   // ------- Admin Events -------
   // ------- Reset complet -------
   socket.on("admin:server:softReset", async () => {
-    if (pseudo !== "Admin") return;
+    if (!isAdmin) return;
     const fs = require("fs");
     const path = require("path");
     const dataDir = path.join(__dirname, "../../../data");
@@ -171,7 +173,7 @@ function registerAdminHandlers({
     }
   });
   socket.on("admin:rules:resetAll", () => {
-    if (pseudo !== "Admin") return;
+    if (!isAdmin) return;
     if (!dbUsers || typeof dbUsers.readAll !== "function") {
       socket.emit("admin:rules:resetAll:result", {
         success: false,
@@ -216,7 +218,7 @@ function registerAdminHandlers({
 
   // Admin: blacklist management via socket (Admin only)
   socket.on("admin:blacklist:get", () => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     try {
       const data = {
         alwaysBlocked: Array.isArray(config.BLACKLIST)
@@ -247,7 +249,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:blacklist:add", ({ ip }) => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     if (!ip)
       return socket.emit("admin:blacklist:result", {
         success: false,
@@ -293,7 +295,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:blacklist:pseudo:add", ({ pseudo: target }) => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     const targetPseudo = String(target || "").trim();
     if (!targetPseudo)
       return socket.emit("admin:blacklist:result", {
@@ -354,7 +356,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:blacklist:remove", ({ ip }) => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     if (!ip)
       return socket.emit("admin:blacklist:result", {
         success: false,
@@ -391,7 +393,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:blacklist:set", ({ alwaysBlocked }) => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     try {
       const forcedList = Array.isArray(config.FORCED_ALWAYS_BLOCKED)
         ? config.FORCED_ALWAYS_BLOCKED
@@ -436,7 +438,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:blacklist:pseudo:remove", ({ pseudo: target }) => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     const targetPseudo = String(target || "").trim();
     if (!targetPseudo)
       return socket.emit("admin:blacklist:result", {
@@ -487,7 +489,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:refresh", () => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     leaderboardManager.broadcastClickerLB(io);
     leaderboardManager.broadcastDinoLB(io);
     leaderboardManager.broadcastFlappyLB(io);
@@ -503,7 +505,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:chat:clear", () => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     FileService.data.historique = [];
     FileService.save("historique", FileService.data.historique);
     io.emit("chat:history", []);
@@ -516,7 +518,7 @@ function registerAdminHandlers({
 
   // Mute / Unmute utilisateurs (Admin)
   socket.on("admin:chat:mute", ({ target, durationMs }) => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     if (!target) return;
     const canonicalTarget = resolveExistingPseudo(target);
     if (!canonicalTarget) {
@@ -544,7 +546,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:chat:unmute", ({ target }) => {
-    if (pseudo !== "Admin") return;
+    if (!canModerate) return;
     if (!target) return;
     const canonicalTarget = resolveExistingPseudo(target);
     if (!canonicalTarget) {
@@ -572,14 +574,15 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:global-notification", ({ message, withCountdown }) => {
-    if (pseudo !== "Admin" || !message) return;
+    if (!canModerate || !message) return;
+    const allowCountdown = isAdmin && !!withCountdown;
 
     const duration = 8000;
     const notificationText = `📢 [ADMIN] ${message}`;
     io.emit("system:notification", {
       message: notificationText,
       duration: duration,
-      withCountdown: withCountdown || false,
+      withCountdown: allowCountdown,
     });
 
     try {
@@ -591,7 +594,7 @@ function registerAdminHandlers({
         author: pseudo,
         message: notificationText,
         rawMessage: message,
-        withCountdown: !!withCountdown,
+        withCountdown: allowCountdown,
         duration,
       });
       if (FileService.data.annonces.length > 200) {
@@ -607,7 +610,7 @@ function registerAdminHandlers({
       message: `Notification globale envoyée: ${message} -- withCountdown?: ${withCountdown}`,
     });
 
-    if (withCountdown) {
+    if (allowCountdown) {
       setTimeout(() => {
         io.emit("system:redirect", "/ferme.html");
 
@@ -632,7 +635,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:disconnect-others", () => {
-    if (pseudo !== "Admin") return;
+    if (!isAdmin) return;
     try {
       const adminSockets = gameState.userSockets.get("Admin");
       if (adminSockets) {
@@ -658,15 +661,25 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:pixelwar:reset_board", () => {
-    if (pseudo !== "Admin") return;
+    if (!isAdmin) return;
     if (pixelWarGame) {
       pixelWarGame.resetBoard();
       io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
+      io.emit("pixelwar:leaderboard", pixelWarGame.getLeaderboard());
+    }
+  });
+
+  socket.on("admin:pixelwar:reset_board_and_users", () => {
+    if (!isAdmin) return;
+    if (pixelWarGame) {
+      pixelWarGame.resetBoardAndUsers();
+      io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
+      io.emit("pixelwar:leaderboard", pixelWarGame.getLeaderboard());
     }
   });
 
   socket.on("admin:pixelwar:reset_area", ({ x1, y1, x2, y2 }) => {
-    if (pseudo !== "Admin") return;
+    if (!isAdmin) return;
     if (pixelWarGame) {
       pixelWarGame.resetArea(x1, y1, x2, y2);
       io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
@@ -674,7 +687,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:pixelwar:clear_polygon", ({ points }) => {
-    if (pseudo !== "Admin") return;
+    if (!isAdmin) return;
     if (!pixelWarGame) return;
 
     try {
@@ -686,7 +699,7 @@ function registerAdminHandlers({
   });
 
   socket.on("admin:pixelwar:clear_square", ({ points }) => {
-    if (pseudo !== "Admin") return;
+    if (!isAdmin) return;
     if (!pixelWarGame) return;
 
     try {

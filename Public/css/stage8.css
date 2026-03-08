@@ -73,7 +73,7 @@
 
 .p4-lobby button {
   padding: 0.8rem 1.5rem;
-  cursor: pointer;
+  
   font-weight: 600;
   transition: all 0.2s ease;
 }
@@ -132,7 +132,7 @@
   justify-content: center;
   position: relative;
   transition: all 0.3s ease;
-  cursor: pointer;
+  
 }
 
 .p4-token {
@@ -201,7 +201,7 @@
 
 .p4-actions button {
   padding: 0.8rem 1.5rem;
-  cursor: pointer;
+  
   font-weight: 600;
   transition: all 0.2s ease;
 }

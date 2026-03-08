@@ -9,6 +9,22 @@ function pixelWarResetBoard() {
   showNotification("✅ Reset board command sent", "success");
 }
 
+function pixelWarResetBoardAndParams() {
+  const socket = window.adminSocket;
+  if (!socket) return alert("Socket not ready");
+
+  if (!confirm("⚠️ RESET BOARD + USER PARAMS PIXEL WAR ?")) return;
+  if (
+    !confirm(
+      "⚠️ Cette action remet le board a zero ET reset les stats/stockage users PixelWar. Continuer ?",
+    )
+  )
+    return;
+
+  socket.emit("admin:pixelwar:reset_board_and_users");
+  showNotification("✅ Reset board + params command sent", "success");
+}
+
 // -----------------------------
 // Admin realtime viewer + 4-point clear
 // -----------------------------
@@ -211,6 +227,7 @@ function pixelWarClearSelection() {
 
 window.pixelWarClearSelection = pixelWarClearSelection;
 window.pixelWarClearSelectionCancel = pixelWarClearSelectionCancel;
+window.pixelWarResetBoardAndParams = pixelWarResetBoardAndParams;
 
 function adminPwAttachSocketHandlers(sock) {
   if (adminPwAttached) return;

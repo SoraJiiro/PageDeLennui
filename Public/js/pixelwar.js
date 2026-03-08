@@ -63,6 +63,26 @@ let currentMouseX = 0;
 let currentMouseY = 0;
 const modal = document.getElementById("pixel-info-modal");
 let gridCanvas, gridCtx;
+let calcCanvas, calcCtx;
+
+const calcLayer = {
+  active: false,
+  isPlacing: false,
+  img: null,
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0,
+  aspectRatio: 1,
+  opacity: 0.42,
+};
+
+const CALC_MIN_SIZE = 8;
+const CALC_RESIZE_HANDLE_SIZE = 8;
+let isCalcDragging = false;
+let isCalcResizing = false;
+let calcDragOffsetX = 0;
+let calcDragOffsetY = 0;
 
 let isBatchMode = false;
 let pendingPixels = new Map();
@@ -87,6 +107,14 @@ export function initPixelWar(sock) {
   gridCanvas = document.getElementById("grid-canvas");
   if (gridCanvas) {
     gridCtx = gridCanvas.getContext("2d");
+  }
+  calcCanvas = document.getElementById("calc-canvas");
+  if (calcCanvas) {
+    calcCtx = calcCanvas.getContext("2d", { alpha: true });
+    calcCtx.imageSmoothingEnabled = false;
+    calcCtx.mozImageSmoothingEnabled = false;
+    calcCtx.webkitImageSmoothingEnabled = false;
+    calcCtx.msImageSmoothingEnabled = false;
   }
 
   const ro = new ResizeObserver((entries) => {
@@ -216,28 +244,35 @@ export function initPixelWar(sock) {
 
 function initPalette() {
   const p = document.getElementById("pixelwar-palette");
+  if (!p) return;
   p.innerHTML = "";
-  COLORS.forEach((c, idx) => {
+
+  let visibleIndices = Array.from(unlockedColorIndices)
+    .map((idx) => Number(idx))
+    .filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < COLORS.length)
+    .sort((a, b) => a - b);
+
+  // Fallback defensif: si rien n'est renvoye, afficher les couleurs de base.
+  if (!visibleIndices.length) {
+    visibleIndices = Array.from(
+      { length: Math.min(16, COLORS.length) },
+      (_, i) => i,
+    );
+  }
+
+  const visibleColors = new Set(visibleIndices.map((idx) => COLORS[idx]));
+  if (!visibleColors.has(selectedColor)) {
+    selectedColor = COLORS[visibleIndices[0]] || "#000000";
+  }
+
+  visibleIndices.forEach((idx) => {
+    const c = COLORS[idx];
     const div = document.createElement("div");
     div.className = "color-swatch";
     div.style.backgroundColor = c;
     div.title = COLOR_NAMES[idx] || "";
-    const unlocked = unlockedColorIndices.has(idx);
-    if (!unlocked) {
-      div.style.opacity = "0.35";
-      div.style.filter = "grayscale(1)";
-      div.title = `${div.title} (Achat requis)`;
-    }
     if (c === selectedColor) div.classList.add("active");
     div.onclick = () => {
-      if (!unlocked) {
-        if (window.showNotif)
-          window.showNotif(
-            "Couleur verrouillée: achète cette couleur dans le shop.",
-            3000,
-          );
-        return;
-      }
       selectColor(c);
     };
     p.appendChild(div);
@@ -323,6 +358,34 @@ function initControls() {
   if (buyStorage) {
     buyStorage.onclick = () => socket.emit("pixelwar:buy", "storage_10");
   }
+
+  const calcInput = document.getElementById("calc-image-input");
+  const calcUploadBtn = document.getElementById("btn-calc-upload");
+  const calcLockBtn = document.getElementById("btn-calc-lock");
+  const calcRemoveBtn = document.getElementById("btn-calc-remove");
+
+  if (calcUploadBtn && calcInput) {
+    calcUploadBtn.onclick = () => calcInput.click();
+  }
+
+  if (calcInput) {
+    calcInput.onchange = (e) => {
+      const file = e?.target?.files?.[0];
+      if (!file) return;
+      loadCalcFromFile(file);
+      calcInput.value = "";
+    };
+  }
+
+  if (calcRemoveBtn) {
+    calcRemoveBtn.onclick = clearCalcLayer;
+  }
+
+  if (calcLockBtn) {
+    calcLockBtn.onclick = lockCalcPlacement;
+  }
+
+  updateCalcButtons();
 }
 
 function centerView() {
@@ -373,6 +436,16 @@ function zoomAtCenter(factor) {
 
 function initCanvasEvents() {
   wrapper.addEventListener("mousedown", (e) => {
+    if (calcLayer.isPlacing && e.button === 0) {
+      if (startCalcInteraction(e)) {
+        e.preventDefault();
+        return;
+      }
+      // Tant que le calc est en placement, on bloque le dessin normal.
+      e.preventDefault();
+      return;
+    }
+
     const isMove =
       e.button === 1 ||
       e.button === 2 ||
@@ -405,9 +478,12 @@ function initCanvasEvents() {
     isDragging = false;
     isPainting = false;
     isErasing = false;
+    stopCalcInteraction();
     lastPaintKey = null;
     lastEraseKey = null;
-    updateToolUI();
+    if (!calcLayer.isPlacing) {
+      updateToolUI();
+    }
   });
 
   window.addEventListener("mousemove", (e) => {
@@ -415,6 +491,12 @@ function initCanvasEvents() {
       translateX = e.clientX - startX;
       translateY = e.clientY - startY;
       updateTransform();
+      return;
+    }
+
+    if (calcLayer.isPlacing) {
+      handleCalcPlacementMouseMove(e);
+      return;
     } else if (isPainting) {
       paintAtEvent(e);
     } else if (isErasing) {
@@ -427,6 +509,14 @@ function initCanvasEvents() {
   wrapper.addEventListener(
     "wheel",
     (e) => {
+      if (calcLayer.isPlacing && calcLayer.active) {
+        const resized = resizeCalcWithWheel(e);
+        if (resized) {
+          e.preventDefault();
+          return;
+        }
+      }
+
       e.preventDefault();
 
       const delta = -Math.sign(e.deltaY) * 0.15;
@@ -780,6 +870,279 @@ function rgbToHex(c) {
   if (c.startsWith("#")) return c;
   return c;
 }
+
+function loadCalcFromFile(file) {
+  if (!file || !calcCtx) return;
+
+  const img = new Image();
+  const objectUrl = URL.createObjectURL(file);
+  img.onload = () => {
+    const fit = Math.min(BOARD_SIZE / img.width, BOARD_SIZE / img.height, 1);
+    const w = clamp(Math.floor(img.width * fit), CALC_MIN_SIZE, BOARD_SIZE);
+    const h = clamp(Math.floor(img.height * fit), CALC_MIN_SIZE, BOARD_SIZE);
+
+    calcLayer.active = true;
+    calcLayer.isPlacing = true;
+    calcLayer.img = img;
+    calcLayer.width = w;
+    calcLayer.height = h;
+    calcLayer.aspectRatio =
+      img.width > 0 && img.height > 0 ? img.width / img.height : 1;
+    calcLayer.x = clamp(Math.floor((BOARD_SIZE - w) / 2), 0, BOARD_SIZE - w);
+    calcLayer.y = clamp(Math.floor((BOARD_SIZE - h) / 2), 0, BOARD_SIZE - h);
+    stopCalcInteraction();
+
+    drawCalcLayer();
+    updateCalcButtons();
+    updateCalcPlacementCursor(null);
+
+    if (window.showNotif) {
+      window.showNotif(
+        "Glisse le calc, redimensionne via le coin bas-droite, puis valide.",
+        4200,
+      );
+    }
+
+    URL.revokeObjectURL(objectUrl);
+  };
+
+  img.onerror = () => {
+    if (window.showNotif)
+      window.showNotif("Image invalide pour le calc.", 2500);
+    URL.revokeObjectURL(objectUrl);
+  };
+
+  img.src = objectUrl;
+}
+
+function startCalcInteraction(e) {
+  if (!calcLayer.active || !calcLayer.isPlacing) return false;
+
+  const { x, y } = eventToBoardCoords(e);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+
+  const bx = Math.floor(x);
+  const by = Math.floor(y);
+  if (!isPointInsideCalc(bx, by)) return false;
+
+  if (isPointOnCalcResizeHandle(bx, by)) {
+    isCalcResizing = true;
+    isCalcDragging = false;
+    return true;
+  }
+
+  isCalcDragging = true;
+  isCalcResizing = false;
+  calcDragOffsetX = bx - calcLayer.x;
+  calcDragOffsetY = by - calcLayer.y;
+  return true;
+}
+
+function handleCalcPlacementMouseMove(e) {
+  if (!calcLayer.active || !calcLayer.isPlacing) return;
+
+  const { x, y } = eventToBoardCoords(e);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    updateCalcPlacementCursor(null);
+    return;
+  }
+
+  const bx = Math.floor(x);
+  const by = Math.floor(y);
+
+  if (isCalcDragging) {
+    const nextX = bx - calcDragOffsetX;
+    const nextY = by - calcDragOffsetY;
+    calcLayer.x = clamp(nextX, 0, BOARD_SIZE - calcLayer.width);
+    calcLayer.y = clamp(nextY, 0, BOARD_SIZE - calcLayer.height);
+    drawCalcLayer();
+  } else if (isCalcResizing) {
+    const desiredWidth = bx - calcLayer.x + 1;
+    resizeCalcByWidth(desiredWidth);
+  }
+
+  updateCalcPlacementCursor({ x: bx, y: by });
+}
+
+function stopCalcInteraction() {
+  isCalcDragging = false;
+  isCalcResizing = false;
+}
+
+function lockCalcPlacement() {
+  if (!calcLayer.active || !calcLayer.isPlacing) return;
+
+  stopCalcInteraction();
+
+  calcLayer.isPlacing = false;
+  drawCalcLayer();
+  updateCalcButtons();
+  updateToolUI();
+
+  if (window.showNotif) {
+    window.showNotif("Calc verrouille. Tu peux dessiner par-dessus.", 3000);
+  }
+}
+
+function clearCalcLayer() {
+  calcLayer.active = false;
+  calcLayer.isPlacing = false;
+  calcLayer.img = null;
+  calcLayer.x = 0;
+  calcLayer.y = 0;
+  calcLayer.width = 0;
+  calcLayer.height = 0;
+  calcLayer.aspectRatio = 1;
+  stopCalcInteraction();
+  updateToolUI();
+
+  if (calcCtx && calcCanvas) {
+    calcCtx.clearRect(0, 0, calcCanvas.width, calcCanvas.height);
+  }
+
+  updateCalcButtons();
+}
+
+function drawCalcLayer() {
+  if (!calcCtx || !calcCanvas) return;
+  calcCtx.clearRect(0, 0, calcCanvas.width, calcCanvas.height);
+
+  if (!calcLayer.active || !calcLayer.img) return;
+
+  calcCtx.save();
+  calcCtx.globalAlpha = calcLayer.opacity;
+  calcCtx.drawImage(
+    calcLayer.img,
+    calcLayer.x,
+    calcLayer.y,
+    calcLayer.width,
+    calcLayer.height,
+  );
+  calcCtx.restore();
+
+  if (calcLayer.isPlacing) {
+    calcCtx.save();
+    calcCtx.strokeStyle = "rgba(255, 210, 77, 0.95)";
+    calcCtx.lineWidth = 1;
+    calcCtx.strokeRect(
+      calcLayer.x + 0.5,
+      calcLayer.y + 0.5,
+      Math.max(0, calcLayer.width - 1),
+      Math.max(0, calcLayer.height - 1),
+    );
+
+    const handleX = calcLayer.x + calcLayer.width - CALC_RESIZE_HANDLE_SIZE;
+    const handleY = calcLayer.y + calcLayer.height - CALC_RESIZE_HANDLE_SIZE;
+    calcCtx.fillStyle = "rgba(255, 210, 77, 0.95)";
+    calcCtx.fillRect(
+      handleX,
+      handleY,
+      CALC_RESIZE_HANDLE_SIZE,
+      CALC_RESIZE_HANDLE_SIZE,
+    );
+    calcCtx.restore();
+  }
+}
+
+function updateCalcButtons() {
+  const calcRemoveBtn = document.getElementById("btn-calc-remove");
+  const calcUploadBtn = document.getElementById("btn-calc-upload");
+  const calcLockBtn = document.getElementById("btn-calc-lock");
+
+  if (calcRemoveBtn) {
+    calcRemoveBtn.disabled = !calcLayer.active;
+  }
+
+  if (calcLockBtn) {
+    calcLockBtn.disabled = !calcLayer.active || !calcLayer.isPlacing;
+  }
+
+  if (calcUploadBtn) {
+    calcUploadBtn.classList.toggle("calc-placing", calcLayer.isPlacing);
+  }
+}
+
+function resizeCalcByWidth(desiredWidth) {
+  if (!calcLayer.active) return;
+
+  const ratio = calcLayer.aspectRatio > 0 ? calcLayer.aspectRatio : 1;
+  const maxWidth = BOARD_SIZE - calcLayer.x;
+  const maxHeight = BOARD_SIZE - calcLayer.y;
+
+  let nextWidth = clamp(Math.floor(desiredWidth), CALC_MIN_SIZE, maxWidth);
+  let nextHeight = Math.max(CALC_MIN_SIZE, Math.round(nextWidth / ratio));
+
+  if (nextHeight > maxHeight) {
+    nextHeight = maxHeight;
+    nextWidth = Math.max(CALC_MIN_SIZE, Math.round(nextHeight * ratio));
+  }
+
+  nextWidth = clamp(nextWidth, CALC_MIN_SIZE, maxWidth);
+  nextHeight = clamp(nextHeight, CALC_MIN_SIZE, maxHeight);
+
+  calcLayer.width = nextWidth;
+  calcLayer.height = nextHeight;
+  drawCalcLayer();
+}
+
+function resizeCalcWithWheel(e) {
+  if (!calcLayer.active || !calcLayer.isPlacing) return false;
+
+  const { x, y } = eventToBoardCoords(e);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+
+  const bx = Math.floor(x);
+  const by = Math.floor(y);
+  if (!isPointInsideCalc(bx, by)) return false;
+
+  const step = e.deltaY < 0 ? 1 : -1;
+  resizeCalcByWidth(calcLayer.width + step);
+  updateCalcPlacementCursor({ x: bx, y: by });
+  return true;
+}
+
+function isPointInsideCalc(x, y) {
+  return (
+    x >= calcLayer.x &&
+    x < calcLayer.x + calcLayer.width &&
+    y >= calcLayer.y &&
+    y < calcLayer.y + calcLayer.height
+  );
+}
+
+function isPointOnCalcResizeHandle(x, y) {
+  return (
+    x >= calcLayer.x + calcLayer.width - CALC_RESIZE_HANDLE_SIZE &&
+    x < calcLayer.x + calcLayer.width &&
+    y >= calcLayer.y + calcLayer.height - CALC_RESIZE_HANDLE_SIZE &&
+    y < calcLayer.y + calcLayer.height
+  );
+}
+
+function updateCalcPlacementCursor(boardPoint) {
+  if (!wrapper || !calcLayer.isPlacing) return;
+  if (!boardPoint) {
+    wrapper.style.cursor = "crosshair";
+    return;
+  }
+
+  if (isPointOnCalcResizeHandle(boardPoint.x, boardPoint.y)) {
+    wrapper.style.cursor = "nwse-resize";
+    return;
+  }
+
+  if (isPointInsideCalc(boardPoint.x, boardPoint.y)) {
+    wrapper.style.cursor = "move";
+    return;
+  }
+
+  wrapper.style.cursor = "crosshair";
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
 function px(v) {
   return v + "px";
 }

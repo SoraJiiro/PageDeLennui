@@ -73,7 +73,7 @@ html {
 
 .uno-lobby button {
   padding: 0.8rem 1.5rem;
-  cursor: pointer;
+  
   font-weight: 600;
 }
 
@@ -126,7 +126,7 @@ html {
   display: grid;
   place-items: center;
   background: var(--bg-color);
-  cursor: pointer;
+  
 }
 
 .uno-pile.disabled {
@@ -170,7 +170,7 @@ html {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  
   font-weight: bold;
   flex-shrink: 0;
   transition: transform cubic-bezier(1, 0, 0, 1) 255ms;
@@ -276,7 +276,7 @@ html {
   width: 100px;
   height: 100px;
   border: 2px solid var(--primary-color);
-  cursor: pointer;
+  
   font-weight: bold;
   font-size: 1rem;
 }

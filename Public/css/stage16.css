@@ -41,13 +41,15 @@
 .color-palette {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 5px;
 }
 
 .color-swatch {
   width: 30px;
   height: 30px;
-  cursor: pointer;
+  
   border: 2px solid transparent;
   transition:
     transform 0.1s,
@@ -65,7 +67,7 @@
   border: 1.75px solid var(--primary-color);
   background: rgba(0, 0, 0, 0.3);
   color: white;
-  cursor: pointer;
+  
   transition: background 0.2s;
 }
 
@@ -97,8 +99,39 @@
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
-#grid-canvas {
+.calc-canvas {
+  image-rendering: pixelated;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 256px;
+  height: 256px;
   z-index: 2;
+  pointer-events: none;
+}
+
+#grid-canvas {
+  z-index: 3;
+}
+
+#btn-calc-upload.calc-placing {
+  border-color: #ffd24d;
+  color: #ffd24d;
+}
+
+#btn-calc-lock {
+  border-color: #00d26a;
+  color: #00d26a;
+}
+
+#btn-calc-lock:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#btn-calc-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .pixel-info-modal {

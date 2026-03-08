@@ -54,6 +54,27 @@ function registerSnakeHandlers({
       if (!socket.data) socket.data = {};
       if (!socket.data.runnerProgress) socket.data.runnerProgress = {};
       socket.data.runnerProgress.snake = s;
+      if (!socket.data.runnerState) socket.data.runnerState = {};
+      socket.data.runnerState.snake = { active: true, at: Date.now() };
+    } catch (e) {}
+  }
+
+  function setRunnerState(active) {
+    try {
+      if (!socket.data) socket.data = {};
+      if (!socket.data.runnerState) socket.data.runnerState = {};
+      socket.data.runnerState.snake = { active: !!active, at: Date.now() };
+    } catch (e) {}
+  }
+
+  function clearRunnerProgress() {
+    try {
+      if (
+        socket?.data?.runnerProgress &&
+        "snake" in socket.data.runnerProgress
+      ) {
+        delete socket.data.runnerProgress.snake;
+      }
     } catch (e) {}
   }
 
@@ -67,6 +88,7 @@ function registerSnakeHandlers({
         resume[pseudo].dino != null ||
         resume[pseudo].flappy != null ||
         resume[pseudo].snake != null ||
+        resume[pseudo].subway != null ||
         resume[pseudo]["2048"] != null ||
         resume[pseudo].blockblast != null;
       if (!hasAny) delete resume[pseudo];
@@ -83,7 +105,12 @@ function registerSnakeHandlers({
     if (!Number.isFinite(s) || s < 0 || s > SNAKE_MAX_SCORE) return;
 
     updateReviveContextFromScore(socket, "snake", s);
-    setRunnerProgress(s);
+    if (final === true) {
+      clearRunnerProgress();
+      setRunnerState(false);
+    } else {
+      setRunnerProgress(s);
+    }
 
     const current = FileService.data.snakeScores[pseudo] || 0;
 
@@ -111,11 +138,6 @@ function registerSnakeHandlers({
             colors.green,
           ),
         );
-        broadcastSystemMessage(
-          io,
-          `${pseudo} a fait un nouveau score de ${s} à Snake !`,
-          true,
-        );
         isAlreadyLogged_snake = true;
       }
     } else if (
@@ -132,12 +154,13 @@ function registerSnakeHandlers({
 
     if (final === true) {
       rewardSnakeFinal(s);
+      leaderboardManager.broadcastSnakeLB(io);
     }
-
-    leaderboardManager.broadcastSnakeLB(io);
   });
 
   socket.on("snake:reset", () => {
+    clearRunnerProgress();
+    setRunnerState(false);
     console.log(
       withGame(
         `\n🔄 Reset Snake pour [${colors.orange}${pseudo}${colors.green}]\n`,

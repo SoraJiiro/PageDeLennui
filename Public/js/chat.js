@@ -19,6 +19,25 @@ export function initChat(socket) {
   let gotDmHistory = false;
   let initialRendered = false;
 
+  function scrollMessagesToBottom({ smooth = true, delayed = false } = {}) {
+    if (!messages) return;
+
+    const apply = () => {
+      const previousBehavior = messages.style.scrollBehavior;
+      if (!smooth) messages.style.scrollBehavior = "auto";
+      messages.scrollTop = messages.scrollHeight;
+      if (!smooth) messages.style.scrollBehavior = previousBehavior;
+    };
+
+    if (delayed) {
+      // Double raf: wait for layout after hidden section becomes visible.
+      requestAnimationFrame(() => requestAnimationFrame(apply));
+      return;
+    }
+
+    apply();
+  }
+
   // Bouton d'upload de fichier (HTML statique)
   const fileButton = document.getElementById("file-upload-btn");
   const fileInput = document.getElementById("file-input");
@@ -303,7 +322,6 @@ export function initChat(socket) {
       <div class="text"></div>`;
       el.querySelector(".text").textContent = text;
       messages.appendChild(el);
-      messages.scrollTop = messages.scrollHeight;
     } else {
       let tagHtml = "";
       if (tag) {
@@ -618,7 +636,6 @@ export function initChat(socket) {
       }
 
       messages.appendChild(el);
-      messages.scrollTop = messages.scrollHeight;
     }
 
     return el;
@@ -756,7 +773,17 @@ export function initChat(socket) {
         type: item.name === "Système" ? "system" : "user",
       });
     });
+
+    // Keep the newest message visible after the first full history paint.
+    scrollMessagesToBottom({ smooth: false, delayed: true });
+    setTimeout(() => scrollMessagesToBottom({ smooth: false }), 120);
   };
+
+  window.addEventListener("pde:section-activated", (event) => {
+    const sectionId = event && event.detail ? event.detail.sectionId : null;
+    if (sectionId !== "stage3") return;
+    scrollMessagesToBottom({ smooth: false, delayed: true });
+  });
 
   socket.on("chat:history", (history) => {
     if (!Array.isArray(history)) return;

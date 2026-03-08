@@ -6,6 +6,30 @@
   }
 })();
 
+// Load simple div-based cursor once for pages using uiColor.js.
+(function () {
+  if (window.__pdeSimpleCursorBootstrapped) return;
+  window.__pdeSimpleCursorBootstrapped = true;
+
+  const boot = () => {
+    if (typeof window.initSimpleCursor === "function") {
+      window.initSimpleCursor();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "/js/custom_cursor.js";
+    script.defer = true;
+    document.head.appendChild(script);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+
 // Exposer la fonction init pour main.js et les autres pages
 window.initUiColor = (socket) => {
   const colorPicker = document.getElementById("mainColorPicker");
@@ -18,7 +42,7 @@ window.initUiColor = (socket) => {
         localStorage.setItem("uiColor", color);
         if (colorPicker) colorPicker.value = color;
         window.dispatchEvent(
-          new CustomEvent("uiColor:changed", { detail: { color } })
+          new CustomEvent("uiColor:changed", { detail: { color } }),
         );
       }
     });
@@ -71,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const color = e.target.value;
       document.documentElement.style.setProperty("--primary-color", color);
       window.dispatchEvent(
-        new CustomEvent("uiColor:changed", { detail: { color } })
+        new CustomEvent("uiColor:changed", { detail: { color } }),
       );
     });
   }

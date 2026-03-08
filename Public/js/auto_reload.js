@@ -1,4 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
+  if (!window.__pdeSimpleCursorBootstrapped) {
+    window.__pdeSimpleCursorBootstrapped = true;
+
+    if (typeof window.initSimpleCursor === "function") {
+      window.initSimpleCursor();
+    } else {
+      const cursorScript = document.createElement("script");
+      cursorScript.src = "/js/custom_cursor.js";
+      cursorScript.defer = true;
+      document.head.appendChild(cursorScript);
+    }
+  }
+
   if (typeof io !== "undefined") {
     let socketInstance = null;
 

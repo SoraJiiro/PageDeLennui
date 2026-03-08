@@ -234,7 +234,7 @@ button.log-off {
   color: var(--primary-color);
   border: 2px solid var(--primary-color);
   padding: clamp(8px, 1vh, 14px) clamp(14px, 2vw, 28px);
-  cursor: pointer;
+
   font-size: clamp(0.9rem, 1.1vw + 0.6rem, 1.2rem);
   z-index: 1000;
   transition: all 0.2s ease;
@@ -282,7 +282,7 @@ button,
   font-size: clamp(0.9rem, 1.1vw + 0.6rem, 1.2rem);
   font-weight: 700;
   letter-spacing: 1.25px;
-  cursor: pointer;
+
   transition: all 325ms ease-out;
   outline: 2px solid var(--bg-color);
 }
@@ -388,7 +388,7 @@ button.reset:not(:disabled):hover,
   font-size: clamp(0.8rem, 0.8vw + 0.55rem, 1.2rem);
   font-weight: 700;
   letter-spacing: 1.25px;
-  cursor: pointer;
+
   transition: all 325ms ease-out;
   outline: 2px solid var(--bg-color);
 }
@@ -397,10 +397,10 @@ button.reset:not(:disabled):hover,
 .blockblast-revive-btn:hover,
 .dino-revive-btn:hover,
 .flappy-revive-btn:hover {
-  color: var(--bg-color);
-  background: var(--primary-color);
-  border: 2px solid var(--bg-color);
-  outline: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  outline: 2px solid var(--bg-color);
 }
 
 .snake-revive-pay-btn,
@@ -422,7 +422,7 @@ button.reset:not(:disabled):hover,
   font-size: clamp(0.75rem, 0.75vw + 0.5rem, 1.05rem);
   font-weight: 700;
   letter-spacing: 1px;
-  cursor: pointer;
+
   transition: all 220ms ease-out;
   outline: 2px solid var(--bg-color);
 }
@@ -558,7 +558,6 @@ p.pause-info {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 .chat-audio-player .cap-play:focus {
   outline: none;
@@ -575,7 +574,7 @@ p.pause-info {
   background: rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   width: 100%;
-  cursor: pointer;
+
   display: block;
 }
 .chat-audio-player .cap-progress-fill {
@@ -693,7 +692,7 @@ body ::-webkit-scrollbar {
 
 .modal-buttons button {
   padding: 8px 20px;
-  cursor: pointer;
+
   font-weight: bold;
   border: 2px solid var(--primary-color);
   transition: all 0.2s;
@@ -776,10 +775,33 @@ button.sidebar-close:hover {
   border: 1px solid var(--primary-color);
   background: var(--bg-color);
   color: var(--primary-color);
-  cursor: pointer;
 }
 
 .annex-back-btn:hover {
   background: var(--primary-color);
   color: var(--bg-color);
+}
+
+section,
+div,
+body {
+  background-color: var(--bg-color);
+}
+
+.dealer-area,
+.bj-message,
+.players-area,
+.player-info,
+.player-name,
+.player-seat div,
+.bj-card span,
+.bj-card div,
+.ee-node *,
+.uno-discard *,
+.uno-pile.tonTour * {
+  background-color: transparent;
+}
+
+.player-seat .bj-card {
+  background-color: #fff;
 }

@@ -136,15 +136,32 @@ function setupRoutes(
 
   // Admin
   app.get("/admin", requireAuth, (req, res) => {
-    if (req.session.user.pseudo !== "Admin") {
+    const allowed = new Set(["Admin", "Moderateur"]);
+    if (!allowed.has(req.session.user.pseudo)) {
       return res.redirect("/");
+    }
+    if (
+      req.session.user.pseudo === "Moderateur" &&
+      String(req.query?.view || "") !== "mod"
+    ) {
+      return res.redirect("/admin?view=mod");
     }
     res.sendFile(path.join(config.PUBLIC, "index_admin.html"));
   });
 
-  // Page des logs - réservée à l'Admin
+  // Panel moderateur (acces restreint)
+  app.get("/mod", requireAuth, (req, res) => {
+    const allowedModerators = new Set(["Admin", "Moderateur"]);
+    if (!allowedModerators.has(req.session.user.pseudo)) {
+      return res.redirect("/");
+    }
+    return res.redirect("/admin?view=mod");
+  });
+
+  // Page des logs - réservée à l'Admin et au Moderateur
   app.get("/admin/logs", requireAuth, (req, res) => {
-    if (req.session.user.pseudo !== "Admin") {
+    const allowed = new Set(["Admin", "Moderateur"]);
+    if (!allowed.has(req.session.user.pseudo)) {
       return res.redirect("/");
     }
     res.sendFile(path.join(config.PUBLIC, "logs.html"));

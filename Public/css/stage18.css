@@ -145,7 +145,7 @@
   background: transparent;
   min-height: 46px;
   min-width: 140px;
-  cursor: pointer;
+  
 }
 
 .slots-spin-btn:hover {
@@ -188,4 +188,10 @@
   display: grid;
   gap: 5px;
   font-size: 0.95rem;
+}
+
+.slots-paytable-note {
+  margin: 8px 0 0;
+  font-size: 0.86rem;
+  opacity: 0.85;
 }

@@ -9,6 +9,7 @@ const { recalculateMedals } = require("../moduleGetter");
 const { EGG_DEFS } = require("../services/easterEggs");
 const { ensureShopCatalog } = require("../services/shopCatalog");
 const { getWallet } = require("../services/wallet");
+const { grantLives } = require("../services/reviveLives");
 const { resetUserBadgesProgress } = require("../services/badgesAuto");
 const words = require("../constants/words");
 
@@ -144,13 +145,50 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
   // Middleware pour vérifier que l'utilisateur est Admin
   function requireAdmin(req, res, next) {
-    if (
-      !req.session ||
-      !req.session.user ||
-      req.session.user.pseudo !== "Admin"
-    ) {
+    const pseudo = req?.session?.user?.pseudo;
+    if (!pseudo) {
       return res.status(403).json({ message: "Accès refusé" });
     }
+
+    if (pseudo === "Admin") {
+      return next();
+    }
+
+    if (pseudo !== "Moderateur") {
+      return res.status(403).json({ message: "Accès refusé" });
+    }
+
+    const method = String(req.method || "GET").toUpperCase();
+    const pathName = String(req.path || "");
+    const moderatorAllowed = new Set([
+      "GET /transactions",
+      "GET /game-money-rewards",
+      "POST /transactions/approve",
+      "POST /transactions/reject",
+      "GET /password-requests",
+      "POST /approve-password-change",
+      "GET /pfp/requests",
+      "POST /pfp/requests/approve",
+      "POST /pfp/requests/reject",
+      "GET /custom-badges/requests",
+      "POST /custom-badges/requests/approve",
+      "POST /custom-badges/requests/reject",
+      "GET /economy/daily-cap",
+      "GET /cheater/list",
+      "POST /cheater/add",
+      "POST /cheater/remove",
+      "GET /tag/list",
+      "POST /tag/respond",
+      "GET /dms/between",
+      "GET /panel/state",
+      "POST /panel/lock",
+      "POST /panel/unlock",
+    ]);
+
+    if (!moderatorAllowed.has(`${method} ${pathName}`)) {
+      return res.status(403).json({ message: "Action réservée à l'Admin" });
+    }
+
     next();
   }
 
@@ -1135,6 +1173,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         pseudo,
         clicks:
           (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
+        reviveLives: Math.max(
+          0,
+          Math.floor(
+            Number(FileService.data.reviveLives?.users?.[pseudo]?.lives) || 0,
+          ),
+        ),
         money: Number(wallet.money || 0),
         tokens: Number(wallet.tokens || 0),
         dinoScore:
@@ -2699,6 +2743,42 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     });
   });
 
+  // Donner des vies de revive à un utilisateur
+  router.post("/revive/give-lives", requireAdmin, (req, res) => {
+    const pseudo = String(req.body?.pseudo || "").trim();
+    const amount = Number.parseInt(req.body?.amount, 10);
+
+    if (!pseudo) {
+      return res.status(400).json({ message: "Pseudo manquant" });
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Le nombre de vies doit être un entier positif" });
+    }
+
+    const result = grantLives(FileService, pseudo, amount);
+    if (!result.ok) {
+      return res.status(500).json({ message: "Impossible d'ajouter les vies" });
+    }
+
+    // Mise à jour realtime pour le joueur s'il est connecté.
+    io.to("user:" + pseudo).emit("revive:lives", { lives: result.lives });
+    io.to("user:" + pseudo).emit(
+      "system:info",
+      `Tu as reçu ${amount} vie(s) de revive de la part de l'admin.`,
+    );
+
+    return res.json({
+      success: true,
+      pseudo,
+      amount,
+      totalLives: result.lives,
+      message: `${amount} vie(s) ajoutée(s) à ${pseudo}. Total: ${result.lives}`,
+    });
+  });
+
   // Supprimer un utilisateur
   router.post("/delete-user", requireAdmin, (req, res) => {
     const { pseudo } = req.body;
@@ -3365,17 +3445,48 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
   // Route pour éteindre le serveur
   router.post("/shutdown", requireAdmin, (req, res) => {
     const { requestShutdown } = require("../bootstrap/shutdownManager");
+    const shouldAwardLeaderboardBonus =
+      req.body?.awardLeaderboardBonus !== false;
 
     console.log({
       level: "warn",
-      message: "Arrêt du serveur demandé par l'admin...",
+      message: `Arrêt du serveur demandé par l'admin (bonus leaderboard: ${shouldAwardLeaderboardBonus ? "ON" : "OFF"})...`,
     });
 
     // On renvoie d'abord la redirection pour que le client puisse naviguer
     res.json({ redirect: "/ferme.html" });
 
     // L'arrêt gracieux s'occupe de: collect progress, refunds, redirect, close
-    setTimeout(() => requestShutdown("admin_http"), 150);
+    setTimeout(
+      () =>
+        requestShutdown("admin_http", {
+          awardLeaderboardBonus: shouldAwardLeaderboardBonus,
+          // OFF => no bonus; ON => force attribution even if already awarded today.
+          forceAwardLeaderboardBonus: shouldAwardLeaderboardBonus,
+        }),
+      150,
+    );
+  });
+
+  // Reset l'etat des bonus de leaderboard de shutdown (reautorise une attribution le meme jour)
+  router.post("/shutdown/bonus/reset", requireAdmin, (req, res) => {
+    try {
+      FileService.data.leaderboardBonusMeta = {};
+      FileService.save(
+        "leaderboardBonusMeta",
+        FileService.data.leaderboardBonusMeta,
+      );
+
+      res.json({
+        ok: true,
+        message: "Etat des recompenses shutdown reset.",
+      });
+    } catch (e) {
+      console.error("[ADMIN] reset shutdown bonus state error", e);
+      res
+        .status(500)
+        .json({ ok: false, message: "Erreur reset etat recompenses." });
+    }
   });
 
   // Définir un tag pour un utilisateur

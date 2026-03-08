@@ -247,14 +247,58 @@ function registerCoinflipHandlers({
     const bet = parsed.bet;
 
     const symbols = ["🍒", "🍋", "🔔", "💎", "7️⃣"];
-    const pick = () => symbols[Math.floor(Math.random() * symbols.length)];
+    // Pondération légère pour rendre les combinaisons premium un peu moins fréquentes.
+    const weightedSymbols = [
+      { symbol: "🍒", weight: 31 },
+      { symbol: "🍋", weight: 27 },
+      { symbol: "🔔", weight: 21 },
+      { symbol: "💎", weight: 14 },
+      { symbol: "7️⃣", weight: 7 },
+    ];
+    const totalWeight = weightedSymbols.reduce((acc, s) => acc + s.weight, 0);
+
+    const pick = () => {
+      let roll = Math.random() * totalWeight;
+      for (const entry of weightedSymbols) {
+        roll -= entry.weight;
+        if (roll <= 0) return entry.symbol;
+      }
+      return weightedSymbols[weightedSymbols.length - 1].symbol;
+    };
+
+    const pickDifferent = (except) => {
+      let next = pick();
+      let guard = 0;
+      while (next === except && guard < 8) {
+        next = pick();
+        guard++;
+      }
+      if (next === except) {
+        return symbols.find((s) => s !== except) || "🍒";
+      }
+      return next;
+    };
+
     const reels = [pick(), pick(), pick()];
 
     let multiplier = 0;
     if (reels[0] === reels[1] && reels[1] === reels[2]) {
-      multiplier = reels[0] === "7️⃣" ? 6 : 4;
+      multiplier = reels[0] === "7️⃣" ? 5 : 3;
     } else if (reels[0] === reels[1] && reels[1] !== reels[2]) {
-      multiplier = 1.5;
+      multiplier = 1.25;
+    }
+
+    // Mini algo anti-abus: petite chance de casser une main gagnante.
+    if (multiplier > 0) {
+      const houseEdge = bet >= 50000 ? 0.2 : bet >= 10000 ? 0.17 : 0.14;
+      if (Math.random() < houseEdge) {
+        if (reels[0] === reels[1] && reels[1] === reels[2]) {
+          reels[2] = pickDifferent(reels[0]);
+        } else if (reels[0] === reels[1]) {
+          reels[1] = pickDifferent(reels[0]);
+        }
+        multiplier = 0;
+      }
     }
 
     const payout = Math.floor(bet * multiplier);
@@ -333,6 +377,7 @@ function registerCoinflipHandlers({
       reels,
       won: payout > 0,
       payout,
+      multiplier,
       amount: bet,
       tokens: getWallet(
         FileService,

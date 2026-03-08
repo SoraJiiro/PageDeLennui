@@ -34,18 +34,8 @@ class PixelWarGame {
       "#FF00FF",
       "#1E90FF",
     ];
-    this.COLOR_PACKS = {
-      color_pack_neon: ["#39FF14", "#FF1493", "#00E5FF", "#FFD700"],
-      color_pack_pastel: ["#FFB3BA", "#BAFFC9", "#BAE1FF", "#FFF4B3"],
-      color_pack_nature: ["#2E8B57", "#6B8E23", "#CD853F", "#87CEEB"],
-    };
     this.customColorRegistry = [];
-    this.legacyPackColors = [
-      ...this.COLOR_PACKS.color_pack_neon,
-      ...this.COLOR_PACKS.color_pack_pastel,
-      ...this.COLOR_PACKS.color_pack_nature,
-    ];
-    this.COLORS = [...this.BASE_COLORS, ...this.legacyPackColors];
+    this.COLORS = [...this.BASE_COLORS];
 
     this.board = new Uint8Array(this.WIDTH * this.HEIGHT);
     this.owners = {};
@@ -289,11 +279,7 @@ class PixelWarGame {
       this.customColorRegistry = [];
     }
 
-    this.COLORS = [
-      ...this.BASE_COLORS,
-      ...this.legacyPackColors,
-      ...this.customColorRegistry,
-    ];
+    this.COLORS = [...this.BASE_COLORS, ...this.customColorRegistry];
 
     try {
       if (fs.existsSync(this.usersPath)) {
@@ -435,7 +421,6 @@ class PixelWarGame {
         pixelsPlaced: 0,
         pixelsOverridden: 0,
         pixelsErased: 0,
-        unlockedColorPacks: [],
       };
       this.usersDirty = true;
     }
@@ -479,11 +464,6 @@ class PixelWarGame {
       this.usersDirty = true;
     }
 
-    if (!Array.isArray(user.unlockedColorPacks)) {
-      user.unlockedColorPacks = [];
-      this.usersDirty = true;
-    }
-
     if (!Array.isArray(user.unlockedCustomColors)) {
       user.unlockedCustomColors = [];
       this.usersDirty = true;
@@ -507,7 +487,6 @@ class PixelWarGame {
           pixelsPlaced: 0,
           pixelsOverridden: 0,
           pixelsErased: 0,
-          unlockedColorPacks: [],
         };
 
     // Clamp local copy to limits
@@ -549,7 +528,6 @@ class PixelWarGame {
       user.pixels = this.UNIVERSAL_STORAGE_LIMIT;
     }
 
-    if (!Array.isArray(user.unlockedColorPacks)) user.unlockedColorPacks = [];
     if (!Array.isArray(user.unlockedCustomColors))
       user.unlockedCustomColors = [];
 
@@ -558,25 +536,13 @@ class PixelWarGame {
 
   getUnlockedColorIndicesForUser(pseudo) {
     const user = this.getUserState(pseudo);
-    const unlocked = new Set(
-      Array.isArray(user.unlockedColorPacks) ? user.unlockedColorPacks : [],
-    );
     const allowed = new Set();
 
     for (let i = 0; i < this.BASE_COLORS.length; i++) {
       allowed.add(i);
     }
 
-    let offset = this.BASE_COLORS.length;
-    for (const packId of Object.keys(this.COLOR_PACKS)) {
-      const packColors = this.COLOR_PACKS[packId] || [];
-      if (unlocked.has(packId)) {
-        for (let i = 0; i < packColors.length; i++) {
-          allowed.add(offset + i);
-        }
-      }
-      offset += packColors.length;
-    }
+    const offset = this.BASE_COLORS.length;
 
     const customUnlocked = Array.isArray(user.unlockedCustomColors)
       ? user.unlockedCustomColors
@@ -607,11 +573,7 @@ class PixelWarGame {
 
     if (!this.customColorRegistry.includes(hex)) {
       this.customColorRegistry.push(hex);
-      this.COLORS = [
-        ...this.BASE_COLORS,
-        ...this.legacyPackColors,
-        ...this.customColorRegistry,
-      ];
+      this.COLORS = [...this.BASE_COLORS, ...this.customColorRegistry];
       this.saveCustomColors();
     }
 
@@ -785,6 +747,12 @@ class PixelWarGame {
     this.owners = {};
     this.undoStacks = {};
     this.boardDirty = true;
+  }
+
+  resetBoardAndUsers() {
+    this.resetBoard();
+    this.users = {};
+    this.usersDirty = true;
   }
 
   resetArea(x1, y1, x2, y2) {

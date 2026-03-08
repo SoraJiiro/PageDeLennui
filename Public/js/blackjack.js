@@ -48,6 +48,7 @@ export function initBlackjack(socket, username) {
   let currentTokens = 0;
   let prevDealerCards = [];
   let prevHandCardCounts = {};
+  let prevHandStatuses = {};
 
   function updateMaxBetUI() {
     const maxBet = Math.max(0, Math.floor((currentTokens || 0) * 0.5));
@@ -252,6 +253,7 @@ export function initBlackjack(socket, username) {
     // --- Affichage Joueurs ---
     playersAreaEl.innerHTML = "";
     const nextHandCardCounts = {};
+    const nextHandStatuses = {};
     state.joueurs.forEach((player) => {
       const seat = createSeat(
         player,
@@ -259,10 +261,13 @@ export function initBlackjack(socket, username) {
         currentPseudo,
         prevHandCardCounts,
         nextHandCardCounts,
+        prevHandStatuses,
+        nextHandStatuses,
       );
       playersAreaEl.appendChild(seat);
     });
     prevHandCardCounts = nextHandCardCounts;
+    prevHandStatuses = nextHandStatuses;
 
     // Mise à jour visibilité contrôles
     updateControls(state);
@@ -274,6 +279,8 @@ export function initBlackjack(socket, username) {
     currentPseudo,
     previousCounts,
     nextCounts,
+    previousStatuses,
+    nextStatuses,
   ) {
     const isCurrentPlayer =
       state.phase === "playing" &&
@@ -343,9 +350,13 @@ export function initBlackjack(socket, username) {
 
       player.hands.forEach((hand, idx) => {
         const handKey = `${player.pseudo}:${idx}`;
+        const previousStatus = previousStatuses[handKey];
+        const isNewBlackjack =
+          hand.status === "blackjack" && previousStatus !== "blackjack";
         const isHandActive = isCurrentPlayer && player.activeHandIndex === idx;
         const handDiv = document.createElement("div");
         handDiv.className = "player-hand-container";
+        nextStatuses[handKey] = hand.status;
 
         if (isSingleHand) {
           handDiv.style.border = "none";
@@ -358,6 +369,7 @@ export function initBlackjack(socket, username) {
             handDiv.style.border = "2px solid gold";
             handDiv.style.padding = "5px";
             handDiv.style.borderRadius = "10px";
+            if (isNewBlackjack) handDiv.classList.add("bj-anim-blackjack-hit");
           } else if (hand.status === "bust") {
             handDiv.classList.add("bj-anim-bust");
             handDiv.style.border = "2px solid red";
@@ -376,6 +388,7 @@ export function initBlackjack(socket, username) {
           // Animations multi-main
           if (hand.status === "blackjack") {
             handDiv.classList.add("bj-anim-blackjack");
+            if (isNewBlackjack) handDiv.classList.add("bj-anim-blackjack-hit");
           } else if (hand.status === "bust") {
             handDiv.classList.add("bj-anim-bust");
           }
@@ -408,6 +421,7 @@ export function initBlackjack(socket, username) {
         // Status Overlay specific to hand
         if (hand.status !== "playing" && hand.status !== "waiting") {
           const overlay = document.createElement("div");
+          overlay.className = "bj-hand-status";
           overlay.style.fontWeight = "bold";
           overlay.style.marginTop = "2px";
           if (hand.status === "bust") {
@@ -416,6 +430,9 @@ export function initBlackjack(socket, username) {
           } else if (hand.status === "blackjack") {
             overlay.textContent = "BLACKJACK !";
             overlay.style.color = "gold";
+            if (isNewBlackjack) {
+              overlay.classList.add("bj-blackjack-pop");
+            }
           } else if (hand.status === "stand") {
             overlay.textContent = "STAND";
             overlay.style.color = "#aaa";
@@ -662,9 +679,9 @@ export function initBlackjack(socket, username) {
     if (isFaceCard) el.classList.add("face-crown");
 
     el.innerHTML = `
-          <div class="suit-top"><span class="corner-rank">${card.value}</span><span class="corner-suit">${suit}</span></div>
+          <div class="suit-top"><span class="corner-rank">${card.value}</span></div>
             ${centerHtml}
-          <div class="suit-bottom"><span class="corner-rank">${card.value}</span><span class="corner-suit">${suit}</span></div>
+          <div class="suit-bottom"><span class="corner-rank">${card.value}</span></div>
         `;
     return el;
   }

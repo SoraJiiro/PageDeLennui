@@ -100,7 +100,7 @@
   border: none;
   font-size: 1.1rem;
   font-weight: bold;
-  cursor: pointer;
+  
   transition: all 0.2s;
   display: flex;
   justify-content: center;

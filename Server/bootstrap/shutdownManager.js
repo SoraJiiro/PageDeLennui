@@ -52,8 +52,12 @@ function getTopPseudoMotus(motusScores) {
   }
 }
 
-function awardDailyShutdownLeaderboardMoney({ FileService, io }) {
-  // +500 monnaie au 1er de chaque leaderboard (Dino, Flappy, Snake, Sudoku, 2048)
+function awardDailyShutdownLeaderboardMoney({
+  FileService,
+  io,
+  force = false,
+}) {
+  // +500 monnaie au 1er de chaque leaderboard (Dino, Flappy, Snake, Subway, 2048)
   const REWARD = 500;
 
   try {
@@ -61,7 +65,7 @@ function awardDailyShutdownLeaderboardMoney({ FileService, io }) {
     try {
       const meta = FileService.data.leaderboardBonusMeta || {};
       const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-      if (meta.lastDate === today) {
+      if (!force && meta.lastDate === today) {
         console.log({
           level: "info",
           message: `[Shutdown] Leaderboard bonus already awarded today (${today}), skipping.`,
@@ -85,8 +89,8 @@ function awardDailyShutdownLeaderboardMoney({ FileService, io }) {
         pseudo: getTopPseudoSimpleScore(FileService.data.snakeScores),
       },
       {
-        game: "sudoku",
-        pseudo: getTopPseudoSimpleScore(FileService.data.sudokuScores),
+        game: "subway",
+        pseudo: getTopPseudoSimpleScore(FileService.data.subwayScores),
       },
       {
         game: "2048",
@@ -159,34 +163,46 @@ function mergeProgressIntoResume(resume, pseudo, game, score) {
   if (s > prev) resume[pseudo][game] = s;
 }
 
+function isRunnerActive(state, game) {
+  return !!(state && state[game] && state[game].active === true);
+}
+
 function collectRunnerProgressFromSockets(io) {
   const resume = {};
   try {
     io.sockets.sockets.forEach((s) => {
       const pseudo = s?.data?.pseudo;
       if (!pseudo) return;
+      const rs = s.data.runnerState || {};
+      const dinoInRun = isRunnerActive(rs, "dino");
+      const flappyInRun = isRunnerActive(rs, "flappy");
+      const snakeInRun = isRunnerActive(rs, "snake");
+      const subwayInRun = isRunnerActive(rs, "subway");
+      const game2048InRun =
+        safeNumber((s.data.runnerProgress || {})["2048"]) > 0;
+      const blockblastInRun =
+        safeNumber((s.data.runnerProgress || {}).blockblast) > 0;
 
       // Score runtime explicit (envoyé par le client)
       const rp = s.data.runnerProgress || {};
       if (rp && typeof rp === "object") {
-        mergeProgressIntoResume(resume, pseudo, "dino", rp.dino);
-        mergeProgressIntoResume(resume, pseudo, "flappy", rp.flappy);
-        mergeProgressIntoResume(resume, pseudo, "snake", rp.snake);
-        mergeProgressIntoResume(resume, pseudo, "2048", rp["2048"]);
-        mergeProgressIntoResume(resume, pseudo, "blockblast", rp.blockblast);
+        if (dinoInRun) mergeProgressIntoResume(resume, pseudo, "dino", rp.dino);
+        if (flappyInRun)
+          mergeProgressIntoResume(resume, pseudo, "flappy", rp.flappy);
+        if (snakeInRun)
+          mergeProgressIntoResume(resume, pseudo, "snake", rp.snake);
+        if (subwayInRun)
+          mergeProgressIntoResume(resume, pseudo, "subway", rp.subway);
+        if (game2048InRun)
+          mergeProgressIntoResume(resume, pseudo, "2048", rp["2048"]);
+        if (blockblastInRun)
+          mergeProgressIntoResume(resume, pseudo, "blockblast", rp.blockblast);
       }
 
       // Fallback: reviveContext contient au moins le dernier score envoyé
       const rc = s.data.reviveContext || {};
       if (rc && typeof rc === "object") {
-        mergeProgressIntoResume(resume, pseudo, "dino", rc?.dino?.lastScore);
-        mergeProgressIntoResume(
-          resume,
-          pseudo,
-          "flappy",
-          rc?.flappy?.lastScore,
-        );
-        mergeProgressIntoResume(resume, pseudo, "snake", rc?.snake?.lastScore);
+        // Pour dino/flappy/snake, on utilise uniquement runnerProgress explicite.
         mergeProgressIntoResume(
           resume,
           pseudo,
@@ -288,7 +304,7 @@ function refundMashIfNeeded({ mashGame }) {
   return false;
 }
 
-async function requestShutdown(reason = "unknown") {
+async function requestShutdown(reason = "unknown", options = {}) {
   if (shutdownStarted) return;
   shutdownStarted = true;
 
@@ -342,6 +358,11 @@ async function requestShutdown(reason = "unknown") {
             safeNumber(merged[pseudo].snake),
             safeNumber(entry.snake),
           );
+        if (entry.subway)
+          merged[pseudo].subway = Math.max(
+            safeNumber(merged[pseudo].subway),
+            safeNumber(entry.subway),
+          );
         if (entry["2048"])
           merged[pseudo]["2048"] = Math.max(
             safeNumber(merged[pseudo]["2048"]),
@@ -375,10 +396,24 @@ async function requestShutdown(reason = "unknown") {
   }
 
   // 4.5) Bonus de fin de session: leaderboards -> monnaie
-  try {
-    awardDailyShutdownLeaderboardMoney({ FileService, io });
-  } catch (e) {
-    // best-effort
+  const shouldAwardLeaderboardBonus = options.awardLeaderboardBonus !== false;
+  const forceAwardLeaderboardBonus =
+    options.forceAwardLeaderboardBonus === true;
+  if (shouldAwardLeaderboardBonus) {
+    try {
+      awardDailyShutdownLeaderboardMoney({
+        FileService,
+        io,
+        force: forceAwardLeaderboardBonus,
+      });
+    } catch (e) {
+      // best-effort
+    }
+  } else {
+    console.log({
+      level: "info",
+      message: "[Shutdown] Leaderboard bonus disabled for this shutdown.",
+    });
   }
 
   // 5) Rediriger tout le monde vers la page fermée
@@ -389,6 +424,12 @@ async function requestShutdown(reason = "unknown") {
   // 6) Stopper sockets + serveur HTTP proprement
   try {
     await sleep(250);
+
+    // Force la vidange des buffers d'ecriture avant fermeture.
+    if (typeof FileService.flushAllPendingWrites === "function") {
+      await FileService.flushAllPendingWrites();
+    }
+
     try {
       io.close();
     } catch (e) {}

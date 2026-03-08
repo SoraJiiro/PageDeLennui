@@ -81,6 +81,8 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       import("./slots_leaderboard.js"),
       import("./sudoku.js"),
       import("./sudoku_leaderboard.js"),
+      import("./subway_leaderboard.js"),
+      import("./subway.js"),
     ]);
 
     const [
@@ -119,6 +121,8 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       slotsLeaderboard,
       sudoku,
       sudokuLeaderboard,
+      subwayLeaderboard,
+      subway,
     ] = modules;
 
     const socket = io({
@@ -244,6 +248,9 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       if (sudoku?.initSudoku) sudoku.initSudoku(socket);
       if (sudokuLeaderboard?.initSudokuLeaderboard)
         sudokuLeaderboard.initSudokuLeaderboard(socket);
+      if (subwayLeaderboard?.initSubwayLeaderboard)
+        subwayLeaderboard.initSubwayLeaderboard(socket);
+      if (subway?.initSubway) subway.initSubway(socket);
       if (passwordChange?.setupPasswordChange)
         passwordChange.setupPasswordChange(socket);
     } else {

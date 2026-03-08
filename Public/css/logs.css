@@ -52,7 +52,7 @@ body {
   border-radius: 0;
   background: var(--bg-color);
   border: 2px solid var(--primary-color);
-  cursor: pointer;
+  
   user-select: none;
 }
 

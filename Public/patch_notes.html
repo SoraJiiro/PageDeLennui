@@ -32,140 +32,407 @@
             <div class="patch-entry">
                 <i class="fa-solid fa-caret-down" id="topArrow"></i>
                 <div class="patch-title">
-                    <span class="version">v3.0.2</span>
-                    <span class="date">03/03/2026</span>
+                    <span class="version">v3.0.4</span>
+                    <span class="date">08/03/2026</span>
                 </div>
                 <div class="patch-content">
                     <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
                     <ul>
-                        <li><span class="tag-new">[NEW]</span> <strong>Leaderboards :</strong> Un nouveau leaderboard <u>Clicks + Peak CPS Humain</u> a été ajouté dans la section des classements.</li>
-                        <li><span class="tag-new">[NEW]</span> <strong>Clicker (Anti-Cheat) :</strong> Détection anti-triche renforcée côté serveur avec une meilleure identification des patterns de clics anormalement constants. Je vais vous traquer. <br> [Aller voir l'Admin si vous pensez être victime d'une erreur]</li>
-                        <li><span class="tag-new">[NEW]</span> <strong>Clicker :</strong> Un mini timer s'affiche lorsque vous atteignez 12 CPS humains. (indicateur de l'obtention du badge Clicker Fou)</li>
-                        <li><span class="tag-new">[NEW]</span> <strong>BlackJack :</strong> Des animations ont été ajoutées au cartes pour une expérience plus immersive. Maintenant le reveal de la 2e carte du croupier est un vrai reveal avec un suspense réaliste.</li>
-                    </ul>
-                    <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
-                    <ul>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Sudoku :</strong> L'expérience de fin de partie a été revue: après une grille complétée, la grille se masque et un message vous invite à lancer une nouvelle partie. Le temps minimum de validation a été ajusté à <u>1 min 30 s</u>.</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Hub :</strong> Un accès rapide au stage des leaderboards a été ajouté dans les liens principaux du hub.</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Snake :</strong> Le canvas a été agrandi sur les grands écrans avec un redimensionnement mieux géré.</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Casino :</strong> L'équilibrage des gains a été ajusté (roulette/slots) pour limiter les écarts trop élevés. (Taux de gain ajustés)</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Slots :</strong> Les combinaisons gagnantes par paire suivent désormais uniquement l'ordre gauche → droite (ex: <u>BBX</u> gagne, <u>XBB</u> et <u>BXB</u> non).</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Shop :</strong> Les prix des items ont été revus à la baisse et le prix du badge personalisable est désormais affiché.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Sudoku :</strong> Correction d'un cas où le timer pouvait ne pas reprendre après un refresh/reconnexion. Correction d'un problème de rafraîchissement du leaderboard à la fin d'une partie.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Badges :</strong> Le badge <u>OG</u> est de nouveau attribué automatiquement aux anciens comptes éligibles.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Snake :</strong> Correction d'un bug où le jeu pouvait rester inactif (canvas / boutons non fonctionnels).</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Hub :</strong> Le stage ChatGPT est correctement masqué tant qu'il n'est pas actif.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Accès refusé (403) :</strong> Le style de la page est de nouveau chargé correctement.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Dino :</strong> La physique du jeu a été revue, améliorant le comportement des collisions et du mouvement. C'est maintenant une simple histoire d'endurance.</li>
-                    </ul>
-                    <h3><i
-                                    class="fa-solid fa-arrow-right-arrow-left"></i>
-                                Retraits / Resets —</h3>
-                            <ul>
-                                <li><span class="tag-removed">[RESET]</span>
-                                    <strong>Badges :</strong> Oui, encore. Mais maintenant ça fonctionne :)</li>
-                            </ul>
+                        <li><span class="tag-new">[NEW]</span> <strong>
+                                Curseur:</strong> Ajout d'un curseur custom sur
+                            l'ensemble du site. (suggestions visuelles
+                            bienvenues pour modifications)</li>
+                        <li><span class="tag-new">[NEW]</span> <strong> Subway
+                                Surfer (presque):</strong> Un nouveau jeu Subway
+                            Surfer arrive sur la PDE! Atteignez des scores
+                            élevés en évitant les obstacles et en récupérant des
+                            pièces. (suggestions sur le gameplay bienvenues pour
+                            modifications)</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>
+                                Serveur:</strong> Tom B. est officiellement
+                            Modérateur du Serveur! Vous pourrez vous référer à
+                            lui si vous avez des questions ou requêtes
+                            nécéssitantes des actions Admin/Modo.</li>
+                        <li><span class="tag-new">[NEW]</span> <strong>
+                                Clicker:</strong> 2 nouvelles améliorations pour
+                            le clickers sont disponible pour booster le farming
+                            de clicks!
+                        </ul>
+                        <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                            —</h3>
+                        <ul>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong> Page de Dons:</strong> Style de la page
+                                aligné sur le design du site général.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong> BlackJack:</strong> Quand un joueur du
+                                Lobby BlackJack quitte avant la fin de la
+                                manche, il n'y a plus de problème
+                                d'initialisation de la prochaine partie. En
+                                bref, on peut quitter et rejoindre directement
+                                après sans soucis. (vous perdez votre mise si
+                                vous quittez avant la phase de fin, que vous
+                                perdez et gardez les gains si vous quittez
+                                pendant le retoura au lobby et que vous avez
+                                gagné).</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>
+                                    Items interface:</strong> Certains aspects
+                                de quelques éléments ont été améliorés/modifié
+                                pour une expérience plus fluide.</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-arrow-right-arrow-left"></i>
+                            Retraits / Resets —</h3>
+                        <ul>
+                            <li><span class="tag-removed">[RESET]</span>
+                                <strong>Reset Global :</strong> Fin de la phase
+                                de tests de la V3.0. Toutes les stas ET la
+                                PixelWar sont reset.</li>
+                        </ul>
+                        <article style="user-select: none; margin-top: 25px;">
+                            <mark
+                                style="background-color: var(--primary-color); padding: 0px 7.5px; margin-top: 10px; border-radius: 40px;line-height: 10px;"><i>*
+                                    Note : La phase de tests a été très
+                                    concluante! </mark><br><mark
+                                    style="background-color: var(--primary-color); padding: 0px 7.5px; margin-top: 10px; border-radius: 40px;line-height: 10px;">Je
+                                    vous remercie de votre contribution et
+                                    collaboration.</mark><br><mark
+                                    style="background-color: var(--primary-color); padding: 0px 7.5px; margin-top: 10px; border-radius: 40px;line-height: 10px;">Bon
+                                    jeu à tous pour la vraie V3!</i></mark>
+                        </article>
+                    </div>
                 </div>
-            </div>
 
-            <div class="patch-entry">
-                <i class="fa-solid fa-caret-down" id="topArrow"></i>
-                <div class="patch-title">
-                    <span class="version">v3.0.1</span>
-                    <span class="date">02/03/2026</span>
+                <div class="patch-entry">
+                    <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                    <div class="patch-title">
+                        <span class="version">v3.0.3</span>
+                        <span class="date">05/03/2026</span>
+                    </div>
+                    <div class="patch-content">
+                        <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
+                        <ul>
+                            <li><span class="tag-new">[NEW]</span> <strong>Pixel
+                                    War :</strong> Ajout d'une fonctionnalité
+                                longuement attendue : les calques! Vous pouvez
+                                maintenant placer une image (calque) sur le
+                                canvas, le positionner / redimensionner à votre
+                                guise pour dessiner par dessus.</li>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Leaderboards :</strong> (RE) Ajout du
+                                leaderboard Motus dans la sections des
+                                classements.</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                            —</h3>
+                        <ul>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Slots :</strong> Modifitcations des taux
+                                de gains. (infos précises sur l'interface du
+                                jeu)</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Pixel
+                                    War :</strong> Correction de l'affichage des
+                                box de couleurs dans la palette. Les couleurs ne
+                                sorte plus du VP (écran) lorsqu'il y en a
+                                beaucoup.</li>
+                            <li><span class="tag-fix">[FIX]</span>
+                                <strong>Serveur :</strong> Correction des bugs
+                                de performances du serveur pour éviter les lags
+                                sur les jeux / chat.</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Chat
+                                    :</strong> Correction d'un bug qui placait
+                                tout le monde en haut du chat (premier message
+                                envoyé dans l'historique). Vous apparaîssez au
+                                dernier message au chargement du Chat et au
+                                changement de Stage.</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-arrow-right-arrow-left"></i>
+                            Retraits / Resets —</h3>
+                        <ul>
+                            <li><span class="tag-removed">[REMOVED]</span>
+                                <strong>ChatGPT :</strong> Le Stage ChatGPT a
+                                été supprimé à cause de problèmes
+                                d'initialisation et de compatibilité avec IE9 et
+                                la version actuelle de FireFox.</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="patch-content">
-                    <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                    <ul>
-                        <li><span class="tag-new">[NEW]</span> <strong>Sudoku :</strong> Votre progression est maintenant sauvegardée automatiquement pendant la partie (grille, timer, erreurs, etc.) et restaurée quand vous revenez sur le jeu.</li>
-                    </ul>
-                    <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
-                    <ul>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Navigation (Sidebar) :</strong> Les boutons de navigation ont été réorganisés dans un ordre plus logique et plus agréable à parcourir.</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Sondages :</strong> Une confirmation est maintenant demandée avant de valider votre vote sur une option.</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Clicker (Challenge Humain) :</strong> Le palier du challenge a été ajusté à <u>12 CPS maintenus pendant 6,7 secondes</u>.</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Jeux & Équilibrage :</strong> Plusieurs validations de score et de progression ont été renforcées côté serveur pour améliorer le fair-play global.</li>
-                    </ul>
-                    <h3><i class="fa-solid fa-wrench"></i> Correctifs —</h3>
-                    <ul>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Hub (Horloge) :</strong> Correction d'un problème d'affichage/placement de l'horloge sur la page principale.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Chat :</strong> Suppression des messages Système liés aux déblocages de médailles pour réduire le spam visuel.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Roulette :</strong> Correction d'un bug intermittent où l'affichage de la roulette pouvait disparaître dans certains cas.</li>
-                    </ul>
-                </div>
-            </div>
 
-            <div class="patch-entry">
-                <i class="fa-solid fa-caret-down" id="topArrow"></i>
-                <div class="patch-title">
-                    <span class="version">v3.0.0</span>
-                    <span class="date">Vacances d'Hiver</span>
+                <div class="patch-entry">
+                    <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                    <div class="patch-title">
+                        <span class="version">v3.0.2</span>
+                        <span class="date">03/03/2026</span>
+                    </div>
+                    <div class="patch-content">
+                        <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
+                        <ul>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Leaderboards :</strong> Un nouveau
+                                leaderboard <u>Clicks + Peak CPS Humain</u> a
+                                été ajouté dans la section des classements.</li>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Clicker (Anti-Cheat) :</strong>
+                                Détection anti-triche renforcée côté serveur
+                                avec une meilleure identification des patterns
+                                de clics anormalement constants. Je vais vous
+                                traquer. <br> [Aller voir l'Admin si vous pensez
+                                être victime d'une erreur]</li>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Clicker :</strong> Un mini timer
+                                s'affiche lorsque vous atteignez 12 CPS humains.
+                                (indicateur de l'obtention du badge Clicker
+                                Fou)</li>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>BlackJack :</strong> Des animations ont
+                                été ajoutées au cartes pour une expérience plus
+                                immersive. Maintenant le reveal de la 2e carte
+                                du croupier est un vrai reveal avec un suspense
+                                réaliste.</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                            —</h3>
+                        <ul>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Sudoku :</strong> L'expérience de fin de
+                                partie a été revue: après une grille complétée,
+                                la grille se masque et un message vous invite à
+                                lancer une nouvelle partie. Le temps minimum de
+                                validation a été ajusté à <u>1 min 30
+                                    s</u>.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Hub :</strong> Un accès rapide au stage
+                                des leaderboards a été ajouté dans les liens
+                                principaux du hub.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Snake :</strong> Le canvas a été agrandi
+                                sur les grands écrans avec un redimensionnement
+                                mieux géré.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Casino :</strong> L'équilibrage des
+                                gains a été ajusté (roulette/slots) pour limiter
+                                les écarts trop élevés. (Taux de gain
+                                ajustés)</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Slots :</strong> Les combinaisons
+                                gagnantes par paire suivent désormais uniquement
+                                l'ordre gauche → droite (ex: <u>BBX</u> gagne,
+                                <u>XBB</u> et <u>BXB</u> non).</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Shop :</strong> Les prix des items ont
+                                été revus à la baisse et le prix du badge
+                                personalisable est désormais affiché.</li>
+                            <li><span class="tag-fix">[FIX]</span>
+                                <strong>Sudoku :</strong> Correction d'un cas où
+                                le timer pouvait ne pas reprendre après un
+                                refresh/reconnexion. Correction d'un problème de
+                                rafraîchissement du leaderboard à la fin d'une
+                                partie.</li>
+                            <li><span class="tag-fix">[FIX]</span>
+                                <strong>Badges :</strong> Le badge <u>OG</u> est
+                                de nouveau attribué automatiquement aux anciens
+                                comptes éligibles.</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Snake
+                                    :</strong> Correction d'un bug où le jeu
+                                pouvait rester inactif (canvas / boutons non
+                                fonctionnels).</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Hub
+                                    :</strong> Le stage ChatGPT est correctement
+                                masqué tant qu'il n'est pas actif.</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Accès
+                                    refusé (403) :</strong> Le style de la page
+                                est de nouveau chargé correctement.</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Dino
+                                    :</strong> La physique du jeu a été revue,
+                                améliorant le comportement des collisions et du
+                                mouvement. C'est maintenant une simple histoire
+                                d'endurance.</li>
+                        </ul>
+                        <h3><i
+                                class="fa-solid fa-arrow-right-arrow-left"></i>
+                            Retraits / Resets —</h3>
+                        <ul>
+                            <li><span class="tag-removed">[RESET]</span>
+                                <strong>Badges :</strong> Oui, encore. Mais
+                                maintenant ça fonctionne :)</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="patch-content">
-                    <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
-                    <ul>
-                        <li><span class="tag-new">[NEW]</span> <strong>Badges
-                                :</strong> Des badges pour chaque jeu ont été
-                            ajoutés! Direction <a
-                                href="badges.html">"badges"</a> pour en savoir
-                            plus.</li>
-                        <li><span class="tag-new">[NEW]</span> <strong>Economie
-                                :</strong> Un nouveau système économique a fait
-                            surface! Direction <a
-                                href="reglement.html">"règlement & infos"</a>
-                            pour en savoir plus.</li>
-                        <li><span class="tag-new">[NEW]</span> <strong>Sudoku
-                                :</strong> Un nouveau jeu de Sudoku a été
-                            ajouté! Allez vous casser le crâne au lieu de faire
-                            la guerre...</li>
-                        <li><span class="tag-new">[NEW]</span> <strong>Casino
-                                :</strong> Une roulette et des slots machines
-                            (machines à sous) ont été ajoutées pour encore plus
-                            d'addiction au gambling!</li>
-                        <li><span class="tag-new">[NEW - BETA]</span>
-                            <strong>ChatGPT :</strong> Un onglet ChatGPT a été
-                            intégré. Il est encore en phase de teste et peut ne
-                            pas fonctionner correctement ; il ne vous sera pas
-                            demandé de report des bugs à propos de celui-ci,
-                            merci de votre compréhension.</li>
-                        <li><span class="tag-new">[NEW]</span> <strong> PixelWar
-                                :</strong> Vous pouvez maintenant personaliser
-                            et acheter des couleurs personalisées depuis le <a
-                                href="shop.html">Shop</a> de manière permanente.</li>
-                    </ul>
-                    <h3><i class="fa-solid fa-wrench"></i> Améliorations —</h3>
-                    <ul>
-                        <li><span class="tag-change">[CHANGE]</span>
-                            <strong>Interface (UI) :</strong> L'interface a été
-                            entièrement révisée pour améliorer l'expérience
-                            utilisateur. Vos retours constructif, positifs et/ou
-                            négatifs sont les bienvenus.</li>
-                        <li><span class="tag-change">[CHANGE]</span>
-                            <strong>Performance :</strong> Amélioration des
-                            performances globales du site.</li>
-                        <li><span class="tag-change">[CHANGE]</span>
-                            <strong>PixelWar :</strong> 
-                            <ul>
-                                <li>Limite de pixel
-                                    &rightarrow; 500 ;</li>
+
+                <div class="patch-entry">
+                    <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                    <div class="patch-title">
+                        <span class="version">v3.0.1</span>
+                        <span class="date">02/03/2026</span>
+                    </div>
+                    <div class="patch-content">
+                        <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
+                        <ul>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Sudoku :</strong> Votre progression est
+                                maintenant sauvegardée automatiquement pendant
+                                la partie (grille, timer, erreurs, etc.) et
+                                restaurée quand vous revenez sur le jeu.</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                            —</h3>
+                        <ul>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Navigation (Sidebar) :</strong> Les
+                                boutons de navigation ont été réorganisés dans
+                                un ordre plus logique et plus agréable à
+                                parcourir.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Sondages :</strong> Une confirmation est
+                                maintenant demandée avant de valider votre vote
+                                sur une option.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Clicker (Challenge Humain) :</strong> Le
+                                palier du challenge a été ajusté à <u>12 CPS
+                                    maintenus pendant 6,7 secondes</u>.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Jeux & Équilibrage :</strong> Plusieurs
+                                validations de score et de progression ont été
+                                renforcées côté serveur pour améliorer le
+                                fair-play global.</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-wrench"></i> Correctifs —</h3>
+                        <ul>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Hub
+                                    (Horloge) :</strong> Correction d'un
+                                problème d'affichage/placement de l'horloge sur
+                                la page principale.</li>
+                            <li><span class="tag-fix">[FIX]</span> <strong>Chat
+                                    :</strong> Suppression des messages Système
+                                liés aux déblocages de médailles pour réduire le
+                                spam visuel.</li>
+                            <li><span class="tag-fix">[FIX]</span>
+                                <strong>Roulette :</strong> Correction d'un bug
+                                intermittent où l'affichage de la roulette
+                                pouvait disparaître dans certains cas.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="patch-entry">
+                    <i class="fa-solid fa-caret-down" id="topArrow"></i>
+                    <div class="patch-title">
+                        <span class="version">v3.0.0</span>
+                        <span class="date">Vacances d'Hiver</span>
+                    </div>
+                    <div class="patch-content">
+                        <h3><i class="fa-solid fa-star"></i> Nouveautés —</h3>
+                        <ul>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Badges
+                                    :</strong> Des badges pour chaque jeu ont
+                                été
+                                ajoutés! Direction <a
+                                    href="badges.html">"badges"</a> pour en
+                                savoir
+                                plus.</li>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Economie
+                                    :</strong> Un nouveau système économique a
+                                fait
+                                surface! Direction <a
+                                    href="reglement.html">"règlement & infos"</a>
+                                pour en savoir plus.</li>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Sudoku
+                                    :</strong> Un nouveau jeu de Sudoku a été
+                                ajouté! Allez vous casser le crâne au lieu de
+                                faire
+                                la guerre...</li>
+                            <li><span class="tag-new">[NEW]</span>
+                                <strong>Casino
+                                    :</strong> Une roulette et des slots
+                                machines
+                                (machines à sous) ont été ajoutées pour encore
+                                plus
+                                d'addiction au gambling!</li>
+                            <li><span class="tag-new">[NEW - BETA]</span>
+                                <strong>ChatGPT :</strong> Un onglet ChatGPT a
+                                été
+                                intégré. Il est encore en phase de teste et peut
+                                ne
+                                pas fonctionner correctement ; il ne vous sera
+                                pas
+                                demandé de report des bugs à propos de celui-ci,
+                                merci de votre compréhension.</li>
+                            <li><span class="tag-new">[NEW]</span> <strong>
+                                    PixelWar
+                                    :</strong> Vous pouvez maintenant
+                                personaliser
+                                et acheter des couleurs personalisées depuis le
+                                <a
+                                    href="shop.html">Shop</a> de manière
+                                permanente.</li>
+                        </ul>
+                        <h3><i class="fa-solid fa-wrench"></i> Améliorations
+                            —</h3>
+                        <ul>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Interface (UI) :</strong> L'interface a
+                                été
+                                entièrement révisée pour améliorer l'expérience
+                                utilisateur. Vos retours constructif, positifs
+                                et/ou
+                                négatifs sont les bienvenus.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>Performance :</strong> Amélioration des
+                                performances globales du site.</li>
+                            <li><span class="tag-change">[CHANGE]</span>
+                                <strong>PixelWar :</strong>
+                                <ul>
+                                    <li>Limite de pixel
+                                        &rightarrow; 500 ;</li>
                                     <li>1 pixel / 30
-                                    secondes ;</li>
+                                        secondes ;</li>
                                     <li>Prix pixels réduit ;</li>
                                 </ul>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Clicker :</strong> Rework du Clicker avec un système de progression amélioré. Vous pouvez maintenant acheter des amélioration pour vous aider à farm les clicks! (cookie clicker like)</li>
-                        <li><span class="tag-change">[CHANGE]</span> <strong>Revive jeux :</strong> Lors de la demande de réanimation dans les jeux, vous aurez le choix de payer ou d'utiliser une Vie achetée au <a href="shop.html">Shop</a>. Ces mêmes Vies ont aussi vu leur prix augmenter.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>PixelWar :</strong> Correction de l'affichage de la mini box d'info concernant qui est le propriétaire d'un pixel.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Revive jeux :</strong> Correction d'un bug qui empêchait la réanimation de certains jeux et fixation de l'interface du modal.</li>
-                        <li><span class="tag-fix">[FIX]</span> <strong>Page de pause :</strong> Le bug de la barre de recherche non fonctionnelle a été réglé, vous pouvez refaire des recherches à partir de la page de pause.</li>
+                                <li><span class="tag-change">[CHANGE]</span>
+                                    <strong>Clicker :</strong> Rework du Clicker
+                                    avec un système de progression amélioré.
+                                    Vous pouvez maintenant acheter des
+                                    amélioration pour vous aider à farm les
+                                    clicks! (cookie clicker like)</li>
+                                <li><span class="tag-change">[CHANGE]</span>
+                                    <strong>Revive jeux :</strong> Lors de la
+                                    demande de réanimation dans les jeux, vous
+                                    aurez le choix de payer ou d'utiliser une
+                                    Vie achetée au <a href="shop.html">Shop</a>.
+                                    Ces mêmes Vies ont aussi vu leur prix
+                                    augmenter.</li>
+                                <li><span class="tag-fix">[FIX]</span>
+                                    <strong>PixelWar :</strong> Correction de
+                                    l'affichage de la mini box d'info concernant
+                                    qui est le propriétaire d'un pixel.</li>
+                                <li><span class="tag-fix">[FIX]</span>
+                                    <strong>Revive jeux :</strong> Correction
+                                    d'un bug qui empêchait la réanimation de
+                                    certains jeux et fixation de l'interface du
+                                    modal.</li>
+                                <li><span class="tag-fix">[FIX]</span>
+                                    <strong>Page de pause :</strong> Le bug de
+                                    la barre de recherche non fonctionnelle a
+                                    été réglé, vous pouvez refaire des
+                                    recherches à partir de la page de
+                                    pause.</li>
                             </ul>
                             <h3><i
                                     class="fa-solid fa-arrow-right-arrow-left"></i>
                                 Retraits / Resets —</h3>
                             <ul>
                                 <li><span class="tag-removed">[REMOVED]</span>
-                                    <strong>Leaderboard Motus:</strong> Le leaderboard Motus a été retiré. (Vous pouvez toujours voir votre avancement dans le jeu directement, et celui des autres depuis leur profil.)</li>
+                                    <strong>Leaderboard Motus:</strong> Le
+                                    leaderboard Motus a été retiré. (Vous pouvez
+                                    toujours voir votre avancement dans le jeu
+                                    directement, et celui des autres depuis leur
+                                    profil.)</li>
                                 <li><span class="tag-removed">[RESET]</span>
-                                    <strong>Reset Global :</strong> Reset saisonnier + phase de teste d'une semaine.</li>
+                                    <strong>Reset Global :</strong> Reset
+                                    saisonnier + phase de teste d'une
+                                    semaine.</li>
                             </ul>
                         </div>
                     </div>

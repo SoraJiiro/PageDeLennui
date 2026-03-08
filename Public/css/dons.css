@@ -1,95 +1,79 @@
-body {
-  background-color: var(--bg-color, #1a1a1a);
-  color: var(--text-color, #f0f0f0);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
+.don-page {
+  min-height: 100vh;
   display: flex;
-  justify-content: center;
   align-items: center;
-  height: 100vh;
+  justify-content: center;
+  padding: 24px 16px;
 }
 
 .donation-container {
-  background: var(--card-bg, #2a2a2a);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   width: 100%;
-  max-width: 450px;
-  text-align: center;
-  border: 1px solid var(--border-color, #333);
+  max-width: 640px;
+  padding: 2rem;
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 0 16px rgba(0, 255, 0, 0.2);
 }
 
-h1 {
-  margin-bottom: 2rem;
-  color: var(--accent-color, #e4a101);
+.donation-container h1 {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 1.75rem;
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
-  text-align: left;
+  margin-bottom: 1.3rem;
 }
 
-label {
+.form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: var(--header-text, #ccc);
+  color: var(--primary-color);
+  font-weight: 700;
 }
 
-select,
-input[type="number"] {
+#recipientSelect,
+#amountInput {
   width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #444);
-  background: var(--input-bg, #333);
-  color: var(--text-color, #fff);
+  background: var(--bg-color);
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
   font-size: 1rem;
-  box-sizing: border-box;
+  padding: 12px;
 }
 
-select:focus,
-input:focus {
+#recipientSelect:focus,
+#amountInput:focus {
   outline: none;
-  border-color: var(--accent-color, #e4a101);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
 }
 
-.btn-submit {
-  background: var(--accent-color, #e4a101);
-  color: var(--btn-text, #000);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 1.1rem;
-  cursor: pointer;
+#recipientSelect option {
+  background: var(--bg-color);
+  color: var(--primary-color);
+}
+
+.don-submit {
   width: 100%;
-  transition: transform 0.2s, opacity 0.2s;
-  font-weight: bold;
-}
-
-.btn-submit:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-}
-
-.btn-back {
-  background: transparent;
-  color: var(--header-text, #aaa);
-  border: 1px solid var(--border-color, #444);
-  margin-top: 1rem;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.btn-back:hover {
-  color: var(--text-color, #fff);
-  border-color: var(--text-color, #fff);
+  margin-top: 8px;
 }
 
 .info-msg {
   margin-top: 1rem;
+  color: var(--primary-color);
+  opacity: 0.85;
+  text-align: center;
   font-size: 0.9rem;
-  color: #888;
+}
+
+@media (max-width: 600px) {
+  .don-page {
+    align-items: flex-start;
+    padding-top: 88px;
+  }
+
+  .donation-container {
+    padding: 1.2rem;
+  }
 }

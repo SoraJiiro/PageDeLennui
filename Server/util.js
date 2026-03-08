@@ -188,6 +188,7 @@ class FileService {
       chatMuted: path.join(config.DATA, "chat_muted.json"),
       dinoScores: path.join(config.DATA, "dino_scores.json"),
       flappyScores: path.join(config.DATA, "flappy_scores.json"),
+      subwayScores: path.join(config.DATA, "subway_scores.json"),
       runnerResume: path.join(config.DATA, "runner_resume.json"),
       unoWins: path.join(config.DATA, "uno_wins.json"),
       unoStats: path.join(config.DATA, "uno_stats.json"),
@@ -241,6 +242,23 @@ class FileService {
       fileActions: path.join(config.DATA, "file_actions.log"),
     };
 
+    this.pendingJsonWrites = new Map();
+    this.jsonFlushTimer = null;
+    this.jsonWriteDelayMs = Math.max(
+      20,
+      Math.floor(Number(process.env.JSON_WRITE_DEBOUNCE_MS) || 120),
+    );
+
+    this.pendingLogAppends = {
+      chatLogs: [],
+      fileActions: [],
+    };
+    this.logFlushTimer = null;
+    this.logWriteDelayMs = Math.max(
+      20,
+      Math.floor(Number(process.env.LOG_WRITE_DEBOUNCE_MS) || 150),
+    );
+
     this.data = this.loadAll();
     // Migration silencieuse des médailles vers format uniforme { name, colors: [] }
     this.migrateMedals();
@@ -270,6 +288,99 @@ class FileService {
 
   writeJSON(file, data) {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf-8");
+  }
+
+  queueJSONWrite(file, data) {
+    try {
+      const payload = JSON.stringify(data, null, 2);
+      this.pendingJsonWrites.set(file, payload);
+      this.scheduleJsonFlush();
+    } catch (e) {
+      console.error("Erreur serialisation JSON:", e);
+    }
+  }
+
+  scheduleJsonFlush() {
+    if (this.jsonFlushTimer) return;
+    this.jsonFlushTimer = setTimeout(() => {
+      this.jsonFlushTimer = null;
+      this.flushJSONWrites().catch((e) => {
+        console.error("Erreur flush JSON:", e);
+      });
+    }, this.jsonWriteDelayMs);
+    if (typeof this.jsonFlushTimer.unref === "function") {
+      this.jsonFlushTimer.unref();
+    }
+  }
+
+  async flushJSONWrites() {
+    const entries = Array.from(this.pendingJsonWrites.entries());
+    if (entries.length === 0) return;
+    this.pendingJsonWrites.clear();
+
+    await Promise.allSettled(
+      entries.map(([file, payload]) =>
+        fs.promises.writeFile(file, payload, "utf8"),
+      ),
+    );
+  }
+
+  queueLogAppend(target, line) {
+    if (!target || !line) return;
+    const bucket = this.pendingLogAppends[target];
+    if (!bucket) return;
+    bucket.push(line);
+    this.scheduleLogFlush();
+  }
+
+  scheduleLogFlush() {
+    if (this.logFlushTimer) return;
+    this.logFlushTimer = setTimeout(() => {
+      this.logFlushTimer = null;
+      this.flushLogAppends().catch((e) => {
+        console.error("Erreur flush logs:", e);
+      });
+    }, this.logWriteDelayMs);
+    if (typeof this.logFlushTimer.unref === "function") {
+      this.logFlushTimer.unref();
+    }
+  }
+
+  async flushLogAppends() {
+    const chatChunk = this.pendingLogAppends.chatLogs.join("");
+    const fileActionChunk = this.pendingLogAppends.fileActions.join("");
+    this.pendingLogAppends.chatLogs = [];
+    this.pendingLogAppends.fileActions = [];
+
+    const ops = [];
+    if (chatChunk) {
+      ops.push(fs.promises.appendFile(this.files.chatLogs, chatChunk, "utf8"));
+    }
+    if (fileActionChunk) {
+      ops.push(
+        fs.promises.appendFile(this.files.fileActions, fileActionChunk, "utf8"),
+      );
+    }
+    if (ops.length > 0) {
+      await Promise.allSettled(ops);
+    }
+  }
+
+  async flushAllPendingWrites() {
+    try {
+      if (this.jsonFlushTimer) {
+        clearTimeout(this.jsonFlushTimer);
+        this.jsonFlushTimer = null;
+      }
+      if (this.logFlushTimer) {
+        clearTimeout(this.logFlushTimer);
+        this.logFlushTimer = null;
+      }
+      await this.flushJSONWrites();
+      await this.flushLogAppends();
+    } catch (e) {
+      console.error("Erreur flushAllPendingWrites:", e);
+    }
   }
 
   loadAll() {
@@ -361,6 +472,7 @@ class FileService {
       dinoScores: this.readJSON(this.files.dinoScores, {}),
       medals: this.readJSON(this.files.medals, {}),
       flappyScores: this.readJSON(this.files.flappyScores, {}),
+      subwayScores: this.readJSON(this.files.subwayScores, {}),
       runnerResume: this.readJSON(this.files.runnerResume, {}),
       unoWins: this.readJSON(this.files.unoWins, {}),
       unoStats: this.readJSON(this.files.unoStats, {}),
@@ -487,6 +599,7 @@ class FileService {
       dinoScores: this.files.dinoScores,
       medals: this.files.medals,
       flappyScores: this.files.flappyScores,
+      subwayScores: this.files.subwayScores,
       runnerResume: this.files.runnerResume,
       unoWins: this.files.unoWins,
       unoStats: this.files.unoStats,
@@ -528,18 +641,18 @@ class FileService {
       chatMuted: this.files.chatMuted,
     };
     if (fileMap[key]) {
-      this.writeJSON(fileMap[key], data);
+      this.queueJSONWrite(fileMap[key], data);
     }
   }
 
   appendLog(payload) {
-    fs.appendFileSync(this.files.chatLogs, JSON.stringify(payload) + "\n");
+    this.queueLogAppend("chatLogs", JSON.stringify(payload) + "\n");
   }
 
   appendFileAction(payload) {
     try {
       const line = JSON.stringify(payload) + "\n";
-      fs.appendFileSync(this.files.fileActions, line, { encoding: "utf8" });
+      this.queueLogAppend("fileActions", line);
     } catch (e) {
       console.error("Erreur écriture file action log:", e);
     }

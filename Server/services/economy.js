@@ -189,6 +189,7 @@ const REVIVE_PRICING = {
   dino: { multiplier: 50, min: 5000, max: 5_000_000 },
   flappy: { multiplier: 150, min: 5000, max: 5_000_000 },
   snake: { multiplier: 75, min: 5000, max: 5_000_000 },
+  subway: { multiplier: 75, min: 5000, max: 5_000_000 },
   2048: { multiplier: 10, min: 5000, max: 5_000_000 },
   blockblast: { multiplier: 25, min: 5000, max: 5_000_000 },
 };

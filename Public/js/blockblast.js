@@ -438,13 +438,9 @@ export function initBlockBlast(socket) {
   });
 
   function reportBestIfImproved() {
+    // On ne pousse plus le leaderboard en continu: envoi du score uniquement au game over.
     const currentBest = Math.max(myBest, lastBestReported);
     if (state.score > currentBest) {
-      socket.emit("blockblast:score", {
-        score: state.score,
-        elapsedMs: state.elapsedMs,
-        final: false,
-      });
       lastBestReported = state.score;
     }
   }

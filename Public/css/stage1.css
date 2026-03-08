@@ -246,7 +246,7 @@
   border: var(--border-width) solid var(--primary-color);
   background: var(--bg-color);
   color: var(--primary-color);
-  cursor: pointer;
+  
   transition: all var(--transition-speed) var(--transition-ease);
 }
 
@@ -254,20 +254,20 @@
   position: absolute;
   left: 25px;
   bottom: 130px;
-  width: 300px;
+  width: 360px;
 }
 
 .zone {
   position: relative;
   width: 100%;
-  height: 235px;
+  height: 285px;
   border: var(--border-width) solid var(--primary-color);
   background: var(--bg-color);
   color: var(--primary-color);
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer;
+  
   transition: all var(--transition-speed) var(--transition-ease);
   z-index: 5;
 }
@@ -292,7 +292,7 @@
 .zone i {
   font-style: normal;
   font-weight: bold;
-  font-size: 1.85rem;
+  font-size: 2.2rem;
   user-select: none;
 }
 
@@ -384,7 +384,7 @@ p.cps-humain {
   border-top: 2px solid var(--primary-color);
   padding: 7.5px;
   width: fit-content;
-  cursor: pointer;
+  
   background: var(--bg-color);
 }
 
@@ -473,7 +473,7 @@ p.cps-humain {
   border: 2px solid var(--primary-color);
   padding: 15px;
   z-index: 9998;
-  cursor: pointer;
+  
 }
 
 .show-nav:hover {
@@ -548,7 +548,7 @@ p.cps-humain {
 }
 
 .medals-wrap .medal.shown:hover {
-  cursor: pointer;
+  
   transition: transform 0.4s ease;
 }
 

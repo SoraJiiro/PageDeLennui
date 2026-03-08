@@ -85,10 +85,18 @@ export function initSlots(socket) {
     await animateSpin(data.reels);
 
     if (data.won) {
-      result.textContent = `Gagné ! +${Number(data.payout || 0)} tokens`;
+      const payout = Number(data.payout || 0);
+      const amount = Number(data.amount || 0);
+      const net = Math.max(0, payout - amount);
+      const mult = Number(data.multiplier || 0);
+      result.textContent = `Gagné ! x${mult.toLocaleString("fr-FR", {
+        minimumFractionDigits: Number.isInteger(mult) ? 0 : 2,
+        maximumFractionDigits: 2,
+      })} | +${payout.toLocaleString("fr-FR")} tokens (net +${net.toLocaleString("fr-FR")})`;
       result.className = "slots-result win";
     } else {
-      result.textContent = "Perdu !";
+      const amount = Number(data.amount || 0);
+      result.textContent = `Perdu ! -${amount.toLocaleString("fr-FR")} token(s)`;
       result.className = "slots-result lose";
     }
 

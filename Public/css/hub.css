@@ -111,6 +111,14 @@ body {
   min-width: 0;
 }
 
+.hub-infos {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
 .hub-links {
   margin-top: 14px;
   display: flex;
@@ -128,7 +136,7 @@ body {
   color: var(--primary-color);
   font-weight: 700;
   letter-spacing: 0.2px;
-  cursor: pointer;
+  
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease,
@@ -214,7 +222,7 @@ body {
     var(--bg-color)
   );
   color: var(--primary-color);
-  cursor: pointer;
+  
   overflow: hidden;
   transition:
     transform 0.18s ease,
@@ -370,7 +378,7 @@ body {
   border: 2px solid var(--primary-color);
   background: color-mix(in srgb, var(--bg-color) 88%, var(--primary-color) 12%);
   color: var(--primary-color);
-  cursor: pointer;
+  
   transition:
     transform 0.18s ease,
     opacity 0.18s ease,

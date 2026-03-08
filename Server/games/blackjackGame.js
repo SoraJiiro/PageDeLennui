@@ -12,6 +12,8 @@ class BlackjackGame {
     this.turnTimeoutMs = 15000;
     this.turnDeadline = 0;
     this.betTimer = null;
+    this.roundResetTimer = null;
+    this.roundEpoch = 0;
     this.betTimeoutMs = 15000;
     this.emitState = null;
     this.onRoundEnd = null;
@@ -80,6 +82,13 @@ class BlackjackGame {
 
       this.joueurs.splice(index, 1);
 
+      // Sécurité: si la table devient vide, on stoppe immédiatement tout cycle
+      // pour éviter qu'un callback async (dealer/payout) relance la manche.
+      if (this.joueurs.length === 0) {
+        this.resetGame();
+        return true;
+      }
+
       if (this.phase === "playing" && this.gameStarted) {
         this.checkTurn();
       }
@@ -87,11 +96,6 @@ class BlackjackGame {
       if (!this.gameStarted) {
         this.processQueue();
       }
-
-      if (this.joueurs.length === 0) {
-        this.resetGame();
-      }
-
       return true;
     }
     return false;
@@ -144,6 +148,8 @@ class BlackjackGame {
   }
 
   resetGame() {
+    // Invalide tout flux async de manche en cours.
+    this.roundEpoch++;
     this.gameStarted = false;
     this.processQueue();
 
@@ -151,6 +157,7 @@ class BlackjackGame {
     this.deck = [];
     this.dealerHand = [];
     this.currentPlayerIndex = 0;
+    this.turnDeadline = 0;
     this.joueurs.forEach((p) => {
       p.hands = [];
       p.activeHandIndex = 0;
@@ -160,6 +167,10 @@ class BlackjackGame {
     });
     if (this.turnTimer) clearTimeout(this.turnTimer);
     if (this.betTimer) clearTimeout(this.betTimer);
+    if (this.roundResetTimer) clearTimeout(this.roundResetTimer);
+    this.turnTimer = null;
+    this.betTimer = null;
+    this.roundResetTimer = null;
   }
 
   createDeck() {
@@ -461,11 +472,20 @@ class BlackjackGame {
   }
 
   async startDealerTurn() {
+    const epoch = this.roundEpoch;
+    if (!this.gameStarted || this.joueurs.length === 0) return;
     this.phase = "dealer";
 
     // Reveal de la carte cachée et on laisse le temps du suspense (match animation CSS)
     if (this.emitState) this.emitState(this.getState());
     await new Promise((r) => setTimeout(r, 2600));
+
+    if (
+      epoch !== this.roundEpoch ||
+      !this.gameStarted ||
+      this.joueurs.length === 0
+    )
+      return;
 
     let dealerScore = this.calculateScore(this.dealerHand);
 
@@ -476,6 +496,13 @@ class BlackjackGame {
 
       if (this.emitState) this.emitState(this.getState());
       await new Promise((r) => setTimeout(r, 1000));
+
+      if (
+        epoch !== this.roundEpoch ||
+        !this.gameStarted ||
+        this.joueurs.length === 0
+      )
+        return;
     }
 
     // Le croupier arrête de tirer, on passe au Payout
@@ -484,6 +511,13 @@ class BlackjackGame {
   }
 
   endRound() {
+    if (!this.gameStarted || this.joueurs.length === 0) {
+      this.resetGame();
+      if (this.emitState) this.emitState(this.getState());
+      return;
+    }
+
+    const epoch = this.roundEpoch;
     this.phase = "payout";
     const dealerScore = this.calculateScore(this.dealerHand);
     const dealerBust = dealerScore > 21;
@@ -558,7 +592,17 @@ class BlackjackGame {
     this.turnDeadline = Date.now() + 5000;
     if (this.emitState) this.emitState(this.getState());
 
-    setTimeout(() => {
+    this.roundResetTimer = setTimeout(() => {
+      if (
+        epoch !== this.roundEpoch ||
+        !this.gameStarted ||
+        this.joueurs.length === 0
+      ) {
+        this.resetGame();
+        if (this.emitState) this.emitState(this.getState());
+        return;
+      }
+
       this.resetGame();
       if (this.joueurs.length > 0) {
         this.startBetting();

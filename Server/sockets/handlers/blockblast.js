@@ -79,6 +79,7 @@ function registerBlockblastHandlers({
         resume[pseudo].dino != null ||
         resume[pseudo].flappy != null ||
         resume[pseudo].snake != null ||
+        resume[pseudo].subway != null ||
         resume[pseudo]["2048"] != null ||
         resume[pseudo].blockblast != null;
       if (!hasAny) delete resume[pseudo];
@@ -123,11 +124,6 @@ function registerBlockblastHandlers({
             colors.green,
           ),
         );
-        broadcastSystemMessage(
-          io,
-          `${pseudo} a fait un nouveau score de ${s} à Block Blast !`,
-          true,
-        );
         isAlreadyLogged_bb = true;
       }
     } else if (
@@ -147,9 +143,8 @@ function registerBlockblastHandlers({
 
     if (final === true) {
       rewardBlockblastFinal(s);
+      leaderboardManager.broadcastBlockBlastLB(io);
     }
-
-    leaderboardManager.broadcastBlockBlastLB(io);
   });
 
   socket.on("blockblast:saveMove", (moveData) => {

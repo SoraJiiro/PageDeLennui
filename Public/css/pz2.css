@@ -26,7 +26,7 @@
   background: transparent;
   color: var(--primary-color);
   padding: 8px 16px;
-  cursor: pointer;
+  
   text-transform: uppercase;
   letter-spacing: 0.16rem;
 }

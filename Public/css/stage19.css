@@ -57,6 +57,7 @@
   aspect-ratio: 1/1;
   display: grid;
   grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
   border: 2px solid color-mix(in srgb, var(--primary-color) 88%, transparent);
   background: color-mix(in srgb, var(--bg-color) 88%, var(--primary-color) 12%);
   position: relative;
@@ -163,7 +164,7 @@
   min-height: 42px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  cursor: pointer;
+  
   transition:
     background-color 0.15s ease,
     color 0.15s ease,

@@ -30,7 +30,8 @@
                     const r = await fetch('/api/session');
                     if (!r.ok) { window.location.href = '/login'; return; }
                     const { pseudo } = await r.json();
-                    if (pseudo !== 'Admin') { window.location.href = '/'; return; }
+                    const allowed = new Set(['Admin', 'Moderateur']);
+                    if (!allowed.has(pseudo)) { window.location.href = '/'; return; }
                 } catch { window.location.href = '/login'; return;}
 
                 const el = {

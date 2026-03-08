@@ -6,6 +6,12 @@ const CPS_PENALTY = Number(process.env.CPS_PENALTY) || 1000; // clicks to remove
 const CLICKER_FOU_CPS_THRESHOLD = 12;
 const CLICKER_FOU_REQUIRED_MS = 6700;
 const CLICKER_FOU_INACTIVITY_MS = 1100;
+const CLICKER_SCORE_EMIT_THROTTLE_MS =
+  Number(process.env.CLICKER_SCORE_EMIT_THROTTLE_MS) || 70;
+const CLICKER_CLICKS_SAVE_DEBOUNCE_MS =
+  Number(process.env.CLICKER_CLICKS_SAVE_DEBOUNCE_MS) || 250;
+const CLICKER_LB_BROADCAST_THROTTLE_MS =
+  Number(process.env.CLICKER_LB_BROADCAST_THROTTLE_MS) || 320;
 const DEFAULT_CLICKER_ANTI_CHEAT_SETTINGS = {
   humanPatternWindowMs: Number(process.env.HUMAN_PATTERN_WINDOW_MS) || 5000,
   humanPatternMinSamples: Number(process.env.HUMAN_PATTERN_MIN_SAMPLES) || 16,
@@ -151,6 +157,14 @@ const CLICKER_UPGRADES = {
     type: "perClick",
     valuePerLevel: 5,
   },
+  per_click_3: {
+    id: "per_click_3",
+    name: "AD Laurent",
+    cost: 8500,
+    maxLevel: 12,
+    type: "perClick",
+    valuePerLevel: 12,
+  },
   auto_click_1: {
     id: "auto_click_1",
     name: "CPS Booster",
@@ -166,6 +180,14 @@ const CLICKER_UPGRADES = {
     maxLevel: 10,
     type: "autoCps",
     valuePerLevel: 7,
+  },
+  auto_click_3: {
+    id: "auto_click_3",
+    name: "X-Clicker",
+    cost: 9800,
+    maxLevel: 12,
+    type: "autoCps",
+    valuePerLevel: 4,
   },
 };
 
@@ -220,6 +242,78 @@ function registerClickerHandlers({
   colors,
 }) {
   const { getWallet } = require("../../services/wallet");
+  let pendingClicksSave = false;
+  let clicksSaveTimer = null;
+  let scoreEmitTimer = null;
+  let pendingScoreEmit = false;
+
+  function persistClicks(immediate = false) {
+    if (immediate) {
+      if (clicksSaveTimer) {
+        clearTimeout(clicksSaveTimer);
+        clicksSaveTimer = null;
+      }
+      pendingClicksSave = false;
+      FileService.save("clicks", FileService.data.clicks);
+      return;
+    }
+
+    pendingClicksSave = true;
+    if (clicksSaveTimer) return;
+    clicksSaveTimer = setTimeout(
+      () => {
+        clicksSaveTimer = null;
+        if (!pendingClicksSave) return;
+        pendingClicksSave = false;
+        FileService.save("clicks", FileService.data.clicks);
+      },
+      Math.max(40, CLICKER_CLICKS_SAVE_DEBOUNCE_MS),
+    );
+    if (typeof clicksSaveTimer.unref === "function") clicksSaveTimer.unref();
+  }
+
+  function emitClickerScore(force = false) {
+    const emitNow = () => {
+      io.to("user:" + pseudo).emit("clicker:you", {
+        score: FileService.data.clicks[pseudo] || 0,
+      });
+    };
+
+    if (force) {
+      if (scoreEmitTimer) {
+        clearTimeout(scoreEmitTimer);
+        scoreEmitTimer = null;
+      }
+      pendingScoreEmit = false;
+      emitNow();
+      return;
+    }
+
+    pendingScoreEmit = true;
+    if (scoreEmitTimer) return;
+    scoreEmitTimer = setTimeout(
+      () => {
+        scoreEmitTimer = null;
+        if (!pendingScoreEmit) return;
+        pendingScoreEmit = false;
+        emitNow();
+      },
+      Math.max(30, CLICKER_SCORE_EMIT_THROTTLE_MS),
+    );
+    if (typeof scoreEmitTimer.unref === "function") scoreEmitTimer.unref();
+  }
+
+  function broadcastClickerLeaderboard() {
+    if (typeof leaderboardManager.broadcastClickerLBThrottled === "function") {
+      leaderboardManager.broadcastClickerLBThrottled(
+        io,
+        CLICKER_LB_BROADCAST_THROTTLE_MS,
+      );
+      return;
+    }
+    leaderboardManager.broadcastClickerLB(io);
+  }
+
   hydrateClickerAntiCheatSettings(FileService);
   socket.emit("clicker:antiCheatSettings", getClickerAntiCheatSettings());
 
@@ -299,7 +393,7 @@ function registerClickerHandlers({
         "clickerHumanPeakCps",
         FileService.data.clickerHumanPeakCps,
       );
-      leaderboardManager.broadcastClickerLB(io);
+      broadcastClickerLeaderboard();
     }
 
     if (cpsHumain >= CLICKER_FOU_CPS_THRESHOLD) {
@@ -424,7 +518,7 @@ function registerClickerHandlers({
 
       const current = FileService.data.clicks[pseudo] || 0;
       FileService.data.clicks[pseudo] = current - CPS_PENALTY;
-      FileService.save("clicks", FileService.data.clicks);
+      persistClicks(true);
 
       try {
         recalculateMedals(
@@ -442,7 +536,7 @@ function registerClickerHandlers({
         duration: 10000,
       });
 
-      leaderboardManager.broadcastClickerLB(io);
+      broadcastClickerLeaderboard();
 
       console.log({
         level: "action",
@@ -483,13 +577,11 @@ function registerClickerHandlers({
     FileService.data.clicks[pseudo] = currentClicks - dynamicCost;
     userUpgrades[id] = level + 1;
 
-    FileService.save("clicks", FileService.data.clicks);
+    persistClicks(true);
     FileService.save("clickerUpgrades", FileService.data.clickerUpgrades);
 
-    io.to("user:" + pseudo).emit("clicker:you", {
-      score: FileService.data.clicks[pseudo],
-    });
-    leaderboardManager.broadcastClickerLB(io);
+    emitClickerScore(true);
+    broadcastClickerLeaderboard();
     emitWalletForUser();
     socket.emit("clicker:upgrades", getUpgradePayload(FileService, pseudo));
   });
@@ -516,7 +608,7 @@ function registerClickerHandlers({
         "clickerHumanPeakCps",
         FileService.data.clickerHumanPeakCps,
       );
-      leaderboardManager.broadcastClickerLB(io);
+      broadcastClickerLeaderboard();
     } catch (e) {
       console.error("Erreur clicker:humanPeakUpdate:", e);
     }
@@ -553,11 +645,9 @@ function registerClickerHandlers({
         1 + Math.max(0, Math.floor(Number(effects.perClickBonus) || 0));
       FileService.data.clicks[pseudo] =
         (FileService.data.clicks[pseudo] || 0) + perClickGain;
-      FileService.save("clicks", FileService.data.clicks);
-      io.to("user:" + pseudo).emit("clicker:you", {
-        score: FileService.data.clicks[pseudo],
-      });
-      leaderboardManager.broadcastClickerLB(io);
+      persistClicks(false);
+      emitClickerScore(false);
+      broadcastClickerLeaderboard();
 
       if (track.banned) return;
 
@@ -568,7 +658,7 @@ function registerClickerHandlers({
           const current = FileService.data.clicks[pseudo] || 0;
           const penalized = current - CPS_PENALTY;
           FileService.data.clicks[pseudo] = penalized;
-          FileService.save("clicks", FileService.data.clicks);
+          persistClicks(true);
 
           if (!FileService.data.cheaters) FileService.data.cheaters = [];
           if (!FileService.data.cheaters.includes(pseudo)) {
@@ -593,7 +683,7 @@ function registerClickerHandlers({
             duration: 10000,
           });
 
-          leaderboardManager.broadcastClickerLB(io);
+          broadcastClickerLeaderboard();
         }
       } else {
         track.violationStart = null;
@@ -628,11 +718,9 @@ function registerClickerHandlers({
       const perClickGain = 1;
       FileService.data.clicks[pseudo] =
         (FileService.data.clicks[pseudo] || 0) + perClickGain;
-      FileService.save("clicks", FileService.data.clicks);
-      io.to("user:" + pseudo).emit("clicker:you", {
-        score: FileService.data.clicks[pseudo],
-      });
-      leaderboardManager.broadcastClickerLB(io);
+      persistClicks(false);
+      emitClickerScore(false);
+      broadcastClickerLeaderboard();
 
       if (track.banned) return;
 
@@ -643,7 +731,7 @@ function registerClickerHandlers({
           const current = FileService.data.clicks[pseudo] || 0;
           const penalized = current - CPS_PENALTY;
           FileService.data.clicks[pseudo] = penalized;
-          FileService.save("clicks", FileService.data.clicks);
+          persistClicks(true);
 
           if (!FileService.data.cheaters) FileService.data.cheaters = [];
           if (!FileService.data.cheaters.includes(pseudo)) {
@@ -668,7 +756,7 @@ function registerClickerHandlers({
             duration: 10000,
           });
 
-          leaderboardManager.broadcastClickerLB(io);
+          broadcastClickerLeaderboard();
         }
       } else {
         track.violationStart = null;
@@ -691,9 +779,9 @@ function registerClickerHandlers({
       if (isInCheatersList || hasTricheurMedal) {
         const current = FileService.data.clicks[pseudo] || 0;
         FileService.data.clicks[pseudo] = current - 2;
-        FileService.save("clicks", FileService.data.clicks);
+        persistClicks(true);
         socket.emit("clicker:you", { score: FileService.data.clicks[pseudo] });
-        leaderboardManager.broadcastClickerLB(io);
+        broadcastClickerLeaderboard();
 
         if (!isInCheatersList) {
           if (!FileService.data.cheaters) FileService.data.cheaters = [];
@@ -708,7 +796,7 @@ function registerClickerHandlers({
 
   socket.on("clicker:reset", () => {
     FileService.data.clicks[pseudo] = 0;
-    FileService.save("clicks", FileService.data.clicks);
+    persistClicks(true);
 
     FileService.data.medals[pseudo] = [];
     FileService.save("medals", FileService.data.medals);
@@ -735,7 +823,7 @@ function registerClickerHandlers({
     }
     socket.emit("clicker:medals", medalsToSend);
 
-    leaderboardManager.broadcastClickerLB(io);
+    broadcastClickerLeaderboard();
 
     console.log(
       withGame(
@@ -793,7 +881,7 @@ function registerClickerHandlers({
 
     // Deduct cost
     FileService.data.clicks[pseudo] = currentScore - COST;
-    FileService.save("clicks", FileService.data.clicks);
+    persistClicks(true);
 
     // Update medals (apply new colors)
     const userMedals = FileService.data.medals[pseudo] || [];
@@ -824,7 +912,7 @@ function registerClickerHandlers({
       false,
     );
 
-    leaderboardManager.broadcastClickerLB(io);
+    broadcastClickerLeaderboard();
 
     broadcastSystemMessage(
       io,
@@ -832,6 +920,10 @@ function registerClickerHandlers({
       true,
     );
     socket.emit("system:info", "✅ Couleurs régénérées avec succès !");
+  });
+
+  socket.on("disconnect", () => {
+    persistClicks(true);
   });
 }
 

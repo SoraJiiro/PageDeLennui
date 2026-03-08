@@ -209,7 +209,7 @@ export function initClicker(socket) {
     `;
     upgradesListEl.appendChild(summaryEl);
 
-    catalog.forEach((u) => {
+    catalog.forEach((u, idx) => {
       const level = Number(upgrades[u.id] || 0);
       const max = Number(u.maxLevel || 0);
       const dynamicCost = Math.floor(
@@ -235,6 +235,13 @@ export function initClicker(socket) {
         });
       }
       upgradesListEl.appendChild(row);
+      if (idx === 2) {
+        const separator = document.createElement("hr");
+        separator.style.margin = "12px auto";
+        separator.style.outline = "2px dashed var(--primary-color)";
+        separator.style.outlineOffset = "-4px";
+        upgradesListEl.appendChild(separator);
+      }
     });
 
     const desired = computeDesiredAutoCps();

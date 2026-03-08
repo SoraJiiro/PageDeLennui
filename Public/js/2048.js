@@ -259,9 +259,9 @@ export function init2048(socket) {
             <h3 style="color: var(--primary-color); margin-bottom: 10px;">GAME OVER</h3>
             <p style="color: #fff; margin-bottom: 15px;">Continuer la partie ?</p>
           <p class="revive-mode" style="color: #fff; margin-bottom: 10px; font-size: 0.95rem;">Choix: paiement en monnaie</p>
-            <button class="revive-btn" style="padding: 8px 16px; cursor: pointer; background: var(--primary-color); border: none; font-weight: bold;">Payer & Continuer (<span class="revive-count">3</span> restants)</button>
-            <button class="revive-pay-btn" style="display:none; margin-top: 8px; padding: 8px 12px; cursor: pointer; background: transparent; border: 1px solid #fff; color: #fff;">Payer</button>
-            <button class="cancel-btn" style="display: block; margin: 10px auto 0; background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px; cursor: pointer; ">Non merci</button>
+            <button class="revive-btn" style="padding: 8px 16px; background: var(--primary-color); border: none; font-weight: bold; color: var(--bg-color);">Payer & Continuer (<span class="revive-count">3</span> restants)</button>
+            <button class="revive-pay-btn" style="display:none; margin-top: 8px; padding: 8px 12px; background: transparent; border: 1px solid #fff; color: #fff;">Payer</button>
+            <button class="cancel-btn" style="display: block; margin: 10px auto 0; background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px; ">Non merci</button>
         `;
 
     if (container) {

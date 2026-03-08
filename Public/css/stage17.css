@@ -121,7 +121,7 @@
   color: var(--primary-color);
   background: transparent;
   min-height: 46px;
-  cursor: pointer;
+  
 }
 
 .roulette-btn:hover {

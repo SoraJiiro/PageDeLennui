@@ -19,8 +19,8 @@
         <link rel="icon" type="img/png" href="imgs/icon_l.png"
             media="(prefers-color-scheme: light)" />
     </head>
-    <body>
-        <div class="donation-container">
+    <body class="don-page">
+        <main class="donation-container container">
             <h1><i class="fa-solid fa-hand-holding-dollar"></i> Faire un
                 don</h1>
 
@@ -39,12 +39,12 @@
                     placeholder="Quantité de monnaie" min="1">
             </div>
 
-            <button class="btn-submit" id="btnSendDonation">Envoyer la
+            <button class="btn don-submit" id="btnSendDonation">Envoyer la
                 Monnaie</button>
 
             <p class="info-msg"><i class="fa-solid fa-circle-info"></i> Tous les
                 dons requièrent une validation admin.</p>
-        </div>
+        </main>
 
         <script>
         document.addEventListener("DOMContentLoaded", () => {

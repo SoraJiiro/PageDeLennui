@@ -1,7 +1,14 @@
 module.exports = function requireAuth(req, res, next) {
   if (req.session && req.session.user) {
-    if (req.session.user.pseudo === "Admin" && req.path === "/") {
+    const pseudo = req.session.user.pseudo;
+    const isHomeRequest = req.path === "/" || req.path === "/index.html";
+
+    if (pseudo === "Admin" && isHomeRequest) {
       return res.redirect("/admin");
+    }
+
+    if (pseudo === "Moderateur" && isHomeRequest) {
+      return res.redirect("/mod");
     }
     return next();
   }

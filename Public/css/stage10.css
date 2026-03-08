@@ -100,7 +100,7 @@
 .snake-btns-wrap button {
   padding: 12px 24px;
   font-weight: bold;
-  cursor: pointer;
+  
   transition: all 0.3s ease;
   font-size: 16px;
 }

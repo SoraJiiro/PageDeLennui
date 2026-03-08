@@ -96,6 +96,24 @@ function addLives(FileService, pseudo, amount, maxPerDay = 5) {
   };
 }
 
+function grantLives(FileService, pseudo, amount) {
+  const qty = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!qty) return { ok: false, lives: 0 };
+
+  const store = ensureStore(FileService);
+  const bucket = getUserBucket(FileService, pseudo);
+  if (!bucket) return { ok: false, lives: 0 };
+
+  // Admin gifts must not consume the user's daily purchase quota.
+  bucket.lives = Math.max(0, Math.floor(bucket.lives || 0)) + qty;
+  FileService.save("reviveLives", store);
+
+  return {
+    ok: true,
+    lives: bucket.lives,
+  };
+}
+
 function consumeLife(FileService, pseudo) {
   const store = ensureStore(FileService);
   const bucket = getUserBucket(FileService, pseudo);
@@ -118,6 +136,7 @@ function getLivesCount(FileService, pseudo) {
 module.exports = {
   canPurchaseLives,
   addLives,
+  grantLives,
   consumeLife,
   getLivesCount,
 };

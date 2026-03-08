@@ -130,6 +130,16 @@
   width: 100%;
 }
 
+.player-hand-container {
+  position: relative;
+  border-radius: 10px;
+}
+
+.bj-hand-status {
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
 /* Overlap cards slightly */
 .player-hand .bj-card:not(:first-child) {
   margin-left: -40px;
@@ -214,7 +224,7 @@
   width: calc(100% - 10px);
   height: calc(100% - 34px);
   display: block;
-  font-size: clamp(0.75rem, 1.1vw, 1.08rem);
+  font-size: clamp(0.75rem, 2.1vw, 1.08rem);
 }
 
 .bj-card .suit-center.pips-layout .pip {
@@ -255,10 +265,6 @@
   font-size: 0.92rem;
 }
 
-.bj-card .corner-suit {
-  font-size: 0.62rem;
-}
-
 .bj-card .suit-top .corner-rank,
 .bj-card .suit-bottom .corner-rank {
   letter-spacing: -0.02em;
@@ -279,7 +285,7 @@
   background: transparent;
   color: var(--primary-color);
   font-weight: bold;
-  cursor: pointer;
+
   text-transform: uppercase;
   transition: all 0.2s;
 }
