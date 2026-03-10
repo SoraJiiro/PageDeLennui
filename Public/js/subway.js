@@ -1,3 +1,5 @@
+import { keys, openSearchNoSocket } from "./util.js";
+
 export function initSubway(socket) {
   const stage = document.getElementById("stage20");
   const canvas = document.getElementById("subway-canvas");
@@ -5,6 +7,7 @@ export function initSubway(socket) {
   const speedEl = document.getElementById("subway-speed");
   const coinsEl = document.getElementById("subway-coins");
   const gainEl = document.getElementById("subway-gain");
+  const pauseBtn = document.getElementById("subway-pause-btn");
   const reviveOverlay = document.getElementById("subway-revive-overlay");
   const reviveBtn = document.getElementById("subway-revive-btn");
   const reviveCountEl = document.getElementById("subway-revive-count");
@@ -17,6 +20,7 @@ export function initSubway(socket) {
     !speedEl ||
     !coinsEl ||
     !gainEl ||
+    !pauseBtn ||
     !reviveOverlay ||
     !reviveBtn ||
     !reviveCountEl ||
@@ -38,6 +42,10 @@ export function initSubway(socket) {
 
   const state = {
     running: false,
+    paused: false,
+    pauseSource: null,
+    resumeCountdown: 0,
+    resumeCountdownTickAtMs: 0,
     gameOver: false,
     score: 0,
     speed: 1,
@@ -64,6 +72,7 @@ export function initSubway(socket) {
   let availableReviveLives = 0;
   let resumeScore = null;
   let resumeConsumed = false;
+  let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
 
   const world = {
     laneCount: 3,
@@ -244,6 +253,58 @@ export function initSubway(socket) {
     gainEl.textContent = `Gain final: ${computeFinalGain()}`;
   }
 
+  function updatePauseButton() {
+    if (!pauseBtn) return;
+    if (state.running && state.paused) {
+      pauseBtn.textContent = `Reprendre (${pauseKeyText})`;
+      return;
+    }
+    pauseBtn.textContent = `Pause (${pauseKeyText})`;
+  }
+
+  function pauseRun(source = "manual") {
+    if (
+      !state.running ||
+      state.gameOver ||
+      state.awaitingRevive ||
+      state.paused
+    ) {
+      return false;
+    }
+    state.paused = true;
+    state.pauseSource = source;
+    state.resumeCountdown = 0;
+    state.resumeCountdownTickAtMs = 0;
+    updatePauseButton();
+    try {
+      socket.emit("subway:score", { score: Math.floor(state.score) });
+    } catch {}
+    if (source === "manual") {
+      try {
+        openSearchNoSocket();
+      } catch {}
+    }
+    return true;
+  }
+
+  function resumeRun() {
+    if (!state.running || !state.paused) return false;
+    state.paused = false;
+    state.pauseSource = null;
+    state.resumeCountdown = 0;
+    state.resumeCountdownTickAtMs = 0;
+    updatePauseButton();
+    return true;
+  }
+
+  function startResumeCountdown() {
+    if (!state.running || !state.paused) return false;
+    state.resumeCountdown = 3;
+    state.resumeCountdownTickAtMs = Date.now() + 1000;
+    updatePauseButton();
+    return true;
+  }
+
   function showReviveOverlay() {
     reviveOverlay.style.display = "flex";
     updateReviveOverlayContent();
@@ -277,6 +338,10 @@ export function initSubway(socket) {
 
   function resetRunState() {
     state.running = true;
+    state.paused = false;
+    state.pauseSource = null;
+    state.resumeCountdown = 0;
+    state.resumeCountdownTickAtMs = 0;
     state.gameOver = false;
     state.awaitingRevive = false;
     state.score = 0;
@@ -312,6 +377,7 @@ export function initSubway(socket) {
     hideReviveOverlay();
     requestReviveLives();
     refreshHud();
+    updatePauseButton();
   }
 
   function triggerEdgeStruggle(dir) {
@@ -426,13 +492,22 @@ export function initSubway(socket) {
     state.gameOver = true;
     state.awaitingRevive = false;
     state.running = false;
+    state.paused = false;
+    state.pauseSource = null;
+    state.resumeCountdown = 0;
+    state.resumeCountdownTickAtMs = 0;
     rewardFinalMoney();
     hideReviveOverlay();
     refreshHud();
+    updatePauseButton();
   }
 
   function onCrash() {
     state.running = false;
+    state.paused = false;
+    state.pauseSource = null;
+    state.resumeCountdown = 0;
+    state.resumeCountdownTickAtMs = 0;
     state.awaitingRevive = true;
     try {
       socket.emit("subway:score", { score: Math.floor(state.score) });
@@ -661,6 +736,40 @@ export function initSubway(socket) {
         canvas.height * 0.56,
       );
     }
+
+    if (
+      state.running &&
+      state.paused &&
+      !state.gameOver &&
+      !state.awaitingRevive
+    ) {
+      ctx.save();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = uiColor;
+      ctx.textAlign = "center";
+      ctx.font = `${Math.max(18, Math.floor(canvas.width * 0.03))}px monospace`;
+      if (state.resumeCountdown > 0) {
+        ctx.fillText(
+          String(state.resumeCountdown),
+          canvas.width * 0.5,
+          canvas.height * 0.47,
+        );
+      } else {
+        ctx.fillText("PAUSE", canvas.width * 0.5, canvas.height * 0.47);
+      }
+      ctx.font = `${Math.max(13, Math.floor(canvas.width * 0.018))}px monospace`;
+      if (state.resumeCountdown > 0) {
+        ctx.fillText("Reprise...", canvas.width * 0.5, canvas.height * 0.54);
+      } else {
+        ctx.fillText(
+          `Appuie sur ${pauseKeyText} pour reprendre`,
+          canvas.width * 0.5,
+          canvas.height * 0.54,
+        );
+      }
+      ctx.restore();
+    }
   }
 
   function loop(ts) {
@@ -668,7 +777,21 @@ export function initSubway(socket) {
     const dt = Math.min(0.04, Math.max(0, (ts - state.lastTs) / 1000));
     state.lastTs = ts;
 
-    if (state.running && !state.gameOver && isStageActive()) {
+    if (state.running && state.paused && state.resumeCountdown > 0) {
+      const now = Date.now();
+      if (!state.resumeCountdownTickAtMs) {
+        state.resumeCountdownTickAtMs = now + 1000;
+      }
+      if (now >= state.resumeCountdownTickAtMs) {
+        state.resumeCountdown = Math.max(0, state.resumeCountdown - 1);
+        state.resumeCountdownTickAtMs = now + 1000;
+        if (state.resumeCountdown === 0) {
+          resumeRun();
+        }
+      }
+    }
+
+    if (state.running && !state.gameOver && !state.paused && isStageActive()) {
       update(dt);
     }
 
@@ -684,6 +807,7 @@ export function initSubway(socket) {
     const isSpace = key === " " || lower === "spacebar";
     const isLeft = key === "ArrowLeft" || lower === "a";
     const isRight = key === "ArrowRight" || lower === "d";
+    const isPause = keys.default.includes(key);
 
     if (state.awaitingRevive) {
       if (e.key === "Escape") {
@@ -701,11 +825,27 @@ export function initSubway(socket) {
       return;
     }
 
+    if (isPause) {
+      if (!state.running) return;
+      if (state.paused) {
+        if (!state.resumeCountdown) startResumeCountdown();
+      } else {
+        pauseRun("manual");
+      }
+      e.preventDefault();
+      return;
+    }
+
     if (!state.running) {
       if (isSpace) {
         resetRunState();
         e.preventDefault();
       }
+      return;
+    }
+
+    if (state.paused) {
+      e.preventDefault();
       return;
     }
 
@@ -745,6 +885,10 @@ export function initSubway(socket) {
     state.awaitingRevive = false;
     state.gameOver = false;
     state.running = true;
+    state.paused = false;
+    state.pauseSource = null;
+    state.resumeCountdown = 0;
+    state.resumeCountdownTickAtMs = 0;
     if (usedLife === true && Number.isFinite(Number(remainingLives))) {
       availableReviveLives = Math.max(0, Math.floor(Number(remainingLives)));
     }
@@ -755,6 +899,7 @@ export function initSubway(socket) {
     clearDangerAroundPlayer();
     hideReviveOverlay();
     refreshHud();
+    updatePauseButton();
   });
 
   socket.on("subway:reviveError", () => {
@@ -772,6 +917,13 @@ export function initSubway(socket) {
   });
 
   window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("pauseKey:changed", (e) => {
+    const k = e?.detail?.key;
+    if (typeof k === "string" && k.length === 1) {
+      pauseKeyText = k.toUpperCase();
+      updatePauseButton();
+    }
+  });
   window.addEventListener("uiColor:changed", (e) => {
     if (e?.detail?.color) uiColor = String(e.detail.color);
     refreshThemeColors();
@@ -780,6 +932,41 @@ export function initSubway(socket) {
   cancelBtn.addEventListener("click", () => {
     if (!state.awaitingRevive) return;
     finalizeRun();
+  });
+  pauseBtn.addEventListener("click", () => {
+    if (
+      !isStageActive() ||
+      !state.running ||
+      state.awaitingRevive ||
+      state.gameOver
+    )
+      return;
+    if (state.paused) {
+      if (!state.resumeCountdown) startResumeCountdown();
+    } else pauseRun("manual");
+  });
+
+  window.addEventListener("pde:stage-nav-guard", (e) => {
+    const detail = e?.detail;
+    if (!detail || detail.stageId !== "stage20") return;
+
+    if (detail.action === "pause") {
+      const runningNow =
+        state.running && !state.gameOver && !state.awaitingRevive;
+      detail.running = !!runningNow;
+      detail.pausedNow = false;
+      if (!runningNow) return;
+      if (!state.paused) {
+        detail.pausedNow = pauseRun("navigation");
+      }
+      return;
+    }
+
+    if (detail.action === "resume") {
+      if (state.paused && state.pauseSource === "navigation") {
+        startResumeCountdown();
+      }
+    }
   });
   window.addEventListener("resize", () => {
     resizeCanvas();
@@ -803,8 +990,14 @@ export function initSubway(socket) {
       return;
     }
     if (sectionId !== "stage20") {
-      state.running = false;
-      state.awaitingRevive = false;
+      if (
+        state.running &&
+        !state.paused &&
+        !state.awaitingRevive &&
+        !state.gameOver
+      ) {
+        pauseRun("section-switch");
+      }
       hideReviveOverlay();
     }
   });
@@ -814,6 +1007,7 @@ export function initSubway(socket) {
   requestReviveLives();
   hideReviveOverlay();
   refreshHud();
+  updatePauseButton();
   draw();
   requestAnimationFrame(loop);
 }

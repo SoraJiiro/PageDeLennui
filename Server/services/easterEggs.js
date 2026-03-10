@@ -35,6 +35,90 @@ const STEP_CODES = {
   g1: { eggId: "S2", stepId: "suggestions_code" },
 };
 
+const EASTER_EGG_BADGES = {
+  S1: { id: "EE_S1", name: "EE [S1]", emoji: "🥚" },
+  S2: { id: "EE_S2", name: "EE [S2]", emoji: "🐣" },
+};
+
+function ensureChatBadgesStore(FileService) {
+  if (!FileService || !FileService.data) return null;
+  if (
+    !FileService.data.chatBadges ||
+    typeof FileService.data.chatBadges !== "object"
+  ) {
+    FileService.data.chatBadges = { catalog: {}, users: {} };
+  }
+  if (
+    !FileService.data.chatBadges.catalog ||
+    typeof FileService.data.chatBadges.catalog !== "object"
+  ) {
+    FileService.data.chatBadges.catalog = {};
+  }
+  if (
+    !FileService.data.chatBadges.users ||
+    typeof FileService.data.chatBadges.users !== "object"
+  ) {
+    FileService.data.chatBadges.users = {};
+  }
+  return FileService.data.chatBadges;
+}
+
+function grantEasterEggBadge(pseudo, eggId, FileService) {
+  const badgeDef = EASTER_EGG_BADGES[String(eggId || "").trim()];
+  if (!badgeDef || !pseudo || !FileService || !FileService.data) return false;
+
+  const badgesStore = ensureChatBadgesStore(FileService);
+  if (!badgesStore) return false;
+
+  let changed = false;
+
+  if (!badgesStore.catalog[badgeDef.id]) {
+    badgesStore.catalog[badgeDef.id] = {
+      emoji: badgeDef.emoji,
+      name: badgeDef.name,
+    };
+    changed = true;
+  } else {
+    const existing = badgesStore.catalog[badgeDef.id];
+    if (!existing || typeof existing !== "object") {
+      badgesStore.catalog[badgeDef.id] = {
+        emoji: badgeDef.emoji,
+        name: badgeDef.name,
+      };
+      changed = true;
+    } else {
+      if (!existing.name) {
+        existing.name = badgeDef.name;
+        changed = true;
+      }
+      if (!existing.emoji) {
+        existing.emoji = badgeDef.emoji;
+        changed = true;
+      }
+    }
+  }
+
+  if (!badgesStore.users[pseudo]) {
+    badgesStore.users[pseudo] = { assigned: [], selected: [] };
+    changed = true;
+  }
+
+  const userBucket = badgesStore.users[pseudo];
+  if (!Array.isArray(userBucket.assigned)) userBucket.assigned = [];
+  if (!Array.isArray(userBucket.selected)) userBucket.selected = [];
+
+  if (!userBucket.assigned.includes(badgeDef.id)) {
+    userBucket.assigned.push(badgeDef.id);
+    changed = true;
+  }
+
+  if (changed) {
+    FileService.save("chatBadges", badgesStore);
+  }
+
+  return changed;
+}
+
 function ensureStore(fileServiceOverride) {
   const FileService = fileServiceOverride || getFileService();
   if (!FileService || !FileService.data) return { users: {} };
@@ -107,6 +191,7 @@ function markStep(pseudo, eggId, stepId, fileServiceOverride) {
   const store = ensureStore(FileService);
   const progress = getUserEggProgress(store, pseudo, eggId);
   const stepState = progress.steps;
+  const wasCompleted = !!progress.completed;
 
   if (stepState[stepId]) {
     return progress;
@@ -135,6 +220,11 @@ function markStep(pseudo, eggId, stepId, fileServiceOverride) {
   progress.updatedAt = new Date().toISOString();
 
   FileService.save("easterEggs", store);
+
+  if (progress.completed && !wasCompleted) {
+    grantEasterEggBadge(pseudo, eggId, FileService);
+  }
+
   return progress;
 }
 

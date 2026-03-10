@@ -275,9 +275,10 @@
 
                                 <div class="form-row">
                                     <div class="form-field">
-                                        <label for="assignPseudo">Pseudo</label>
+                                        <label
+                                            for="assignPseudo">Pseudo(s)</label>
                                         <input id="assignPseudo"
-                                            placeholder="Pseudo (ou ALL)" />
+                                            placeholder="Pseudo, Pseudo2 (ou ALL)" />
                                     </div>
                                     <div class="form-field">
                                         <label for="assignBadgeId">Badge</label>
@@ -1603,7 +1604,7 @@
                 title.innerHTML = '<i class="fa-solid fa-shield-halved"></i> PANEL MODERATEUR';
             }
 
-            document.querySelectorAll('.reset-rules, .del-other-admins, .shutdown, .shutdown-admin-only').forEach((btn) => {
+            document.querySelectorAll('.reset-rules, .del-other-admins, .shutdown-admin-only').forEach((btn) => {
                 btn.style.display = 'none';
             });
 
@@ -2761,26 +2762,43 @@
             }
         }
 
+        function parseBadgeTargets(rawValue) {
+            const raw = String(rawValue || '').trim();
+            if (!raw) return [];
+            return [...new Set(
+                raw
+                    .split(/[\n,;]+/)
+                    .map(x => x.trim())
+                    .filter(Boolean)
+            )];
+        }
+
         async function assignBadge(action) {
-            const pseudo = (document.getElementById('assignPseudo')?.value || '').trim();
+            const pseudoInput = (document.getElementById('assignPseudo')?.value || '').trim();
             const badgeId = (document.getElementById('assignBadgeId')?.value || '').trim();
-            const isAllTarget = pseudo.toLowerCase() === 'all';
-            if (!pseudo || !badgeId) {
+            const targets = parseBadgeTargets(pseudoInput);
+            const isAllTarget = targets.some(t => t.toLowerCase() === 'all');
+            if (!targets.length || !badgeId) {
                 showNotification('Pseudo/Badge manquants', 'error');
                 return;
             }
             try {
-                const { res, data } = await adminPostJson('/api/admin/badges/assign', { pseudo, badgeId, action });
+                const payload = isAllTarget
+                    ? { pseudo: 'ALL', badgeId, action }
+                    : { pseudos: targets, badgeId, action };
+                const { res, data } = await adminPostJson('/api/admin/badges/assign', payload);
                 if (res.ok) {
+                    const targetCount = Number(data && data.count) || (isAllTarget ? 0 : targets.length);
+                    const successText = isAllTarget
+                        ? (action === 'remove' ? 'Badge retiré pour tous les joueurs' : 'Badge donné à tous les joueurs')
+                        : `Badge ${action === 'remove' ? 'retiré' : 'donné'} à ${targetCount} joueur(s)`;
                     showNotification(
-                        action === 'remove'
-                            ? (isAllTarget ? 'Badge retiré pour tous les joueurs' : 'Badge retiré')
-                            : (isAllTarget ? 'Badge donné à tous les joueurs' : 'Badge donné'),
+                        successText,
                         'success'
                     );
                     await refreshBadges();
-                    if (!isAllTarget) {
-                        await refreshUserInfoPanel(pseudo);
+                    if (!isAllTarget && targetCount === 1) {
+                        await refreshUserInfoPanel(targets[0]);
                     }
                 } else {
                     showNotification(data.message || 'Erreur', 'error');

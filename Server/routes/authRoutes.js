@@ -66,13 +66,38 @@ function verifNombreCompte(ip) {
   return users.filter((u) => u.creeDepuis === ip).length;
 }
 
+function extractClientIp(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "");
+  const firstForwarded = forwarded.split(",")[0].trim();
+  return String(firstForwarded || req.socket.remoteAddress || "")
+    .replace("::ffff:", "")
+    .trim();
+}
+
+function isUnlimitedRegistrationIp(ip) {
+  const normalizedIp = String(ip || "").trim();
+  const normalizedHost = String(config.HOST || "").trim();
+  const unlimitedIps = new Set([
+    "127.0.0.1",
+    "::1",
+    "localhost",
+    "192.168.197.32",
+  ]);
+
+  if (
+    normalizedHost &&
+    normalizedHost !== "0.0.0.0" &&
+    normalizedHost !== "::"
+  ) {
+    unlimitedIps.add(normalizedHost);
+  }
+
+  return unlimitedIps.has(normalizedIp);
+}
+
 router.post("/register", async (req, res) => {
   const { pseudo, password } = req.body;
-  const ip = (
-    req.headers["x-forwarded-for"] ||
-    req.socket.remoteAddress ||
-    ""
-  ).replace("::ffff:", "");
+  const ip = extractClientIp(req);
 
   if (!pseudo || !password)
     return res.status(400).json({ message: "Champs manquants." });
@@ -93,7 +118,7 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ message: "Nom d'utilisateur déjà pris." });
   }
 
-  if (verifNombreCompte(ip) >= 2 && ip !== "::1") {
+  if (verifNombreCompte(ip) >= 2 && !isUnlimitedRegistrationIp(ip)) {
     return res.status(403).json({
       message: "Tu as déjà créé 2 comptes depuis cette IP.",
     });
@@ -133,11 +158,7 @@ router.get("/users/list", (req, res) => {
 
 router.post("/login", async (req, res) => {
   const { pseudo, password } = req.body;
-  const ip = (
-    req.headers["x-forwarded-for"] ||
-    req.socket.remoteAddress ||
-    ""
-  ).replace("::ffff:", "");
+  const ip = extractClientIp(req);
 
   if (!pseudo || !password)
     return res.status(400).json({ message: "Champs manquants." });
@@ -238,11 +259,7 @@ router.post("/verify-password", async (req, res) => {
 
 router.post("/request-password-change", (req, res) => {
   const { pseudo, newPassword } = req.body;
-  const ip = (
-    req.headers["x-forwarded-for"] ||
-    req.socket.remoteAddress ||
-    ""
-  ).replace("::ffff:", "");
+  const ip = extractClientIp(req);
 
   if (!pseudo || !newPassword) {
     return res.status(400).json({ message: "Champs manquants." });

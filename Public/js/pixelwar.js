@@ -558,15 +558,20 @@ function getClientXY(e) {
 }
 
 function eventToBoardCoords(e) {
-  if (!canvas) return { x: NaN, y: NaN };
-  const rect = canvas.getBoundingClientRect();
-  if (!rect.width || !rect.height) return { x: NaN, y: NaN };
+  if (!container || !canvas) return { x: NaN, y: NaN };
 
   const { x: clientX, y: clientY } = getClientXY(e);
+  const rect = container.getBoundingClientRect();
+  if (!rect.width || !rect.height) return { x: NaN, y: NaN };
+
+  // On mappe le pointeur sur le rect reel du container transformé.
+  // Cette conversion reste stable pour drag/resize, y compris grands ecrans.
   const nx = (clientX - rect.left) / rect.width;
   const ny = (clientY - rect.top) / rect.height;
+  const boardX = nx * canvas.width;
+  const boardY = ny * canvas.height;
 
-  return { x: nx * BOARD_SIZE, y: ny * BOARD_SIZE };
+  return { x: boardX, y: boardY };
 }
 
 function paintAtEvent(e) {

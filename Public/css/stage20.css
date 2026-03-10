@@ -29,6 +29,21 @@
   flex-wrap: wrap;
 }
 
+.subway-pause-btn {
+  border: 1px solid var(--primary-color);
+  background: var(--bg-color);
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  min-height: 34px;
+}
+
+.subway-pause-btn:hover {
+  filter: brightness(1.1);
+}
+
 .subway-head h2 {
   margin: 0;
   font-size: clamp(1.1rem, 2.4vw, 1.4rem);
@@ -124,5 +139,10 @@
     width: min(100%, 99vw);
     max-height: calc(100dvh - 16px);
     padding: 10px;
+  }
+
+  .subway-pause-btn {
+    order: 3;
+    width: 100%;
   }
 }

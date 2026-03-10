@@ -591,7 +591,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const currentSectionId = active && active.id ? active.id : "hubStage";
     if (!currentSectionId || currentSectionId === nextSectionId) return true;
 
-    const guardedStages = ["stage2", "stage6", "stage10"];
+    const guardedStages = ["stage2", "stage6", "stage10", "stage20"];
     if (!guardedStages.includes(currentSectionId)) return true;
 
     const guardDetail = {

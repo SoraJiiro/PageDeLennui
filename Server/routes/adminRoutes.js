@@ -183,6 +183,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "GET /panel/state",
       "POST /panel/lock",
       "POST /panel/unlock",
+      "POST /shutdown",
     ]);
 
     if (!moderatorAllowed.has(`${method} ${pathName}`)) {
@@ -637,12 +638,27 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
   });
 
   router.post("/badges/assign", requireAdmin, (req, res) => {
-    const { pseudo, badgeId, action } = req.body || {};
+    const { pseudo, pseudos, badgeId, action } = req.body || {};
     const p = String(pseudo || "").trim();
     const id = String(badgeId || "").trim();
     const act = String(action || "add").trim();
-    const isAllTarget = p.toLowerCase() === "all";
-    if (!p || !id)
+
+    const parsePseudoTokens = (value) =>
+      String(value || "")
+        .split(/[\n,;]+/)
+        .map((x) => String(x || "").trim())
+        .filter(Boolean);
+
+    const requestedTargets = Array.isArray(pseudos)
+      ? pseudos.map((x) => String(x || "").trim()).filter(Boolean)
+      : parsePseudoTokens(p);
+
+    const uniqRequestedTargets = [...new Set(requestedTargets)];
+    const isAllTarget =
+      p.toLowerCase() === "all" ||
+      uniqRequestedTargets.some((x) => x.toLowerCase() === "all");
+
+    if ((!uniqRequestedTargets.length && !isAllTarget) || !id)
       return res.status(400).json({ message: "Paramètres manquants" });
 
     const data = ensureBadgesData();
@@ -671,6 +687,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       }
     };
 
+    let appliedTargets = [];
+
     if (isAllTarget) {
       const allUsers = dbUsers.readAll();
       const pseudos = Array.isArray(allUsers && allUsers.users)
@@ -683,19 +701,40 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         return res.status(404).json({ message: "Aucun utilisateur trouvé" });
       }
 
-      pseudos.forEach(applyForPseudo);
+      appliedTargets = [...new Set(pseudos)];
+      appliedTargets.forEach(applyForPseudo);
     } else {
-      const userRec = dbUsers.findBypseudo(p);
-      if (!userRec)
-        return res.status(404).json({ message: "Utilisateur introuvable" });
+      const missing = [];
+      const canonicalTargets = [];
 
-      const canonicalPseudo = userRec.pseudo;
-      applyForPseudo(canonicalPseudo);
+      uniqRequestedTargets.forEach((targetPseudo) => {
+        const userRec = dbUsers.findBypseudo(targetPseudo);
+        if (!userRec) {
+          missing.push(targetPseudo);
+          return;
+        }
+        canonicalTargets.push(String(userRec.pseudo || "").trim());
+      });
+
+      if (missing.length) {
+        return res.status(404).json({
+          message: `Utilisateur(s) introuvable(s): ${missing.join(", ")}`,
+        });
+      }
+
+      appliedTargets = [...new Set(canonicalTargets)];
+      appliedTargets.forEach(applyForPseudo);
     }
 
     FileService.save("chatBadges", data);
     emitAdminRefresh("badges");
-    res.json({ success: true, target: isAllTarget ? "ALL" : p });
+    const count = appliedTargets.length;
+    res.json({
+      success: true,
+      target: isAllTarget ? "ALL" : appliedTargets[0],
+      targets: isAllTarget ? ["ALL"] : appliedTargets,
+      count,
+    });
   });
 
   router.post("/badges/reset-user", requireAdmin, (req, res) => {
