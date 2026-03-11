@@ -10,7 +10,7 @@
 
 .subway-card {
   width: min(1320px, 99vw);
-  height: calc(100dvh - 16px);
+  height: fit-content;
   max-height: calc(100dvh - 8px);
   border: 2px solid var(--primary-color);
   background: var(--bg-color);
@@ -82,9 +82,8 @@
 }
 
 #subway-canvas {
-  width: min(1260px, 100%);
+  min-width: 100%;
   max-width: 100%;
-  height: 140%;
   border: 2px solid var(--primary-color);
   background: var(--bg-color);
   touch-action: none;

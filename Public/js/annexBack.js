@@ -1,13 +1,24 @@
 (function () {
-  function goBackToIndex() {
+  function goBackToPreviousPage() {
+    // Priorite a l'historique reel de navigation.
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    // Fallback: referrer interne (utile pour certains onglets ouverts depuis le site).
     try {
       const ref = document.referrer || "";
-      const sameOrigin = ref.startsWith(window.location.origin);
-      if (sameOrigin && /\/index(\.html)?$/i.test(new URL(ref).pathname)) {
-        window.history.back();
-        return;
+      if (ref) {
+        const url = new URL(ref);
+        if (url.origin === window.location.origin) {
+          window.location.href = `${url.pathname}${url.search}${url.hash}`;
+          return;
+        }
       }
     } catch (e) {}
+
+    // Dernier recours.
     window.location.href = "/";
   }
 
@@ -17,9 +28,9 @@
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "annex-back-btn";
-    btn.setAttribute("aria-label", "Retour à l'index");
+    btn.setAttribute("aria-label", "Retour à la page précédente");
     btn.textContent = "← Retour";
-    btn.addEventListener("click", goBackToIndex);
+    btn.addEventListener("click", goBackToPreviousPage);
 
     document.body.appendChild(btn);
   });

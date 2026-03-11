@@ -171,7 +171,7 @@ export function initClicker(socket) {
       .replace(/\s/g, "\u00a0")} C 
     • ${Number(state.money || 0)
       .toLocaleString("fr-FR")
-      .replace(/\s/g, "\u00a0")} M 
+      .replace(/\s/g, "\u00a0")} FCO 
     • ${Number(state.tokens || 0)
       .toLocaleString("fr-FR")
       .replace(/\s/g, "\u00a0")} T`;

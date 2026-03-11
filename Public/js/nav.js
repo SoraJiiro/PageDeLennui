@@ -215,25 +215,45 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function getPatchNoteVersions() {
+    const getVersionsFromJson = async () => {
+      try {
+        const res = await fetch("persistant_data/patch_notes.json", {
+          cache: "no-store",
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        const entries = Array.isArray(data.entries) ? data.entries : [];
+        return entries
+          .map((entry) => String(entry?.version || "").trim())
+          .filter(Boolean);
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const jsonVersions = await getVersionsFromJson();
+
     // Sur la page patch_notes.html, on peut parser directement le DOM.
     if (page === "patch_notes.html") {
       const els = document.querySelectorAll(".patch-entry .version");
-      return Array.from(els)
+      const domVersions = Array.from(els)
         .map((e) => (e && e.textContent ? e.textContent.trim() : ""))
         .filter(Boolean);
+      return Array.from(new Set([...jsonVersions, ...domVersions]));
     }
 
     try {
       const res = await fetch("patch_notes.html", { cache: "no-store" });
-      if (!res.ok) return [];
+      if (!res.ok) return jsonVersions;
       const html = await res.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
       const els = doc.querySelectorAll(".patch-entry .version");
-      return Array.from(els)
+      const htmlVersions = Array.from(els)
         .map((e) => (e && e.textContent ? e.textContent.trim() : ""))
         .filter(Boolean);
+      return Array.from(new Set([...jsonVersions, ...htmlVersions]));
     } catch (e) {
-      return [];
+      return jsonVersions;
     }
   }
 

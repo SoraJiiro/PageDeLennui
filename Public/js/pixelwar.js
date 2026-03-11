@@ -64,6 +64,7 @@ let currentMouseY = 0;
 const modal = document.getElementById("pixel-info-modal");
 let gridCanvas, gridCtx;
 let calcCanvas, calcCtx;
+let calcStateSaveTimer = null;
 
 const calcLayer = {
   active: false,
@@ -79,6 +80,7 @@ const calcLayer = {
 
 const CALC_MIN_SIZE = 8;
 const CALC_RESIZE_HANDLE_SIZE = 8;
+const CALC_STORAGE_VERSION = 1;
 let isCalcDragging = false;
 let isCalcResizing = false;
 let calcDragOffsetX = 0;
@@ -88,6 +90,7 @@ let isBatchMode = false;
 let pendingPixels = new Map();
 let localBoardCache = new Uint8Array(BOARD_SIZE * BOARD_SIZE);
 let unlockedColorIndices = new Set(Array.from({ length: 16 }, (_, i) => i));
+let dailyRewardClaims = { clicks: false, pixels: false, tokens: false };
 
 export function initPixelWar(sock) {
   socket = sock;
@@ -116,6 +119,8 @@ export function initPixelWar(sock) {
     calcCtx.webkitImageSmoothingEnabled = false;
     calcCtx.msImageSmoothingEnabled = false;
   }
+
+  restoreCalcLayerState();
 
   const ro = new ResizeObserver((entries) => {
     for (let entry of entries) {
@@ -183,6 +188,14 @@ export function initPixelWar(sock) {
       );
     }
     initPalette();
+    if (data?.dailyRewards?.claims) {
+      dailyRewardClaims = {
+        clicks: !!data.dailyRewards.claims.clicks,
+        pixels: !!data.dailyRewards.claims.pixels,
+        tokens: !!data.dailyRewards.claims.tokens,
+      };
+      refreshDailyClaimButtons();
+    }
     updateStats(data);
     drawFullBoard(data.board);
   });
@@ -358,6 +371,23 @@ function initControls() {
   if (buyStorage) {
     buyStorage.onclick = () => socket.emit("pixelwar:buy", "storage_10");
   }
+
+  const claimClicks = document.getElementById("daily-claim-clicks");
+  if (claimClicks) {
+    claimClicks.onclick = () => socket.emit("pixelwar:daily_claim", "clicks");
+  }
+
+  const claimPixels = document.getElementById("daily-claim-pixels");
+  if (claimPixels) {
+    claimPixels.onclick = () => socket.emit("pixelwar:daily_claim", "pixels");
+  }
+
+  const claimTokens = document.getElementById("daily-claim-tokens");
+  if (claimTokens) {
+    claimTokens.onclick = () => socket.emit("pixelwar:daily_claim", "tokens");
+  }
+
+  refreshDailyClaimButtons();
 
   const calcInput = document.getElementById("calc-image-input");
   const calcUploadBtn = document.getElementById("btn-calc-upload");
@@ -782,6 +812,19 @@ function hideTooltip() {
 }
 
 function updateStats(data) {
+  const currentPixels =
+    data.pixels !== undefined
+      ? Number(data.pixels)
+      : Number(document.getElementById("pixel-count")?.innerText);
+  const currentMaxPixels =
+    data.maxPixels !== undefined
+      ? Number(data.maxPixels)
+      : Number(document.getElementById("pixel-max")?.innerText);
+  const isStorageFull =
+    Number.isFinite(currentPixels) &&
+    Number.isFinite(currentMaxPixels) &&
+    currentPixels >= currentMaxPixels;
+
   if (data.pixels !== undefined)
     document.getElementById("pixel-count").innerText = data.pixels;
   if (data.maxPixels !== undefined)
@@ -789,12 +832,48 @@ function updateStats(data) {
   if (data.nextPixelIn !== undefined) {
     startTimer(data.nextPixelIn);
   }
+  if (data.doublePixelBoostMs !== undefined) {
+    startDoubleBoostTimer(data.doublePixelBoostMs, { freeze: isStorageFull });
+  }
+  if (data?.dailyRewards?.claims) {
+    dailyRewardClaims = {
+      clicks: !!data.dailyRewards.claims.clicks,
+      pixels: !!data.dailyRewards.claims.pixels,
+      tokens: !!data.dailyRewards.claims.tokens,
+    };
+    refreshDailyClaimButtons();
+  }
+}
+
+function refreshDailyClaimButtons() {
+  const clickBtn = document.getElementById("daily-claim-clicks");
+  const pixelBtn = document.getElementById("daily-claim-pixels");
+  const tokenBtn = document.getElementById("daily-claim-tokens");
+
+  const apply = (btn, label, claimed) => {
+    if (!btn) return;
+    const nextDisabled = !!claimed;
+    const nextText = claimed ? `${label} (claimed)` : label;
+    if (btn.disabled !== nextDisabled) btn.disabled = nextDisabled;
+    if (btn.textContent !== nextText) btn.textContent = nextText;
+  };
+
+  apply(clickBtn, "Claim Clicks", dailyRewardClaims.clicks);
+  apply(pixelBtn, "Claim pixels", dailyRewardClaims.pixels);
+  apply(tokenBtn, "Claim Token", dailyRewardClaims.tokens);
 }
 
 let timerInterval;
+let doubleBoostTimerInterval;
 function startTimer(ms) {
   if (timerInterval) clearInterval(timerInterval);
-  let target = Date.now() + ms;
+  const initialMs = Math.max(0, Math.floor(Number(ms) || 0));
+  if (initialMs <= 0) {
+    document.getElementById("pixel-timer").innerText = "00:00";
+    return;
+  }
+
+  let target = Date.now() + initialMs;
 
   function tick() {
     let diff = target - Date.now();
@@ -816,6 +895,50 @@ function startTimer(ms) {
 
   tick();
   timerInterval = setInterval(tick, 1000);
+}
+
+function startDoubleBoostTimer(ms, options = {}) {
+  if (doubleBoostTimerInterval) clearInterval(doubleBoostTimerInterval);
+
+  const timerEl = document.getElementById("pixel-double-timer");
+  if (!timerEl) return;
+
+  const initialMs = Math.max(0, Math.floor(Number(ms) || 0));
+  if (initialMs <= 0) {
+    timerEl.innerText = "00:00";
+    return;
+  }
+
+  const freeze = !!options.freeze;
+  if (freeze) {
+    const sec = Math.floor(initialMs / 1000);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    timerEl.innerText = `${m}:${s.toString().padStart(2, "0")}`;
+    return;
+  }
+
+  let target = Date.now() + initialMs;
+
+  function tickBoost() {
+    let diff = target - Date.now();
+    if (diff <= 0) {
+      timerEl.innerText = "00:00";
+      clearInterval(doubleBoostTimerInterval);
+      if (socket) {
+        socket.emit("pixelwar:request_stats");
+      }
+      return;
+    }
+
+    let sec = Math.floor(diff / 1000);
+    let m = Math.floor(sec / 60);
+    let s = sec % 60;
+    timerEl.innerText = `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
+  tickBoost();
+  doubleBoostTimerInterval = setInterval(tickBoost, 1000);
 }
 
 function drawFullBoard(compressedBoard) {
@@ -879,45 +1002,83 @@ function rgbToHex(c) {
 function loadCalcFromFile(file) {
   if (!file || !calcCtx) return;
 
+  const reader = new FileReader();
+  reader.onload = () => {
+    const src =
+      typeof reader.result === "string" ? reader.result : String(reader.result);
+    applyCalcImageSource(src);
+  };
+
+  reader.onerror = () => {
+    if (window.showNotif)
+      window.showNotif("Impossible de lire l'image du calc.", 2500);
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function applyCalcImageSource(src, options = {}) {
+  if (!src || !calcCtx) return;
+
   const img = new Image();
-  const objectUrl = URL.createObjectURL(file);
   img.onload = () => {
     const fit = Math.min(BOARD_SIZE / img.width, BOARD_SIZE / img.height, 1);
     const w = clamp(Math.floor(img.width * fit), CALC_MIN_SIZE, BOARD_SIZE);
     const h = clamp(Math.floor(img.height * fit), CALC_MIN_SIZE, BOARD_SIZE);
+    const restore = options.restoreState || null;
+
+    const nextWidth = Number.isFinite(restore?.width)
+      ? clamp(Math.floor(restore.width), CALC_MIN_SIZE, BOARD_SIZE)
+      : w;
+    const nextHeight = Number.isFinite(restore?.height)
+      ? clamp(Math.floor(restore.height), CALC_MIN_SIZE, BOARD_SIZE)
+      : h;
+
+    const maxX = Math.max(0, BOARD_SIZE - nextWidth);
+    const maxY = Math.max(0, BOARD_SIZE - nextHeight);
+    const nextX = Number.isFinite(restore?.x)
+      ? clamp(Math.floor(restore.x), 0, maxX)
+      : clamp(Math.floor((BOARD_SIZE - nextWidth) / 2), 0, maxX);
+    const nextY = Number.isFinite(restore?.y)
+      ? clamp(Math.floor(restore.y), 0, maxY)
+      : clamp(Math.floor((BOARD_SIZE - nextHeight) / 2), 0, maxY);
+    const isPlacing = restore?.isPlacing !== false;
 
     calcLayer.active = true;
-    calcLayer.isPlacing = true;
+    calcLayer.isPlacing = isPlacing;
     calcLayer.img = img;
-    calcLayer.width = w;
-    calcLayer.height = h;
+    calcLayer.width = nextWidth;
+    calcLayer.height = nextHeight;
     calcLayer.aspectRatio =
       img.width > 0 && img.height > 0 ? img.width / img.height : 1;
-    calcLayer.x = clamp(Math.floor((BOARD_SIZE - w) / 2), 0, BOARD_SIZE - w);
-    calcLayer.y = clamp(Math.floor((BOARD_SIZE - h) / 2), 0, BOARD_SIZE - h);
+    calcLayer.x = nextX;
+    calcLayer.y = nextY;
     stopCalcInteraction();
 
     drawCalcLayer();
     updateCalcButtons();
-    updateCalcPlacementCursor(null);
+    if (calcLayer.isPlacing) {
+      updateCalcPlacementCursor(null);
+    } else {
+      updateToolUI();
+    }
 
-    if (window.showNotif) {
+    saveCalcLayerState();
+
+    if (!options.silent && window.showNotif) {
       window.showNotif(
         "Glisse le calc, redimensionne via le coin bas-droite, puis valide.",
         4200,
       );
     }
-
-    URL.revokeObjectURL(objectUrl);
   };
 
   img.onerror = () => {
     if (window.showNotif)
       window.showNotif("Image invalide pour le calc.", 2500);
-    URL.revokeObjectURL(objectUrl);
   };
 
-  img.src = objectUrl;
+  img.src = src;
 }
 
 function startCalcInteraction(e) {
@@ -961,9 +1122,11 @@ function handleCalcPlacementMouseMove(e) {
     calcLayer.x = clamp(nextX, 0, BOARD_SIZE - calcLayer.width);
     calcLayer.y = clamp(nextY, 0, BOARD_SIZE - calcLayer.height);
     drawCalcLayer();
+    queueSaveCalcLayerState();
   } else if (isCalcResizing) {
     const desiredWidth = bx - calcLayer.x + 1;
     resizeCalcByWidth(desiredWidth);
+    queueSaveCalcLayerState();
   }
 
   updateCalcPlacementCursor({ x: bx, y: by });
@@ -983,6 +1146,7 @@ function lockCalcPlacement() {
   drawCalcLayer();
   updateCalcButtons();
   updateToolUI();
+  saveCalcLayerState();
 
   if (window.showNotif) {
     window.showNotif("Calc verrouille. Tu peux dessiner par-dessus.", 3000);
@@ -1000,6 +1164,7 @@ function clearCalcLayer() {
   calcLayer.aspectRatio = 1;
   stopCalcInteraction();
   updateToolUI();
+  removeCalcLayerState();
 
   if (calcCtx && calcCanvas) {
     calcCtx.clearRect(0, 0, calcCanvas.width, calcCanvas.height);
@@ -1090,6 +1255,86 @@ function resizeCalcByWidth(desiredWidth) {
   drawCalcLayer();
 }
 
+function getCalcStorageKey() {
+  const username =
+    typeof window !== "undefined" && window.username
+      ? String(window.username)
+      : "anon";
+  return `pde_pixelwar_calc_v${CALC_STORAGE_VERSION}_${username}`;
+}
+
+function queueSaveCalcLayerState() {
+  if (calcStateSaveTimer) {
+    clearTimeout(calcStateSaveTimer);
+  }
+  calcStateSaveTimer = setTimeout(() => {
+    calcStateSaveTimer = null;
+    saveCalcLayerState();
+  }, 120);
+}
+
+function saveCalcLayerState() {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    if (!calcLayer.active || !calcLayer.img || !calcLayer.img.src) {
+      removeCalcLayerState();
+      return;
+    }
+
+    const payload = {
+      version: CALC_STORAGE_VERSION,
+      src: calcLayer.img.src,
+      x: calcLayer.x,
+      y: calcLayer.y,
+      width: calcLayer.width,
+      height: calcLayer.height,
+      isPlacing: !!calcLayer.isPlacing,
+      opacity: calcLayer.opacity,
+    };
+
+    window.localStorage.setItem(getCalcStorageKey(), JSON.stringify(payload));
+  } catch (e) {
+    // ignore quota or privacy mode errors
+  }
+}
+
+function removeCalcLayerState() {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    window.localStorage.removeItem(getCalcStorageKey());
+  } catch (e) {
+    // ignore storage access errors
+  }
+}
+
+function restoreCalcLayerState() {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    const raw = window.localStorage.getItem(getCalcStorageKey());
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !parsed.src) return;
+
+    if (Number.isFinite(parsed.opacity)) {
+      calcLayer.opacity = clamp(parsed.opacity, 0, 1);
+    }
+
+    applyCalcImageSource(parsed.src, {
+      restoreState: {
+        x: parsed.x,
+        y: parsed.y,
+        width: parsed.width,
+        height: parsed.height,
+        isPlacing: parsed.isPlacing,
+      },
+      silent: true,
+    });
+  } catch (e) {
+    // ignore parse/access errors
+  }
+}
+
 function resizeCalcWithWheel(e) {
   if (!calcLayer.active || !calcLayer.isPlacing) return false;
 
@@ -1102,6 +1347,7 @@ function resizeCalcWithWheel(e) {
 
   const step = e.deltaY < 0 ? 1 : -1;
   resizeCalcByWidth(calcLayer.width + step);
+  queueSaveCalcLayerState();
   updateCalcPlacementCursor({ x: bx, y: by });
   return true;
 }

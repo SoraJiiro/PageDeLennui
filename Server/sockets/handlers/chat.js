@@ -40,7 +40,7 @@ function registerChatHandlers({
     };
     const userBucket = (badgesData.users && badgesData.users[p]) || null;
     const selectedIds = Array.isArray(userBucket && userBucket.selected)
-      ? userBucket.selected.slice(0, 3)
+      ? userBucket.selected.slice(0, 5)
       : [];
     const out = [];
     for (const id of selectedIds) {

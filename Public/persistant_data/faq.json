@@ -1,0 +1,127 @@
+{
+  "title": "FAQ",
+  "subtitle": "Questions frequentes sur la PDE et son fonctionnement",
+  "sections": [
+    {
+      "icon": "fa-user",
+      "title": "Compte & Profil",
+      "items": [
+        {
+          "open": true,
+          "q": "Comment modifier mon pseudo, mon tag ou ma photo de profil ?",
+          "a": "Le pseudo n'est pas modifiable mais pour la photo de profil (PFP) vous pouvez faire une demande depuis votre <a href='/profil.html'>page profil</a>. Pour un tag personnalisé, utilisez la <a href='/demande-tag.html'>page demande de tag</a> depuis la navigation."
+        },
+        {
+          "q": "Je me suis trompe sur ma date de naissance, que faire ?",
+          "a": "La date de naissance est prevue pour une saisie unique. En cas d'erreur, contactez l'Admin pour demander une correction. La date de naissance est saisissable depuis votre <a href='/profil.html'>profil</a>"
+        },
+        {
+          "q": "Ma photo de profil ne s'affiche pas.",
+          "a": "Assurez vous que l'URL (lien de l'image) est valide (se termine par .jpg, .png, etc.) et que l'image est accessible publiquement en évitant de les prendre depuis les réseaux sociaux comme facebook, reddit, instagram..."
+        },
+        {
+          "q": "Comment accéder aux profils des autres utilisateurs?",
+          "a": "Pour voir le profil des autres utilisateurs, vous pouvez vous rendre dans la section <b>Chat</b> et cliquer sur leur nom d'utilisateur pour accéder à leur profil public. Vous pouvez aussi cliquer sur le nombre d'utilisateur actuellement en ligne, dans l'en-tête du Chat, pour obtenir la liste de tous les utilisateurs du serveur avec un lien vers chacun de leur profil."
+        }
+      ]
+    },
+    {
+      "icon": "fa-comments",
+      "title": "Chat & Communaute",
+      "items": [
+        {
+          "q": "Comment signaler un comportement problematique ?",
+          "a": "Prevenez directement l'Admin ou le moderateur via la <a href='/suggestions.html'>page des suggestions</a> ou via le Chat. Les messages peuvent etre verifies pour garantir le respect du reglement."
+        },
+        {
+          "q": "Puis-je partager des liens et des fichiers dans le Chat?",
+          "a": "Oui, uniquement si le contenu est sur et pertinent. N'envoyez jamais de liens suspects, de phishing ou de contenu malveillant. Les pièces jointes douteuse ou complètement hors règlement seront immédiatement supprimées."
+        },
+        {
+          "q": "Puis-je envoyer des MP/DM (messages privés) à un autre utilisateur ?",
+          "a": "Oui, vous pouvez envoyer des messages privés uniquement visibles par vous et le destinataire. Cependant, respectez toujours les règles de conduite même dans les messages privés et ne harcelez pas les autres utilisateurs. En cas de problème, vous pouvez signaler les messages privés à l'Admin.<br>Commande à entrer dans le Chat pour envoyer un MP : <code>/msg [utilisateur] (message)</code><br>Exemple : <code>/msg M.Francois Salut, comment ça va ?</code>"
+        },
+        {
+          "q": "Où participer aux sondages lancés par l'Admin et le Modérateur ?",
+          "a": "Vous pouvez voter et partager votre avis sur les sondages depuis la <a href='/sondages.html'>page sondages</a>. Des sondages sont régulièrement proposés, restez donc à l'affût."
+        }
+      ]
+    },
+    {
+      "icon": "fa-coins",
+      "title": "Economie & Recompenses",
+      "items": [
+        {
+          "q": "Quels sont les taux de conversion clicks / monnaie / tokens ?",
+          "a": "Les taux actuels sont : <ul><li>5 clicks = 1 monnaie</li><li>50 monnaie = 1 token</li><li>1 token en 50 monnaie</li></ul> Les conversions de valeurs sont disponible sur la <a href='/conversion.html'>page des conversions</a>."
+        },
+        {
+          "q": "Pourquoi certaines limites quotidiennes existent ?",
+          "a": "Elles servent à garder une économie equilibree pour tout le monde et à limiter les abus pendant les sessions longues."
+        },
+        {
+          "q": "Comment sont calculées les récompenses gratuites quotidiennes (clicks / pixels / tokens) ?",
+          "a": "Les calculs sont aléatoires mais limités sur une valeur max et une valeur min : <ul><li>Clicks : 200 - 15 000</li><li>Pixels : 2 - 15</li><li>Tokens : 2 - 25</li></ul> Les récompenses quotidiennes gratuites sont Claimable (récupérables) depuis la sidebar (navigation)."
+        },
+        {
+          "q": "Pourquoi ne puis-je pas convertir ma monnaie en clicks ?",
+          "a": "Vous ne pouvez et ne pourrez jamais convertir votre monnaie en clicks. Les clicks sont une ressource de base qui ne peut être obtenue dans le jeu Clicker. Si on vous laisse convertir votre monnaie en clicks, d'une part, ca ne servirait à rien, et d'une autre, il y aurait des risque déséquilibre de l'économie sur le serveur. <u>Il ne sert à rien de demander cette feature, le choix est fait et restera comme tel.</u>"
+        },
+        {
+          "q": "Comment s'appelle la monnaie du serveur ?",
+          "a": "La monnaie du serveur a vu son nom être choisi à travers un sondage communautaire. Son nom officiel et définitif est le <b>\"Francouille d'Or\" (FCO).</b> "
+        }
+      ]
+    },
+    {
+      "icon": "fa-gamepad",
+      "title": "Jeux & Scores",
+      "items": [
+        {
+          "q": "Que se passe-t-il si le serveur redémarre pendant une partie ?",
+          "a": "Selon le jeu, une reprise peut etre proposee au redemarrage avec votre dernier etat connu. Les jeux multijoueurs ne propose pas de reprise. L'Admin se dédoine de toute responsabilité en cas de restart server foireux."
+        },
+        {
+          "q": "Un bug ou un exploit a été trouvé, que dois-je faire ?",
+          "a": "Signalez-le rapidement a l'Admin sans l'exploiter. Cela permet une correction plus rapide et protège l'expérience des autres joueurs."
+        },
+        {
+          "q": "Qu'est-ce que la charte de gains des jeux ?",
+          "a": "Voici le bareme actuel des gains en monnaie (FCO) : <ul><li>Dino : <b>+7</b> monnaie par <b>1000 points</b></li><li>Flappy : <b>+5</b> monnaie par <b>10 points</b></li><li>Snake : <b>+2</b> monnaie par <b>5 points</b></li><li>Block Blast : <b>+3</b> monnaie par <b>400 points</b></li><li>Subway : <b>+2</b> monnaie par <b>750 points</b> + bonus sur les pieces ramassees</li><li>2048 : pas de gain direct au score, mais <b>+5</b> monnaie a chaque nouveau palier de tuile max atteint</li><li>Motus : <b>+100</b> monnaie par mot trouve</li><li>Sudoku : <b>+250</b> monnaie par grille validee</li><li>UNO / Puissance 4 / Mash : <b>+250</b> monnaie pour le gagnant</li></ul>Les valeurs peuvent etre ajustees en cas de reequilibrage economique."
+        },
+        {
+          "q": "Où acheter des boosts pour les jeux et/ou des Vies de revive pour le Dino, Flappy etc... ?",
+          "a": "Les boosts et les vies de revive sont disponibles à l'achat dans le <a href='/shop.html'>Shop</a> avec votre monnaie (FCO). Les boosts offrent des avantages temporaires pour améliorer vos performances dans les jeux, tandis que les vies de revive vous permettent de continuer une partie après un échec. Assurez-vous d'avoir suffisamment de Francouilles d'Or pour profiter de ces options!"
+        }
+      ]
+    },
+    {
+      "icon": "fa-tower-broadcast",
+      "title": "Questions générales",
+      "items": [
+        {
+          "q": "Comment obtenir / afficher des badges ?",
+          "a": "Pour en savoir plus sur l'obtention de badges, lisez la <a href='/badges.html'>page des badges</a>. Pour afficher / désafficher des badges déjà obtenus, cela se passe dans votre <a href='/profil.html'>profil</a>. Vous pouvez afficher <b>jusqu'à 5</b> badges à la fois. Les badges affichés sont visibles par tous les autres utilisateurs sur votre profil et à côté de votre pseudo dans le Chat."
+        }
+      ]
+    }
+  ],
+  "linksBlock": {
+    "icon": "fa-link",
+    "title": "Liens utiles",
+    "links": [
+      {
+        "label": "Patch Notes",
+        "href": "patch_notes.html"
+      },
+      {
+        "label": "Reglement & Infos",
+        "href": "reglement.html"
+      },
+      {
+        "label": "Suggestions",
+        "href": "suggestions.html"
+      }
+    ]
+  }
+}

@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const session = require("express-session");
 const config = require("./config");
+const { AUTO_BADGES } = require("./services/badgesAuto");
 
 const DEFAULT_PFP_URL = "/Public/imgs/defaultProfile.png";
 
@@ -215,6 +216,7 @@ class FileService {
       sudokuScores: path.join(config.DATA, "sudoku_scores.json"),
       sudokuState: path.join(config.DATA, "sudoku_state.json"),
       dailyEarnings: path.join(config.DATA, "daily_earnings.json"),
+      dailyRewards: path.join(config.DATA, "daily_rewards.json"),
       leaderboardBonusMeta: path.join(
         config.DATA,
         "leaderboard_bonus_meta.json",
@@ -456,6 +458,16 @@ class FileService {
           upgrade: "color_custom",
           desc: "Crée et débloque une couleur Pixel War personnalisée.",
         },
+        pixel_double_1m: {
+          id: "pixel_double_1m",
+          name: "x2 Pixel War 2 min",
+          emoji: "\u23F1\uFE0F",
+          price: 1200,
+          available: true,
+          type: "pixelwar",
+          upgrade: "pixel_double_1m",
+          desc: "Pendant 2 minutes, chaque tick Pixel War donne 2 pixels au lieu de 1.",
+        },
       },
     };
     return {
@@ -498,6 +510,7 @@ class FileService {
       sudokuScores: this.readJSON(this.files.sudokuScores, {}),
       sudokuState: this.readJSON(this.files.sudokuState, {}),
       dailyEarnings: this.readJSON(this.files.dailyEarnings, {}),
+      dailyRewards: this.readJSON(this.files.dailyRewards, {}),
       leaderboardBonusMeta: this.readJSON(this.files.leaderboardBonusMeta, {}),
       wallets: this.readJSON(this.files.wallets, {}),
       annonces: this.readJSON(this.files.annonces, []),
@@ -546,9 +559,138 @@ class FileService {
 
   migrateChatBadges() {
     try {
+      const ensureSystemBadgesAndAssignments = (badgesData) => {
+        if (!badgesData || typeof badgesData !== "object") return false;
+        if (!badgesData.catalog || typeof badgesData.catalog !== "object") {
+          badgesData.catalog = {};
+        }
+        if (!badgesData.users || typeof badgesData.users !== "object") {
+          badgesData.users = {};
+        }
+
+        let changed = false;
+        const fixedCatalog = {
+          birthday: { emoji: "🎂", name: "Anniversaire" },
+        };
+        const eeCatalog = {
+          EE_S1: { emoji: "🌈​", name: "EE [S1]" },
+          EE_S2: { emoji: "​📨​", name: "EE [S2]" },
+        };
+
+        for (const [badgeId, def] of Object.entries(fixedCatalog)) {
+          const cur = badgesData.catalog[badgeId];
+          if (!cur || typeof cur !== "object") {
+            badgesData.catalog[badgeId] = { emoji: def.emoji, name: def.name };
+            changed = true;
+            continue;
+          }
+          if (!cur.name) {
+            cur.name = def.name;
+            changed = true;
+          }
+          if (!cur.emoji) {
+            cur.emoji = def.emoji;
+            changed = true;
+          }
+        }
+
+        const autoCatalog = Array.isArray(AUTO_BADGES) ? AUTO_BADGES : [];
+        for (const badge of autoCatalog) {
+          if (!badge || !badge.id) continue;
+          const cur = badgesData.catalog[badge.id];
+          if (!cur || typeof cur !== "object") {
+            badgesData.catalog[badge.id] = {
+              emoji: String(badge.emoji || "🏷️"),
+              name: String(badge.name || badge.id),
+            };
+            changed = true;
+            continue;
+          }
+          if (!cur.name) {
+            cur.name = String(badge.name || badge.id);
+            changed = true;
+          }
+          if (!cur.emoji) {
+            cur.emoji = String(badge.emoji || "🏷️");
+            changed = true;
+          }
+        }
+
+        for (const [badgeId, def] of Object.entries(eeCatalog)) {
+          const cur = badgesData.catalog[badgeId];
+          if (!cur || typeof cur !== "object") {
+            badgesData.catalog[badgeId] = { emoji: def.emoji, name: def.name };
+            changed = true;
+            continue;
+          }
+          if (!cur.name) {
+            cur.name = def.name;
+            changed = true;
+          }
+          if (!cur.emoji) {
+            cur.emoji = def.emoji;
+            changed = true;
+          }
+        }
+
+        const eeUsers =
+          this.data &&
+          this.data.easterEggs &&
+          this.data.easterEggs.users &&
+          typeof this.data.easterEggs.users === "object"
+            ? this.data.easterEggs.users
+            : {};
+
+        for (const [pseudo, eggs] of Object.entries(eeUsers)) {
+          if (
+            !badgesData.users[pseudo] ||
+            typeof badgesData.users[pseudo] !== "object"
+          ) {
+            badgesData.users[pseudo] = { assigned: [], selected: [] };
+            changed = true;
+          }
+          const bucket = badgesData.users[pseudo];
+          if (!Array.isArray(bucket.assigned)) {
+            bucket.assigned = [];
+            changed = true;
+          }
+          if (!Array.isArray(bucket.selected)) {
+            bucket.selected = [];
+            changed = true;
+          }
+
+          const s1 = eggs && eggs.S1;
+          const s2 = eggs && eggs.S2;
+          const s1Steps =
+            s1 && s1.steps && typeof s1.steps === "object" ? s1.steps : {};
+          const s2Steps =
+            s2 && s2.steps && typeof s2.steps === "object" ? s2.steps : {};
+          const s1Completed = Boolean(s1 && (s1.completed || s1Steps.rainbow));
+          const s2Completed = Boolean(
+            s2 &&
+            (s2.completed ||
+              (s2Steps.index_x &&
+                s2Steps.ann_link &&
+                s2Steps.suggestions_code)),
+          );
+
+          if (s1Completed && !bucket.assigned.includes("EE_S1")) {
+            bucket.assigned.push("EE_S1");
+            changed = true;
+          }
+          if (s2Completed && !bucket.assigned.includes("EE_S2")) {
+            bucket.assigned.push("EE_S2");
+            changed = true;
+          }
+        }
+
+        return changed;
+      };
+
       const raw = this.data.chatBadges;
       if (!raw || typeof raw !== "object") {
         this.data.chatBadges = { catalog: {}, users: {} };
+        ensureSystemBadgesAndAssignments(this.data.chatBadges);
         this.save("chatBadges", this.data.chatBadges);
         return;
       }
@@ -561,6 +703,9 @@ class FileService {
         raw.catalog = raw.catalog || {};
         raw.users = raw.users || {};
         this.data.chatBadges = raw;
+        if (ensureSystemBadgesAndAssignments(this.data.chatBadges)) {
+          this.save("chatBadges", this.data.chatBadges);
+        }
         return;
       }
 
@@ -577,6 +722,7 @@ class FileService {
         }
         migrated.users[pseudo] = { assigned: [badgeId], selected: [badgeId] };
       }
+      ensureSystemBadgesAndAssignments(migrated);
       this.data.chatBadges = migrated;
       this.save("chatBadges", migrated);
       console.log(
@@ -626,6 +772,7 @@ class FileService {
       sudokuScores: this.files.sudokuScores,
       sudokuState: this.files.sudokuState,
       dailyEarnings: this.files.dailyEarnings,
+      dailyRewards: this.files.dailyRewards,
       leaderboardBonusMeta: this.files.leaderboardBonusMeta,
       wallets: this.files.wallets,
       annonces: this.files.annonces,

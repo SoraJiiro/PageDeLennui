@@ -59,7 +59,7 @@ function setPfp(url) {
   };
 }
 
-function renderBadgesRow(container, badges, max = 3) {
+function renderBadgesRow(container, badges, max = 5) {
   if (!container) return;
   container.innerHTML = "";
   const list = Array.isArray(badges) ? badges : [];
@@ -284,7 +284,7 @@ async function main() {
   qs("tag").innerHTML = data.tag ? `[ ${renderTag(data.tag)} ]` : "";
 
   setPfp(data.pfpUrl);
-  renderBadgesRow(qs("badgesSelected"), data.badges && data.badges.selected, 3);
+  renderBadgesRow(qs("badgesSelected"), data.badges && data.badges.selected, 5);
   renderBadgesRow(
     qs("badgesAll"),
     data.badges && data.badges.assigned,
@@ -346,8 +346,8 @@ async function main() {
     if (saveBtn) {
       saveBtn.onclick = async () => {
         const ids = getPickerSelectedIds();
-        if (ids.length > 3) {
-          if (saveStatus) saveStatus.textContent = "Maximum 3 badges.";
+        if (ids.length > 5) {
+          if (saveStatus) saveStatus.textContent = "Maximum 5 badges.";
           return;
         }
         const res = await fetch("/api/profile/badges/select", {
@@ -366,18 +366,18 @@ async function main() {
       };
     }
 
-    // Live limit to 3
+    // Live limit to 5
     const picker = qs("badgesPicker");
     if (picker) {
       picker.addEventListener("change", () => {
         const ids = getPickerSelectedIds();
-        if (ids.length > 3) {
+        if (ids.length > 5) {
           const boxes = Array.from(
             picker.querySelectorAll('input[type="checkbox"]'),
           );
           const checked = boxes.filter((b) => b.checked);
           if (checked.length) checked[checked.length - 1].checked = false;
-          if (saveStatus) saveStatus.textContent = "Maximum 3 badges.";
+          if (saveStatus) saveStatus.textContent = "Maximum 5 badges.";
         } else if (saveStatus) {
           saveStatus.textContent = "";
         }

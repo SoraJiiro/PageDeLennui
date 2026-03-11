@@ -177,6 +177,43 @@ function getSiteMoneyStatsPayload() {
   };
 }
 
+function getUsersPresencePayload(gameState) {
+  const onlineUsers = Array.isArray(gameState?.getUniqueUsers?.())
+    ? gameState.getUniqueUsers()
+    : [];
+
+  const onlineByLower = new Map();
+  onlineUsers.forEach((name) => {
+    const pseudo = String(name || "").trim();
+    if (!pseudo) return;
+    onlineByLower.set(pseudo.toLowerCase(), pseudo);
+  });
+
+  const seen = new Set();
+  const out = [];
+
+  const addPseudo = (raw) => {
+    const pseudo = String(raw || "").trim();
+    if (!pseudo) return;
+    const lower = pseudo.toLowerCase();
+    if (seen.has(lower)) return;
+    seen.add(lower);
+    out.push({
+      pseudo,
+      online: onlineByLower.has(lower),
+    });
+  };
+
+  const db = dbUsers.readAll ? dbUsers.readAll() : { users: [] };
+  const allRegistered = Array.isArray(db?.users) ? db.users : [];
+  allRegistered.forEach((entry) => addPseudo(entry?.pseudo));
+
+  out.sort((a, b) =>
+    a.pseudo.localeCompare(b.pseudo, "fr", { sensitivity: "base" }),
+  );
+  return out;
+}
+
 function broadcastSiteMoneyStats(io) {
   if (!io) return;
   io.emit("economy:siteMoneyStats", getSiteMoneyStatsPayload());
@@ -564,6 +601,16 @@ function initSocketHandlers(io, socket, gameState) {
   const sessionId =
     socket.handshake.sessionID || socket.handshake.session?.id || null;
   gameState.addUser(socket.id, pseudo, io, sessionId);
+
+  const emitUsersPresence = () => {
+    io.emit("users:list", gameState.getUniqueUsers());
+    io.emit("users:presence", getUsersPresencePayload(gameState));
+  };
+
+  socket.on("users:presence:get", () => {
+    socket.emit("users:presence", getUsersPresencePayload(gameState));
+  });
+
   if (pseudo !== "Admin") {
     if (config.LOG_SOCKET_EVENTS) {
       console.log(`>> [${colorize(pseudo, orange)}] connecté`);
@@ -584,7 +631,7 @@ function initSocketHandlers(io, socket, gameState) {
       };
       const userBucket = (badgesData.users && badgesData.users[p]) || null;
       const selectedIds = Array.isArray(userBucket && userBucket.selected)
-        ? userBucket.selected.slice(0, 3)
+        ? userBucket.selected.slice(0, 5)
         : [];
       const out = [];
       for (const id of selectedIds) {
@@ -903,7 +950,7 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastSudokuLB(io);
   leaderboardManager.broadcastSubwayLB(io);
 
-  io.emit("users:list", gameState.getUniqueUsers());
+  emitUsersPresence();
 
   // ------- Snake (module) -------
   registerSnakeHandlers({
@@ -989,6 +1036,7 @@ function initSocketHandlers(io, socket, gameState) {
     pseudo,
     FileService,
     pixelWarGame,
+    leaderboardManager,
   });
 
   socket.on("disconnect", () => {
@@ -1004,7 +1052,7 @@ function initSocketHandlers(io, socket, gameState) {
       }
     }
 
-    io.emit("users:list", gameState.getUniqueUsers());
+    emitUsersPresence();
 
     if (fullyDisconnected) {
       // UNO / PUISSANCE 4 (externalisés)

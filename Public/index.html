@@ -84,6 +84,15 @@
                 <div class="sidebar-section">
                     <h3 class="sb-username"></h3>
                     <h3 class="money"></h3>
+                    <div class="sidebar-controls daily-rewards"
+                        style="margin-bottom: 10px;">
+                        <button id="daily-claim-clicks" class="nav-link">Claim
+                            Clicks</button>
+                        <button id="daily-claim-pixels" class="nav-link">Claim
+                            pixels</button>
+                        <button id="daily-claim-tokens" class="nav-link">Claim
+                            Token</button>
+                    </div>
                     <h3><i class="fa-solid fa-gamepad"></i> Jeux</h3>
                     <ul>
                         <li><button class="nav-btn secHub">Hub</button></li>
@@ -130,6 +139,9 @@
                                 data-external-url="reglement.html"
                                 data-external-title="Règlement & Infos">Règlement
                                 & Infos</button></li>
+                        <li><button class="nav-btn ext-btn"
+                                data-external-url="faq.html"
+                                data-external-title="FAQ">FAQ</button></li>
                         <li><button class="nav-btn ext-btn"
                                 data-external-url="patch_notes.html"
                                 data-external-title="Patch Notes">Patch
@@ -571,7 +583,8 @@
                 </div>
 
                 <div class="hub-infos"><center><p><b><u>SI VOUS AVEZ DES
-                                    QUESTIONS, REFEREZ VOUS AU PATCH NOTES ET AU
+                                    QUESTIONS, REFEREZ VOUS A LA FAQ, AUX PATCH
+                                    NOTES ET AU
                                     REGLEMENT & INFOS AVANT DE DEMANDER AU
                                     MODERATEUR (TOM) OU A
                                     L'ADMIN.</u></b></p></center></div>
@@ -589,6 +602,10 @@
                         data-external-url="reglement.html"
                         data-external-title="Règlement & Infos"
                         type="button">Règlement & Infos</button>
+                    <button class="hub-link-btn ext-btn"
+                        data-external-url="faq.html"
+                        data-external-title="FAQ"
+                        type="button">FAQ</button>
                     <button class="hub-link-btn sec4"
                         type="button">Leaderboard</button>
 
@@ -708,10 +725,9 @@
                 <div class="chat-header">
                     <span id="l"><h2>Chat.exe</h2></span>
                     <div class="chat-status">
-                        <span id="info"><p>Laisser la souris sur le
-                                nombre
-                                d'utilisateurs pour voir la liste des joueurs
-                                connectés.</p>
+                        <span id="info"><p>Clique sur le nombre
+                                d'utilisateurs
+                                pour voir la liste des joueurs</p>
                         </span>
                         <span id="usersCount"></span>
                     </div>
@@ -1325,6 +1341,11 @@
                         style="margin-left:15px; font-size: 0.9em; opacity: 0.8;">
                         <i class="fa-regular fa-clock"></i> <span
                             id="pixel-timer">--:--</span>
+                    </span>
+                    <span
+                        style="margin-left:15px; font-size: 0.9em; opacity: 0.85;">
+                        <i class="fa-solid fa-bolt"></i> x2: <span
+                            id="pixel-double-timer">--:--</span>
                     </span>
                 </div>
 

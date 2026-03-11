@@ -26,66 +26,54 @@
     dot.style.backgroundColor = color;
   }
 
-  function parseRgb(colorValue) {
-    if (!colorValue) return null;
-    const m = String(colorValue)
-      .trim()
-      .match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/i);
-    if (!m) return null;
-    return {
-      r: Math.max(0, Math.min(255, Number(m[1]))),
-      g: Math.max(0, Math.min(255, Number(m[2]))),
-      b: Math.max(0, Math.min(255, Number(m[3]))),
-      a: m[4] == null ? 1 : Math.max(0, Math.min(1, Number(m[4]))),
-    };
+  function isTextInputElement(target) {
+    if (!target || !(target instanceof Element)) return false;
+    if (target.matches("textarea, [contenteditable='true']")) return true;
+    if (!target.matches("input")) return false;
+
+    const type = String(target.getAttribute("type") || "text").toLowerCase();
+    return [
+      "text",
+      "search",
+      "email",
+      "password",
+      "url",
+      "tel",
+      "number",
+    ].includes(type);
   }
 
-  function isTransparent(colorValue) {
-    const value = String(colorValue || "")
-      .trim()
-      .toLowerCase();
-    if (!value || value === "transparent") return true;
-    const parsed = parseRgb(value);
-    return !!parsed && parsed.a === 0;
-  }
+  function resolveCursorKind(target) {
+    if (!target || !(target instanceof Element)) return "default";
 
-  function rgbToCss(rgb) {
-    return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-  }
-
-  function inverseRgb(rgb) {
-    return {
-      r: 255 - rgb.r,
-      g: 255 - rgb.g,
-      b: 255 - rgb.b,
-    };
-  }
-
-  function getHoverColorFromElement(element) {
-    const fallback = parseRgb(getPrimaryColor());
-    if (!element || !(element instanceof Element)) {
-      return fallback;
+    if (
+      target.closest("#pixelwar-canvas, #admin-pixelwar-canvas, #board-wrapper")
+    ) {
+      return "crosshair";
     }
 
-    let node = element;
-    while (node && node instanceof Element) {
-      const style = getComputedStyle(node);
-      const candidates = [
-        style.backgroundColor,
-        style.borderTopColor,
-        style.color,
-      ];
-
-      for (const candidate of candidates) {
-        if (isTransparent(candidate)) continue;
-        const parsed = parseRgb(candidate);
-        if (parsed) return parsed;
-      }
-
-      node = node.parentElement;
+    if (target.closest("textarea, input, [contenteditable='true']")) {
+      return isTextInputElement(
+        target.closest("textarea, input, [contenteditable='true']"),
+      )
+        ? "input-text"
+        : "text";
     }
 
-    return fallback;
+    const cursor = getComputedStyle(target).cursor || "";
+    if (cursor === "crosshair") return "crosshair";
+    if (cursor === "pointer") return "pointer";
+    if (cursor === "text" || cursor === "vertical-text") return "text";
+
+    if (
+      target.closest(
+        "a, button, [role='button'], summary, label[for], select, .btn, .zone, .medal, .p4-cell, .uno-card-item, .uno-pile.tonTour",
+      )
+    ) {
+      return "pointer";
+    }
+
+    return "default";
   }
 
   function installCustomCursor() {
@@ -97,6 +85,7 @@
     style.textContent = [
       "@media (hover: hover) and (pointer: fine) {",
       "  html, body, a, button, input, textarea, select, summary, label, [role='button'] { cursor: none !important; }",
+      "  #pixelwar-canvas, #admin-pixelwar-canvas, #board-wrapper, #board-wrapper * { cursor: none !important; }",
       "  .pde-cursor-dot {",
       "    position: fixed;",
       "    left: 0;",
@@ -110,6 +99,7 @@
       "    border-radius: 999px;",
       "    background: var(--pde-cursor-color);",
       "    opacity: 0.77;",
+      "    mix-blend-mode: difference;",
       "    pointer-events: none;",
       "    z-index: 2147483647;",
       "    transform: translate(-50%, -50%) scale(1);",
@@ -155,8 +145,17 @@
       "    50% { transform: rotate(90deg); }",
       "    100% { transform: rotate(0deg); }",
       "  }",
-      "  .pde-cursor-dot.is-hover-interactive { opacity: 0.88; animation: pdeCursorHoverRotate 888ms ease-in infinite}",
-      "  .pde-cursor-dot.is-hover-interactive::after { animation: pdeCursorHoverPulse 888ms ease-in-out infinite; }",
+      "  .pde-cursor-dot.is-hover-pointer { opacity: 0.88; animation: pdeCursorHoverRotate 888ms ease-in infinite; }",
+      "  .pde-cursor-dot.is-hover-pointer::after { animation: pdeCursorHoverPulse 888ms ease-in-out infinite; }",
+      "  .pde-cursor-dot.is-hover-text { width: 4px; border-radius: 2px; outline: none; opacity: 0.92; }",
+      "  .pde-cursor-dot.is-hover-text::after { transform: rotate(0deg) scale(0); opacity: 0; }",
+      "  .pde-cursor-dot.is-hover-text::before { width: 0; height: 0; border: 0; }",
+      "  .pde-cursor-dot.is-hover-input-text { width: 5px; height: 20px; border-radius: 2px; outline: none; opacity: 0.96; }",
+      "  .pde-cursor-dot.is-hover-input-text::after { transform: rotate(0deg) scale(0); opacity: 0; }",
+      "  .pde-cursor-dot.is-hover-input-text::before { width: 0; height: 0; border: 0; }",
+      "  .pde-cursor-dot.is-hover-crosshair { width: 26px; height: 26px; border: 0; border-radius: 0; outline: none; background: transparent; opacity: 0.98; animation: none; }",
+      "  .pde-cursor-dot.is-hover-crosshair::before { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 2px; height: 18px; border: 0; border-radius: 2px; background: var(--pde-cursor-color); animation: none; }",
+      "  .pde-cursor-dot.is-hover-crosshair::after { left: 50%; top: 50%; width: 18px; height: 2px; border: 0; border-radius: 2px; background: var(--pde-cursor-color); transform: translate(-50%, -50%); animation: none; }",
       "  .pde-cursor-dot.is-hidden { opacity: 0; }",
       "}",
     ].join("\n");
@@ -171,47 +170,67 @@
     let raf = 0;
     let nextX = 0;
     let nextY = 0;
-
-    const hoverSelector =
-      "a, button, [role='button'], summary, label[for], select, input, textarea, .btn, .zone, .medal, scrollbar-thumb, -webkit-scrollbar-thumb, span, .p4-cell, .uno-card-item, .uno-pile.tonTour";
+    let currentX = 0;
+    let currentY = 0;
+    let hasCursorPosition = false;
+    const EASE_FACTOR = 0.66;
 
     const applyHoverVisual = (target) => {
-      const base =
-        getHoverColorFromElement(target) || parseRgb(getPrimaryColor());
-      const inv = inverseRgb(base);
-      const invCss = rgbToCss(inv);
-      const isInteractive = !!(target && target.closest(hoverSelector));
+      const kind = resolveCursorKind(target);
+      dot.classList.remove(
+        "is-hover-pointer",
+        "is-hover-text",
+        "is-hover-input-text",
+        "is-hover-crosshair",
+      );
 
-      dot.classList.toggle("is-hover-interactive", isInteractive);
-      dot.style.setProperty("--pde-cursor-color", invCss);
-      dot.style.backgroundColor = isInteractive ? "transparent" : invCss;
+      if (kind === "pointer") dot.classList.add("is-hover-pointer");
+      else if (kind === "text") dot.classList.add("is-hover-text");
+      else if (kind === "input-text") dot.classList.add("is-hover-input-text");
+      else if (kind === "crosshair") dot.classList.add("is-hover-crosshair");
+
+      dot.style.backgroundColor =
+        kind === "crosshair" ? "transparent" : "var(--pde-cursor-color)";
     };
 
     const clearHoverVisual = () => {
-      dot.classList.remove("is-hover-interactive");
+      dot.classList.remove(
+        "is-hover-pointer",
+        "is-hover-text",
+        "is-hover-input-text",
+        "is-hover-crosshair",
+      );
       applyColor(dot);
     };
 
     const render = () => {
-      raf = 0;
-      dot.style.left = nextX + "px";
-      dot.style.top = nextY + "px";
+      if (!hasCursorPosition) {
+        currentX = nextX;
+        currentY = nextY;
+        hasCursorPosition = true;
+      }
+
+      currentX += (nextX - currentX) * EASE_FACTOR;
+      currentY += (nextY - currentY) * EASE_FACTOR;
+
+      dot.style.left = currentX + "px";
+      dot.style.top = currentY + "px";
+
+      const dx = Math.abs(nextX - currentX);
+      const dy = Math.abs(nextY - currentY);
+      if (dx > 0.1 || dy > 0.1) {
+        raf = window.requestAnimationFrame(render);
+      } else {
+        // Snap final pour éviter les micro-décalages permanents.
+        currentX = nextX;
+        currentY = nextY;
+        dot.style.left = currentX + "px";
+        dot.style.top = currentY + "px";
+        raf = 0;
+      }
     };
 
     const onMove = (event) => {
-      const isPixelWarCanvas = !!(
-        event.target &&
-        event.target.closest &&
-        event.target.closest(
-          "#pixelwar-canvas, #admin-pixelwar-canvas, #board-wrapper",
-        )
-      );
-
-      if (isPixelWarCanvas) {
-        hideDot();
-        return;
-      }
-
       nextX = event.clientX;
       nextY = event.clientY;
       if (!raf) raf = window.requestAnimationFrame(render);
@@ -223,6 +242,7 @@
     const hideDot = () => {
       dot.classList.add("is-hidden");
       clearHoverVisual();
+      hasCursorPosition = false;
     };
 
     window.addEventListener("mousemove", onMove, { passive: true });
@@ -230,7 +250,7 @@
     window.addEventListener("blur", hideDot, { passive: true });
 
     window.addEventListener("uiColor:changed", () => {
-      if (!dot.classList.contains("is-hover-interactive")) applyColor(dot);
+      applyColor(dot);
     });
 
     window.__pdeSimpleCursorReady = true;

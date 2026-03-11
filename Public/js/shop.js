@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function formatPrice(value) {
-    return `${value.toLocaleString("fr-FR")} M`;
+    return `${value.toLocaleString("fr-FR")} FCO`;
   }
 
   function getPersonalizeBtnLabel() {
@@ -79,7 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return (
         item.upgrade === "pixel_1" ||
         item.upgrade === "pixel_15" ||
-        item.upgrade === "storage_10"
+        item.upgrade === "storage_10" ||
+        item.upgrade === "pixel_double_1m"
       );
     }
     return false;

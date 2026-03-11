@@ -1,14 +1,14 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Patch Notes - PDE</title>
+        <title>FAQ - PDE</title>
 
         <link rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
         <link rel="stylesheet" type="text/css" href="css/common.css">
-        <link rel="stylesheet" type="text/css" href="css/patchNotes.css">
+        <link rel="stylesheet" type="text/css" href="css/faq.css">
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
             media="(prefers-color-scheme: dark)" />
@@ -17,20 +17,17 @@
 
         <script defer type="text/javascript" src="js/uiColor.js"></script>
         <script defer src="js/annexBack.js"></script>
-        <script defer type="module" src="js/main.js"></script>
         <script defer src="/socket.io/socket.io.js"></script>
         <script defer type="text/javascript" src="js/nav.js"></script>
         <script defer src="js/auto_reload.js"></script>
-        <script defer src="js/patchNotes.js"></script>
+        <script defer src="js/faq.js"></script>
     </head>
     <body>
-        <div class="patch-container">
-            <div class="patch-header">
-                <h1><i class="fa-solid fa-pen-to-square"></i> Patch Notes</h1>
-                <p>Historique des mises à jour et changements</p>
-            </div>
-
-            <div id="patch-dynamic-list"></div>
-        </div>
+        <main class="faq-container" id="faq-root">
+            <header class="faq-header">
+                <h1><i class="fa-solid fa-circle-question"></i> FAQ</h1>
+                <p>Chargement des questions...</p>
+            </header>
+        </main>
     </body>
 </html>

@@ -421,4 +421,4 @@ function applyAutoBadges({ pseudo, FileService }) {
   return { changed, assigned: Array.from(assignedSet) };
 }
 
-module.exports = { applyAutoBadges, resetUserBadgesProgress };
+module.exports = { applyAutoBadges, resetUserBadgesProgress, AUTO_BADGES };

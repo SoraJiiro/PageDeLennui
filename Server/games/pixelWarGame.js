@@ -45,6 +45,7 @@ class PixelWarGame {
     this.UNIVERSAL_STORAGE_LIMIT = 500;
 
     this.PIXEL_GENERATION_INTERVAL_MS = 30000;
+    this.PIXEL_DOUBLE_BOOST_MULTIPLIER = 2;
 
     this.MAX_UNDO_DEPTH_PER_PIXEL = 10;
 
@@ -417,6 +418,7 @@ class PixelWarGame {
         pixels: 0,
         maxPixels: 30,
         lastPixelGeneration: Date.now(),
+        pixelDoubleUntil: null,
         lastDaily: null,
         pixelsPlaced: 0,
         pixelsOverridden: 0,
@@ -432,18 +434,74 @@ class PixelWarGame {
     }
 
     const now = Date.now();
+    const boostUntilRaw = Number(user.pixelDoubleUntil);
+    if (!Number.isFinite(boostUntilRaw) || boostUntilRaw <= 0) {
+      if (user.pixelDoubleUntil != null) {
+        user.pixelDoubleUntil = null;
+        this.usersDirty = true;
+      }
+    } else {
+      user.pixelDoubleUntil = boostUntilRaw;
+    }
+
+    const lastGeneration = Number(user.lastPixelGeneration);
+    if (!Number.isFinite(lastGeneration)) {
+      user.lastPixelGeneration = now;
+      this.usersDirty = true;
+    }
+
+    // Si le stockage est plein, le boost x2 est gelé: sa durée ne diminue pas.
+    if (
+      Number.isFinite(user.pixelDoubleUntil) &&
+      user.pixelDoubleUntil > now &&
+      user.pixels >= user.maxPixels
+    ) {
+      const freezeDelta = Math.max(0, now - user.lastPixelGeneration);
+      if (freezeDelta > 0) {
+        user.pixelDoubleUntil += freezeDelta;
+        this.usersDirty = true;
+      }
+    }
+
     const diff = now - user.lastPixelGeneration;
     const generated = Math.floor(diff / this.PIXEL_GENERATION_INTERVAL_MS);
 
     if (generated > 0) {
+      let generatedPixels = generated;
+      if (
+        Number.isFinite(user.pixelDoubleUntil) &&
+        user.pixelDoubleUntil > user.lastPixelGeneration
+      ) {
+        const boostedIntervals = Math.max(
+          0,
+          Math.min(
+            generated,
+            Math.floor(
+              (user.pixelDoubleUntil - user.lastPixelGeneration) /
+                this.PIXEL_GENERATION_INTERVAL_MS,
+            ),
+          ),
+        );
+        generatedPixels +=
+          boostedIntervals * (this.PIXEL_DOUBLE_BOOST_MULTIPLIER - 1);
+      }
+
       if (user.pixels < user.maxPixels) {
         const space = user.maxPixels - user.pixels;
-        const toAdd = Math.min(generated, space);
+        const toAdd = Math.min(generatedPixels, space);
         if (toAdd > 0) {
           user.pixels += toAdd;
         }
       }
       user.lastPixelGeneration += generated * this.PIXEL_GENERATION_INTERVAL_MS;
+      this.usersDirty = true;
+    }
+
+    if (
+      Number.isFinite(user.pixelDoubleUntil) &&
+      now >= user.pixelDoubleUntil
+    ) {
+      user.pixelDoubleUntil = null;
       this.usersDirty = true;
     }
 
@@ -483,6 +541,7 @@ class PixelWarGame {
           pixels: 0,
           maxPixels: 30,
           lastPixelGeneration: now,
+          pixelDoubleUntil: null,
           lastDaily: null,
           pixelsPlaced: 0,
           pixelsOverridden: 0,
@@ -496,19 +555,36 @@ class PixelWarGame {
       // noop
     }
 
-    const diff = now - (Number(user.lastPixelGeneration) || now);
+    const lastPixelGeneration = Number(user.lastPixelGeneration) || now;
+    const diff = now - lastPixelGeneration;
     const generated = Math.floor(diff / this.PIXEL_GENERATION_INTERVAL_MS);
 
     if (generated > 0) {
+      let generatedPixels = generated;
+      const boostUntil = Number(user.pixelDoubleUntil);
+      if (Number.isFinite(boostUntil) && boostUntil > lastPixelGeneration) {
+        const boostedIntervals = Math.max(
+          0,
+          Math.min(
+            generated,
+            Math.floor(
+              (boostUntil - lastPixelGeneration) /
+                this.PIXEL_GENERATION_INTERVAL_MS,
+            ),
+          ),
+        );
+        generatedPixels +=
+          boostedIntervals * (this.PIXEL_DOUBLE_BOOST_MULTIPLIER - 1);
+      }
+
       if (user.pixels < user.maxPixels) {
         const space = user.maxPixels - user.pixels;
-        const toAdd = Math.min(generated, space);
+        const toAdd = Math.min(generatedPixels, space);
         if (toAdd > 0) user.pixels += toAdd;
       }
       // Do not persist lastPixelGeneration for peek
       user.lastPixelGeneration =
-        (Number(user.lastPixelGeneration) || now) +
-        generated * this.PIXEL_GENERATION_INTERVAL_MS;
+        lastPixelGeneration + generated * this.PIXEL_GENERATION_INTERVAL_MS;
     }
 
     const today = new Date().toISOString().split("T")[0];
@@ -595,6 +671,27 @@ class PixelWarGame {
     const nextTime =
       user.lastPixelGeneration + this.PIXEL_GENERATION_INTERVAL_MS;
     return Math.max(0, nextTime - now);
+  }
+
+  addDoublePixelBoost(pseudo, durationMs) {
+    const user = this.getUserState(pseudo);
+    const now = Date.now();
+    const duration = Math.max(0, Math.floor(Number(durationMs) || 0));
+    if (!duration) return user;
+
+    const boostUntil = Number(user.pixelDoubleUntil);
+    const base =
+      Number.isFinite(boostUntil) && boostUntil > now ? boostUntil : now;
+    user.pixelDoubleUntil = base + duration;
+    this.usersDirty = true;
+    return user;
+  }
+
+  getDoublePixelBoostRemainingMs(pseudo) {
+    const user = this.getUserState(pseudo);
+    const until = Number(user && user.pixelDoubleUntil);
+    if (!Number.isFinite(until) || until <= 0) return 0;
+    return Math.max(0, until - Date.now());
   }
 
   placePixel(pseudo, x, y, colorIndex) {
@@ -692,6 +789,7 @@ class PixelWarGame {
       storage_10: 8000,
       pixel_1: 250,
       pixel_15: 3000,
+      pixel_double_1m: 1200,
     };
 
     if (!costs[type]) return { success: false };
@@ -723,6 +821,8 @@ class PixelWarGame {
       user.pixels += 15;
       if (user.pixels > this.UNIVERSAL_STORAGE_LIMIT)
         user.pixels = this.UNIVERSAL_STORAGE_LIMIT;
+    } else if (type === "pixel_double_1m") {
+      this.addDoublePixelBoost(pseudo, 120 * 1000);
     }
 
     this.fileService.data.wallets[pseudo].money = Math.max(

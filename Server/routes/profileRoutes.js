@@ -117,7 +117,7 @@ function getChatProfile(pseudo) {
   };
 
   const assignedResolved = assigned.map(resolve).filter(Boolean);
-  const selectedResolved = selected.slice(0, 3).map(resolve).filter(Boolean);
+  const selectedResolved = selected.slice(0, 5).map(resolve).filter(Boolean);
 
   return {
     pfpUrl:
@@ -287,8 +287,8 @@ router.post("/badges/select", express.json(), (req, res) => {
   const unique = Array.from(
     new Set(selectedIds.map((x) => String(x || "").trim()).filter(Boolean)),
   );
-  if (unique.length > 3) {
-    return res.status(400).json({ message: "Maximum 3 badges" });
+  if (unique.length > 5) {
+    return res.status(400).json({ message: "Maximum 5 badges" });
   }
 
   const badgesData = FileService.data.chatBadges || { catalog: {}, users: {} };
@@ -545,7 +545,8 @@ router.post("/shop/purchase", express.json(), (req, res) => {
       (item.type === "pixelwar" &&
         (item.upgrade === "pixel_1" ||
           item.upgrade === "pixel_15" ||
-          item.upgrade === "storage_10"));
+          item.upgrade === "storage_10" ||
+          item.upgrade === "pixel_double_1m"));
     if (!isRepeatable && qty !== 1) {
       return res.status(400).json({ message: "Quantite invalide" });
     }
@@ -606,7 +607,8 @@ router.post("/shop/purchase", express.json(), (req, res) => {
       upgrade !== "storage_10" &&
       upgrade !== "pixel_1" &&
       upgrade !== "pixel_15" &&
-      upgrade !== "color_custom"
+      upgrade !== "color_custom" &&
+      upgrade !== "pixel_double_1m"
     ) {
       return res.status(400).json({ message: "Upgrade Pixel War invalide" });
     }
@@ -724,6 +726,10 @@ router.post("/shop/purchase", express.json(), (req, res) => {
       } else if (entry.item.upgrade === "pixel_15") {
         userState.pixels =
           Math.max(0, Number(userState.pixels) || 0) + qty * 15;
+      } else if (entry.item.upgrade === "pixel_double_1m") {
+        if (typeof pixelWarGame.addDoublePixelBoost === "function") {
+          pixelWarGame.addDoublePixelBoost(pseudo, qty * 120 * 1000);
+        }
       } else if (entry.item.upgrade === "color_custom") {
         const colorHex = normalizeHexColor(entry.customColor);
         if (

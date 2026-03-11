@@ -1050,6 +1050,37 @@
                         </div>
                     </section>
 
+                    <section class="admin-section" style="order: 1;">
+                        <h2><i class="fa-solid fa-cake-candles"
+                                style="margin-right: 10px;"></i>/Liste users
+                            (anniversaire)</h2>
+                        <div class="transactions-container">
+                            <div class="user-search"
+                                style="margin-bottom: 10px;">
+                                <input type="text"
+                                    id="adminBirthdaysSearchInput"
+                                    placeholder="Filtrer par pseudo..." />
+                            </div>
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pseudo</th>
+                                        <th>Date écrite</th>
+                                        <th>Anniversaire</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminBirthdaysList"></tbody>
+                            </table>
+                            <center>
+                                <button onclick="refreshAdminUsersBirthdays()"
+                                    class="refresh-btn"><i
+                                        class="fa-solid fa-rotate"></i>
+                                    Actualiser</button>
+                            </center>
+                        </div>
+                    </section>
+
                     <!-- ADMINISTRATION -->
                     <section class="admin-section" style="order: 8;">
                         <h2><i class="fa-solid fa-gear"></i> /Commandes</h2>
@@ -1688,6 +1719,7 @@
             'password-requests': () => refreshPasswordRequests(),
             'pfp-requests': () => refreshPfpRequests(),
             'custom-badge-requests': () => refreshCustomBadgeRequests(),
+            'users-birthdays': () => refreshAdminUsersBirthdays(),
             'badges': () => refreshBadges(),
             'shop-catalog': () => refreshShopCatalog(),
             'daily-cap': () => refreshDailyCap(),
@@ -2218,7 +2250,7 @@
                     tr.innerHTML = `
                         <td>${fromDisplay}</td>
                         <td>${tx.to}</td>
-                        <td>${tx.amount.toLocaleString()} M</td>
+                        <td>${tx.amount.toLocaleString()} FCO</td>
                         <td>${new Date(tx.date).toLocaleString()}</td>
                         <td>
                             <button onclick="approveTransaction('${tx.id}')" class="btn-approve" style="background:#4CAF50; color:white; border:none; padding:5px 10px; margin-right:5px;"><i class="fa-solid fa-check"></i></button>
@@ -3198,6 +3230,7 @@
             refreshShopCatalog();
             refreshClickerAntiCheatSettings();
             refreshEeCompletions();
+            refreshAdminUsersBirthdays();
         }
 
         const shopSelect = document.getElementById('shopItemSelect');
@@ -3209,6 +3242,157 @@
             });
         }
         refreshDailyCap();
+
+        let adminUsersBirthdaysCache = [];
+
+        function formatBirthDateForAdminList(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return 'Non renseignée';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+                const [year, month, day] = raw.split('-');
+                return `${day}/${month}/${year}`;
+            }
+            return raw;
+        }
+
+        function getBirthdayStatusLabel(entry) {
+            if (!entry || !entry.hasBirthDate) {
+                return '<span style="color:#9a9a9a;">Non renseigné</span>';
+            }
+            return entry.birthdayPassed
+                ? '<span style="color:#17b26a;font-weight:600;">Passé</span>'
+                : '<span style="color:#f79009;font-weight:600;">Pas encore</span>';
+        }
+
+        function getBirthdayGiftActionHtml(entry) {
+            const pseudo = String(entry?.pseudo || '');
+            const hasBirthDate = !!entry?.hasBirthDate;
+            const birthdayPassed = !!entry?.birthdayPassed;
+            const giftedThisYear = !!entry?.giftedThisYear;
+            const canGift = !!entry?.canGift;
+
+            let reason = '';
+            if (!hasBirthDate) {
+                reason = 'Date non renseignée';
+            } else if (!birthdayPassed) {
+                reason = 'Anniversaire pas encore passé';
+            } else if (giftedThisYear) {
+                reason = 'Déjà donné cette année';
+            }
+
+            return `
+                <button
+                    type="button"
+                    class="btn"
+                    data-birthday-gift-pseudo="${pseudo}"
+                    ${canGift ? '' : 'disabled'}
+                    title="${canGift ? 'Envoyer le cadeau anniversaire' : reason}">
+                    <i class="fa-solid fa-gift"></i>
+                    Cadeau
+                </button>
+            `;
+        }
+
+        function renderAdminUsersBirthdays(list) {
+            const tbody = document.getElementById('adminBirthdaysList');
+            if (!tbody) return;
+
+            const rows = Array.isArray(list) ? list : [];
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9a9a9a;">Aucun utilisateur</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.map((entry) => `
+                <tr>
+                    <td>${entry.pseudo || '—'}</td>
+                    <td>${formatBirthDateForAdminList(entry.birthDate)}</td>
+                    <td>${getBirthdayStatusLabel(entry)}</td>
+                    <td>${getBirthdayGiftActionHtml(entry)}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function giftBirthdayBundle(pseudoRaw) {
+            const pseudo = String(pseudoRaw || '').trim();
+            if (!pseudo) return;
+
+            const ok = confirm(
+                `Envoyer le cadeau anniversaire à ${pseudo} ?\n\n` +
+                '- 50 K clicks\n' +
+                '- 1 K monnaie\n' +
+                '- 1 vie revive\n' +
+                '- badge Anniversaire 🎂',
+            );
+            if (!ok) return;
+
+            try {
+                const res = await fetch('/api/admin/users-birthdays/gift', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showNotification(data?.message || 'Erreur envoi cadeau', 'error');
+                    return;
+                }
+
+                showNotification(`✅ Cadeau envoyé à ${pseudo}`, 'success');
+                await refreshUserInfoPanel(pseudo);
+                await refreshAdminUsersBirthdays();
+            } catch (err) {
+                console.error('Erreur giftBirthdayBundle', err);
+                showNotification('Erreur serveur (cadeau anniversaire)', 'error');
+            }
+        }
+
+        function applyAdminUsersBirthdaysFilter() {
+            const input = document.getElementById('adminBirthdaysSearchInput');
+            const query = String(input?.value || '').trim().toLowerCase();
+            if (!query) {
+                renderAdminUsersBirthdays(adminUsersBirthdaysCache);
+                return;
+            }
+
+            const filtered = adminUsersBirthdaysCache.filter((entry) =>
+                String(entry?.pseudo || '').toLowerCase().includes(query),
+            );
+            renderAdminUsersBirthdays(filtered);
+        }
+
+        async function refreshAdminUsersBirthdays() {
+            if (isModeratorPanel) return;
+
+            try {
+                const res = await fetch('/api/admin/users-birthdays');
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showNotification(data?.message || 'Erreur chargement anniversaires', 'error');
+                    return;
+                }
+
+                adminUsersBirthdaysCache = Array.isArray(data?.users) ? data.users : [];
+                applyAdminUsersBirthdaysFilter();
+            } catch (err) {
+                console.error('Erreur refreshAdminUsersBirthdays', err);
+                showNotification('Erreur serveur (liste anniversaires)', 'error');
+            }
+        }
+
+        const adminBirthdaysSearchInput = document.getElementById('adminBirthdaysSearchInput');
+        if (adminBirthdaysSearchInput) {
+            adminBirthdaysSearchInput.addEventListener('input', applyAdminUsersBirthdaysFilter);
+        }
+
+        const adminBirthdaysList = document.getElementById('adminBirthdaysList');
+        if (adminBirthdaysList) {
+            adminBirthdaysList.addEventListener('click', (event) => {
+                const btn = event.target.closest('[data-birthday-gift-pseudo]');
+                if (!btn) return;
+                giftBirthdayBundle(btn.dataset.birthdayGiftPseudo);
+            });
+        }
 
         // Recherche utilisateur
         document.getElementById('userSearchInput').addEventListener('input', async (e) => {

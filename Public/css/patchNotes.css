@@ -94,7 +94,6 @@
   margin-bottom: 10px;
   padding-left: 20px;
   position: relative;
-  color: var(--primary-color);
   opacity: 0.8;
   line-height: 22.5px;
   font-size: clamp(0.9rem, 2.5vw, 1rem);
@@ -129,6 +128,15 @@
   color: #9c27b0;
   font-weight: bold;
   margin-right: 5px;
+}
+
+li {
+  color: #fff;
+}
+
+strong {
+  color: var(--primary-color);
+  font-weight: 999;
 }
 
 .tag-ee {

@@ -12,6 +12,9 @@ html {
   --transition-speed: 185ms;
   --transition-ease: ease;
   --primary-hover: #66ff66;
+  --link-visited: #7dff7d;
+  --link-underline-thickness: 2px;
+  --link-underline-offset: 3px;
   --container-max-width: 1200px;
 }
 
@@ -60,6 +63,34 @@ body {
   font-family: monospace, monospace;
   width: 100vw;
   overflow-x: hidden;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: var(--link-underline-thickness);
+  text-underline-offset: var(--link-underline-offset);
+  transition:
+    color 180ms ease-out,
+    text-decoration-color 180ms ease-out,
+    text-shadow 180ms ease-out;
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--primary-hover);
+  text-decoration-color: var(--primary-hover);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--primary-hover) 45%, transparent);
+}
+
+a:active {
+  color: var(--primary-color);
+  text-decoration-color: var(--primary-color);
 }
 
 .pde-notification {

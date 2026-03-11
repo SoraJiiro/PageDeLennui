@@ -71,6 +71,16 @@ const DEFAULT_ITEMS = {
     upgrade: "color_custom",
     desc: "Crée et débloque une couleur Pixel War personnalisée.",
   },
+  pixel_double_1m: {
+    id: "pixel_double_1m",
+    name: "x2 Pixel War 2 min",
+    emoji: "\u23F1\uFE0F",
+    price: 1200,
+    available: true,
+    type: "pixelwar",
+    upgrade: "pixel_double_1m",
+    desc: "Pendant 2 minutes, chaque tick Pixel War donne 2 pixels au lieu de 1.",
+  },
 };
 
 const RETIRED_ITEM_IDS = [

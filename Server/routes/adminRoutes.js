@@ -1311,6 +1311,202 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
   });
 
+  router.get("/users-birthdays", requireAdmin, (req, res) => {
+    try {
+      const all = dbUsers.readAll();
+      const users = Array.isArray(all?.users) ? all.users : [];
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const currentDay = now.getDate();
+
+      const list = users
+        .map((u) => {
+          const pseudo = String(u?.pseudo || "").trim();
+          const rawBirthDate = String(u?.birthDate || "").trim();
+          const hasBirthDate = /^\d{4}-\d{2}-\d{2}$/.test(rawBirthDate);
+
+          let birthdayPassed = null;
+          if (hasBirthDate) {
+            const parts = rawBirthDate.split("-");
+            const month = Number(parts[1]);
+            const day = Number(parts[2]);
+            birthdayPassed =
+              month < currentMonth ||
+              (month === currentMonth && day <= currentDay);
+          }
+
+          const giftedYearRaw = Number(u?.birthdayGiftYear);
+          const giftedThisYear =
+            Number.isFinite(giftedYearRaw) &&
+            Math.floor(giftedYearRaw) === currentYear;
+          const canGift = Boolean(
+            hasBirthDate && birthdayPassed && !giftedThisYear,
+          );
+
+          return {
+            pseudo,
+            birthDate: hasBirthDate ? rawBirthDate : null,
+            hasBirthDate,
+            birthdayPassed,
+            giftedThisYear,
+            canGift,
+          };
+        })
+        .filter((u) => u.pseudo)
+        .sort((a, b) =>
+          a.pseudo.localeCompare(b.pseudo, "fr", { sensitivity: "base" }),
+        );
+
+      res.json({ users: list });
+    } catch (err) {
+      console.error("[ADMIN] Erreur /users-birthdays", err);
+      res.status(500).json({ message: "Erreur serveur" });
+    }
+  });
+
+  router.post("/users-birthdays/gift", requireAdmin, (req, res) => {
+    const pseudo = String(req.body?.pseudo || "").trim();
+    if (!pseudo) {
+      return res.status(400).json({ message: "Pseudo manquant" });
+    }
+
+    const userRec = dbUsers.findBypseudo(pseudo);
+    if (!userRec || !userRec.pseudo) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    const targetPseudo = String(userRec.pseudo).trim();
+    const rawBirthDate = String(userRec.birthDate || "").trim();
+    const hasBirthDate = /^\d{4}-\d{2}-\d{2}$/.test(rawBirthDate);
+    if (!hasBirthDate) {
+      return res
+        .status(400)
+        .json({
+          message: "Cadeau impossible: date d'anniversaire non renseignée",
+        });
+    }
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const currentDay = now.getDate();
+    const parts = rawBirthDate.split("-");
+    const birthMonth = Number(parts[1]);
+    const birthDay = Number(parts[2]);
+    const birthdayPassed =
+      birthMonth < currentMonth ||
+      (birthMonth === currentMonth && birthDay <= currentDay);
+    if (!birthdayPassed) {
+      return res
+        .status(400)
+        .json({ message: "Cadeau impossible: anniversaire pas encore passé" });
+    }
+
+    const giftedYearRaw = Number(userRec.birthdayGiftYear);
+    const giftedThisYear =
+      Number.isFinite(giftedYearRaw) &&
+      Math.floor(giftedYearRaw) === currentYear;
+    if (giftedThisYear) {
+      return res.status(400).json({ message: "Cadeau déjà donné cette année" });
+    }
+
+    const CLICK_GIFT = 50000;
+    const MONEY_GIFT = 1000;
+    const REVIVE_GIFT = 1;
+    const BIRTHDAY_BADGE_ID = "birthday";
+    const BIRTHDAY_BADGE = {
+      emoji: "🎂",
+      name: "Anniversaire",
+    };
+
+    if (
+      !FileService.data.clicks ||
+      typeof FileService.data.clicks !== "object"
+    ) {
+      FileService.data.clicks = {};
+    }
+    const currentClicks = Math.max(
+      0,
+      Math.floor(Number(FileService.data.clicks[targetPseudo]) || 0),
+    );
+    const nextClicks = currentClicks + CLICK_GIFT;
+    FileService.data.clicks[targetPseudo] = nextClicks;
+    FileService.save("clicks", FileService.data.clicks);
+    recalculateMedals(targetPseudo, nextClicks, io, false, true);
+    refreshLeaderboard("clicks");
+
+    if (
+      !FileService.data.wallets ||
+      typeof FileService.data.wallets !== "object"
+    ) {
+      FileService.data.wallets = {};
+    }
+    if (!FileService.data.wallets[targetPseudo]) {
+      FileService.data.wallets[targetPseudo] = { money: 0, tokens: 0 };
+    }
+    const currentMoney = Math.max(
+      0,
+      Math.floor(Number(FileService.data.wallets[targetPseudo].money) || 0),
+    );
+    FileService.data.wallets[targetPseudo].money = currentMoney + MONEY_GIFT;
+    FileService.save("wallets", FileService.data.wallets);
+
+    const reviveResult = grantLives(FileService, targetPseudo, REVIVE_GIFT);
+    if (!reviveResult.ok) {
+      return res
+        .status(500)
+        .json({ message: "Impossible d'ajouter la vie revive" });
+    }
+
+    const badgesData = ensureBadgesData();
+    if (!badgesData.catalog[BIRTHDAY_BADGE_ID]) {
+      badgesData.catalog[BIRTHDAY_BADGE_ID] = BIRTHDAY_BADGE;
+    }
+    const bucket = badgesData.users[targetPseudo] || {
+      assigned: [],
+      selected: [],
+    };
+    const assigned = Array.isArray(bucket.assigned) ? bucket.assigned : [];
+    const selected = Array.isArray(bucket.selected) ? bucket.selected : [];
+    badgesData.users[targetPseudo] = {
+      assigned: assigned.includes(BIRTHDAY_BADGE_ID)
+        ? assigned
+        : [...assigned, BIRTHDAY_BADGE_ID],
+      selected,
+    };
+    FileService.save("chatBadges", badgesData);
+
+    emitUserStatsRealtimeUpdate(targetPseudo, "clicks");
+    io.to("user:" + targetPseudo).emit("revive:lives", {
+      lives: Math.max(0, Math.floor(Number(reviveResult.lives) || 0)),
+    });
+    io.to("user:" + targetPseudo).emit(
+      "system:info",
+      "🎂 Cadeau d'anniversaire reçu: +50 000 clicks, +1 000 monnaie, +1 vie revive et badge Anniversaire.",
+    );
+
+    emitAdminRefresh("users-birthdays");
+    emitAdminRefresh("badges");
+
+    dbUsers.updateUserFields(targetPseudo, {
+      birthdayGiftYear: currentYear,
+      birthdayGiftAt: new Date().toISOString(),
+    });
+
+    return res.json({
+      success: true,
+      pseudo: targetPseudo,
+      gifts: {
+        clicks: CLICK_GIFT,
+        money: MONEY_GIFT,
+        reviveLives: REVIVE_GIFT,
+        badgeId: BIRTHDAY_BADGE_ID,
+      },
+    });
+  });
+
   // --- Clicker: réglages anti-cheat runtime ---
   router.get("/clicker/anti-cheat/settings", requireAdmin, (req, res) => {
     try {

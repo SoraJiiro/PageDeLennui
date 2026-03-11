@@ -92,6 +92,24 @@ export function initSubway(socket) {
     invincibilityScoreStep: 3250,
   };
 
+  function coinPickUpAnim(bool = true) {
+    function popEase(v) {
+      const p = 0.6;
+      if (v < p) {
+        return (v / p) * (v / p) - Math.PI * v + p - 1;
+      }
+      return 1 - ((Math.min(v, p) + 3 * Math.PI) * p - v * 2);
+    }
+
+    popEase(world.spawnChance);
+
+    if (bool) {
+      world.playerSize = 39;
+    } else {
+      world.playerSize = 29;
+    }
+  }
+
   function isStageActive() {
     return stage.classList.contains("is-active");
   }
@@ -607,6 +625,8 @@ export function initSubway(socket) {
       const cx = Math.abs(c.x - state.playerX) < c.r + pHalf * 0.6;
       const cy = Math.abs(c.y - pY) < c.r + pHalf * 0.6;
       if (cx && cy) {
+        coinPickUpAnim(true);
+        setTimeout(() => coinPickUpAnim(false), 150);
         state.coins += 1;
         c.y = canvas.height + 999;
       }

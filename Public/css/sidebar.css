@@ -67,7 +67,7 @@
   color: var(--primary-color);
   border: none !important;
   font-size: 1.5rem;
-  
+
   transition:
     transform 0.25s ease,
     scale 0.3s ease;
@@ -154,7 +154,7 @@
   background: transparent;
   border: 1px solid transparent;
   color: var(--primary-color);
-  
+
   text-align: left;
   border-radius: 0;
   transition:
@@ -208,6 +208,17 @@
   border: 1px solid var(--primary-color);
 }
 
+.sidebar-controls.daily-rewards {
+  border-left: 3px solid var(--primary-color);
+}
+.sidebar-controls.daily-rewards .nav-link {
+  outline: none;
+}
+
+.sidebar-controls.daily-rewards .nav-link:hover {
+  transform: translateY(0) translateX(2px);
+}
+
 .control-item {
   display: flex;
   justify-content: space-between;
@@ -246,7 +257,7 @@ input[type="color"] {
   height: 30px;
   border-radius: 0;
   overflow: hidden;
-  
+
   padding: 0;
   background: none;
 }

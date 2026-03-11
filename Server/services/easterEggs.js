@@ -36,8 +36,8 @@ const STEP_CODES = {
 };
 
 const EASTER_EGG_BADGES = {
-  S1: { id: "EE_S1", name: "EE [S1]", emoji: "🥚" },
-  S2: { id: "EE_S2", name: "EE [S2]", emoji: "🐣" },
+  S1: { id: "EE_S1", name: "EE [S1]", emoji: "🌈​" },
+  S2: { id: "EE_S2", name: "EE [S2]", emoji: "📨" },
 };
 
 function ensureChatBadgesStore(FileService) {
@@ -194,6 +194,26 @@ function markStep(pseudo, eggId, stepId, fileServiceOverride) {
   const wasCompleted = !!progress.completed;
 
   if (stepState[stepId]) {
+    const nowCompleted = isEggComplete(eggDef, stepState);
+    if (nowCompleted) {
+      let changed = false;
+      if (!progress.completed) {
+        progress.completed = true;
+        changed = true;
+      }
+      if (!progress.completedAt) {
+        progress.completedAt = new Date().toISOString();
+        changed = true;
+      }
+      if (!progress.updatedAt) {
+        progress.updatedAt = new Date().toISOString();
+        changed = true;
+      }
+      if (changed) {
+        FileService.save("easterEggs", store);
+      }
+      grantEasterEggBadge(pseudo, eggId, FileService);
+    }
     return progress;
   }
 

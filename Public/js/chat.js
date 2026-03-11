@@ -8,6 +8,7 @@ export function initChat(socket) {
   const submit = document.querySelector(".submit");
   let myPseudo = null;
   let onlineUsers = [];
+  let allUsersPresence = [];
   const knownUsersByLower = new Map();
   let lastDmFrom = null;
   let dmSuggestState = { matches: [], index: -1, needle: "" };
@@ -186,6 +187,211 @@ export function initChat(socket) {
     }
   });
 
+  function ensureUsersPresenceModalStyles() {
+    if (document.getElementById("users-presence-modal-style")) return;
+    const style = document.createElement("style");
+    style.id = "users-presence-modal-style";
+    style.textContent = `
+      .users-presence-modal { position: fixed; inset: 0; z-index: 15000; display: none; }
+      .users-presence-modal.visible { display: block; }
+      .users-presence-modal__backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.62); }
+      .users-presence-modal__dialog {
+        position: relative;
+        width: min(760px, calc(100vw - 30px));
+        max-height: min(72vh, 740px);
+        margin: 8vh auto 0;
+        background: var(--bg-color, #111);
+        border: 2px solid var(--primary-color, #77ff00);
+        color: #fff;
+        box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+      }
+      .users-presence-modal__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .users-presence-modal__title { font-size: 0.98rem; font-weight: 700; letter-spacing: 0.6px; }
+      .users-presence-modal__summary { opacity: 0.85; font-size: 0.86rem; }
+      .users-presence-modal__close {
+        border: 1px solid var(--primary-color, #77ff00);
+        background: transparent;
+        color: var(--primary-color, #77ff00);
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+        padding: 5px 9px;
+      }
+      .users-presence-modal__body { max-height: calc(min(72vh, 740px) - 62px); overflow: auto; }
+      .users-presence-table { width: 100%; border-collapse: collapse; }
+      .users-presence-table th,
+      .users-presence-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); text-align: left; }
+      .users-presence-table th { position: sticky; top: 0; background: rgba(0, 0, 0, 0.92); z-index: 1; }
+      .users-presence-table tr:hover td { background: rgba(255, 255, 255, 0.04); }
+      .users-presence-link { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+      .users-presence-link:hover { color: var(--primary-color, #77ff00); }
+      .users-presence-state { font-weight: 700; }
+      .users-presence-state.online { color: #33dd66; }
+      .users-presence-state.offline { color: #b6b6b6; }
+      #usersCount { cursor: pointer; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  ensureUsersPresenceModalStyles();
+
+  const usersPresenceModal = document.createElement("div");
+  usersPresenceModal.className = "users-presence-modal";
+  usersPresenceModal.innerHTML = `
+    <div class="users-presence-modal__backdrop" aria-hidden="true"></div>
+    <div class="users-presence-modal__dialog" role="dialog" aria-modal="true" aria-label="Etat des joueurs">
+      <div class="users-presence-modal__header"  style="background: #000;">
+        <div>
+          <div class="users-presence-modal__title">Joueurs du serveur</div>
+          <div class="users-presence-modal__summary" id="users-presence-summary"></div>
+        </div>
+        <button type="button" class="users-presence-modal__close" aria-label="Fermer">Fermer</button>
+      </div>
+      <div class="users-presence-modal__body" style="background: #000;">
+        <table class="users-presence-table" aria-label="Liste des joueurs">
+          <thead>
+            <tr>
+              <th>Pseudo</th>
+              <th>Etat</th>
+            </tr>
+          </thead>
+          <tbody id="users-presence-body"  style="background: #000;"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(usersPresenceModal);
+
+  const usersPresenceBackdrop = usersPresenceModal.querySelector(
+    ".users-presence-modal__backdrop",
+  );
+  const usersPresenceClose = usersPresenceModal.querySelector(
+    ".users-presence-modal__close",
+  );
+  const usersPresenceBody = usersPresenceModal.querySelector(
+    "#users-presence-body",
+  );
+  const usersPresenceSummary = usersPresenceModal.querySelector(
+    "#users-presence-summary",
+  );
+
+  const closeUsersPresenceModal = () => {
+    usersPresenceModal.classList.remove("visible");
+  };
+
+  const openUsersPresenceModal = () => {
+    usersPresenceModal.classList.add("visible");
+    socket.emit("users:presence:get");
+  };
+
+  usersPresenceClose.addEventListener("click", closeUsersPresenceModal);
+  usersPresenceBackdrop.addEventListener("click", closeUsersPresenceModal);
+
+  function normalizePresencePayload(payload) {
+    const list = Array.isArray(payload) ? payload : [];
+    const out = [];
+    const seen = new Set();
+
+    list.forEach((entry) => {
+      const pseudo = String(entry?.pseudo || entry?.name || "").trim();
+      if (!pseudo) return;
+      const lower = pseudo.toLowerCase();
+      if (seen.has(lower)) return;
+      seen.add(lower);
+      out.push({
+        pseudo,
+        online: !!entry?.online,
+      });
+    });
+
+    out.sort((a, b) =>
+      a.pseudo.localeCompare(b.pseudo, "fr", { sensitivity: "base" }),
+    );
+    return out;
+  }
+
+  function applyOnlineListToPresence(list) {
+    const onlineSet = new Set(
+      (Array.isArray(list) ? list : [])
+        .map((name) =>
+          String(name || "")
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean),
+    );
+
+    const map = new Map();
+    allUsersPresence.forEach((entry) => {
+      const lower = entry.pseudo.toLowerCase();
+      map.set(lower, {
+        pseudo: entry.pseudo,
+        online: onlineSet.has(lower),
+      });
+    });
+
+    onlineSet.forEach((lower) => {
+      if (map.has(lower)) return;
+      var display =
+        (Array.isArray(list)
+          ? list.find(
+              (name) =>
+                String(name || "")
+                  .trim()
+                  .toLowerCase() === lower,
+            )
+          : null) || "";
+      if (!display) return;
+      map.set(lower, { pseudo: display, online: true });
+    });
+
+    allUsersPresence = Array.from(map.values()).sort((a, b) =>
+      a.pseudo.localeCompare(b.pseudo, "fr", { sensitivity: "base" }),
+    );
+  }
+
+  function renderUsersPresenceModal() {
+    if (!usersPresenceBody) return;
+    const onlineCount = allUsersPresence.filter((entry) => entry.online).length;
+
+    if (usersPresenceSummary) {
+      usersPresenceSummary.textContent = `${allUsersPresence.length} joueurs, ${onlineCount} connectés`;
+    }
+
+    if (!allUsersPresence.length) {
+      usersPresenceBody.innerHTML =
+        '<tr><td colspan="2" style="opacity:.75">Aucun joueur trouve</td></tr>';
+      return;
+    }
+
+    usersPresenceBody.innerHTML = allUsersPresence
+      .map(
+        (entry) => `
+          <tr>
+            <td style="background: #000;"><a class="users-presence-link" href="/profil.html?pseudo=${encodeURIComponent(entry.pseudo)}">${escapeHtml(entry.pseudo)}</a></td>
+            <td style="background: #000;">
+              <span class="users-presence-state ${entry.online ? "online" : "offline"}">
+                ${entry.online ? "connecté" : "déconnecté"}
+              </span>
+            </td>
+          </tr>
+        `,
+      )
+      .join("");
+  }
+
+  if (usersCount) {
+    usersCount.addEventListener("click", openUsersPresenceModal);
+  }
+
   const linkPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
   const htmlEscapes = {
     "&": "&amp;",
@@ -346,7 +552,7 @@ export function initChat(socket) {
 
       let badgesHtml = "";
       if (Array.isArray(badges) && badges.length) {
-        const safe = badges.slice(0, 3);
+        const safe = badges.slice(0, 5);
         badgesHtml = ` <span class="chat-badges">${safe
           .map(
             (b) =>
@@ -814,11 +1020,24 @@ export function initChat(socket) {
   socket.on("users:list", (l) => {
     onlineUsers = l || [];
     registerKnownUsers(onlineUsers);
+
+    applyOnlineListToPresence(onlineUsers);
+    renderUsersPresenceModal();
+
     if (usersCount) {
       usersCount.innerHTML = `En ligne: <b>${l.length}</b>`;
       usersCount.title = `‣ ${l.join("\n‣ ")}`;
     }
   });
+
+  socket.on("users:presence", (payload) => {
+    allUsersPresence = normalizePresencePayload(payload);
+    registerKnownUsers(allUsersPresence.map((entry) => entry.pseudo));
+    applyOnlineListToPresence(onlineUsers);
+    renderUsersPresenceModal();
+  });
+
+  socket.emit("users:presence:get");
 
   socket.on("chat:knownUsers", (list) => {
     registerKnownUsers(list);
