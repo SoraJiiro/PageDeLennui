@@ -1,4 +1,7 @@
 const dbUsers = require("../db/dbUsers");
+const fs = require("fs");
+const path = require("path");
+const config = require("../config");
 
 const OG_CUTOFF = Date.UTC(2025, 11, 25, 23, 59, 59, 999);
 
@@ -141,6 +144,12 @@ const AUTO_BADGES = [
     name: "Clicker Fou",
     isEligible: ({ clickerFouDone }) => Boolean(clickerFouDone),
   },
+  {
+    id: "Artiste",
+    emoji: "🖌️",
+    name: "Artiste",
+    isEligible: ({ pixelwarPixelsPlaced }) => pixelwarPixelsPlaced >= 1000,
+  },
 ];
 
 function ensureBadgesData(FileService) {
@@ -184,6 +193,21 @@ function getCasinoTotalFor(pseudo, FileService) {
   );
 }
 
+function getPixelwarUsers(FileService) {
+  const inMemory =
+    FileService && FileService.data && FileService.data.pixelwarUsers;
+  if (inMemory && typeof inMemory === "object") return inMemory;
+
+  try {
+    const filePath = path.join(config.DATA, "pixelwar_users.json");
+    const raw = fs.readFileSync(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function getEligibilitySnapshot(p, FileService) {
   return {
     unoGames: readNum(FileService.data.unoStats, p),
@@ -205,6 +229,11 @@ function getEligibilitySnapshot(p, FileService) {
     slotsGames: readNum(FileService.data.slotsStats, p, "gamesPlayed"),
     slotsTotalBet: readNum(FileService.data.slotsStats, p, "totalBet"),
     casinoTotal: getCasinoTotalFor(p, FileService),
+    pixelwarPixelsPlaced: readNum(
+      getPixelwarUsers(FileService),
+      p,
+      "pixelsPlaced",
+    ),
   };
 }
 
@@ -258,6 +287,8 @@ function getBadgeUnlockCondition({
       return `casinoTotal >= 100000 (value=${Number(progress.casinoTotal || 0)})`;
     case "ClickerFou":
       return `clickerFouDone === true (value=${Boolean(clickerFouDone)})`;
+    case "Artiste":
+      return `pixelwarPixelsPlaced >= 1000 (value=${Number(progress.pixelwarPixelsPlaced || 0)})`;
     default:
       return "condition unknown";
   }
@@ -346,6 +377,7 @@ function applyAutoBadges({ pseudo, FileService }) {
   const slotsGames = progress.slotsGames;
   const slotsTotalBet = progress.slotsTotalBet;
   const casinoTotal = progress.casinoTotal;
+  const pixelwarPixelsPlaced = progress.pixelwarPixelsPlaced;
 
   const isOgLocked = Boolean(baseline && baseline.lockOg);
   const clickerFouDone = Boolean(
@@ -386,6 +418,7 @@ function applyAutoBadges({ pseudo, FileService }) {
             slotsGames,
             slotsTotalBet,
             casinoTotal,
+            pixelwarPixelsPlaced,
             clickerFouDone,
           });
     if (eligible && !assignedSet.has(badge.id)) {

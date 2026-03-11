@@ -75,11 +75,14 @@ const calcLayer = {
   width: 0,
   height: 0,
   aspectRatio: 1,
+  rotationQuarterTurns: 0,
   opacity: 0.42,
 };
 
 const CALC_MIN_SIZE = 8;
 const CALC_RESIZE_HANDLE_SIZE = 8;
+const CALC_ROTATE_HANDLE_SIZE = 8;
+const CALC_MIN_VISIBLE_SIZE = 8;
 const CALC_STORAGE_VERSION = 1;
 let isCalcDragging = false;
 let isCalcResizing = false;
@@ -1034,14 +1037,21 @@ function applyCalcImageSource(src, options = {}) {
       ? clamp(Math.floor(restore.height), CALC_MIN_SIZE, BOARD_SIZE)
       : h;
 
-    const maxX = Math.max(0, BOARD_SIZE - nextWidth);
-    const maxY = Math.max(0, BOARD_SIZE - nextHeight);
+    const nextBounds = getCalcDragBounds(nextWidth, nextHeight);
     const nextX = Number.isFinite(restore?.x)
-      ? clamp(Math.floor(restore.x), 0, maxX)
-      : clamp(Math.floor((BOARD_SIZE - nextWidth) / 2), 0, maxX);
+      ? clamp(Math.floor(restore.x), nextBounds.minX, nextBounds.maxX)
+      : clamp(
+          Math.floor((BOARD_SIZE - nextWidth) / 2),
+          nextBounds.minX,
+          nextBounds.maxX,
+        );
     const nextY = Number.isFinite(restore?.y)
-      ? clamp(Math.floor(restore.y), 0, maxY)
-      : clamp(Math.floor((BOARD_SIZE - nextHeight) / 2), 0, maxY);
+      ? clamp(Math.floor(restore.y), nextBounds.minY, nextBounds.maxY)
+      : clamp(
+          Math.floor((BOARD_SIZE - nextHeight) / 2),
+          nextBounds.minY,
+          nextBounds.maxY,
+        );
     const isPlacing = restore?.isPlacing !== false;
 
     calcLayer.active = true;
@@ -1051,6 +1061,11 @@ function applyCalcImageSource(src, options = {}) {
     calcLayer.height = nextHeight;
     calcLayer.aspectRatio =
       img.width > 0 && img.height > 0 ? img.width / img.height : 1;
+    calcLayer.rotationQuarterTurns = Number.isFinite(
+      restore?.rotationQuarterTurns,
+    )
+      ? ((Math.floor(restore.rotationQuarterTurns) % 4) + 4) % 4
+      : 0;
     calcLayer.x = nextX;
     calcLayer.y = nextY;
     stopCalcInteraction();
@@ -1067,7 +1082,7 @@ function applyCalcImageSource(src, options = {}) {
 
     if (!options.silent && window.showNotif) {
       window.showNotif(
-        "Glisse le calc, redimensionne via le coin bas-droite, puis valide.",
+        "Glisse le calc, redimensionne via le coin bas-droite, retourne via le coin haut-gauche, puis valide.",
         4200,
       );
     }
@@ -1089,13 +1104,21 @@ function startCalcInteraction(e) {
 
   const bx = Math.floor(x);
   const by = Math.floor(y);
-  if (!isPointInsideCalc(bx, by)) return false;
 
   if (isPointOnCalcResizeHandle(bx, by)) {
     isCalcResizing = true;
     isCalcDragging = false;
     return true;
   }
+
+  if (isPointOnCalcRotateHandle(bx, by)) {
+    rotateCalcQuarterTurn();
+    isCalcDragging = false;
+    isCalcResizing = false;
+    return true;
+  }
+
+  if (!isPointInsideCalc(bx, by)) return false;
 
   isCalcDragging = true;
   isCalcResizing = false;
@@ -1119,8 +1142,9 @@ function handleCalcPlacementMouseMove(e) {
   if (isCalcDragging) {
     const nextX = bx - calcDragOffsetX;
     const nextY = by - calcDragOffsetY;
-    calcLayer.x = clamp(nextX, 0, BOARD_SIZE - calcLayer.width);
-    calcLayer.y = clamp(nextY, 0, BOARD_SIZE - calcLayer.height);
+    const bounds = getCalcDragBounds(calcLayer.width, calcLayer.height);
+    calcLayer.x = clamp(nextX, bounds.minX, bounds.maxX);
+    calcLayer.y = clamp(nextY, bounds.minY, bounds.maxY);
     drawCalcLayer();
     queueSaveCalcLayerState();
   } else if (isCalcResizing) {
@@ -1162,6 +1186,7 @@ function clearCalcLayer() {
   calcLayer.width = 0;
   calcLayer.height = 0;
   calcLayer.aspectRatio = 1;
+  calcLayer.rotationQuarterTurns = 0;
   stopCalcInteraction();
   updateToolUI();
   removeCalcLayerState();
@@ -1179,14 +1204,22 @@ function drawCalcLayer() {
 
   if (!calcLayer.active || !calcLayer.img) return;
 
+  const rotationQuarterTurns =
+    ((Math.floor(Number(calcLayer.rotationQuarterTurns) || 0) % 4) + 4) % 4;
+  const drawSize = getCalcRenderSize(rotationQuarterTurns);
+  const centerX = calcLayer.x + calcLayer.width / 2;
+  const centerY = calcLayer.y + calcLayer.height / 2;
+
   calcCtx.save();
   calcCtx.globalAlpha = calcLayer.opacity;
+  calcCtx.translate(centerX, centerY);
+  calcCtx.rotate((Math.PI / 2) * rotationQuarterTurns);
   calcCtx.drawImage(
     calcLayer.img,
-    calcLayer.x,
-    calcLayer.y,
-    calcLayer.width,
-    calcLayer.height,
+    -drawSize.width / 2,
+    -drawSize.height / 2,
+    drawSize.width,
+    drawSize.height,
   );
   calcCtx.restore();
 
@@ -1199,6 +1232,16 @@ function drawCalcLayer() {
       calcLayer.y + 0.5,
       Math.max(0, calcLayer.width - 1),
       Math.max(0, calcLayer.height - 1),
+    );
+
+    const rotateHandleX = calcLayer.x;
+    const rotateHandleY = calcLayer.y;
+    calcCtx.fillStyle = "rgba(124, 190, 255, 0.95)";
+    calcCtx.fillRect(
+      rotateHandleX,
+      rotateHandleY,
+      CALC_ROTATE_HANDLE_SIZE,
+      CALC_ROTATE_HANDLE_SIZE,
     );
 
     const handleX = calcLayer.x + calcLayer.width - CALC_RESIZE_HANDLE_SIZE;
@@ -1235,7 +1278,11 @@ function updateCalcButtons() {
 function resizeCalcByWidth(desiredWidth) {
   if (!calcLayer.active) return;
 
-  const ratio = calcLayer.aspectRatio > 0 ? calcLayer.aspectRatio : 1;
+  const rotationQuarterTurns =
+    ((Math.floor(Number(calcLayer.rotationQuarterTurns) || 0) % 4) + 4) % 4;
+  const baseRatio = calcLayer.aspectRatio > 0 ? calcLayer.aspectRatio : 1;
+  const ratio =
+    rotationQuarterTurns % 2 === 0 ? baseRatio : Math.max(0.001, 1 / baseRatio);
   const maxWidth = BOARD_SIZE - calcLayer.x;
   const maxHeight = BOARD_SIZE - calcLayer.y;
 
@@ -1253,6 +1300,23 @@ function resizeCalcByWidth(desiredWidth) {
   calcLayer.width = nextWidth;
   calcLayer.height = nextHeight;
   drawCalcLayer();
+}
+
+function rotateCalcQuarterTurn() {
+  if (!calcLayer.active || !calcLayer.isPlacing) return;
+  calcLayer.rotationQuarterTurns =
+    ((((Math.floor(Number(calcLayer.rotationQuarterTurns) || 0) % 4) + 4) % 4) +
+      1) %
+    4;
+  drawCalcLayer();
+  queueSaveCalcLayerState();
+}
+
+function getCalcRenderSize(rotationQuarterTurns) {
+  if (rotationQuarterTurns % 2 === 0) {
+    return { width: calcLayer.width, height: calcLayer.height };
+  }
+  return { width: calcLayer.height, height: calcLayer.width };
 }
 
 function getCalcStorageKey() {
@@ -1288,6 +1352,7 @@ function saveCalcLayerState() {
       y: calcLayer.y,
       width: calcLayer.width,
       height: calcLayer.height,
+      rotationQuarterTurns: calcLayer.rotationQuarterTurns,
       isPlacing: !!calcLayer.isPlacing,
       opacity: calcLayer.opacity,
     };
@@ -1326,6 +1391,7 @@ function restoreCalcLayerState() {
         y: parsed.y,
         width: parsed.width,
         height: parsed.height,
+        rotationQuarterTurns: parsed.rotationQuarterTurns,
         isPlacing: parsed.isPlacing,
       },
       silent: true,
@@ -1370,6 +1436,29 @@ function isPointOnCalcResizeHandle(x, y) {
   );
 }
 
+function isPointOnCalcRotateHandle(x, y) {
+  return (
+    x >= calcLayer.x &&
+    x < calcLayer.x + CALC_ROTATE_HANDLE_SIZE &&
+    y >= calcLayer.y &&
+    y < calcLayer.y + CALC_ROTATE_HANDLE_SIZE
+  );
+}
+
+function getCalcDragBounds(width, height) {
+  const w = Math.max(CALC_MIN_SIZE, Math.floor(Number(width) || CALC_MIN_SIZE));
+  const h = Math.max(
+    CALC_MIN_SIZE,
+    Math.floor(Number(height) || CALC_MIN_SIZE),
+  );
+  return {
+    minX: -w + CALC_MIN_VISIBLE_SIZE,
+    maxX: BOARD_SIZE - CALC_MIN_VISIBLE_SIZE,
+    minY: -h + CALC_MIN_VISIBLE_SIZE,
+    maxY: BOARD_SIZE - CALC_MIN_VISIBLE_SIZE,
+  };
+}
+
 function updateCalcPlacementCursor(boardPoint) {
   if (!wrapper || !calcLayer.isPlacing) return;
   if (!boardPoint) {
@@ -1379,6 +1468,11 @@ function updateCalcPlacementCursor(boardPoint) {
 
   if (isPointOnCalcResizeHandle(boardPoint.x, boardPoint.y)) {
     wrapper.style.cursor = "nwse-resize";
+    return;
+  }
+
+  if (isPointOnCalcRotateHandle(boardPoint.x, boardPoint.y)) {
+    wrapper.style.cursor = "alias";
     return;
   }
 

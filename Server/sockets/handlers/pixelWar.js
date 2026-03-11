@@ -1,5 +1,6 @@
 const pixelWarGame = require("../../games/pixelWarGame");
 const { getWallet } = require("../../services/wallet");
+const { applyAutoBadges } = require("../../services/badgesAuto");
 
 const DAILY_REWARD_TYPES = ["clicks", "pixels", "tokens"];
 
@@ -69,6 +70,10 @@ function registerPixelWarHandlers({
 }) {
   if (!pseudo) return;
 
+  if (FileService && FileService.data) {
+    FileService.data.pixelwarUsers = pixelWarGame.users;
+  }
+
   const buildStatsPayload = (userState) => {
     const user = userState || pixelWarGame.getUserState(pseudo);
     return {
@@ -102,6 +107,10 @@ function registerPixelWarHandlers({
   socket.on("pixelwar:place", ({ x, y, colorIndex }) => {
     const res = pixelWarGame.placePixel(pseudo, x, y, colorIndex);
     if (res.success) {
+      try {
+        applyAutoBadges({ pseudo, FileService });
+      } catch {}
+
       io.emit("pixelwar:update_pixel", { x, y, colorIndex, owner: pseudo });
 
       const user = pixelWarGame.getUserState(pseudo);

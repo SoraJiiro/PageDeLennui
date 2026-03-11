@@ -1381,11 +1381,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     const rawBirthDate = String(userRec.birthDate || "").trim();
     const hasBirthDate = /^\d{4}-\d{2}-\d{2}$/.test(rawBirthDate);
     if (!hasBirthDate) {
-      return res
-        .status(400)
-        .json({
-          message: "Cadeau impossible: date d'anniversaire non renseignée",
-        });
+      return res.status(400).json({
+        message: "Cadeau impossible: date d'anniversaire non renseignée",
+      });
     }
 
     const now = new Date();
@@ -1898,6 +1896,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "coinflipStats",
       "rouletteStats",
       "slotsStats",
+      "clickerHumanPeakCps",
       "pixelwar",
     ];
 
@@ -1934,6 +1933,26 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       } else {
         return res.status(500).json({ message: "PixelWarGame non disponible" });
       }
+    }
+
+    if (statType === "clickerHumanPeakCps") {
+      if (!FileService.data.clickerHumanPeakCps)
+        FileService.data.clickerHumanPeakCps = {};
+
+      FileService.data.clickerHumanPeakCps[pseudo] = Math.max(
+        0,
+        Number(value) || 0,
+      );
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      refreshLeaderboard("clicks");
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
+      return res.json({
+        message: `Peak CPS humain de ${pseudo} mis à jour à ${FileService.data.clickerHumanPeakCps[pseudo]}`,
+      });
     }
 
     if (
@@ -2192,6 +2211,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "coinflipStats",
       "rouletteStats",
       "slotsStats",
+      "clickerHumanPeakCps",
       "pixelwar",
     ];
 
@@ -2254,6 +2274,30 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `PixelWar.${field} mis à ${value} pour ${users.length} joueurs`,
+      });
+    }
+
+    if (statType === "clickerHumanPeakCps") {
+      if (!FileService.data.clickerHumanPeakCps)
+        FileService.data.clickerHumanPeakCps = {};
+
+      const users = Object.keys(FileService.data.clicks || {});
+      users.forEach((p) => {
+        FileService.data.clickerHumanPeakCps[p] = Math.max(
+          0,
+          Number(value) || 0,
+        );
+      });
+
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      refreshLeaderboard("clicks");
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
+      return res.json({
+        message: `Peak CPS humain mis à ${value} pour ${users.length} joueurs`,
       });
     }
 
@@ -2328,6 +2372,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "coinflipStats",
       "rouletteStats",
       "slotsStats",
+      "clickerHumanPeakCps",
       "pixelwar",
     ];
 
@@ -2381,6 +2426,28 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `${value} ajouté à PixelWar.${field} de ${users.length} joueurs`,
+      });
+    }
+
+    if (statType === "clickerHumanPeakCps") {
+      if (!FileService.data.clickerHumanPeakCps)
+        FileService.data.clickerHumanPeakCps = {};
+
+      const users = Object.keys(FileService.data.clicks || {});
+      users.forEach((p) => {
+        const current = Number(FileService.data.clickerHumanPeakCps[p]) || 0;
+        FileService.data.clickerHumanPeakCps[p] = Math.max(0, current + value);
+      });
+
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      refreshLeaderboard("clicks");
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
+      return res.json({
+        message: `${value} ajouté au Peak CPS humain de ${users.length} joueurs`,
       });
     }
 
@@ -2460,6 +2527,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "coinflipStats",
       "rouletteStats",
       "slotsStats",
+      "clickerHumanPeakCps",
       "pixelwar",
     ];
 
@@ -2511,6 +2579,28 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `${value} retiré de PixelWar.${field} de ${users.length} joueurs`,
+      });
+    }
+
+    if (statType === "clickerHumanPeakCps") {
+      if (!FileService.data.clickerHumanPeakCps)
+        FileService.data.clickerHumanPeakCps = {};
+
+      const users = Object.keys(FileService.data.clicks || {});
+      users.forEach((p) => {
+        const current = Number(FileService.data.clickerHumanPeakCps[p]) || 0;
+        FileService.data.clickerHumanPeakCps[p] = Math.max(0, current - value);
+      });
+
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      refreshLeaderboard("clicks");
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
+      return res.json({
+        message: `${value} retiré du Peak CPS humain de ${users.length} joueurs`,
       });
     }
 
@@ -2593,6 +2683,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "coinflipStats",
       "rouletteStats",
       "slotsStats",
+      "clickerHumanPeakCps",
       "pixelwar",
     ];
 
@@ -2630,6 +2721,26 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `PixelWar.${field} de ${pseudo} augmenté de ${value} (total: ${next})`,
+      });
+    }
+
+    if (statType === "clickerHumanPeakCps") {
+      if (!FileService.data.clickerHumanPeakCps)
+        FileService.data.clickerHumanPeakCps = {};
+
+      const current = Number(FileService.data.clickerHumanPeakCps[pseudo]) || 0;
+      const next = Math.max(0, current + value);
+      FileService.data.clickerHumanPeakCps[pseudo] = next;
+
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      refreshLeaderboard("clicks");
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
+      return res.json({
+        message: `Peak CPS humain de ${pseudo} augmenté de ${value} (total: ${next})`,
       });
     }
 
@@ -2856,6 +2967,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "coinflipStats",
       "rouletteStats",
       "slotsStats",
+      "clickerHumanPeakCps",
       "pixelwar",
     ];
 
@@ -2893,6 +3005,26 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `PixelWar.${field} de ${pseudo} diminué de ${value} (total: ${next})`,
+      });
+    }
+
+    if (statType === "clickerHumanPeakCps") {
+      if (!FileService.data.clickerHumanPeakCps)
+        FileService.data.clickerHumanPeakCps = {};
+
+      const current = Number(FileService.data.clickerHumanPeakCps[pseudo]) || 0;
+      const next = Math.max(0, current - value);
+      FileService.data.clickerHumanPeakCps[pseudo] = next;
+
+      FileService.save(
+        "clickerHumanPeakCps",
+        FileService.data.clickerHumanPeakCps,
+      );
+      refreshLeaderboard("clicks");
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
+      return res.json({
+        message: `Peak CPS humain de ${pseudo} diminué de ${value} (total: ${next})`,
       });
     }
 

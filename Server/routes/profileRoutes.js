@@ -215,6 +215,11 @@ router.get("/user/:pseudo", (req, res) => {
     pixelWarGame && typeof pixelWarGame.getUserState === "function"
       ? pixelWarGame.getUserState(exists.pseudo)
       : null;
+  const stats = getStatsFor(exists.pseudo);
+  stats.pixelwarMaxPixels =
+    pixelUser && Number.isFinite(Number(pixelUser.maxPixels))
+      ? Number(pixelUser.maxPixels)
+      : 0;
 
   res.json({
     pseudo: exists.pseudo,
@@ -227,7 +232,7 @@ router.get("/user/:pseudo", (req, res) => {
     },
     medals:
       (FileService.data.medals && FileService.data.medals[exists.pseudo]) || [],
-    stats: getStatsFor(exists.pseudo),
+    stats,
     customPixelColors:
       pixelUser && Array.isArray(pixelUser.unlockedCustomColors)
         ? pixelUser.unlockedCustomColors
@@ -251,6 +256,11 @@ router.get("/me", (req, res) => {
     pixelWarGame && typeof pixelWarGame.getUserState === "function"
       ? pixelWarGame.getUserState(exists.pseudo)
       : null;
+  const stats = getStatsFor(exists.pseudo);
+  stats.pixelwarMaxPixels =
+    pixelUser && Number.isFinite(Number(pixelUser.maxPixels))
+      ? Number(pixelUser.maxPixels)
+      : 0;
 
   res.json({
     pseudo: exists.pseudo,
@@ -266,7 +276,7 @@ router.get("/me", (req, res) => {
     },
     medals:
       (FileService.data.medals && FileService.data.medals[exists.pseudo]) || [],
-    stats: getStatsFor(exists.pseudo),
+    stats,
     customPixelColors:
       pixelUser && Array.isArray(pixelUser.unlockedCustomColors)
         ? pixelUser.unlockedCustomColors

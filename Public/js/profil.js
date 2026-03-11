@@ -87,6 +87,7 @@ function renderStats(stats) {
     ["Money", s.money],
     ["Tokens", s.tokens],
     ["Peak CPS", s.peakHumanCps ? Number(s.peakHumanCps).toFixed(1) : 0],
+    ["Stockage max PXL", Number(s.pixelwarMaxPixels || 0)],
     ["Dino", s.dinoScore],
     ["Flappy", s.flappyScore],
     ["Snake", s.snakeScore],
