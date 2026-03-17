@@ -158,6 +158,7 @@ function registerAdminHandlers({
         leaderboardManager.broadcastMashLB(io);
         leaderboardManager.broadcastBlackjackLB(io);
         leaderboardManager.broadcastCoinflipLB(io);
+        leaderboardManager.broadcastAimTrainerLB(io);
       } catch (e) {
         // noop
       }

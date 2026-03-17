@@ -39,6 +39,7 @@ const {
   registerBlackjackHandlers,
 } = require("./sockets/handlers/blackjack");
 const { registerSudokuHandlers } = require("./sockets/handlers/sudoku");
+const { registerAimTrainerHandlers } = require("./sockets/handlers/aimTrainer");
 
 const PixelWarGame = require("./games/pixelWarGame");
 const { registerPixelWarHandlers } = require("./sockets/handlers/pixelWar");
@@ -497,6 +498,48 @@ const leaderboardManager = {
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
     io.emit("subway:leaderboard", arr);
   },
+  broadcastAimTrainerLB(io, selectedDuration = "30", targetSocket = null) {
+    const src = FileService.data.aimTrainerScores || {};
+    const isPerDuration =
+      src && typeof src === "object" && (src["15"] || src["30"] || src["60"]);
+
+    const byDuration = {
+      15: isPerDuration ? src["15"] || {} : {},
+      30: isPerDuration ? src["30"] || {} : src,
+      60: isPerDuration ? src["60"] || {} : {},
+    };
+
+    const toRows = (bucket) =>
+      Object.entries(bucket || {})
+        .map(([u, s]) => ({ pseudo: u, score: Number(s) || 0 }))
+        .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+
+    const leaderboards = {
+      15: toRows(byDuration["15"]),
+      30: toRows(byDuration["30"]),
+      60: toRows(byDuration["60"]),
+    };
+
+    const duration =
+      String(selectedDuration) === "15" ||
+      String(selectedDuration) === "30" ||
+      String(selectedDuration) === "60"
+        ? String(selectedDuration)
+        : "30";
+
+    const payload = {
+      duration,
+      items: leaderboards[duration],
+      leaderboards,
+    };
+
+    if (targetSocket && typeof targetSocket.emit === "function") {
+      targetSocket.emit("aim:leaderboard", payload);
+      return;
+    }
+
+    io.emit("aim:leaderboard", payload);
+  },
 };
 
 // ------- Handler Socket -------
@@ -949,6 +992,7 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastSlotsLB(io);
   leaderboardManager.broadcastSudokuLB(io);
   leaderboardManager.broadcastSubwayLB(io);
+  leaderboardManager.broadcastAimTrainerLB(io);
 
   emitUsersPresence();
 
@@ -988,6 +1032,14 @@ function initSocketHandlers(io, socket, gameState) {
   });
 
   registerSudokuHandlers({
+    io,
+    socket,
+    pseudo,
+    FileService,
+    leaderboardManager,
+  });
+
+  registerAimTrainerHandlers({
     io,
     socket,
     pseudo,

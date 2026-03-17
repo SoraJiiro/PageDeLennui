@@ -2,6 +2,14 @@ import { showNotif, keys, toggleScrollLock, requestPassword } from "./util.js";
 import { openSearchNoSocket } from "./util.js";
 
 export function initFlappy(socket) {
+  const DPI_BOOST = 1.25;
+  const MAX_RENDER_DPR = 2;
+
+  function getRenderRatio() {
+    const base = window.devicePixelRatio || 1;
+    return Math.min(MAX_RENDER_DPR, base * DPI_BOOST);
+  }
+
   // ---------- Cache UI ----------
   const ui = {
     canvas: document.getElementById("flappyCanvas"),
@@ -45,7 +53,7 @@ export function initFlappy(socket) {
 
   function resizeCanvas() {
     try {
-      const ratio = window.devicePixelRatio || 1;
+      const ratio = getRenderRatio();
       const stage = document.getElementById("stage6");
       const wrap = ui.canvas.closest(".flappy-wrap");
       const wrapRect = wrap
@@ -86,6 +94,10 @@ export function initFlappy(socket) {
 
       if (ui.ctx && typeof ui.ctx.setTransform === "function") {
         ui.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+      if (ui.ctx) {
+        ui.ctx.imageSmoothingEnabled = true;
+        ui.ctx.imageSmoothingQuality = "high";
       }
     } catch (e) {}
 
@@ -266,7 +278,7 @@ export function initFlappy(socket) {
   });
 
   function updateScales() {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getRenderRatio();
     const cssW = Math.round(ui.canvas.width / dpr);
     const cssH = Math.round(ui.canvas.height / dpr);
     if (!cssW || !cssH) return;
@@ -282,12 +294,12 @@ export function initFlappy(socket) {
     xRatio: 0.17, // position horizontale relative
     radiusRatio: 0.02, // taille relative
     get x() {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = getRenderRatio();
       const cssW = Math.round(ui.canvas.width / dpr);
       return this.xRatio * cssW;
     },
     get radius() {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = getRenderRatio();
       const cssH = Math.round(ui.canvas.height / dpr);
       return this.radiusRatio * cssH;
     },
@@ -301,7 +313,7 @@ export function initFlappy(socket) {
 
   function drawStartScreen() {
     try {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = getRenderRatio();
       const cssW = Math.round(ui.canvas.width / dpr);
       const cssH = Math.round(ui.canvas.height / dpr);
       if (!cssW || !cssH) return;
@@ -349,7 +361,7 @@ export function initFlappy(socket) {
   function resetGame() {
     resizeCanvas();
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getRenderRatio();
     const cssH = Math.round(ui.canvas.height / dpr);
     birdY = cssH / 3.55;
     birdVel = 0;
@@ -400,7 +412,7 @@ export function initFlappy(socket) {
 
   function clearToBlack() {
     try {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = getRenderRatio();
       const cssW = Math.round(ui.canvas.width / dpr);
       const cssH = Math.round(ui.canvas.height / dpr);
       ui.ctx.fillStyle = "#000";
@@ -410,7 +422,7 @@ export function initFlappy(socket) {
 
   function drawPipes() {
     ui.ctx.fillStyle = uiColor;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getRenderRatio();
     const cssW = Math.round(ui.canvas.width / dpr);
     const cssH = Math.round(ui.canvas.height / dpr);
     pipes.forEach((p) => {
@@ -428,7 +440,7 @@ export function initFlappy(socket) {
 
   function showPaused() {
     ui.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getRenderRatio();
     const cssW = Math.round(ui.canvas.width / dpr);
     const cssH = Math.round(ui.canvas.height / dpr);
     ui.ctx.fillRect(0, 0, cssW, cssH);
@@ -453,7 +465,7 @@ export function initFlappy(socket) {
   function update() {
     if (!gameRunning) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getRenderRatio();
     const cssW = Math.round(ui.canvas.width / dpr);
     const cssH = Math.round(ui.canvas.height / dpr);
 
@@ -550,7 +562,7 @@ export function initFlappy(socket) {
   function showGameOver() {
     // Overlay sombre
     ui.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = getRenderRatio();
     const cssW = Math.round(ui.canvas.width / dpr);
     const cssH = Math.round(ui.canvas.height / dpr);
     ui.ctx.fillRect(0, 0, cssW, cssH);

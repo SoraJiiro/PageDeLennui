@@ -1,5 +1,5 @@
 :root {
-  --sidebar-width: 300px;
+  --sidebar-width: 420px;
   --sidebar-bg: var(--bg-color);
   --sidebar-border: 1px solid var(--primary-color);
   --sidebar-text: var(--primary-color);

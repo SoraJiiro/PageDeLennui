@@ -44,6 +44,22 @@ function getStatsFor(pseudo) {
     pseudo,
     (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
   );
+  const aimScores = FileService.data.aimTrainerScores || {};
+  const aimHasBuckets =
+    aimScores &&
+    typeof aimScores === "object" &&
+    (typeof aimScores["15"] === "object" ||
+      typeof aimScores["30"] === "object" ||
+      typeof aimScores["60"] === "object");
+
+  const aimBestByDuration = {
+    15: aimHasBuckets ? Number(aimScores["15"]?.[pseudo] || 0) : 0,
+    30: aimHasBuckets
+      ? Number(aimScores["30"]?.[pseudo] || 0)
+      : Number(aimScores[pseudo] || 0),
+    60: aimHasBuckets ? Number(aimScores["60"]?.[pseudo] || 0) : 0,
+  };
+
   return {
     clicks: (FileService.data.clicks && FileService.data.clicks[pseudo]) || 0,
     money: wallet.money || 0,
@@ -85,6 +101,17 @@ function getStatsFor(pseudo) {
       null,
     motus:
       (FileService.data.motusScores && FileService.data.motusScores[pseudo]) ||
+      null,
+    aimTrainerBestByDuration: aimBestByDuration,
+    aimTrainerBest: Math.max(
+      0,
+      aimBestByDuration["15"],
+      aimBestByDuration["30"],
+      aimBestByDuration["60"],
+    ),
+    aimTrainerStats:
+      (FileService.data.aimTrainerStats &&
+        FileService.data.aimTrainerStats[pseudo]) ||
       null,
   };
 }

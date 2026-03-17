@@ -1,3 +1,5 @@
+import { createPixelWarDailyClaimsController } from "./pixelwar_daily_claims.js";
+
 let socket = null;
 let canvas, ctx, container, wrapper;
 let scale = 1;
@@ -93,10 +95,11 @@ let isBatchMode = false;
 let pendingPixels = new Map();
 let localBoardCache = new Uint8Array(BOARD_SIZE * BOARD_SIZE);
 let unlockedColorIndices = new Set(Array.from({ length: 16 }, (_, i) => i));
-let dailyRewardClaims = { clicks: false, pixels: false, tokens: false };
+let dailyClaimsController = null;
 
 export function initPixelWar(sock) {
   socket = sock;
+  dailyClaimsController = createPixelWarDailyClaimsController(socket);
   canvas = document.getElementById("pixelwar-canvas");
   ctx = canvas.getContext("2d", { alpha: false });
   wrapper = document.getElementById("board-wrapper");
@@ -192,12 +195,7 @@ export function initPixelWar(sock) {
     }
     initPalette();
     if (data?.dailyRewards?.claims) {
-      dailyRewardClaims = {
-        clicks: !!data.dailyRewards.claims.clicks,
-        pixels: !!data.dailyRewards.claims.pixels,
-        tokens: !!data.dailyRewards.claims.tokens,
-      };
-      refreshDailyClaimButtons();
+      dailyClaimsController?.setClaims(data.dailyRewards.claims);
     }
     updateStats(data);
     drawFullBoard(data.board);
@@ -375,22 +373,8 @@ function initControls() {
     buyStorage.onclick = () => socket.emit("pixelwar:buy", "storage_10");
   }
 
-  const claimClicks = document.getElementById("daily-claim-clicks");
-  if (claimClicks) {
-    claimClicks.onclick = () => socket.emit("pixelwar:daily_claim", "clicks");
-  }
-
-  const claimPixels = document.getElementById("daily-claim-pixels");
-  if (claimPixels) {
-    claimPixels.onclick = () => socket.emit("pixelwar:daily_claim", "pixels");
-  }
-
-  const claimTokens = document.getElementById("daily-claim-tokens");
-  if (claimTokens) {
-    claimTokens.onclick = () => socket.emit("pixelwar:daily_claim", "tokens");
-  }
-
-  refreshDailyClaimButtons();
+  dailyClaimsController?.bind();
+  dailyClaimsController?.refresh();
 
   const calcInput = document.getElementById("calc-image-input");
   const calcUploadBtn = document.getElementById("btn-calc-upload");
@@ -839,31 +823,8 @@ function updateStats(data) {
     startDoubleBoostTimer(data.doublePixelBoostMs, { freeze: isStorageFull });
   }
   if (data?.dailyRewards?.claims) {
-    dailyRewardClaims = {
-      clicks: !!data.dailyRewards.claims.clicks,
-      pixels: !!data.dailyRewards.claims.pixels,
-      tokens: !!data.dailyRewards.claims.tokens,
-    };
-    refreshDailyClaimButtons();
+    dailyClaimsController?.setClaims(data.dailyRewards.claims);
   }
-}
-
-function refreshDailyClaimButtons() {
-  const clickBtn = document.getElementById("daily-claim-clicks");
-  const pixelBtn = document.getElementById("daily-claim-pixels");
-  const tokenBtn = document.getElementById("daily-claim-tokens");
-
-  const apply = (btn, label, claimed) => {
-    if (!btn) return;
-    const nextDisabled = !!claimed;
-    const nextText = claimed ? `${label} (claimed)` : label;
-    if (btn.disabled !== nextDisabled) btn.disabled = nextDisabled;
-    if (btn.textContent !== nextText) btn.textContent = nextText;
-  };
-
-  apply(clickBtn, "Claim Clicks", dailyRewardClaims.clicks);
-  apply(pixelBtn, "Claim pixels", dailyRewardClaims.pixels);
-  apply(tokenBtn, "Claim Token", dailyRewardClaims.tokens);
 }
 
 let timerInterval;

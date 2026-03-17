@@ -83,6 +83,8 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       import("./sudoku_leaderboard.js"),
       import("./subway_leaderboard.js"),
       import("./subway.js"),
+      import("./aim_trainer.js"),
+      import("./aim_trainer_leaderboard.js"),
     ]);
 
     const [
@@ -123,6 +125,8 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       sudokuLeaderboard,
       subwayLeaderboard,
       subway,
+      aimTrainer,
+      aimTrainerLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -251,6 +255,9 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       if (subwayLeaderboard?.initSubwayLeaderboard)
         subwayLeaderboard.initSubwayLeaderboard(socket);
       if (subway?.initSubway) subway.initSubway(socket);
+      if (aimTrainer?.initAimTrainer) aimTrainer.initAimTrainer(socket);
+      if (aimTrainerLeaderboard?.initAimTrainerLeaderboard)
+        aimTrainerLeaderboard.initAimTrainerLeaderboard(socket);
       if (passwordChange?.setupPasswordChange)
         passwordChange.setupPasswordChange(socket);
     } else {

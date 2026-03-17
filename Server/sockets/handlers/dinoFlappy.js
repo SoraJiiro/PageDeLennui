@@ -15,10 +15,15 @@ function registerDinoFlappyHandlers({
   const FLAPPY_MAX_SCORE = 10000;
   const SUBWAY_MAX_SCORE = 250000;
 
-  socket.on("subway:score", ({ score } = {}) => {
+  socket.on("subway:score", ({ score, revivePending } = {}) => {
     const s = Math.floor(Number(score));
     if (!Number.isFinite(s) || s < 0 || s > SUBWAY_MAX_SCORE) return;
     updateReviveContextFromScore(socket, "subway", s);
+    if (revivePending === true) {
+      clearRunnerProgress("subway");
+      setRunnerState("subway", false);
+      return;
+    }
     setRunnerProgress("subway", s);
   });
 
@@ -131,6 +136,7 @@ function registerDinoFlappyHandlers({
     if (final === true) {
       clearRunnerProgress("dino");
       setRunnerState("dino", false);
+      consumeRunnerResume("dino");
     } else {
       setRunnerProgress("dino", s);
     }
@@ -159,6 +165,7 @@ function registerDinoFlappyHandlers({
   socket.on("dino:reset", () => {
     clearRunnerProgress("dino");
     setRunnerState("dino", false);
+    consumeRunnerResume("dino");
     FileService.data.dinoScores[pseudo] = 0;
     FileService.save("dinoScores", FileService.data.dinoScores);
     console.log(
@@ -180,6 +187,7 @@ function registerDinoFlappyHandlers({
     if (final === true) {
       clearRunnerProgress("flappy");
       setRunnerState("flappy", false);
+      consumeRunnerResume("flappy");
     } else {
       setRunnerProgress("flappy", s);
     }
@@ -208,6 +216,7 @@ function registerDinoFlappyHandlers({
   socket.on("flappy:reset", () => {
     clearRunnerProgress("flappy");
     setRunnerState("flappy", false);
+    consumeRunnerResume("flappy");
     FileService.data.flappyScores[pseudo] = 0;
     FileService.save("flappyScores", FileService.data.flappyScores);
     console.log(
@@ -231,6 +240,7 @@ function registerDinoFlappyHandlers({
     updateReviveContextFromScore(socket, "subway", s);
     clearRunnerProgress("subway");
     setRunnerState("subway", false);
+    consumeRunnerResume("subway");
 
     const currentBest = Math.floor(
       Number((FileService.data.subwayScores || {})[pseudo]) || 0,

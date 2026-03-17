@@ -2,6 +2,54 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.0.6",
+      "date": "15/03/2026 ",
+      "sections": [
+        {
+          "title": "Nouveautes",
+          "icon": "fa-star",
+          "items": [
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "AimTrainer :",
+              "text": "Un nouveau jeu d'AIM Trainer, montrez nous vos talents de joueurs FPS."
+            }
+          ]
+        },
+        {
+          "title": "Améliorations —",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "UI récompenses quotidiennes:",
+              "text": "L'interface des récompenses quotidiennes a été améliorée."
+            },
+            {
+              "tagClass": "tag-change",
+              "tag": "[FIX]",
+              "strong": "Subway Surfer:",
+              "text": "Correction du bug de sauvegarde du score quand cela n'était pas censé se passer."
+            }
+          ]
+        },
+        {
+          "title": "Retraits / Resets",
+          "icon": "fa-arrow-right-arrow-left",
+          "items": [
+            {
+              "tagClass": "tag-removed",
+              "tag": "[RESET]",
+              "strong": "Reset Subway Surfer :",
+              "text": "Reset des scores du Subway Surfer pour tout le monde, histoire de repartir sur une base legit."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.0.5",
       "date": "11/03/2026",
       "sections": [

@@ -1,0 +1,159 @@
+#stage21 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 8px;
+  background: var(--bg-color);
+  color: var(--primary-color);
+}
+
+.aim-card {
+  width: min(1080px, 98vw);
+  border: 2px solid var(--primary-color);
+  background: var(--bg-color);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.aim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aim-header h2 {
+  margin: 0;
+  color: var(--bg-color);
+  background: var(--primary-color);
+  padding: 3px 9px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.aim-stats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.aim-stats span {
+  border: 1px solid var(--primary-color);
+  padding: 3px 7px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.aim-config {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: end;
+}
+
+.aim-config label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+#aim-shape-select,
+#aim-duration-select {
+  border: 1px solid var(--primary-color);
+  background: var(--bg-color);
+  color: var(--primary-color);
+}
+
+#aim-shape-select,
+#aim-duration-select {
+  min-height: 32px;
+  padding: 1px 4px;
+}
+
+.aim-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.aim-actions button {
+  border: 1px solid var(--primary-color);
+  background: color-mix(in srgb, var(--bg-color) 88%, var(--primary-color) 12%);
+  color: var(--primary-color);
+  font-weight: 700;
+  min-height: 32px;
+  padding: 0 9px;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.aim-arena {
+  position: relative;
+  width: 100%;
+  min-height: 500px;
+  border: 2px solid var(--primary-color);
+  background: #000;
+  overflow: hidden;
+}
+
+.aim-arena-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  color: color-mix(in srgb, var(--primary-color) 80%, #fff 20%);
+  font-weight: 700;
+}
+
+.aim-target {
+  position: absolute;
+  border: none;
+  cursor: crosshair;
+  background: var(--primary-color);
+  box-shadow: 0 0 0 2px #000 inset;
+}
+
+.aim-target[data-shape="square"] {
+  border-radius: 10%;
+}
+
+.aim-target[data-shape="circle"] {
+  border-radius: 50%;
+}
+
+.aim-help {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 820px) {
+  .aim-card {
+    width: min(100%, 98vw);
+  }
+
+  .aim-config {
+    grid-template-columns: 1fr;
+  }
+
+  .aim-actions {
+    width: 100%;
+  }
+
+  .aim-actions button {
+    flex: 1;
+  }
+
+  .aim-arena {
+    min-height: 390px;
+  }
+}

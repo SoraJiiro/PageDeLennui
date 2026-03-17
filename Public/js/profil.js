@@ -113,6 +113,30 @@ function renderStats(stats) {
       "Motus (mots trouvés)",
       s.motus && typeof s.motus.words === "number" ? s.motus.words : "—",
     ],
+    ["Aim Trainer (best)", s.aimTrainerBest || 0],
+    ["Aim Trainer (best 15s)", Number(s.aimTrainerBestByDuration?.["15"] || 0)],
+    ["Aim Trainer (best 30s)", Number(s.aimTrainerBestByDuration?.["30"] || 0)],
+    ["Aim Trainer (best 1mn)", Number(s.aimTrainerBestByDuration?.["60"] || 0)],
+    [
+      "Aim Trainer (precision moyenne)",
+      s.aimTrainerStats &&
+      Number.isFinite(Number(s.aimTrainerStats.avgAccuracy))
+        ? `${Number(s.aimTrainerStats.avgAccuracy).toFixed(1)}%`
+        : "0.0%",
+    ],
+    [
+      "Aim Trainer (precision derniere)",
+      s.aimTrainerStats &&
+      Number.isFinite(Number(s.aimTrainerStats.lastAccuracy))
+        ? `${Number(s.aimTrainerStats.lastAccuracy).toFixed(1)}%`
+        : "0.0%",
+    ],
+    [
+      "Aim Trainer (ratio dernier)",
+      s.aimTrainerStats && s.aimTrainerStats.lastRatio
+        ? s.aimTrainerStats.lastRatio
+        : "0:0",
+    ],
   ];
 
   container.innerHTML = "";

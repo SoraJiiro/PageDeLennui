@@ -1,6 +1,14 @@
 import { keys, openSearchNoSocket } from "./util.js";
 
 export function initSubway(socket) {
+  const DPI_BOOST = 1.25;
+  const MAX_RENDER_DPR = 2;
+
+  function getRenderRatio() {
+    const base = window.devicePixelRatio || 1;
+    return Math.min(MAX_RENDER_DPR, base * DPI_BOOST);
+  }
+
   const stage = document.getElementById("stage20");
   const canvas = document.getElementById("subway-canvas");
   const scoreEl = document.getElementById("subway-score");
@@ -188,7 +196,7 @@ export function initSubway(socket) {
   function pushProgress() {
     try {
       if (!socket) return;
-      if (state.gameOver) return;
+      if (state.gameOver || state.awaitingRevive || !state.running) return;
       const s = Math.max(0, Math.floor(Number(state.score) || 0));
       if (s <= 0) return;
       socket.emit("subway:progress", { score: s });
@@ -307,6 +315,8 @@ export function initSubway(socket) {
 
   function resumeRun() {
     if (!state.running || !state.paused) return false;
+    // Reprise plus douce apres pause: on baisse legerement la vitesse courante.
+    state.speed = Math.max(1, state.speed * 0.92);
     state.paused = false;
     state.pauseSource = null;
     state.resumeCountdown = 0;
@@ -338,7 +348,7 @@ export function initSubway(socket) {
 
     const cssW = Math.max(380, Math.min(wrap.clientWidth - 4, 1020));
     const cssH = Math.round((cssW * 9) / 16);
-    const ratio = window.devicePixelRatio || 1;
+    const ratio = getRenderRatio();
 
     canvas.style.width = `${cssW}px`;
     canvas.style.height = `${cssH}px`;
@@ -350,6 +360,12 @@ export function initSubway(socket) {
       canvas.width = nextW;
       canvas.height = nextH;
     }
+
+    if (ctx && typeof ctx.setTransform === "function") {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     initPlayerLanePosition();
   }
@@ -528,7 +544,10 @@ export function initSubway(socket) {
     state.resumeCountdownTickAtMs = 0;
     state.awaitingRevive = true;
     try {
-      socket.emit("subway:score", { score: Math.floor(state.score) });
+      socket.emit("subway:score", {
+        score: Math.floor(state.score),
+        revivePending: true,
+      });
     } catch {}
 
     if (state.revivesUsed < 3) {
@@ -1005,7 +1024,6 @@ export function initSubway(socket) {
     const sectionId = event?.detail?.sectionId;
     if (sectionId === "stage20") {
       resizeCanvas();
-      if (!state.running && !state.gameOver) resetRunState();
       draw();
       return;
     }

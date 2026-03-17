@@ -23,7 +23,8 @@ body {
 #stage17,
 #stage18,
 #stage19,
-#stage20 {
+#stage20,
+#stage21 {
   display: none !important;
   width: 100%;
   height: 100vh;
@@ -49,7 +50,8 @@ body {
 #stage17.is-active,
 #stage18.is-active,
 #stage19.is-active,
-#stage20.is-active {
+#stage20.is-active,
+#stage21.is-active {
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -136,7 +138,7 @@ body {
   color: var(--primary-color);
   font-weight: 700;
   letter-spacing: 0.2px;
-  
+
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease,
@@ -222,7 +224,7 @@ body {
     var(--bg-color)
   );
   color: var(--primary-color);
-  
+
   overflow: hidden;
   transition:
     transform 0.18s ease,
@@ -378,7 +380,7 @@ body {
   border: 2px solid var(--primary-color);
   background: color-mix(in srgb, var(--bg-color) 88%, var(--primary-color) 12%);
   color: var(--primary-color);
-  
+
   transition:
     transform 0.18s ease,
     opacity 0.18s ease,

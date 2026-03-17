@@ -38,6 +38,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage18.css" />
         <link rel="stylesheet" type="text/css" href="css/stage19.css" />
         <link rel="stylesheet" type="text/css" href="css/stage20.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage21.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -80,17 +81,24 @@
                     class="sidebar-close">&times;</button>
             </div>
             <div class="sidebar-content">
-                <pre id="periodic-msg">Magic Squares !</pre>
+                <pre id="periodic-msg">Les Pâtes Carbo</pre>
                 <div class="sidebar-section">
                     <h3 class="sb-username"></h3>
                     <h3 class="money"></h3>
                     <div class="sidebar-controls daily-rewards"
                         style="margin-bottom: 10px;">
-                        <button id="daily-claim-clicks" class="nav-link">Claim
+                        <h3><i class="fa-solid fa-gift"></i> Récompenses
+                            Quotidiennes</h3>
+                        <button id="daily-claim-clicks" class="nav-link"><i
+                                class="fa-solid fa-arrow-pointer"></i> &nbsp;
+                            Obtenir
                             Clicks</button>
-                        <button id="daily-claim-pixels" class="nav-link">Claim
+                        <button id="daily-claim-pixels" class="nav-link"><i
+                                class="fa-solid fa-square"></i> &nbsp; Obtenir
                             pixels</button>
-                        <button id="daily-claim-tokens" class="nav-link">Claim
+                        <button id="daily-claim-tokens" class="nav-link"><i
+                                class="fa-solid fa-tenge-sign"></i> &nbsp;
+                            Obtenir
                             Token</button>
                     </div>
                     <h3><i class="fa-solid fa-gamepad"></i> Jeux</h3>
@@ -580,6 +588,11 @@
                             alt aria-hidden="true"><span
                             class="hub-card-label">Subway
                             Surfer</span></button>
+                    <button class="hub-card sec21" data-game="Aim Trainer"
+                        data-emoji="🎯" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">Aim Trainer</span></button>
                 </div>
 
                 <div class="hub-infos"><center><p><b><u>SI VOUS AVEZ DES
@@ -772,6 +785,7 @@
                 <button data-board="slots">Slots</button>
                 <button data-board="sudoku">Sudoku</button>
                 <button data-board="subway">Subway</button>
+                <button data-board="aim-trainer">Aim Trainer</button>
                 <button data-board="pixelwar">PixelWar</button>
                 <button data-board="clicks-cps">Clicks + Peak CPS</button>
             </div>
@@ -960,6 +974,27 @@
                 </div>
                 <table class="board" id="subway-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <!-- LEADERBOARD AIM TRAINER -->
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2>Aim Trainer Leaderboard.exe</h2>
+                    <label
+                        style="display:flex;align-items:center;gap:6px;font-size:12px;">
+                        Duree
+                        <select id="aim-lb-duration-select"
+                            style="min-height:30px;">
+                            <option value="15">15s</option>
+                            <option value="30" selected>30s</option>
+                            <option value="60">1mn</option>
+                        </select>
+                    </label>
+                </div>
+                <table class="board" id="aim-trainer-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Cibles
+                                touchées</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -1539,6 +1574,52 @@
                             merci</button>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section id="stage21">
+            <div class="aim-card">
+                <div class="aim-header">
+                    <h2>Aim Trainer.exe</h2>
+                    <div class="aim-stats">
+                        <span id="aim-time">Temps: 30s</span>
+                        <span id="aim-score">Touches: 0</span>
+                        <span id="aim-misses">Rates: 0</span>
+                        <span id="aim-accuracy">Precision: 0.0%</span>
+                        <span id="aim-ratio">Ratio: 0:0</span>
+                    </div>
+                </div>
+
+                <div class="aim-config">
+                    <label>
+                        Forme
+                        <select id="aim-shape-select">
+                            <option value="square" selected>Carre</option>
+                            <option value="circle">Rond</option>
+                        </select>
+                    </label>
+                    <label>
+                        Duree
+                        <select id="aim-duration-select">
+                            <option value="15">15 secondes</option>
+                            <option value="30" selected>30 secondes</option>
+                            <option value="60">1 minute</option>
+                        </select>
+                    </label>
+
+                    <div class="aim-actions">
+                        <button id="aim-start-btn" type="button">Lancer
+                            (30s)</button>
+                        <button id="aim-reset-btn" type="button">Reset</button>
+                    </div>
+                </div>
+
+                <div id="aim-arena" class="aim-arena"
+                    aria-label="Zone de jeu Aim Trainer">
+                    <div class="aim-arena-empty">Choisis une forme puis lance la
+                        partie.</div>
+                </div>
+
             </div>
         </section>
 

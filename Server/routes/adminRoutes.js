@@ -18,6 +18,51 @@ const CUSTOM_BADGE_PRICE = 180000;
 // Fonction pour créer le router avec accès à io
 function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
   const router = express.Router();
+  const AIM_DURATION_FIELDS = ["15", "30", "60"];
+
+  function normalizeAimDurationField(field) {
+    const normalized = String(field || "").trim();
+    return AIM_DURATION_FIELDS.includes(normalized) ? normalized : null;
+  }
+
+  function ensureAimTrainerScoresShape() {
+    const src = FileService.data.aimTrainerScores;
+    const next = { 15: {}, 30: {}, 60: {} };
+
+    if (src && typeof src === "object") {
+      const hasBuckets =
+        typeof src["15"] === "object" ||
+        typeof src["30"] === "object" ||
+        typeof src["60"] === "object";
+
+      if (hasBuckets) {
+        AIM_DURATION_FIELDS.forEach((key) => {
+          const bucket = src[key];
+          if (!bucket || typeof bucket !== "object") return;
+          Object.entries(bucket).forEach(([pseudo, score]) => {
+            next[key][pseudo] = Math.max(0, Math.floor(Number(score) || 0));
+          });
+        });
+      } else {
+        Object.entries(src).forEach(([pseudo, score]) => {
+          next["30"][pseudo] = Math.max(0, Math.floor(Number(score) || 0));
+        });
+      }
+    }
+
+    FileService.data.aimTrainerScores = next;
+    return FileService.data.aimTrainerScores;
+  }
+
+  function getAimTrainerDurationBucket(field) {
+    const duration = normalizeAimDurationField(field);
+    if (!duration) return null;
+    const all = ensureAimTrainerScoresShape();
+    if (!all[duration] || typeof all[duration] !== "object") {
+      all[duration] = {};
+    }
+    return { duration, bucket: all[duration] };
+  }
 
   // Helper pour refresh les leaderboards
   function refreshLeaderboard(statType) {
@@ -67,6 +112,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         break;
       case "sudokuScores":
         leaderboardManager.broadcastSudokuLB(io);
+        break;
+      case "aimTrainerScores":
+        leaderboardManager.broadcastAimTrainerLB(io);
         break;
     }
   }
@@ -1898,6 +1946,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "slotsStats",
       "clickerHumanPeakCps",
       "pixelwar",
+      "aimTrainerScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -1952,6 +2001,24 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `Peak CPS humain de ${pseudo} mis à jour à ${FileService.data.clickerHumanPeakCps[pseudo]}`,
+      });
+    }
+
+    if (statType === "aimTrainerScores") {
+      const target = getAimTrainerDurationBucket(field);
+      if (!target) {
+        return res.status(400).json({
+          message: "Champ invalide pour Aim Trainer (15|30|60)",
+        });
+      }
+
+      target.bucket[pseudo] = Math.max(0, Math.floor(Number(value) || 0));
+      FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+      refreshLeaderboard(statType);
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
+      return res.json({
+        message: `Score Aim Trainer ${target.duration}s de ${pseudo} mis à jour à ${target.bucket[pseudo]}`,
       });
     }
 
@@ -2213,6 +2280,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "slotsStats",
       "clickerHumanPeakCps",
       "pixelwar",
+      "aimTrainerScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -2301,6 +2369,28 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       });
     }
 
+    if (statType === "aimTrainerScores") {
+      const target = getAimTrainerDurationBucket(field);
+      if (!target) {
+        return res.status(400).json({
+          message: "Champ invalide pour Aim Trainer (15|30|60)",
+        });
+      }
+
+      const users = Object.keys(target.bucket || {});
+      users.forEach((p) => {
+        target.bucket[p] = Math.max(0, Math.floor(Number(value) || 0));
+      });
+
+      FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+      refreshLeaderboard(statType);
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
+      return res.json({
+        message: `Scores Aim Trainer ${target.duration}s mis à ${value} pour ${users.length} joueurs`,
+      });
+    }
+
     const users = Object.keys(FileService.data[statType] || {});
     users.forEach((pseudo) => {
       if (
@@ -2374,6 +2464,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "slotsStats",
       "clickerHumanPeakCps",
       "pixelwar",
+      "aimTrainerScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -2448,6 +2539,29 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `${value} ajouté au Peak CPS humain de ${users.length} joueurs`,
+      });
+    }
+
+    if (statType === "aimTrainerScores") {
+      const target = getAimTrainerDurationBucket(field);
+      if (!target) {
+        return res.status(400).json({
+          message: "Champ invalide pour Aim Trainer (15|30|60)",
+        });
+      }
+
+      const users = Object.keys(target.bucket || {});
+      users.forEach((p) => {
+        const current = Number(target.bucket[p]) || 0;
+        target.bucket[p] = Math.max(0, Math.floor(current + value));
+      });
+
+      FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+      refreshLeaderboard(statType);
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
+      return res.json({
+        message: `${value} ajouté aux scores Aim Trainer ${target.duration}s de ${users.length} joueurs`,
       });
     }
 
@@ -2529,6 +2643,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "slotsStats",
       "clickerHumanPeakCps",
       "pixelwar",
+      "aimTrainerScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -2601,6 +2716,29 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `${value} retiré du Peak CPS humain de ${users.length} joueurs`,
+      });
+    }
+
+    if (statType === "aimTrainerScores") {
+      const target = getAimTrainerDurationBucket(field);
+      if (!target) {
+        return res.status(400).json({
+          message: "Champ invalide pour Aim Trainer (15|30|60)",
+        });
+      }
+
+      const users = Object.keys(target.bucket || {});
+      users.forEach((p) => {
+        const current = Number(target.bucket[p]) || 0;
+        target.bucket[p] = Math.max(0, Math.floor(current - value));
+      });
+
+      FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+      refreshLeaderboard(statType);
+      users.forEach((p) => emitUserStatsRealtimeUpdate(p, statType));
+
+      return res.json({
+        message: `${value} retiré des scores Aim Trainer ${target.duration}s de ${users.length} joueurs`,
       });
     }
 
@@ -2685,6 +2823,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "slotsStats",
       "clickerHumanPeakCps",
       "pixelwar",
+      "aimTrainerScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -2741,6 +2880,27 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `Peak CPS humain de ${pseudo} augmenté de ${value} (total: ${next})`,
+      });
+    }
+
+    if (statType === "aimTrainerScores") {
+      const target = getAimTrainerDurationBucket(field);
+      if (!target) {
+        return res.status(400).json({
+          message: "Champ invalide pour Aim Trainer (15|30|60)",
+        });
+      }
+
+      const current = Number(target.bucket[pseudo]) || 0;
+      const next = Math.max(0, Math.floor(current + value));
+      target.bucket[pseudo] = next;
+
+      FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+      refreshLeaderboard(statType);
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
+      return res.json({
+        message: `Score Aim Trainer ${target.duration}s de ${pseudo} augmenté de ${value} (total: ${next})`,
       });
     }
 
@@ -2969,6 +3129,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "slotsStats",
       "clickerHumanPeakCps",
       "pixelwar",
+      "aimTrainerScores",
     ];
 
     if (!validStats.includes(statType)) {
@@ -3025,6 +3186,27 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `Peak CPS humain de ${pseudo} diminué de ${value} (total: ${next})`,
+      });
+    }
+
+    if (statType === "aimTrainerScores") {
+      const target = getAimTrainerDurationBucket(field);
+      if (!target) {
+        return res.status(400).json({
+          message: "Champ invalide pour Aim Trainer (15|30|60)",
+        });
+      }
+
+      const current = Number(target.bucket[pseudo]) || 0;
+      const next = Math.max(0, Math.floor(current - value));
+      target.bucket[pseudo] = next;
+
+      FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+      refreshLeaderboard(statType);
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+
+      return res.json({
+        message: `Score Aim Trainer ${target.duration}s de ${pseudo} diminué de ${value} (total: ${next})`,
       });
     }
 
@@ -3185,6 +3367,14 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     if (FileService.data.slotsStats) delete FileService.data.slotsStats[pseudo];
     if (FileService.data.sudokuScores)
       delete FileService.data.sudokuScores[pseudo];
+    if (FileService.data.aimTrainerScores) {
+      const allAim = ensureAimTrainerScoresShape();
+      AIM_DURATION_FIELDS.forEach((key) => {
+        if (allAim[key] && pseudo in allAim[key]) delete allAim[key][pseudo];
+      });
+    }
+    if (FileService.data.aimTrainerStats)
+      delete FileService.data.aimTrainerStats[pseudo];
     if (FileService.data.wallets) delete FileService.data.wallets[pseudo];
     delete FileService.data.medals[pseudo];
     delete FileService.data.blockblastSaves[pseudo];
@@ -3231,6 +3421,10 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       FileService.save("slotsStats", FileService.data.slotsStats);
     if (FileService.data.sudokuScores)
       FileService.save("sudokuScores", FileService.data.sudokuScores);
+    if (FileService.data.aimTrainerScores)
+      FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+    if (FileService.data.aimTrainerStats)
+      FileService.save("aimTrainerStats", FileService.data.aimTrainerStats);
     if (FileService.data.wallets)
       FileService.save("wallets", FileService.data.wallets);
     if (FileService.data.motusScores)
@@ -3405,6 +3599,36 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       clearSimple("sudokuScores", "sudoku");
     };
 
+    const clearAim = (durationField = null) => {
+      const all = ensureAimTrainerScoresShape();
+
+      if (durationField) {
+        const key = normalizeAimDurationField(durationField);
+        if (!key) return;
+        if (all[key] && pseudo in all[key]) {
+          delete all[key][pseudo];
+          FileService.save(
+            "aimTrainerScores",
+            FileService.data.aimTrainerScores,
+          );
+          removed.push(`aim-${key}`);
+        }
+        return;
+      }
+
+      let changed = false;
+      AIM_DURATION_FIELDS.forEach((key) => {
+        if (all[key] && pseudo in all[key]) {
+          delete all[key][pseudo];
+          changed = true;
+        }
+      });
+      if (changed) {
+        FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+        removed.push("aim");
+      }
+    };
+
     try {
       switch (type) {
         case "clicker":
@@ -3452,6 +3676,18 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         case "sudoku":
           clearSudoku();
           break;
+        case "aim":
+          clearAim();
+          break;
+        case "aim15":
+          clearAim("15");
+          break;
+        case "aim30":
+          clearAim("30");
+          break;
+        case "aim60":
+          clearAim("60");
+          break;
         case "all":
         default:
           clearClicker();
@@ -3469,6 +3705,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           clearRoulette();
           clearSlots();
           clearSudoku();
+          clearAim();
           break;
       }
 
@@ -3519,6 +3756,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
             break;
           case "sudoku":
             refreshLeaderboard("sudokuScores");
+            break;
+          case "aim":
+          case "aim-15":
+          case "aim-30":
+          case "aim-60":
+            refreshLeaderboard("aimTrainerScores");
             break;
         }
       });
@@ -3589,6 +3832,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "roulette_stats.json",
         "slots_stats.json",
         "sudoku_scores.json",
+        "aim_trainer_scores.json",
       ];
 
       filesToBackup.forEach((file) => {
@@ -3656,6 +3900,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         FileService.data.sudokuScores = {};
         FileService.save("sudokuScores", {});
 
+        FileService.data.aimTrainerScores = { 15: {}, 30: {}, 60: {} };
+        FileService.save("aimTrainerScores", FileService.data.aimTrainerScores);
+
         // Refresh all leaderboards
         refreshLeaderboard("dinoScores");
         refreshLeaderboard("flappyScores");
@@ -3671,6 +3918,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         refreshLeaderboard("rouletteStats");
         refreshLeaderboard("slotsStats");
         refreshLeaderboard("sudokuScores");
+        refreshLeaderboard("aimTrainerScores");
 
         message = `Tous les leaderboards (sauf clicks) ont été réinitialisés. Backup créé : ${backupId}`;
       } else {
@@ -3775,6 +4023,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "snake_best_times.json",
         "motus_scores.json",
         "2048_scores.json",
+        "aim_trainer_scores.json",
       ];
 
       filesToRestore.forEach((file) => {
@@ -3796,6 +4045,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       refreshLeaderboard("snakeScores");
       refreshLeaderboard("motusScores");
       refreshLeaderboard("scores2048");
+      refreshLeaderboard("aimTrainerScores");
 
       console.log({
         level: "action",

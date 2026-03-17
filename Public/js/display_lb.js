@@ -20,6 +20,7 @@ function showLeaderboard(name) {
     slots: "#slots-leaderboard",
     sudoku: "#sudoku-leaderboard",
     subway: "#subway-leaderboard",
+    "aim-trainer": "#aim-trainer-leaderboard",
     pixelwar: "#pixelwar-leaderboard",
     "clicks-cps": "#clicks-cps-leaderboard",
   };

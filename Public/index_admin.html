@@ -620,6 +620,8 @@
                                 <button class="lb-tab"
                                     data-board="sudoku">Sudoku</button>
                                 <button class="lb-tab"
+                                    data-board="aim">Aim Trainer</button>
+                                <button class="lb-tab"
                                     data-board="pixelwar">PixelWar</button>
                                 <button class="lb-tab"
                                     data-board="clicks-cps">Clicks + Peak
@@ -828,6 +830,29 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lb-sudoku"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="leaderboard-content" data-board="aim">
+                            <div
+                                style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:8px;">
+                                <label>Durée</label>
+                                <select id="admin-aim-duration"
+                                    style="min-height:30px;">
+                                    <option value="15">15s</option>
+                                    <option value="30" selected>30s</option>
+                                    <option value="60">1mn</option>
+                                </select>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Pseudo</th>
+                                        <th>Cibles touchées</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lb-aim"></tbody>
                             </table>
                         </div>
 
@@ -1123,6 +1148,9 @@
                                                 <option
                                                     value="sudokuScores">Sudoku</option>
                                                 <option
+                                                    value="aimTrainerScores">Aim
+                                                    Trainer (15/30/60)</option>
+                                                <option
                                                     value="scores2048">2048</option>
                                                 <option
                                                     value="blackjackStats">Blackjack</option>
@@ -1346,6 +1374,20 @@
                                                 <option
                                                     value="coinflip">Coin
                                                     Flip</option>
+                                                <option
+                                                    value="roulette">Roulette</option>
+                                                <option
+                                                    value="slots">Slots</option>
+                                                <option
+                                                    value="sudoku">Sudoku</option>
+                                                <option value="aim">Aim
+                                                    Trainer (all)</option>
+                                                <option value="aim15">Aim
+                                                    Trainer 15s</option>
+                                                <option value="aim30">Aim
+                                                    Trainer 30s</option>
+                                                <option value="aim60">Aim
+                                                    Trainer 1mn</option>
                                             </select>
                                         </div>
 
@@ -1600,6 +1642,7 @@
         let chatModule = null;
         let shutdownBonusEnabled = true;
         let isModeratorPanel = window.location.search.includes('view=mod');
+        let adminAimLeaderboards = { '15': [], '30': [], '60': [] };
 
         function updateShutdownBonusToggleUi() {
             const btn = document.getElementById('shutdown-bonus-toggle-btn');
@@ -1857,8 +1900,24 @@
             socket.on('roulette:leaderboard', (data) => updateLeaderboard('roulette', data, 'wins'));
             socket.on('slots:leaderboard', (data) => updateLeaderboard('slots', data, 'wins'));
             socket.on('sudoku:leaderboard', (data) => updateLeaderboard('sudoku', data, 'completed'));
+            socket.on('aim:leaderboard', (payload) => {
+                if (Array.isArray(payload)) {
+                    adminAimLeaderboards['30'] = payload;
+                } else if (payload && typeof payload === 'object' && payload.leaderboards) {
+                    adminAimLeaderboards = {
+                        '15': Array.isArray(payload.leaderboards['15']) ? payload.leaderboards['15'] : [],
+                        '30': Array.isArray(payload.leaderboards['30']) ? payload.leaderboards['30'] : [],
+                        '60': Array.isArray(payload.leaderboards['60']) ? payload.leaderboards['60'] : [],
+                    };
+                }
+
+                const selectedDuration = String(document.getElementById('admin-aim-duration')?.value || '30');
+                const list = adminAimLeaderboards[selectedDuration] || [];
+                updateLeaderboard('aim', list, 'score');
+            });
             socket.on('pixelwar:leaderboard', (data) => updateLeaderboard('pixelwar', data, 'pixelsPlaced'));
             socket.emit('pixelwar:get_leaderboard');
+            socket.emit('aim:requestLeaderboard', { duration: '30' });
 
             // Notifications globales (admin voit aussi le countdown)
             socket.on('system:notification', (data) => {
@@ -2098,6 +2157,17 @@
                     return;
                 }
 
+                if (type === 'aim') {
+                    const score = Number(item.score || 0).toLocaleString('fr-FR');
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${score}</td>
+                    `;
+                    tbody.appendChild(tr);
+                    return;
+                }
+
                 tr.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${item.pseudo}</td>
@@ -2120,6 +2190,18 @@
                 document.querySelector(`.leaderboard-content[data-board="${board}"]`).classList.add('active');
             });
         });
+
+        const adminAimDurationSelect = document.getElementById('admin-aim-duration');
+        if (adminAimDurationSelect) {
+            adminAimDurationSelect.addEventListener('change', () => {
+                const duration = String(adminAimDurationSelect.value || '30');
+                const list = adminAimLeaderboards[duration] || [];
+                updateLeaderboard('aim', list, 'score');
+                if (socket) {
+                    socket.emit('aim:requestLeaderboard', { duration });
+                }
+            });
+        }
 
         const _adminPagers = {
             transactions: { page: 1, pageSize: 5 },
@@ -4156,6 +4238,11 @@
             'pixelwar': [
                 { value: 'pixels', label: 'Pixels (Stock)' },
                 { value: 'maxPixels', label: 'Stockage Max' }
+            ],
+            'aimTrainerScores': [
+                { value: '15', label: '15 secondes' },
+                { value: '30', label: '30 secondes' },
+                { value: '60', label: '1 minute' }
             ]
         };
 

@@ -7,6 +7,14 @@ import {
 } from "./util.js";
 
 export function initDino(socket) {
+  const DPI_BOOST = 1.25;
+  const MAX_RENDER_DPR = 2;
+
+  function getRenderRatio() {
+    const base = window.devicePixelRatio || 1;
+    return Math.min(MAX_RENDER_DPR, base * DPI_BOOST);
+  }
+
   // ---------- Cache UI ----------
   const ui = {
     canvas: document.querySelector(".game"),
@@ -287,7 +295,7 @@ export function initDino(socket) {
         : ui.canvas.getBoundingClientRect();
       if (!wrapRect.width) return;
 
-      const ratio = window.devicePixelRatio || 1;
+      const ratio = getRenderRatio();
 
       const availableW = Math.max(200, Math.round(wrapRect.width));
       const stageRect = stage ? stage.getBoundingClientRect() : null;
@@ -322,6 +330,10 @@ export function initDino(socket) {
 
       if (c && typeof c.setTransform === "function") {
         c.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+      if (c) {
+        c.imageSmoothingEnabled = true;
+        c.imageSmoothingQuality = "high";
       }
 
       // mettre à jour les tailles dynamiques utilisées par le jeu (basé sur les pixels CSS)
