@@ -18,6 +18,7 @@ function registerBlockblastHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const { recordGameScoreContribution } = require("../../services/guerreClans");
   const {
     getReviveCostForSocket,
     incrementReviveUsed,
@@ -37,6 +38,7 @@ function registerBlockblastHandlers({
       pseudo,
       gain,
       FileService.data.clicks[pseudo] || 0,
+      "jeu:blockblast",
     );
     io.to("user:" + pseudo).emit("economy:wallet", wallet);
     io.to("user:" + pseudo).emit("economy:gameMoney", {
@@ -142,6 +144,14 @@ function registerBlockblastHandlers({
     }
 
     if (final === true) {
+      recordGameScoreContribution({
+        FileService,
+        io,
+        pseudo,
+        game: "blockblast",
+        score: s,
+        multiplier: 3,
+      });
       rewardBlockblastFinal(s);
       leaderboardManager.broadcastBlockBlastLB(io);
     }

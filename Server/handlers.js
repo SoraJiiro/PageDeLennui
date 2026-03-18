@@ -255,6 +255,45 @@ const colors = { orange, reset, blue, green, pink, violet, red };
 // ------- LB manager -------
 const leaderboardManager = {
   _throttleTimers: new Map(),
+  _getAllRegisteredPseudos() {
+    let list = [];
+    try {
+      const usersData = dbUsers.readAll();
+      list = usersData && Array.isArray(usersData.users) ? usersData.users : [];
+    } catch (e) {
+      list = [];
+    }
+
+    const unique = new Set();
+    for (const user of list) {
+      const pseudo = user && typeof user.pseudo === "string" ? user.pseudo : "";
+      if (pseudo) unique.add(pseudo);
+    }
+
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  },
+  _withUsersFallback(rows, makeRowFromPseudo) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    const allPseudos = this._getAllRegisteredPseudos();
+    if (allPseudos.length === 0) return safeRows;
+
+    const seen = new Set(
+      safeRows
+        .map((row) =>
+          row && typeof row.pseudo === "string"
+            ? row.pseudo.trim().toLowerCase()
+            : "",
+        )
+        .filter(Boolean),
+    );
+
+    const missingRows = allPseudos
+      .filter((pseudo) => !seen.has(String(pseudo).trim().toLowerCase()))
+      .map((pseudo) => makeRowFromPseudo(pseudo));
+
+    if (missingRows.length === 0) return safeRows;
+    return safeRows.concat(missingRows);
+  },
   scheduleThrottledBroadcast(key, delayMs, emitter) {
     if (this._throttleTimers.has(key)) return;
     const timer = setTimeout(
@@ -272,7 +311,7 @@ const leaderboardManager = {
   broadcastClickerLB(io) {
     const peakMap = FileService.data.clickerHumanPeakCps || {};
     const wallets = FileService.data.wallets || {};
-    const arr = Object.entries(FileService.data.clicks)
+    let arr = Object.entries(FileService.data.clicks)
       .map(([pseudo, score]) => ({
         pseudo,
         score: Number(score) || 0,
@@ -287,6 +326,19 @@ const leaderboardManager = {
             : 0,
       }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      score: 0,
+      peakHumanCps: Number(peakMap[pseudo]) || 0,
+      money:
+        wallets[pseudo] && Number(wallets[pseudo].money)
+          ? Number(wallets[pseudo].money)
+          : 0,
+      tokens:
+        wallets[pseudo] && Number(wallets[pseudo].tokens)
+          ? Number(wallets[pseudo].tokens)
+          : 0,
+    }));
     io.emit("economie:leaderboard", arr);
   },
   broadcastClickerLBThrottled(io, delayMs = 300) {
@@ -295,9 +347,10 @@ const leaderboardManager = {
     });
   },
   broadcastDinoLB(io) {
-    const arr = Object.entries(FileService.data.dinoScores)
+    let arr = Object.entries(FileService.data.dinoScores)
       .map(([u, s]) => ({ pseudo: u, score: s }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, score: 0 }));
     io.emit("dino:leaderboard", arr);
   },
   broadcastDinoLBThrottled(io, delayMs = 200) {
@@ -306,9 +359,10 @@ const leaderboardManager = {
     });
   },
   broadcastFlappyLB(io) {
-    const arr = Object.entries(FileService.data.flappyScores)
+    let arr = Object.entries(FileService.data.flappyScores)
       .map(([u, s]) => ({ pseudo: u, score: s }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, score: 0 }));
     io.emit("flappy:leaderboard", arr);
   },
   broadcastFlappyLBThrottled(io, delayMs = 200) {
@@ -317,20 +371,22 @@ const leaderboardManager = {
     });
   },
   broadcastUnoLB(io) {
-    const arr = Object.entries(FileService.data.unoWins)
+    let arr = Object.entries(FileService.data.unoWins)
       .map(([u, w]) => ({ pseudo: u, wins: w }))
       .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, wins: 0 }));
     io.emit("uno:leaderboard", arr);
   },
   broadcastP4LB(io) {
-    const arr = Object.entries(FileService.data.p4Wins)
+    let arr = Object.entries(FileService.data.p4Wins)
       .map(([u, w]) => ({ pseudo: u, wins: w }))
       .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, wins: 0 }));
     io.emit("p4:leaderboard", arr);
   },
   broadcastMotusLB(io) {
     const totalWords = Number(motusGame.getWordListLength()) || 0;
-    const arr = Object.entries(FileService.data.motusScores || {})
+    let arr = Object.entries(FileService.data.motusScores || {})
       .map(([u, s]) => ({
         pseudo: u,
         words: s.words || 0,
@@ -343,22 +399,30 @@ const leaderboardManager = {
           a.tries - b.tries ||
           a.pseudo.localeCompare(b.pseudo),
       );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      words: 0,
+      tries: 0,
+      totalWords,
+    }));
     io.emit("motus:leaderboard", arr);
   },
   broadcastMashLB(io) {
-    const arr = Object.entries(FileService.data.mashWins || {})
+    let arr = Object.entries(FileService.data.mashWins || {})
       .map(([u, w]) => ({ pseudo: u, wins: w }))
       .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, wins: 0 }));
     io.emit("mash:leaderboard", arr);
   },
   broadcast2048LB(io) {
-    const arr = Object.entries(FileService.data.scores2048 || {})
+    let arr = Object.entries(FileService.data.scores2048 || {})
       .map(([u, s]) => ({ pseudo: u, score: s }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, score: 0 }));
     io.emit("2048:leaderboard", arr);
   },
   broadcastBlockBlastLB(io) {
-    const arr = Object.entries(FileService.data.blockblastScores || {})
+    let arr = Object.entries(FileService.data.blockblastScores || {})
       .map(([u, s]) => ({
         pseudo: u,
         score: s,
@@ -367,10 +431,17 @@ const leaderboardManager = {
           : null,
       }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      score: 0,
+      timeMs: FileService.data.blockblastBestTimes
+        ? FileService.data.blockblastBestTimes[pseudo] || null
+        : null,
+    }));
     io.emit("blockblast:leaderboard", arr);
   },
   broadcastSnakeLB(io) {
-    const arr = Object.entries(FileService.data.snakeScores || {})
+    let arr = Object.entries(FileService.data.snakeScores || {})
       .map(([u, s]) => ({
         pseudo: u,
         score: s,
@@ -379,6 +450,13 @@ const leaderboardManager = {
           : null,
       }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      score: 0,
+      timeMs: FileService.data.snakeBestTimes
+        ? FileService.data.snakeBestTimes[pseudo] || null
+        : null,
+    }));
     io.emit("snake:leaderboard", arr);
   },
   broadcastSnakeLBThrottled(io, delayMs = 200) {
@@ -388,7 +466,7 @@ const leaderboardManager = {
   },
   broadcastBlackjackLB(io) {
     const data = FileService.data.blackjackStats || {};
-    const arr = Object.entries(data)
+    let arr = Object.entries(data)
       .map(([u, s]) => ({
         pseudo: u,
         handsPlayed: s.handsPlayed || 0,
@@ -404,11 +482,20 @@ const leaderboardManager = {
           b.biggestBet - a.biggestBet ||
           a.pseudo.localeCompare(b.pseudo),
       );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      handsPlayed: 0,
+      handsWon: 0,
+      handsLost: 0,
+      biggestBet: 0,
+      doubles: 0,
+      bjs: 0,
+    }));
     io.emit("blackjack:leaderboard", arr);
   },
   broadcastCoinflipLB(io) {
     const data = FileService.data.coinflipStats || {};
-    const arr = Object.entries(data)
+    let arr = Object.entries(data)
       .map(([u, s]) => ({
         pseudo: u,
         gamesPlayed: s.gamesPlayed || 0,
@@ -424,11 +511,20 @@ const leaderboardManager = {
           b.biggestBet - a.biggestBet ||
           a.pseudo.localeCompare(b.pseudo),
       );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      gamesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      biggestBet: 0,
+      biggestLoss: 0,
+      allIns: 0,
+    }));
     io.emit("coinflip:leaderboard", arr);
   },
   broadcastRouletteLB(io) {
     const data = FileService.data.rouletteStats || {};
-    const arr = Object.entries(data)
+    let arr = Object.entries(data)
       .map(([u, s]) => ({
         pseudo: u,
         gamesPlayed: s.gamesPlayed || 0,
@@ -443,11 +539,19 @@ const leaderboardManager = {
           b.biggestWin - a.biggestWin ||
           a.pseudo.localeCompare(b.pseudo),
       );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      gamesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      biggestBet: 0,
+      biggestWin: 0,
+    }));
     io.emit("roulette:leaderboard", arr);
   },
   broadcastSlotsLB(io) {
     const data = FileService.data.slotsStats || {};
-    const arr = Object.entries(data)
+    let arr = Object.entries(data)
       .map(([u, s]) => ({
         pseudo: u,
         gamesPlayed: s.gamesPlayed || 0,
@@ -462,6 +566,14 @@ const leaderboardManager = {
           b.biggestWin - a.biggestWin ||
           a.pseudo.localeCompare(b.pseudo),
       );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      gamesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      biggestBet: 0,
+      biggestWin: 0,
+    }));
     io.emit("slots:leaderboard", arr);
   },
   broadcastSudokuLB(io) {
@@ -485,17 +597,22 @@ const leaderboardManager = {
       return 0;
     };
 
-    const arr = Object.entries(data)
+    let arr = Object.entries(data)
       .map(([u, s]) => ({ pseudo: u, completed: readCompletedCount(s) }))
       .sort(
         (a, b) => b.completed - a.completed || a.pseudo.localeCompare(b.pseudo),
       );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      completed: 0,
+    }));
     io.emit("sudoku:leaderboard", arr);
   },
   broadcastSubwayLB(io) {
-    const arr = Object.entries(FileService.data.subwayScores || {})
+    let arr = Object.entries(FileService.data.subwayScores || {})
       .map(([u, s]) => ({ pseudo: u, score: Number(s) || 0 }))
       .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, score: 0 }));
     io.emit("subway:leaderboard", arr);
   },
   broadcastAimTrainerLB(io, selectedDuration = "30", targetSocket = null) {
@@ -509,10 +626,13 @@ const leaderboardManager = {
       60: isPerDuration ? src["60"] || {} : {},
     };
 
-    const toRows = (bucket) =>
-      Object.entries(bucket || {})
+    const toRows = (bucket) => {
+      const rows = Object.entries(bucket || {})
         .map(([u, s]) => ({ pseudo: u, score: Number(s) || 0 }))
         .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
+
+      return this._withUsersFallback(rows, (pseudo) => ({ pseudo, score: 0 }));
+    };
 
     const leaderboards = {
       15: toRows(byDuration["15"]),
@@ -630,8 +750,12 @@ function initSocketHandlers(io, socket, gameState) {
     return normalized;
   }
 
-  // Joindre la room admin si Admin ou Moderateur
-  if (pseudo === "Admin" || pseudo === "Moderateur") {
+  // Joindre la room admin si Admin ou moderateurs autorises
+  if (
+    pseudo === "Admin" ||
+    pseudo === "Moderateur1" ||
+    pseudo === "Moderateur2"
+  ) {
     try {
       socket.join("admins");
       // Envoyer l'historique récent des logs au nouvel admin connecté
@@ -733,6 +857,7 @@ function initSocketHandlers(io, socket, gameState) {
         from: dm.from,
         to: dm.to,
         text: dm.text,
+        file: dm.file || null,
         at: dm.at,
         tag: getTagPayloadForChat(from),
         pfp:

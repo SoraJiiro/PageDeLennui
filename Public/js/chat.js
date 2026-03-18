@@ -43,6 +43,27 @@ export function initChat(socket) {
   const fileButton = document.getElementById("file-upload-btn");
   const fileInput = document.getElementById("file-input");
 
+  function getDmUploadContext(rawInput) {
+    const text = String(rawInput || "").trim();
+    if (!text) return null;
+
+    const msgMatch = text.match(/^\/msg\s+(\S+)(?:\s+([\s\S]+))?$/i);
+    if (msgMatch) {
+      const to = String(msgMatch[1] || "").trim();
+      const dmText = String(msgMatch[2] || "").trim();
+      if (!to) return null;
+      return { to, text: dmText };
+    }
+
+    const repMatch = text.match(/^\/rep(?:\s+([\s\S]+))?$/i);
+    if (repMatch && lastDmFrom) {
+      const dmText = String(repMatch[1] || "").trim();
+      return { to: lastDmFrom, text: dmText };
+    }
+
+    return null;
+  }
+
   if (fileButton && fileInput) {
     fileButton.addEventListener("click", () => fileInput.click());
 
@@ -59,10 +80,15 @@ export function initChat(socket) {
         return;
       }
       try {
+        const dmContext = getDmUploadContext(input ? input.value : "");
+        const loadingText = dmContext
+          ? `⏳ Envoi du fichier ${file.name} en MP à ${dmContext.to}...`
+          : `⏳ Upload de ${file.name} en cours...`;
+
         // Afficher un indicateur de chargement
-        const loadingMsg = addMessage({
+        addMessage({
           auteur: "Système",
-          text: `⏳ Upload de ${file.name} en cours...`,
+          text: loadingText,
           type: "system",
         });
 
@@ -71,12 +97,23 @@ export function initChat(socket) {
         reader.onload = () => {
           const base64Data = reader.result.split(",")[1];
 
-          socket.emit("chat:uploadFile", {
-            fileName: file.name,
-            fileData: base64Data,
-            fileType: file.type,
-            fileSize: file.size,
-          });
+          if (dmContext) {
+            socket.emit("chat:dm:uploadFile", {
+              to: dmContext.to,
+              text: dmContext.text,
+              fileName: file.name,
+              fileData: base64Data,
+              fileType: file.type,
+              fileSize: file.size,
+            });
+          } else {
+            socket.emit("chat:uploadFile", {
+              fileName: file.name,
+              fileData: base64Data,
+              fileType: file.type,
+              fileSize: file.size,
+            });
+          }
         };
         reader.readAsDataURL(file);
 
@@ -392,7 +429,30 @@ export function initChat(socket) {
     usersCount.addEventListener("click", openUsersPresenceModal);
   }
 
-  const linkPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+  const absoluteOrWwwLinkPattern = /(?:https?:\/\/|www\.)[^\s<]+/i;
+  const relativeLinkPattern =
+    /\/[\w\-./%]+\.[A-Za-z0-9]{1,10}(?:\?[^\s<]*)?(?:#[^\s<]*)?/i;
+  const linkPattern = new RegExp(
+    `${absoluteOrWwwLinkPattern.source}|${relativeLinkPattern.source}`,
+    "gi",
+  );
+  const relativeLinkLabelByPath = {
+    "/patch-notes.html": "Voir les patch notes",
+    "/faq.html": "Lire la FAQ",
+    "/shop.html": "Aller au shop",
+    "/profil.html": "Voir le profil",
+    "/demande-tag.html": "Demander un tag",
+    "/suggestions.html": "Faire une suggestion",
+    "/conversion.html": "Convertir les currencies",
+    "/reglement.html": "Lire le règlement",
+    "/sondages.html": "Voir les sondages",
+    "/pz2.html": "Consulter l'Easter Egg Tracker",
+    "/dons.html": "Faire un don",
+    "/badges.html": "Voir les badges",
+    "/guerre-clan.html": "Voir la Guerre des Clans",
+    "/hall-des-oublies.html": "Voir le Hall des Oubliés",
+    "/annonces.html": "Voir l'historique des annonces",
+  };
   const htmlEscapes = {
     "&": "&amp;",
     "<": "&lt;",
@@ -428,7 +488,11 @@ export function initChat(socket) {
     const mentionRegex = /(^|\s)@([A-Za-z0-9_À-ÖØ-öø-ÿ.-]+)/g;
     content.replace(mentionRegex, (match, prefix, mentionName) => {
       const canonical = resolveMentionPseudo(mentionName);
+      const fallback = String(mentionName || "")
+        .trim()
+        .toLowerCase();
       if (canonical) found.add(canonical.toLowerCase());
+      else if (fallback) found.add(fallback);
       return match;
     });
     return found;
@@ -452,9 +516,10 @@ export function initChat(socket) {
       if (typeof mentionName === "string" && mentionName.length) {
         const safePrefix = escapeHtml(prefix || "");
         const canonical = resolveMentionPseudo(mentionName);
-        if (canonical) {
-          const safeName = escapeHtml(canonical);
-          const href = `/profil.html?pseudo=${encodeURIComponent(canonical)}`;
+        const target = canonical || String(mentionName || "").trim();
+        if (target) {
+          const safeName = escapeHtml(target);
+          const href = `/profil.html?pseudo=${encodeURIComponent(target)}`;
           formatted += `${safePrefix}<a class="mention-link" href="${href}">@${safeName}</a>`;
         } else {
           formatted += `${safePrefix}@${escapeHtml(mentionName)}`;
@@ -465,9 +530,19 @@ export function initChat(socket) {
 
       // URL
       const url = match;
+      const isRelative = /^\//.test(url);
       const hasProtocol = /^https?:\/\//i.test(url);
-      const href = hasProtocol ? url : `https://${url}`;
-      formatted += `<a class="chat-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
+      const href = isRelative ? url : hasProtocol ? url : `https://${url}`;
+      const relativePath = isRelative
+        ? url.split("?")[0].split("#")[0].toLowerCase()
+        : "";
+      const label = isRelative
+        ? relativeLinkLabelByPath[relativePath] || url
+        : url;
+      const targetAttrs = isRelative
+        ? ""
+        : ' target="_blank" rel="noopener noreferrer"';
+      formatted += `<a class="chat-link" href="${escapeHtml(href)}"${targetAttrs}>${escapeHtml(label)}</a>`;
       lastIndex = offset + match.length;
       return match;
     });
@@ -908,7 +983,9 @@ export function initChat(socket) {
     const from = String(payload.from || "").trim();
     const to = String(payload.to || "").trim();
     const msg = String(payload.text || "");
-    if (!from || !to || !msg) return;
+    const file =
+      payload.file && typeof payload.file === "object" ? payload.file : null;
+    if (!from || !to || (!msg && !file)) return;
 
     if (payload.id) {
       const existing = messages.querySelector(`.msg[data-id="${payload.id}"]`);
@@ -931,6 +1008,7 @@ export function initChat(socket) {
       tag: payload.tag,
       pfp: payload.pfp,
       badges: payload.badges,
+      file,
       type: directionType,
     });
 
@@ -980,7 +1058,6 @@ export function initChat(socket) {
       });
     });
 
-    // Keep the newest message visible after the first full history paint.
     scrollMessagesToBottom({ smooth: false, delayed: true });
     setTimeout(() => scrollMessagesToBottom({ smooth: false }), 120);
   };
@@ -1085,6 +1162,8 @@ export function initChat(socket) {
     ) {
       showNotif(`💬 Vous avez été mentionné par ${payload.name} dans le Chat`);
     }
+
+    scrollMessagesToBottom({ smooth: false, delayed: true });
   });
 
   // --- MPs ---

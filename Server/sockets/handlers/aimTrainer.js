@@ -5,6 +5,7 @@ function registerAimTrainerHandlers({
   FileService,
   leaderboardManager,
 }) {
+  const { recordGameScoreContribution } = require("../../services/guerreClans");
   const AIM_SCORE_MAX = 5000;
   const AIM_MISSES_MAX = 20000;
 
@@ -71,6 +72,15 @@ function registerAimTrainerHandlers({
     if (!Number.isFinite(misses) || misses < 0 || misses > AIM_MISSES_MAX)
       return;
 
+    recordGameScoreContribution({
+      FileService,
+      io,
+      pseudo,
+      game: `aim_${duration}`,
+      score,
+      multiplier: 3,
+    });
+
     const durationScores = ensureDurationScores();
     if (!FileService.data.aimTrainerStats)
       FileService.data.aimTrainerStats = {};
@@ -97,12 +107,30 @@ function registerAimTrainerHandlers({
       Math.max(0, Math.floor(Number(prev.totalMisses) || 0)) + misses;
     const totalShots = totalHits + totalMisses;
     const avgAccuracy = totalShots > 0 ? (totalHits / totalShots) * 100 : 0;
+    const bestAccuracy = Math.max(
+      0,
+      Number.isFinite(Number(prev.bestAccuracy))
+        ? Number(prev.bestAccuracy)
+        : 0,
+      accuracy,
+    );
+    const bestRatio =
+      Number.isFinite(Number(prev.bestAccuracy)) &&
+      Number(prev.bestAccuracy) >= accuracy &&
+      typeof prev.bestRatio === "string" &&
+      prev.bestRatio.includes(":")
+        ? prev.bestRatio
+        : `${score}:${misses}`;
+    const avgRatio = `${totalHits}:${totalMisses}`;
 
     FileService.data.aimTrainerStats[pseudo] = {
       games,
       totalHits,
       totalMisses,
       avgAccuracy,
+      bestAccuracy,
+      avgRatio,
+      bestRatio,
       lastHits: score,
       lastMisses: misses,
       lastAccuracy: accuracy,

@@ -107,6 +107,7 @@ function awardDailyShutdownLeaderboardMoney({
         pseudo,
         REWARD,
         FileService.data.clicks?.[pseudo] || 0,
+        `bonus:leaderboard:${game}`,
       );
       rewarded += REWARD;
 

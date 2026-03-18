@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
@@ -52,44 +52,14 @@
       <footer>
         <div>Firefox - 2025</div>
         <div class="links">
-          <a href="#">Mentions légales</a>
-          <a href="#">Vie privée</a>
-          <a href="#">Paramètres</a>
+          <a href="#">Mentions l�gales</a>
+          <a href="#">Vie priv�e</a>
+          <a href="#">Param�tres</a>
         </div>
       </footer>
     </div>
 
-    <script type="text/javascript">
-const searchInput = document.querySelector('.search input[type="text"]');
-const searchIcon = document.querySelector('.search .icon');
-
-function performSearch() {
-    const query = searchInput.value.trim();
-    if (query) {
-        if (isURL(query)) {
-            window.location.href = query.startsWith('http') ? query : `https://${query}`;
-        } else {
-            window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-        }
-    }
-}
-
-function isURL(string) {
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-    return urlPattern.test(string);
-}
-
-if (searchIcon) {
-    searchIcon.addEventListener('click', performSearch);
-}
-
-if (searchInput) {
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            performSearch();
-        }
-    });
-}
-        </script>
+    <script src="js/pages/search.page.js"></script>
   </body>
 </html>
+

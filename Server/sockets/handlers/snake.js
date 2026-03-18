@@ -11,6 +11,7 @@ function registerSnakeHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const { recordGameScoreContribution } = require("../../services/guerreClans");
   const SNAKE_MAX_SCORE = 5000;
   let isAlreadyLogged_snake = false;
 
@@ -25,6 +26,7 @@ function registerSnakeHandlers({
       pseudo,
       gain,
       FileService.data.clicks[pseudo] || 0,
+      "jeu:snake",
     );
     io.to("user:" + pseudo).emit("economy:wallet", wallet);
     io.to("user:" + pseudo).emit("economy:gameMoney", {
@@ -153,6 +155,14 @@ function registerSnakeHandlers({
     }
 
     if (final === true) {
+      recordGameScoreContribution({
+        FileService,
+        io,
+        pseudo,
+        game: "snake",
+        score: s,
+        multiplier: 3,
+      });
       rewardSnakeFinal(s);
       leaderboardManager.broadcastSnakeLB(io);
     }

@@ -127,6 +127,10 @@
                                 data-external-url="sondages.html"
                                 data-external-title="Sondages">Sondages</button></li>
                         <li><button class="nav-btn ext-btn"
+                                data-external-url="guerre-clans.html"
+                                data-external-title="Guerre des Clans">Guerre
+                                des Clans</button></li>
+                        <li><button class="nav-btn ext-btn"
                                 data-external-url="suggestions.html"
                                 data-external-title="Suggestions">Suggestions</button></li>
                         <li><button class="nav-btn ext-btn"
@@ -151,7 +155,7 @@
                                 data-external-url="faq.html"
                                 data-external-title="FAQ">FAQ</button></li>
                         <li><button class="nav-btn ext-btn"
-                                data-external-url="patch_notes.html"
+                                data-external-url="patch-notes.html"
                                 data-external-title="Patch Notes">Patch
                                 Notes</button></li>
                     </ul>
@@ -608,7 +612,11 @@
                         data-external-title="Sondages"
                         type="button">Sondages</button>
                     <button class="hub-link-btn ext-btn"
-                        data-external-url="patch_notes.html"
+                        data-external-url="guerre-clans.html"
+                        data-external-title="Guerre des Clans"
+                        type="button">Guerre des Clans</button>
+                    <button class="hub-link-btn ext-btn"
+                        data-external-url="patch-notes.html"
                         data-external-title="Patch Notes"
                         type="button">Patch Notes</button>
                     <button class="hub-link-btn ext-btn"
@@ -1660,73 +1668,5 @@
         </div>
     </body>
 
-    <script defer type="text/javascript">
-                (function () {
-                    function protectZone() {
-                        const z = document.querySelector('.zone');
-                        if (!z) return;
-
-                        const blocker = function () { return 'Action bloquée'; };
-
-                        const captureHandler = function (e) {
-                            if (!e.isTrusted) {
-                                try { e.stopImmediatePropagation(); } catch (ie) {}
-                                e.preventDefault();
-                                console.warn('Clic synthétique bloqué sur .zone');
-                            }
-                        };
-
-                        const bubbleHandler = function (e) {
-                            e.preventDefault();
-                        };
-
-                        try {
-                            Object.defineProperty(z, 'onclick', {
-                                configurable: false,
-                                writable: false,
-                                value: blocker
-                            });
-                        } catch (err) {
-                             
-                        }
-
-                        try {
-                            if (!z.__zone_protection) {
-                                z.addEventListener('click', bubbleHandler, false);
-                                z.addEventListener('click', captureHandler, true);
-                                z.__zone_protection = { captureHandler: captureHandler, bubbleHandler: bubbleHandler, blocker: blocker };
-                            }
-                        } catch (err) {
-                        }
-
-                        try {
-                            if (z.onclick !== blocker) {
-                                try {
-                                    Object.defineProperty(z, 'onclick', {
-                                        configurable: false,
-                                        writable: false,
-                                        value: blocker
-                                    });
-                                } catch (err) {
-                                    z.onclick = blocker;
-                                }
-                            }
-                        } catch (err) {
-                        }
-                    }
-
-                    setTimeout(function () {
-                        protectZone();
-
-                        const observer = new MutationObserver(function (mutations) {
-                            protectZone();
-                        });
-                        observer.observe(document.documentElement || document.body, { childList: true, subtree: true, attributes: true });
-
-                        const periodic = setInterval(protectZone, 1500);
-
-                        window.addEventListener('beforeunload', function () { observer.disconnect(); clearInterval(periodic); });
-                    }, 400);
-                })();
-                </script>
+    <script src="js/pages/index.page.js"></script>
 </html>

@@ -158,6 +158,7 @@ function registerSudokuHandlers({
       pseudo,
       gain,
       FileService.data.clicks[pseudo] || 0,
+      "jeu:sudoku",
     );
     io.to("user:" + pseudo).emit("economy:wallet", wallet);
     io.to("user:" + pseudo).emit("economy:gameMoney", {

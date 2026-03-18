@@ -289,6 +289,7 @@ function registerUnoHandlers({
         res.winner,
         250,
         FileService.data.clicks[res.winner] || 0,
+        "jeu:uno",
       );
       io.to("user:" + res.winner).emit("economy:wallet", winnerWallet);
       io.to("user:" + res.winner).emit("economy:gameMoney", {

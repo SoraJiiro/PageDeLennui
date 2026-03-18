@@ -113,6 +113,10 @@ function getStatsFor(pseudo) {
       (FileService.data.aimTrainerStats &&
         FileService.data.aimTrainerStats[pseudo]) ||
       null,
+    clickerUpgrades:
+      (FileService.data.clickerUpgrades &&
+        FileService.data.clickerUpgrades[pseudo]) ||
+      {},
   };
 }
 

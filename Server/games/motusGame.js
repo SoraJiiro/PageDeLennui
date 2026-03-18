@@ -1,4 +1,4 @@
-const words = require("../constants/words");
+const words = require("../constants/motusWords");
 
 class MotusGame {
   constructor() {

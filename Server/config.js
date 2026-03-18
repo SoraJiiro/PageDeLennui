@@ -1,6 +1,7 @@
 require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
+const bannedWords = require("./constants/bannedWords");
 
 module.exports = {
   // Serveur
@@ -15,6 +16,15 @@ module.exports = {
   // Blacklist
   BLACKLIST: [],
   BLACKLIST_PSEUDOS: [],
+  BANNED_WORDS: Array.isArray(bannedWords)
+    ? bannedWords
+        .map((w) =>
+          String(w || "")
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean)
+    : [],
   // IPs qui doivent TOUJOURS être bloquées (forcées)
   FORCED_ALWAYS_BLOCKED: [
     "192.168.197.197",
@@ -38,7 +48,10 @@ module.exports = {
     const blacklistPath = path.join(__dirname, "..", "blacklist.json");
     try {
       if (!fs.existsSync(blacklistPath)) {
-        const defaultData = { alwaysBlocked: [], alwaysBlockedPseudos: [] };
+        const defaultData = {
+          alwaysBlocked: [],
+          alwaysBlockedPseudos: [],
+        };
         fs.writeFileSync(
           blacklistPath,
           JSON.stringify(defaultData, null, 2),
@@ -88,9 +101,35 @@ module.exports = {
       // Définir la blacklist d'exécution sur alwaysBlocked fusionné (forcé + fichier)
       this.BLACKLIST = [...new Set(alwaysBlocked)];
       this.BLACKLIST_PSEUDOS = [...new Set(alwaysBlockedPseudos)];
+      this.BANNED_WORDS = Array.isArray(bannedWords)
+        ? [
+            ...new Set(
+              bannedWords
+                .map((w) =>
+                  String(w || "")
+                    .trim()
+                    .toLowerCase(),
+                )
+                .filter(Boolean),
+            ),
+          ]
+        : [];
     } catch (err) {
       this.BLACKLIST = [];
       this.BLACKLIST_PSEUDOS = [];
+      this.BANNED_WORDS = Array.isArray(bannedWords)
+        ? [
+            ...new Set(
+              bannedWords
+                .map((w) =>
+                  String(w || "")
+                    .trim()
+                    .toLowerCase(),
+                )
+                .filter(Boolean),
+            ),
+          ]
+        : [];
     }
   },
 };

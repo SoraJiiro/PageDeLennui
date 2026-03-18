@@ -18,6 +18,7 @@ function setupRoutes(
     pixelWarGame,
     tagRoutes,
     surveyRoutesFactory,
+    guerreClansRoutesFactory,
     suggestionRoutes,
     easterEggRoutes,
   },
@@ -33,6 +34,7 @@ function setupRoutes(
   );
   app.use("/api/tag", tagRoutes);
   app.use("/api/surveys", surveyRoutesFactory(io));
+  app.use("/api/guerre-clans", guerreClansRoutesFactory());
   app.use("/api/suggestions", suggestionRoutes);
   app.use("/api/x9", easterEggRoutes);
   app.use("/api/profile", requireAuth, profileRoutes);
@@ -68,7 +70,7 @@ function setupRoutes(
       return max === null ? null : new Date(max).toISOString();
     };
 
-    const patchNotesPath = path.join(config.PUBLIC, "patch_notes.html");
+    const patchNotesPath = path.join(config.PUBLIC, "patch-notes.html");
     const patchNotesUpdatedAt = safeStatMtimeIso(patchNotesPath);
 
     const annoncesLatestAt =
@@ -136,12 +138,13 @@ function setupRoutes(
 
   // Admin
   app.get("/admin", requireAuth, (req, res) => {
-    const allowed = new Set(["Admin", "Moderateur"]);
+    const allowed = new Set(["Admin", "Moderateur1", "Moderateur2"]);
     if (!allowed.has(req.session.user.pseudo)) {
       return res.redirect("/");
     }
     if (
-      req.session.user.pseudo === "Moderateur" &&
+      (req.session.user.pseudo === "Moderateur1" ||
+        req.session.user.pseudo === "Moderateur2") &&
       String(req.query?.view || "") !== "mod"
     ) {
       return res.redirect("/admin?view=mod");
@@ -151,7 +154,16 @@ function setupRoutes(
 
   // Panel moderateur (acces restreint)
   app.get("/mod", requireAuth, (req, res) => {
-    const allowedModerators = new Set(["Admin", "Moderateur"]);
+    const allowedModerators = new Set(["Admin", "Moderateur1"]);
+    if (!allowedModerators.has(req.session.user.pseudo)) {
+      return res.redirect("/");
+    }
+    return res.redirect("/admin?view=mod");
+  });
+
+  // Panel moderateur 2 (acces restreint)
+  app.get("/mod2", requireAuth, (req, res) => {
+    const allowedModerators = new Set(["Admin", "Moderateur2"]);
     if (!allowedModerators.has(req.session.user.pseudo)) {
       return res.redirect("/");
     }
@@ -160,7 +172,7 @@ function setupRoutes(
 
   // Page des logs - réservée à l'Admin et au Moderateur
   app.get("/admin/logs", requireAuth, (req, res) => {
-    const allowed = new Set(["Admin", "Moderateur"]);
+    const allowed = new Set(["Admin", "Moderateur1", "Moderateur2"]);
     if (!allowed.has(req.session.user.pseudo)) {
       return res.redirect("/");
     }

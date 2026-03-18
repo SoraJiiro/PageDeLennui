@@ -2,6 +2,54 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.1.0",
+      "date": "18/03/2026 ",
+      "sections": [
+        {
+          "title": "Nouveautes",
+          "icon": "fa-star",
+          "items": [
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "La Guerre de Clans :",
+              "text": "La guerre est déclarée! Aidez votre clan à rassembler le plus de score possible avant la fin pour gagner! Plus d'infos sur la <a href=\"/faq.html\">page FAQ</a> et sur la page de la <a href=\"/guerre-clans.html\">Guerre de Clans</a>."
+            },
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Censure Chat :",
+              "text": "Un système de censure a été implémenté dans le Chat, il est toujours expérimental et s'affinera au fur et à mesure."
+            },
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Modération :",
+              "text": "Pol est désormais le 2<sup>ème</sup> modérateur serveur."
+            }
+          ]
+        },
+        {
+          "title": "Améliorations —",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Leaderboards :",
+              "text": "Les leaderboard contiennent désormais la liste complète des utilisateurs même ceux qui n'ont pas de score."
+            },
+            {
+              "tagClass": "tag-change",
+              "tag": "[FIX]",
+              "strong": "Serveur :",
+              "text": "Bugs de liens backend fixés et noms de fichier changés pour plus de clarté."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.0.6",
       "date": "15/03/2026 ",
       "sections": [
@@ -61,13 +109,13 @@
               "tagClass": "tag-new",
               "tag": "[NEW]",
               "strong": "FAQ:",
-              "text": "Ajout de la page FAQ contenant les questions les plus posées sur le site et son fonctionnement. Je vous en conjure, aller lire la page avant de me poser des questions évidentes... Si vous posez des questions pertinentes cependant, elles seront ajoutées par la suite sur la page. Lien de la <a href='/faq.html'>page FAQ</a>. "
+              "text": "Ajout de la page FAQ contenant les questions les plus posées sur le site et son fonctionnement. Je vous en conjure, aller lire la page avant de me poser des questions évidentes... Si vous posez des questions pertinentes cependant, elles seront ajoutées par la suite sur la page. Lien de la <a href=\"/faq.html\">page FAQ</a>. "
             },
             {
               "tagClass": "tag-new",
               "tag": "[NEW]",
               "strong": "PixelWar :",
-              "text": "Vous pouvez maintenant acheter un boost x2 pixel au <a href='/shop.html'>Shop</a>. [Vous obtenez 2 pixels toutes les 30 secondes au lieu de 1 avec le boost]"
+              "text": "Vous pouvez maintenant acheter un boost x2 pixel au <a href=\"/shop.html\">Shop</a>. [Vous obtenez 2 pixels toutes les 30 secondes au lieu de 1 avec le boost]"
             }
           ]
         },

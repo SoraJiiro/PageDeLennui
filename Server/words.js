@@ -1,1 +1,1 @@
-module.exports = require("./constants/words");
+module.exports = require("./constants/motusWords");

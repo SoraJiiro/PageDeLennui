@@ -178,7 +178,7 @@ function convertClicksToMoney({
     `[convertClicksToMoney] ${pseudo} converted ${usableClicks} clicks -> +${moneyGain} money (remainingClicks:${result.clicks})`,
   );
   console.log(
-    `[GAIN_MONNAIE] ${pseudo} +${moneyGain} monnaie via conversion clicks (${usableClicks} clicks dépensés, total: ${result.wallet.money})`,
+    `[GAIN_MONNAIE] ${pseudo} +${moneyGain} monnaie (source:conversion_clicks) (${usableClicks} clicks dépensés, total: ${result.wallet.money})`,
   );
   return result;
 }
@@ -236,6 +236,9 @@ function convertMoneyToTokens({
   logger.action(
     `[convertMoneyToTokens] ${pseudo} converted ${usable} money -> +${tokenGain} tokens (spentToday:${wallet.tokenDaily.spentMoney})`,
   );
+  console.log(
+    `[GAIN_TOKENS] ${pseudo} +${tokenGain} tokens (source:conversion_monnaie) (${usable} monnaie dépensée, total: ${result.wallet.tokens})`,
+  );
   return result;
 }
 
@@ -275,7 +278,7 @@ function convertTokensToMoney({
     `[convertTokensToMoney] ${pseudo} converted ${amount} tokens -> +${moneyGain} money (remainingTokens:${result.wallet.tokens})`,
   );
   console.log(
-    `[GAIN_MONNAIE] ${pseudo} +${moneyGain} monnaie via conversion tokens (${amount} tokens dépensés, total: ${result.wallet.money})`,
+    `[GAIN_MONNAIE] ${pseudo} +${moneyGain} monnaie (source:conversion_tokens) (${amount} tokens dépensés, total: ${result.wallet.money})`,
   );
   return result;
 }
@@ -295,14 +298,21 @@ function spendTokens(FileService, pseudo, amount, currentClicks = 0) {
   return { ok: true, wallet: getWalletView(wallet) };
 }
 
-function addTokens(FileService, pseudo, amount, currentClicks = 0) {
+function addTokens(
+  FileService,
+  pseudo,
+  amount,
+  currentClicks = 0,
+  source = "non_precisee",
+) {
   const wallet = ensureWallet(FileService, pseudo, currentClicks);
   const gain = Math.max(0, Math.floor(Number(amount) || 0));
+  const src = String(source || "non_precisee");
   if (gain > 0) {
     wallet.tokens += gain;
     FileService.save("wallets", ensureWalletStore(FileService));
     console.log(
-      `[GAIN_TOKENS] ${pseudo} +${gain} tokens (total: ${wallet.tokens})`,
+      `[GAIN_TOKENS] ${pseudo} +${gain} tokens (source:${src}) (total: ${wallet.tokens})`,
     );
     try {
       // Met à jour le monitoring des gains journaliers (tokens earned)
@@ -313,14 +323,21 @@ function addTokens(FileService, pseudo, amount, currentClicks = 0) {
   return getWalletView(wallet);
 }
 
-function addMoney(FileService, pseudo, amount, currentClicks = 0) {
+function addMoney(
+  FileService,
+  pseudo,
+  amount,
+  currentClicks = 0,
+  source = "non_precisee",
+) {
   const wallet = ensureWallet(FileService, pseudo, currentClicks);
   const gain = Math.max(0, Math.floor(Number(amount) || 0));
+  const src = String(source || "non_precisee");
   if (gain > 0) {
     wallet.money += gain;
     FileService.save("wallets", ensureWalletStore(FileService));
     console.log(
-      `[GAIN_MONNAIE] ${pseudo} +${gain} monnaie (total: ${wallet.money})`,
+      `[GAIN_MONNAIE] ${pseudo} +${gain} monnaie (source:${src}) (total: ${wallet.money})`,
     );
   }
   return getWalletView(wallet);

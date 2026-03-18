@@ -11,6 +11,7 @@ function registerDinoFlappyHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const { recordGameScoreContribution } = require("../../services/guerreClans");
   const DINO_MAX_SCORE = 250000;
   const FLAPPY_MAX_SCORE = 10000;
   const SUBWAY_MAX_SCORE = 250000;
@@ -44,6 +45,7 @@ function registerDinoFlappyHandlers({
       pseudo,
       gain,
       FileService.data.clicks[pseudo] || 0,
+      `jeu:${game}`,
     );
     io.to("user:" + pseudo).emit("economy:wallet", wallet);
     io.to("user:" + pseudo).emit("economy:gameMoney", {
@@ -157,6 +159,14 @@ function registerDinoFlappyHandlers({
       );
     }
     if (final === true) {
+      recordGameScoreContribution({
+        FileService,
+        io,
+        pseudo,
+        game: "dino",
+        score: s,
+        multiplier: 3,
+      });
       rewardFinalRun("dino", s);
       leaderboardManager.broadcastDinoLB(io);
     }
@@ -208,6 +218,14 @@ function registerDinoFlappyHandlers({
       );
     }
     if (final === true) {
+      recordGameScoreContribution({
+        FileService,
+        io,
+        pseudo,
+        game: "flappy",
+        score: s,
+        multiplier: 3,
+      });
       rewardFinalRun("flappy", s);
       leaderboardManager.broadcastFlappyLB(io);
     }
@@ -238,6 +256,14 @@ function registerDinoFlappyHandlers({
     if (!Number.isFinite(c) || c < 0) return;
 
     updateReviveContextFromScore(socket, "subway", s);
+    recordGameScoreContribution({
+      FileService,
+      io,
+      pseudo,
+      game: "subway",
+      score: s,
+      multiplier: 3,
+    });
     clearRunnerProgress("subway");
     setRunnerState("subway", false);
     consumeRunnerResume("subway");
@@ -280,6 +306,7 @@ function registerDinoFlappyHandlers({
       pseudo,
       gain,
       FileService.data.clicks[pseudo] || 0,
+      "jeu:subway",
     );
 
     io.to("user:" + pseudo).emit("economy:wallet", wallet);

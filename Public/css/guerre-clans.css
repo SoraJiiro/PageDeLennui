@@ -1,0 +1,247 @@
+.war-note {
+  opacity: 0.85;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.war-section-gap {
+  margin-top: 3rem;
+}
+
+.war-duel {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.war-team {
+  border: 1px solid var(--primary-color);
+  padding: 10px;
+  text-align: center;
+}
+
+.war-team-name {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.war-team-score {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.war-vs {
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  opacity: 0.8;
+}
+
+.war-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+
+.war-bets-card {
+  border: 1px solid var(--primary-color);
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.war-bets-head {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.war-bets-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+  opacity: 0.85;
+}
+
+.war-bets-pools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.war-bet-pool {
+  border: 1px solid color-mix(in srgb, var(--primary-color) 55%, transparent);
+  padding: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.war-bet-form {
+  display: grid;
+  gap: 8px;
+}
+
+.bet-amount-input {
+  width: 100%;
+  border: 1px solid var(--primary-color);
+  background: transparent;
+  color: var(--text-color);
+  padding: 8px 10px;
+}
+
+.war-bet-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bet-message {
+  min-height: 20px;
+  opacity: 0.9;
+}
+
+.bet-success {
+  color: #3aa655;
+}
+
+.bet-error {
+  color: #d14a4a;
+}
+
+.war-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--primary-color);
+  max-height: 340px;
+  overflow: auto;
+}
+
+.war-list li {
+  padding: 8px 10px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--primary-color) 45%, transparent);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.war-list li:last-child {
+  border-bottom: none;
+}
+
+.war-empty {
+  text-align: center;
+  opacity: 0.7;
+  padding: 16px;
+}
+
+.war-top3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.war-top3-item {
+  border: 1px solid var(--primary-color);
+  padding: 8px;
+  text-align: center;
+}
+
+.war-top3-rank {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.war-top3-name {
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.war-top3-score {
+  margin-top: 4px;
+}
+
+.war-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.war-split-col {
+  border: 1px solid var(--primary-color);
+}
+
+.war-split-head {
+  padding: 8px 10px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--primary-color);
+}
+
+.war-split-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--primary-color) 45%, transparent);
+}
+
+.war-split-row:last-child {
+  border-bottom: none;
+}
+
+p.war-rewards {
+  text-align: justify;
+  font-size: 1rem;
+  margin-top: 12px;
+  width: 100%;
+}
+
+p.war-rewards mark {
+  background-color: var(--primary-color);
+  text-decoration: dashed;
+  padding: 0.3rem;
+  line-height: 2rem;
+  margin-left: 18px;
+  position: relative;
+}
+
+p.war-rewards mark::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 4px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 12px solid var(--primary-color);
+  rotate: 180deg;
+}
+
+@media (max-width: 760px) {
+  .war-top3 {
+    grid-template-columns: 1fr;
+  }
+
+  .war-split {
+    grid-template-columns: 1fr;
+  }
+
+  .war-bets-pools {
+    grid-template-columns: 1fr;
+  }
+
+  .war-bet-actions {
+    grid-template-columns: 1fr;
+  }
+}

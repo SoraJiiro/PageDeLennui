@@ -43,6 +43,7 @@ function ensureBlackjackGameConfigured({
             p.pseudo,
             totalPayout,
             FileService.data.clicks[p.pseudo] || 0,
+            "jeu:blackjack",
           );
         }
 

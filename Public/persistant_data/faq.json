@@ -44,13 +44,21 @@
         {
           "q": "Où participer aux sondages lancés par l'Admin et le Modérateur ?",
           "a": "Vous pouvez voter et partager votre avis sur les sondages depuis la <a href='/sondages.html'>page sondages</a>. Des sondages sont régulièrement proposés, restez donc à l'affût."
+        },
+        {
+          "q": "C'est quoi les Badges ?",
+          "a": "Les badges sont des récompenses virtuelles que vous pouvez obtenir en accomplissant certaines actions ou en atteignant certains objectifs sur le serveur. Ils sont affichés sur votre profil et à côté de votre pseudo dans le Chat. Pour en savoir plus sur les badges disponibles et comment les obtenir, consultez la <a href='/badges.html'>page des badges</a> et/ou scrollez pour obtenir des infos supplémentaires sur cette page."
         }
       ]
     },
     {
       "icon": "fa-coins",
-      "title": "Economie & Recompenses",
+      "title": "Economie & Récompenses",
       "items": [
+        {
+          "q": "C'est quoi les Tokens ?",
+          "a": "Les Tokens sont une monnaie virtuelle permettant de jouer et parier sur les jeux dits \"Casino\", c'est à dire le BlackJack, CoinFlip, Roulette et Slots Machines. Les Tokens sont obtenables gratuitement chaque jour depuis la sidebar (navigation) ou grâce à la conversion de monnaie (FCO)."
+        },
         {
           "q": "Quels sont les taux de conversion clicks / monnaie / tokens ?",
           "a": "Les taux actuels sont : <ul><li>5 clicks = 1 monnaie</li><li>50 monnaie = 1 token</li><li>1 token en 50 monnaie</li></ul> Les conversions de valeurs sont disponible sur la <a href='/conversion.html'>page des conversions</a>."
@@ -79,7 +87,7 @@
       "items": [
         {
           "q": "Que se passe-t-il si le serveur redémarre pendant une partie ?",
-          "a": "Selon le jeu, une reprise peut etre proposee au redemarrage avec votre dernier etat connu. Les jeux multijoueurs ne propose pas de reprise. L'Admin se dédoine de toute responsabilité en cas de restart server foireux."
+          "a": "Selon le jeu, une reprise peut etre proposée au redemarrage avec votre dernier etat connu. Les jeux multijoueurs ne propose pas de reprise. L'Admin se dédoine de toute responsabilité en cas de restart server foireux."
         },
         {
           "q": "Un bug ou un exploit a été trouvé, que dois-je faire ?",
@@ -92,6 +100,14 @@
         {
           "q": "Où acheter des boosts pour les jeux et/ou des Vies de revive pour le Dino, Flappy etc... ?",
           "a": "Les boosts et les vies de revive sont disponibles à l'achat dans le <a href='/shop.html'>Shop</a> avec votre monnaie (FCO). Les boosts offrent des avantages temporaires pour améliorer vos performances dans les jeux, tandis que les vies de revive vous permettent de continuer une partie après un échec. Assurez-vous d'avoir suffisamment de Francouilles d'Or pour profiter de ces options!"
+        },
+        {
+          "q": "Que faire si je perd une partie ?",
+          "a": "Il y a deux solutions, soit vous possedez une vie de revive (disponible à l'achat dans le <a href='/shop.html'>Shop</a>) que vous pouvez utiliser pour continuer la partie, soit vous devez recommencer une nouvelle partie depuis le début en cliquant sur 'non merci'. Les vies de revives sont a utiliser de façon stratégique si vous voulez atteindre le top des classements!"
+        },
+        {
+          "q": "Que faire si mon dessin se fait attaquer sur la PixelWar ?",
+          "a": "Si votre dessin se fait attaquer, vous pouvez éventuellement discuter avec l'attaquant pour trouver un terrain d'entente ou simplement ignorer l'attaque. Cependant, si vous pensez que l'attaque est injuste ou abusive, vous pouvez signaler le comportement à l'Admin pour qu'il puisse enquêter et prendre les mesures appropriées. Rappelez-vous que la PixelWar est tout de même un espace de conflits, mais cela ne vous empêche pas d'agir pacifiquement et amicalement sur celle-ci."
         }
       ]
     },
@@ -102,6 +118,10 @@
         {
           "q": "Comment obtenir / afficher des badges ?",
           "a": "Pour en savoir plus sur l'obtention de badges, lisez la <a href='/badges.html'>page des badges</a>. Pour afficher / désafficher des badges déjà obtenus, cela se passe dans votre <a href='/profil.html'>profil</a>. Vous pouvez afficher <b>jusqu'à 5</b> badges à la fois. Les badges affichés sont visibles par tous les autres utilisateurs sur votre profil et à côté de votre pseudo dans le Chat."
+        },
+        {
+          "q": "C'est quoi les Guerres de Clans ?",
+          "a": "Les Guerres de Clans sont des Events saisoniers où les SLAM et les SISR s'affrontent sur la PDE. Le clan qui aura obtenu le plus grand nombre de score sur tous les jeux disponibles et confondus (clicker exclu), sera déclaré vainqueur. Le clan gagnant obtiendra des récompenses qui seront distribués à ses membres. Les récompenses peuvent inclures de la monnaie (FCO), des Pixels et d'autres cosmétiques exclusifs. Il est important de noter que les menaces / insultes d'un clan envers l'autre sont interdites et le clan fautif sera sanctionné! Pour voir la guerre active, ses récompense et ses infos ou simplement l'historique des guerres précédentes, rendez-vous sur la <a href='/guerre-clans.html'>page des Guerres de Clans</a>."
         }
       ]
     }
@@ -112,7 +132,7 @@
     "links": [
       {
         "label": "Patch Notes",
-        "href": "patch_notes.html"
+        "href": "patch-notes.html"
       },
       {
         "label": "Reglement & Infos",

@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const patchNotesLinks = Array.from(
     document.querySelectorAll(
-      '[data-external-url="patch_notes.html"], a[href="patch_notes.html"]',
+      '[data-external-url="patch-notes.html"], a[href="patch-notes.html"]',
     ),
   );
   const annoncesLinks = Array.from(
@@ -235,8 +235,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const jsonVersions = await getVersionsFromJson();
 
-    // Sur la page patch_notes.html, on peut parser directement le DOM.
-    if (page === "patch_notes.html") {
+    // Sur la page patch-notes.html, on peut parser directement le DOM.
+    if (page === "patch-notes.html") {
       const els = document.querySelectorAll(".patch-entry .version");
       const domVersions = Array.from(els)
         .map((e) => (e && e.textContent ? e.textContent.trim() : ""))
@@ -245,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const res = await fetch("patch_notes.html", { cache: "no-store" });
+      const res = await fetch("patch-notes.html", { cache: "no-store" });
       if (!res.ok) return jsonVersions;
       const html = await res.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function checkPatchNotes({ markSeen = false } = {}) {
-    if (patchNotesLinks.length === 0 && page !== "patch_notes.html") return;
+    if (patchNotesLinks.length === 0 && page !== "patch-notes.html") return;
     const versions = await getPatchNoteVersions();
     if (versions.length === 0) {
       setBadgeAll(patchNotesLinks, null);
@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const unseenVersions = versions.filter((v) => !seen.includes(v));
     const unseenCount = unseenVersions.length;
 
-    if (markSeen || page === "patch_notes.html") {
+    if (markSeen || page === "patch-notes.html") {
       const merged = Array.from(new Set([...seen, ...versions]));
       await setSeenIds("seenPatchVersions", merged);
       setBadgeAll(patchNotesLinks, null);
@@ -556,13 +556,13 @@ document.addEventListener("DOMContentLoaded", () => {
     surveysLinks.length > 0 ||
     reglementLinks.length > 0 ||
     !!chatBtn ||
-    page === "patch_notes.html" ||
+    page === "patch-notes.html" ||
     page === "annonces.html" ||
     page === "reglement.html";
   if (shouldPollBadges) {
     setInterval(refreshAllBadges, 60_000);
   }
-  if (page === "patch_notes.html") {
+  if (page === "patch-notes.html") {
     checkPatchNotes({ markSeen: true });
   }
   if (page === "annonces.html") {
@@ -814,7 +814,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const title = String(btn.dataset.externalTitle || "").trim();
       if (!url) return;
 
-      if (url.includes("patch_notes.html")) {
+      if (url.includes("patch-notes.html")) {
         await checkPatchNotes({ markSeen: true });
       }
       if (url.includes("annonces.html")) {

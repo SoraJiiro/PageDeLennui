@@ -7,8 +7,12 @@ module.exports = function requireAuth(req, res, next) {
       return res.redirect("/admin");
     }
 
-    if (pseudo === "Moderateur" && isHomeRequest) {
+    if (pseudo === "Moderateur1" && isHomeRequest) {
       return res.redirect("/mod");
+    }
+
+    if (pseudo === "Moderateur2" && isHomeRequest) {
+      return res.redirect("/mod2");
     }
     return next();
   }

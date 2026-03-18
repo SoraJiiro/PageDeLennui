@@ -197,7 +197,7 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       !subPageName.endsWith("demande-tag.html") &&
       !subPageName.endsWith("suggestions.html") &&
       !subPageName.endsWith("hall-des-oublies.html") &&
-      !subPageName.endsWith("patch_notes.html") &&
+      !subPageName.endsWith("patch-notes.html") &&
       !subPageName.endsWith("profile.html") &&
       !subPageName.endsWith("403.html") &&
       !subPageName.endsWith("badges.html")

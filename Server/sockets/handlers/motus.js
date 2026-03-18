@@ -150,6 +150,7 @@ function registerMotusHandlers({
         pseudo,
         gain,
         FileService.data.clicks[pseudo] || 0,
+        "jeu:motus",
       );
       io.to("user:" + pseudo).emit("economy:wallet", wallet);
       io.to("user:" + pseudo).emit("economy:gameMoney", {

@@ -10,6 +10,7 @@ function register2048Handlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const { recordGameScoreContribution } = require("../../services/guerreClans");
   const SCORE_2048_MAX = 2000000;
   const TILE_2048_MAX = 65536;
 
@@ -48,6 +49,7 @@ function register2048Handlers({
       pseudo,
       gain,
       FileService.data.clicks[pseudo] || 0,
+      "jeu:2048",
     );
     io.to("user:" + pseudo).emit("economy:wallet", wallet);
     io.to("user:" + pseudo).emit("economy:gameMoney", {
@@ -111,6 +113,14 @@ function register2048Handlers({
     if (maxTile > 0 && s > 0 && maxTile > s * 2) return;
 
     updateReviveContextFromScore(socket, "2048", s);
+    recordGameScoreContribution({
+      FileService,
+      io,
+      pseudo,
+      game: "2048",
+      score: s,
+      multiplier: 3,
+    });
     setRunnerProgress(s);
 
     if (!FileService.data.scores2048) FileService.data.scores2048 = {};

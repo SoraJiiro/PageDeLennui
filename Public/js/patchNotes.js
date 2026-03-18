@@ -14,10 +14,11 @@
     const tagClass = escapeHtml(item.tagClass || "tag-change");
     const tag = escapeHtml(item.tag || "[CHANGE]");
     const strong = escapeHtml(item.strong || "");
-    const text = escapeHtml(item.text || "");
+    const rawText = item && typeof item.text === "string" ? item.text : "";
+    const text = escapeHtml(rawText);
     const textHtml =
       item && typeof item.textHtml === "string" ? item.textHtml : "";
-    const body = textHtml || text;
+    const body = textHtml || (/<a\s/i.test(rawText) ? rawText : text);
 
     if (strong) {
       return `<li><span class="${tagClass}">${tag}</span> <strong>${strong}</strong> ${body}</li>`;

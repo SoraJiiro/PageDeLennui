@@ -63,6 +63,7 @@ function registerCoinflipHandlers({
         pseudo,
         bet * 2,
         FileService.data.clicks[pseudo] || 0,
+        "jeu:coinflip",
       );
       emitWallet();
     }
@@ -160,6 +161,7 @@ function registerCoinflipHandlers({
         pseudo,
         payout,
         FileService.data.clicks[pseudo] || 0,
+        "jeu:roulette",
       );
       emitWallet();
     }
@@ -308,6 +310,7 @@ function registerCoinflipHandlers({
         pseudo,
         payout,
         FileService.data.clicks[pseudo] || 0,
+        "jeu:slots",
       );
       emitWallet();
     }

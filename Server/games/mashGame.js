@@ -243,6 +243,7 @@ class MashGame {
       winner.pseudo,
       250,
       FileService.data.clicks[winner.pseudo] || 0,
+      "jeu:mash",
     );
     if (this.onPayout) {
       this.onPayout(

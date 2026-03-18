@@ -128,23 +128,36 @@ export function initPixelWar(sock) {
 
   restoreCalcLayerState();
 
-  const ro = new ResizeObserver((entries) => {
-    for (let entry of entries) {
-      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-        if (gridCanvas) {
-          gridCanvas.width = entry.contentRect.width;
-          gridCanvas.height = entry.contentRect.height;
-        }
+  const handleWrapperResize = (width, height) => {
+    if (!(width > 0 && height > 0)) return;
 
-        if (!scale || scale <= MIN_ZOOM || isNaN(scale) || scale === Infinity) {
-          centerView();
-        } else {
-          drawGrid();
-        }
-      }
+    if (gridCanvas) {
+      gridCanvas.width = width;
+      gridCanvas.height = height;
     }
-  });
-  ro.observe(wrapper);
+
+    if (!scale || scale <= MIN_ZOOM || isNaN(scale) || scale === Infinity) {
+      centerView();
+    } else {
+      drawGrid();
+    }
+  };
+
+  if (typeof ResizeObserver === "function") {
+    const ro = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        handleWrapperResize(entry.contentRect.width, entry.contentRect.height);
+      }
+    });
+    ro.observe(wrapper);
+  } else {
+    const fallbackResize = () => {
+      const rect = wrapper.getBoundingClientRect();
+      handleWrapperResize(rect.width, rect.height);
+    };
+    window.addEventListener("resize", fallbackResize);
+    fallbackResize();
+  }
 
   initPalette();
   initControls();
@@ -536,7 +549,8 @@ function initCanvasEvents() {
 
       e.preventDefault();
 
-      const delta = -Math.sign(e.deltaY) * 0.15;
+      const deltaY = normalizeWheelDeltaY(e);
+      const delta = -Math.sign(deltaY) * 0.15;
       const zoomFactor = 1 + delta;
 
       const rect = wrapper.getBoundingClientRect();
@@ -562,6 +576,19 @@ function initCanvasEvents() {
   );
 
   wrapper.addEventListener("contextmenu", (e) => e.preventDefault());
+}
+
+function normalizeWheelDeltaY(e) {
+  const mode = Number(e?.deltaMode) || 0;
+  const raw = Number(e?.deltaY) || 0;
+
+  // Firefox peut emettre deltaY en lignes/pages (deltaMode 1/2).
+  if (mode === 1) return raw * 16;
+  if (mode === 2) {
+    const page = wrapper?.clientHeight || window?.innerHeight || 800;
+    return raw * page;
+  }
+  return raw;
 }
 
 function getClientXY(e) {
@@ -1372,8 +1399,29 @@ function resizeCalcWithWheel(e) {
   const by = Math.floor(y);
   if (!isPointInsideCalc(bx, by)) return false;
 
-  const step = e.deltaY < 0 ? 1 : -1;
+  const prevX = calcLayer.x;
+  const prevY = calcLayer.y;
+  const prevWidth = Math.max(CALC_MIN_SIZE, calcLayer.width || CALC_MIN_SIZE);
+  const prevHeight = Math.max(CALC_MIN_SIZE, calcLayer.height || CALC_MIN_SIZE);
+
+  const step = normalizeWheelDeltaY(e) < 0 ? 1 : -1;
   resizeCalcByWidth(calcLayer.width + step);
+
+  // Garder le pointeur au meme endroit relatif dans le calc apres resize.
+  const rx = (bx - prevX) / prevWidth;
+  const ry = (by - prevY) / prevHeight;
+  const anchoredX = Math.round(bx - rx * calcLayer.width);
+  const anchoredY = Math.round(by - ry * calcLayer.height);
+  const bounds = getCalcDragBounds(calcLayer.width, calcLayer.height);
+  calcLayer.x = clamp(anchoredX, bounds.minX, bounds.maxX);
+  calcLayer.y = clamp(anchoredY, bounds.minY, bounds.maxY);
+
+  if (isCalcDragging) {
+    calcDragOffsetX = bx - calcLayer.x;
+    calcDragOffsetY = by - calcLayer.y;
+  }
+
+  drawCalcLayer();
   queueSaveCalcLayerState();
   updateCalcPlacementCursor({ x: bx, y: by });
   return true;

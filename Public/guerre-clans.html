@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Guerre des Clans - PDE</title>
+        <link rel="stylesheet" href="css/common.css">
+        <link rel="stylesheet" href="css/surveys.css">
+        <link rel="stylesheet" href="css/guerre-clans.css">
+        <script src="/js/uiColor.js" type="text/javascript"></script>
+        <script defer src="js/annexBack.js"></script>
+        <link rel="icon" type="img/png" href="imgs/icon_d.png"
+            media="(prefers-color-scheme: dark)">
+        <link rel="icon" type="img/png" href="imgs/icon_l.png"
+            media="(prefers-color-scheme: light)">
+        <link rel="preload"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+            as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript>
+            <link rel="stylesheet"
+                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+        </noscript>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="page-title"><i class="fa-solid fa-radiation"></i> Guerre
+                des
+                Clans</h1>
+            <p class="war-note">
+                Les scores prennent en compte tous les jeux (sauf clicks).<br>
+                Les jeux comptent x3 pour la guerre des clans (votre progression
+                personnelle reste à x1).
+            </p>
+
+            <div id="activeWarSection">
+                <h2>En cours</h2>
+                <div id="activeWarCard" class="survey-card">
+                    <div class="war-empty">Aucune guerre active.</div>
+                </div>
+            </div>
+
+            <div id="pastWarsSection" class="war-section-gap">
+                <h2>Historique</h2>
+                <div id="pastWarsList"></div>
+            </div>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script defer src="js/auto_reload.js"></script>
+        <script src="js/pages/guerre-clans.page.js"></script>
+    </body>
+</html>

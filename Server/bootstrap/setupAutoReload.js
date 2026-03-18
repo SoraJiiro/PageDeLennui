@@ -9,7 +9,7 @@ function setupAutoReload(io, config) {
     ignored: null,
   });
 
-  watcher.on("all", (_, filePath) => {
+  watcher.on("all", (eventName, filePath) => {
     const relativePath = path.relative(config.PUBLIC, filePath);
     clearTimeout(reloadTimer);
     reloadTimer = setTimeout(() => {
@@ -17,7 +17,12 @@ function setupAutoReload(io, config) {
         level: "action",
         message: `[!] Fichier modifié - Public\\${relativePath}`,
       });
-      io.emit("reload", { file: relativePath });
+      io.emit("reload", {
+        scope: "public",
+        event: eventName,
+        file: relativePath,
+        at: Date.now(),
+      });
     }, 500);
   });
 

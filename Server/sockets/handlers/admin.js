@@ -1,3 +1,10 @@
+const {
+  ensureTicker,
+  getPublicState,
+  startWar,
+  finishWar,
+} = require("../../services/guerreClans");
+
 function registerAdminHandlers({
   io,
   socket,
@@ -12,7 +19,8 @@ function registerAdminHandlers({
   pixelWarGame,
 }) {
   const isAdmin = pseudo === "Admin";
-  const canModerate = pseudo === "Admin" || pseudo === "Moderateur";
+  const canModerate =
+    pseudo === "Admin" || pseudo === "Moderateur1" || pseudo === "Moderateur2";
   const normalizePseudoValue = (p) => {
     const raw = String(p || "").trim();
     return raw ? raw.toLowerCase() : "";
@@ -37,6 +45,20 @@ function registerAdminHandlers({
         : null;
     return rec && rec.pseudo ? rec.pseudo : null;
   };
+
+  ensureTicker({ FileService, io, broadcastSystemMessage });
+
+  socket.on("clanwar:get_state", () => {
+    try {
+      const state = getPublicState(FileService);
+      socket.emit("clanwar:update", state.activeWar || null);
+      socket.emit("clanwar:history", (state.history || []).slice(0, 50));
+    } catch (e) {
+      socket.emit("clanwar:update", null);
+      socket.emit("clanwar:history", []);
+    }
+  });
+
   // ------- Admin Events -------
   // ------- Reset complet -------
   socket.on("admin:server:softReset", async () => {
@@ -708,6 +730,44 @@ function registerAdminHandlers({
       io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
     } catch (e) {
       console.error("admin:pixelwar:clear_square error:", e);
+    }
+  });
+
+  socket.on("admin:clanwar:start", ({ winnerBadgeName } = {}) => {
+    if (!isAdmin) return;
+    try {
+      const out = startWar({
+        FileService,
+        io,
+        startedBy: pseudo,
+        winnerBadgeName,
+        broadcastSystemMessage,
+      });
+      socket.emit("admin:clanwar:result", out);
+    } catch (e) {
+      socket.emit("admin:clanwar:result", {
+        ok: false,
+        message: "Erreur au demarrage de la guerre.",
+      });
+    }
+  });
+
+  socket.on("admin:clanwar:finish", () => {
+    if (!isAdmin) return;
+    try {
+      const out = finishWar({
+        FileService,
+        io,
+        endedBy: pseudo,
+        reason: "manual",
+        broadcastSystemMessage,
+      });
+      socket.emit("admin:clanwar:result", out);
+    } catch (e) {
+      socket.emit("admin:clanwar:result", {
+        ok: false,
+        message: "Erreur lors de la cloture de la guerre.",
+      });
     }
   });
 }

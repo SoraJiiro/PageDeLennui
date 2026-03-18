@@ -81,11 +81,21 @@ function renderStats(stats) {
   const container = qs("stats");
   if (!container) return;
   const s = stats || {};
+  const upgrades =
+    s.clickerUpgrades && typeof s.clickerUpgrades === "object"
+      ? s.clickerUpgrades
+      : {};
 
   const rows = [
     ["Clicks", s.clicks],
     ["Money", s.money],
     ["Tokens", s.tokens],
+    ["CLKR Upgrade (Click Booster)", Number(upgrades.per_click_1 || 0)],
+    ["CLKR Upgrade (Le Flo)", Number(upgrades.per_click_2 || 0)],
+    ["CLKR Upgrade (AD Laurent)", Number(upgrades.per_click_3 || 0)],
+    ["CLKR Upgrade (CPS Booster)", Number(upgrades.auto_click_1 || 0)],
+    ["CLKR Upgrade (L'Ultime)", Number(upgrades.auto_click_2 || 0)],
+    ["CLKR Upgrade (X-Clicker)", Number(upgrades.auto_click_3 || 0)],
     ["Peak CPS", s.peakHumanCps ? Number(s.peakHumanCps).toFixed(1) : 0],
     ["Stockage max PXL", Number(s.pixelwarMaxPixels || 0)],
     ["Dino", s.dinoScore],
@@ -125,17 +135,27 @@ function renderStats(stats) {
         : "0.0%",
     ],
     [
-      "Aim Trainer (precision derniere)",
+      "Aim Trainer (precision best)",
       s.aimTrainerStats &&
-      Number.isFinite(Number(s.aimTrainerStats.lastAccuracy))
-        ? `${Number(s.aimTrainerStats.lastAccuracy).toFixed(1)}%`
+      Number.isFinite(
+        Number(
+          s.aimTrainerStats.bestAccuracy ?? s.aimTrainerStats.lastAccuracy,
+        ),
+      )
+        ? `${Number(
+            s.aimTrainerStats.bestAccuracy ?? s.aimTrainerStats.lastAccuracy,
+          ).toFixed(1)}%`
         : "0.0%",
     ],
     [
-      "Aim Trainer (ratio dernier)",
-      s.aimTrainerStats && s.aimTrainerStats.lastRatio
-        ? s.aimTrainerStats.lastRatio
-        : "0:0",
+      "Aim Trainer (ratio moyen)",
+      s.aimTrainerStats && s.aimTrainerStats.avgRatio
+        ? s.aimTrainerStats.avgRatio
+        : s.aimTrainerStats &&
+            Number.isFinite(Number(s.aimTrainerStats.totalHits)) &&
+            Number.isFinite(Number(s.aimTrainerStats.totalMisses))
+          ? `${Math.max(0, Math.floor(Number(s.aimTrainerStats.totalHits) || 0))}:${Math.max(0, Math.floor(Number(s.aimTrainerStats.totalMisses) || 0))}`
+          : "0:0",
     ],
   ];
 

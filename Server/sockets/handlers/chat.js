@@ -11,6 +11,260 @@ const SPAM_WINDOW_MS = 10 * 1000; // 10s window
 const SPAM_MAX_MESSAGES = 5; // max messages in window before auto-mute
 const SPAM_AUTO_MUTE_MS = 30 * 1000; // auto-mute duration (30s)
 
+function maskWordKeepFirst(word) {
+  const value = String(word || "");
+  if (!value) return value;
+  if (value.length <= 1) return value;
+  return value[0] + "*".repeat(value.length - 1);
+}
+
+function escapeRegex(text) {
+  return String(text || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+let getPunctuationBP = () => {
+  return [
+    ",",
+    ".",
+    "-",
+    "_",
+    "#",
+    "*",
+    "~",
+    ";",
+    "@",
+    ":",
+    "/",
+    "\\",
+    "<",
+    ">",
+  ];
+};
+
+function getPunctuationLinkedCensorRanges(input, bannedWords, punctuationBP) {
+  const source = String(input || "");
+  if (!source) return [];
+
+  const words = (Array.isArray(bannedWords) ? bannedWords : [])
+    .map((w) => normalizeCompact(w))
+    .filter(Boolean);
+  if (!words.length) return [];
+
+  const punctuationSet = new Set(
+    Array.isArray(punctuationBP) ? punctuationBP : [],
+  );
+
+  const { normalized, indexMap } = buildNormalizedTextMap(source);
+  if (!normalized) return [];
+
+  const ranges = [];
+  for (const compactWord of words) {
+    if (compactWord.length < 2) continue;
+
+    const pattern = compactWord
+      .split("")
+      .map((ch) => escapeRegex(ch))
+      .join("[^\\p{L}\\p{N}]+?");
+    if (!pattern) continue;
+
+    const regex = new RegExp(pattern, "gu");
+    let match;
+    while ((match = regex.exec(normalized)) !== null) {
+      const startNorm = match.index;
+      const endNorm = match.index + match[0].length - 1;
+      const startSrc = indexMap[startNorm];
+      const endSrc = indexMap[endNorm];
+      if (!Number.isInteger(startSrc) || !Number.isInteger(endSrc)) {
+        if (regex.lastIndex === match.index) regex.lastIndex++;
+        continue;
+      }
+
+      const rawMatch = source.slice(startSrc, endSrc + 1);
+      const hasConfiguredPunctuation = Array.from(rawMatch).some((ch) =>
+        punctuationSet.has(ch),
+      );
+      if (hasConfiguredPunctuation) {
+        ranges.push({ start: startSrc, end: endSrc });
+      }
+
+      if (regex.lastIndex === match.index) regex.lastIndex++;
+    }
+  }
+
+  return ranges;
+}
+
+function normalizeForCompare(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase();
+}
+
+function normalizeCompact(text) {
+  return normalizeForCompare(text).replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function buildNormalizedTextMap(text) {
+  const source = String(text || "");
+  const indexMap = [];
+  let normalized = "";
+
+  for (let i = 0; i < source.length; i++) {
+    const chunk = normalizeForCompare(source[i]);
+    for (const ch of chunk) {
+      normalized += ch;
+      indexMap.push(i);
+    }
+  }
+
+  return { normalized, indexMap };
+}
+
+function mergeRanges(ranges) {
+  if (!Array.isArray(ranges) || !ranges.length) return [];
+  const sorted = ranges
+    .filter((r) => r && Number.isInteger(r.start) && Number.isInteger(r.end))
+    .filter((r) => r.start >= 0 && r.end >= r.start)
+    .sort((a, b) => a.start - b.start);
+
+  if (!sorted.length) return [];
+  const merged = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = merged[merged.length - 1];
+    const cur = sorted[i];
+    if (cur.start <= last.end + 1) {
+      last.end = Math.max(last.end, cur.end);
+    } else {
+      merged.push({ start: cur.start, end: cur.end });
+    }
+  }
+  return merged;
+}
+
+function applyMaskRangesKeepFirst(text, ranges) {
+  const input = String(text || "");
+  if (!input) return input;
+  if (!Array.isArray(ranges) || !ranges.length) return input;
+
+  const out = input.split("");
+  for (const range of ranges) {
+    if (!range) continue;
+    const start = Math.max(0, range.start);
+    const end = Math.min(input.length - 1, range.end);
+    if (start >= input.length || end <= start) continue;
+    for (let i = start + 1; i <= end; i++) {
+      out[i] = "*";
+    }
+  }
+  return out.join("");
+}
+
+function getPhraseCensorRanges(input, bannedWords) {
+  const source = String(input || "");
+  if (!source) return [];
+  const words = Array.isArray(bannedWords) ? bannedWords : [];
+  if (!words.length) return [];
+
+  const { normalized, indexMap } = buildNormalizedTextMap(source);
+  if (!normalized) return [];
+
+  const ranges = [];
+  for (const raw of words) {
+    const normalizedWord = normalizeForCompare(raw);
+    const parts = normalizedWord.split(/[^\p{L}\p{N}]+/gu).filter(Boolean);
+    if (!parts.length) continue;
+
+    const pattern = parts.map((p) => escapeRegex(p)).join("[^\\p{L}\\p{N}]*");
+    if (!pattern) continue;
+
+    const regex = new RegExp(pattern, "gu");
+    let match;
+    while ((match = regex.exec(normalized)) !== null) {
+      const startNorm = match.index;
+      const endNorm = match.index + match[0].length - 1;
+      const startSrc = indexMap[startNorm];
+      const endSrc = indexMap[endNorm];
+      if (Number.isInteger(startSrc) && Number.isInteger(endSrc)) {
+        ranges.push({ start: startSrc, end: endSrc });
+      }
+      if (regex.lastIndex === match.index) regex.lastIndex++;
+    }
+  }
+
+  return ranges;
+}
+
+function getGluedWordCensorRanges(input, bannedWords) {
+  const source = String(input || "");
+  if (!source) return [];
+
+  const compactBanned = (Array.isArray(bannedWords) ? bannedWords : [])
+    .map((w) => normalizeCompact(w))
+    .filter(Boolean);
+  if (!compactBanned.length) return [];
+
+  const ranges = [];
+  const tokenRegex = /[\p{L}\p{N}_]+/gu;
+  let token;
+  while ((token = tokenRegex.exec(source)) !== null) {
+    const rawToken = token[0];
+    const compactToken = normalizeCompact(rawToken);
+    if (!compactToken) continue;
+
+    const hasBannedWord = compactBanned.some((bad) =>
+      compactToken.includes(bad),
+    );
+    if (hasBannedWord) {
+      ranges.push({
+        start: token.index,
+        end: token.index + rawToken.length - 1,
+      });
+    }
+  }
+
+  return ranges;
+}
+
+function censorBannedWords(text, bannedWords) {
+  const input = String(text || "");
+  if (!input) return input;
+
+  const list = (Array.isArray(bannedWords) ? bannedWords : [])
+    .map((w) => String(w || "").trim())
+    .filter(Boolean);
+  if (!list.length) return input;
+
+  const punctuationBP = getPunctuationBP();
+  const hasPunctuationLinkedBannedWord = checkIfBannedWordLinkedWithPunctuation(
+    input,
+    list,
+    punctuationBP,
+  );
+  const punctuationLinkedRanges = hasPunctuationLinkedBannedWord
+    ? getPunctuationLinkedCensorRanges(input, list, punctuationBP)
+    : [];
+
+  const ranges = mergeRanges([
+    ...getPhraseCensorRanges(input, list),
+    ...getGluedWordCensorRanges(input, list),
+    ...punctuationLinkedRanges,
+  ]);
+
+  return applyMaskRangesKeepFirst(input, ranges);
+}
+
+function checkIfBannedWordLinkedWithPunctuation(
+  text,
+  bannedWords,
+  punctuationBP,
+) {
+  return (
+    getPunctuationLinkedCensorRanges(text, bannedWords, punctuationBP).length >
+    0
+  );
+}
+
 function registerChatHandlers({
   io,
   socket,
@@ -100,6 +354,199 @@ function registerChatHandlers({
     return msg.length > 2000 ? msg.slice(0, 2000) : msg;
   }
 
+  function storeSharedFile({ fileName, fileData, fileType, fileSize }) {
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+    if (Number(fileSize) > MAX_FILE_SIZE) {
+      throw new Error(
+        "Fichier trop volumineux (max " +
+          MAX_FILE_SIZE / (1024 * 1024) +
+          " Mo)",
+      );
+    }
+
+    const safeNameRaw = String(fileName || "file");
+    const ext = path.extname(safeNameRaw).toLowerCase();
+
+    const allowedExtensions = new Set([
+      ".php",
+      ".js",
+      ".html",
+      ".css",
+      ".txt",
+      ".pdf",
+      ".zip",
+      ".mp4",
+      ".webm",
+      ".ogg",
+      ".mov",
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".mp3",
+      ".opus",
+      ".wav",
+      ".flac",
+      ".gif",
+      ".bmp",
+      ".svg",
+      ".ico",
+      ".tiff",
+      ".avi",
+      ".mkv",
+      ".7z",
+      ".tar",
+      ".gz",
+      ".bz2",
+      ".doc",
+      ".docx",
+      ".xls",
+      ".xlsx",
+      ".ppt",
+      ".pptx",
+      ".odt",
+      ".ods",
+      ".odp",
+      ".rtf",
+      ".csv",
+      ".md",
+      ".epub",
+      ".mobi",
+      ".azw",
+      ".azw3",
+      ".fb2",
+      ".cbz",
+      ".cbr",
+      ".bin",
+      ".exe",
+      ".dll",
+      ".iso",
+      ".dmg",
+      ".m4a",
+      ".cpp",
+      ".java",
+      ".py",
+      ".flv",
+      ".wmv",
+      ".webp",
+      ".json",
+      ".xml",
+      ".yml",
+      ".yaml",
+      ".ini",
+      ".log",
+      ".rtx",
+      ".sh",
+      ".bat",
+      ".ps1",
+      ".sass",
+      ".scss",
+      ".cs",
+      ".go",
+      ".c",
+      ".xhtml",
+      ".tsx",
+      ".jsx",
+      ".pkt",
+      ".sql",
+      ".vbs",
+      ".lua",
+      ".cpkt",
+    ]);
+
+    const allowedExact = new Set([
+      "application/pdf",
+      "text/plain",
+      "application/zip",
+      "text/html",
+      "text/css",
+      "application/javascript",
+      "text/javascript",
+      "application/x-httpd-php",
+      "text/x-php",
+      "text/php",
+      "video/mp4",
+      "video/webm",
+      "video/ogg",
+      "video/quicktime",
+      "text/*",
+      "application/*",
+      "video/*",
+      "image/*",
+      "audio/*",
+      "application/octet-stream",
+      "binary/octet-stream",
+    ]);
+
+    const isAllowedMime =
+      typeof fileType === "string" &&
+      (fileType.startsWith("image/") ||
+        fileType.startsWith("video/") ||
+        fileType.startsWith("audio/") ||
+        Array.from(allowedExact).some((a) =>
+          a.endsWith("/*")
+            ? fileType.startsWith(a.slice(0, -1))
+            : fileType === a,
+        ));
+
+    const isAllowed = isAllowedMime || allowedExtensions.has(ext);
+    if (!isAllowed) {
+      throw new Error("Type de fichier non autorisé");
+    }
+
+    if (!FileService.data.sharedFiles) FileService.data.sharedFiles = {};
+
+    const fileId =
+      Date.now().toString(36) + Math.random().toString(36).substr(2);
+    const safeName = path
+      .basename(safeNameRaw)
+      .replace(/\0/g, "")
+      .slice(0, 200);
+
+    const uploadsDir = path.join(config.PUBLIC, "uploads");
+    try {
+      if (!fs.existsSync(uploadsDir))
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    } catch (e) {}
+
+    const savedName = `${fileId}${ext || ""}`;
+    const savedPath = path.join(uploadsDir, savedName);
+    fs.writeFileSync(savedPath, Buffer.from(String(fileData || ""), "base64"));
+
+    const fileEntry = {
+      id: fileId,
+      name: safeName,
+      type: fileType,
+      size: fileSize,
+      diskPath: path.join("uploads", savedName),
+      url: `/uploads/${savedName}`,
+      uploader: pseudo,
+      uploadedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    FileService.data.sharedFiles[fileId] = fileEntry;
+    FileService.save("sharedFiles", FileService.data.sharedFiles);
+
+    try {
+      FileService.appendFileAction({
+        action: "upload",
+        fileId,
+        name: safeName,
+        uploader: pseudo,
+        size: fileSize,
+        at: new Date().toISOString(),
+      });
+    } catch (e) {}
+
+    return {
+      id: fileId,
+      name: safeName,
+      type: fileType,
+      size: fileSize,
+      url: fileEntry.url,
+    };
+  }
+
   function flushPendingDms() {
     try {
       const list = Array.isArray(FileService.data.dms)
@@ -120,6 +567,7 @@ function registerChatHandlers({
           from: dm.from,
           to: dm.to,
           text: dm.text,
+          file: dm.file || null,
           at: dm.at,
           pfp: getPfpFor(dm.from),
           tag: FileService.data.tags ? FileService.data.tags[dm.from] : null,
@@ -144,7 +592,7 @@ function registerChatHandlers({
 
   socket.on("chat:dm:send", ({ to, text }) => {
     const resolvedTo = normalizePseudoLikeRoom(to);
-    const msg = safeTrimMessage(text);
+    const msg = censorBannedWords(safeTrimMessage(text), config.BANNED_WORDS);
 
     if (!resolvedTo) {
       socket.emit("chat:dm:error", "Pseudo destinataire invalide");
@@ -218,9 +666,109 @@ function registerChatHandlers({
     });
   });
 
+  socket.on(
+    "chat:dm:uploadFile",
+    ({ to, text, fileName, fileData, fileType, fileSize }) => {
+      const resolvedTo = normalizePseudoLikeRoom(to);
+      const msg = censorBannedWords(safeTrimMessage(text), config.BANNED_WORDS);
+
+      if (!resolvedTo) {
+        socket.emit("chat:dm:error", "Pseudo destinataire invalide");
+        return;
+      }
+      if (resolvedTo === pseudo) {
+        socket.emit("chat:dm:error", "Vous ne pouvez pas vous envoyer un MP");
+        return;
+      }
+      if (dbUsers && typeof dbUsers.findBypseudo === "function") {
+        const exists = dbUsers.findBypseudo(resolvedTo);
+        if (!exists) {
+          socket.emit(
+            "chat:dm:error",
+            `Utilisateur introuvable: ${resolvedTo}`,
+          );
+          return;
+        }
+      }
+
+      if (!fileName || !fileData) {
+        socket.emit("chat:fileError", "Fichier invalide");
+        return;
+      }
+
+      let filePayload = null;
+      try {
+        filePayload = storeSharedFile({
+          fileName,
+          fileData,
+          fileType,
+          fileSize,
+        });
+      } catch (err) {
+        socket.emit("chat:fileError", err.message || "Erreur lors de l'upload");
+        return;
+      }
+
+      const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+      const at = new Date().toISOString();
+
+      const tagData = FileService.data.tags
+        ? FileService.data.tags[pseudo]
+        : null;
+      let tagPayload = null;
+      if (tagData) {
+        if (typeof tagData === "string")
+          tagPayload = { text: tagData, color: null };
+        else if (typeof tagData === "object") tagPayload = tagData;
+      }
+
+      const dmPayload = {
+        id,
+        from: pseudo,
+        to: resolvedTo,
+        text: msg,
+        file: filePayload,
+        at,
+        tag: tagPayload,
+        pfp: getPfpFor(pseudo),
+        badges: getSelectedBadgesFor(pseudo),
+      };
+
+      const dms = Array.isArray(FileService.data.dms)
+        ? FileService.data.dms
+        : [];
+      const online = isUserOnline(resolvedTo);
+      const record = {
+        id,
+        from: pseudo,
+        to: resolvedTo,
+        text: msg,
+        file: filePayload,
+        at,
+        delivered: online,
+        deliveredAt: online ? at : null,
+      };
+      dms.push(record);
+      if (dms.length > 5000) dms.splice(0, dms.length - 5000);
+      FileService.save("dms", dms);
+
+      socket.emit("chat:dm", dmPayload);
+      io.to("user:" + resolvedTo).emit("chat:dm", {
+        ...dmPayload,
+        pfp: getPfpFor(pseudo),
+        tag: tagPayload,
+        badges: getSelectedBadgesFor(pseudo),
+      });
+
+      socket.emit("chat:fileUploaded", { fileId: filePayload.id, dm: true });
+    },
+  );
+
   socket.on("chat:message", ({ text }) => {
     let msg = String(text || "").trim();
     if (!msg) return;
+
+    msg = censorBannedWords(msg, config.BANNED_WORDS);
 
     // Vérifier mute côté serveur (persisté)
     try {

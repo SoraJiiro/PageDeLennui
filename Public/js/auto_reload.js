@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
+  let reloadScheduled = false;
+
   if (!window.__pdeSimpleCursorBootstrapped) {
     window.__pdeSimpleCursorBootstrapped = true;
 
@@ -32,26 +34,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       socketInstance.on("reload", (data) => {
-        const file = data?.file || "";
-        // Recharger seulement les CSS/JS sans reset de socket
-        if (file.match(/\.css$/i)) {
-          // Recharger les CSS
-          document
-            .querySelectorAll('link[rel="stylesheet"]')
-            .forEach((link) => {
-              const href = link.href.split("?")[0];
-              link.href = href + "?v=" + Date.now();
-            });
-        } else if (file.match(/\.js$/i)) {
-          // Pour les JS, reload complet nécessaire
-          window.location.reload();
-        } else if (file.match(/\.html$/i)) {
-          // Pour les HTML, reload complet
-          window.location.reload();
-        } else {
-          // Fallback
-          window.location.reload();
-        }
+        if (reloadScheduled) return;
+        const scope = String(data?.scope || "public").toLowerCase();
+        if (scope !== "public") return;
+        reloadScheduled = true;
+        // Tout changement dans Public force un reload complet pour rester coherent.
+        window.location.reload();
       });
     }
   }

@@ -11,7 +11,7 @@ const { ensureShopCatalog } = require("../services/shopCatalog");
 const { getWallet } = require("../services/wallet");
 const { grantLives } = require("../services/reviveLives");
 const { resetUserBadgesProgress } = require("../services/badgesAuto");
-const words = require("../constants/words");
+const words = require("../constants/motusWords");
 
 const CUSTOM_BADGE_PRICE = 180000;
 
@@ -76,6 +76,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         break;
       case "flappyScores":
         leaderboardManager.broadcastFlappyLB(io);
+        break;
+      case "subwayScores":
+        leaderboardManager.broadcastSubwayLB(io);
         break;
       case "unoWins":
         leaderboardManager.broadcastUnoLB(io);
@@ -202,7 +205,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       return next();
     }
 
-    if (pseudo !== "Moderateur") {
+    const isModerator = pseudo === "Moderateur1" || pseudo === "Moderateur2";
+    if (!isModerator) {
       return res.status(403).json({ message: "Accès refusé" });
     }
 
@@ -1932,6 +1936,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "wallets",
       "dinoScores",
       "flappyScores",
+      "subwayScores",
       "unoWins",
       "p4Wins",
       "blockblastScores",
@@ -2215,6 +2220,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "wallets",
         "dinoScores",
         "flappyScores",
+        "subwayScores",
         "unoWins",
         "p4Wins",
         "blockblastScores",
@@ -2266,6 +2272,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "wallets",
       "dinoScores",
       "flappyScores",
+      "subwayScores",
       "unoWins",
       "p4Wins",
       "blockblastScores",
@@ -2450,6 +2457,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "wallets",
       "dinoScores",
       "flappyScores",
+      "subwayScores",
       "unoWins",
       "p4Wins",
       "blockblastScores",
@@ -2629,6 +2637,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "wallets",
       "dinoScores",
       "flappyScores",
+      "subwayScores",
       "unoWins",
       "p4Wins",
       "blockblastScores",
@@ -2809,6 +2818,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "wallets",
       "dinoScores",
       "flappyScores",
+      "subwayScores",
       "unoWins",
       "p4Wins",
       "blockblastScores",
@@ -3115,6 +3125,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "wallets",
       "dinoScores",
       "flappyScores",
+      "subwayScores",
       "unoWins",
       "p4Wins",
       "blockblastScores",
@@ -3353,6 +3364,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     delete FileService.data.clicks[pseudo];
     delete FileService.data.dinoScores[pseudo];
     delete FileService.data.flappyScores[pseudo];
+    if (FileService.data.subwayScores)
+      delete FileService.data.subwayScores[pseudo];
     delete FileService.data.unoWins[pseudo];
     delete FileService.data.p4Wins[pseudo];
     delete FileService.data.blockblastScores[pseudo];
@@ -3404,6 +3417,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     FileService.save("clicks", FileService.data.clicks);
     FileService.save("dinoScores", FileService.data.dinoScores);
     FileService.save("flappyScores", FileService.data.flappyScores);
+    if (FileService.data.subwayScores)
+      FileService.save("subwayScores", FileService.data.subwayScores);
     FileService.save("unoWins", FileService.data.unoWins);
     FileService.save("p4Wins", FileService.data.p4Wins);
     FileService.save("blockblastScores", FileService.data.blockblastScores);
@@ -3640,6 +3655,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         case "flappy":
           clearSimple("flappyScores", "flappy");
           break;
+        case "subway":
+          clearSimple("subwayScores", "subway");
+          break;
         case "uno":
           clearSimple("unoWins", "uno");
           break;
@@ -3693,6 +3711,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           clearClicker();
           clearSimple("dinoScores", "dino");
           clearSimple("flappyScores", "flappy");
+          clearSimple("subwayScores", "subway");
           clearSimple("unoWins", "uno");
           clearSimple("p4Wins", "p4");
           clearSimple("mashWins", "mash");
@@ -3720,6 +3739,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
             break;
           case "flappy":
             refreshLeaderboard("flappyScores");
+            break;
+          case "subway":
+            refreshLeaderboard("subwayScores");
             break;
           case "uno":
             refreshLeaderboard("unoWins");
@@ -3817,6 +3839,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       const filesToBackup = [
         "dino_scores.json",
         "flappy_scores.json",
+        "subway_scores.json",
         "uno_wins.json",
         "p4_wins.json",
         "blockblast_scores.json",
@@ -3857,6 +3880,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
         FileService.data.flappyScores = {};
         FileService.save("flappyScores", {});
+
+        FileService.data.subwayScores = {};
+        FileService.save("subwayScores", {});
 
         FileService.data.unoWins = {};
         FileService.save("unoWins", {});
@@ -3906,6 +3932,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         // Refresh all leaderboards
         refreshLeaderboard("dinoScores");
         refreshLeaderboard("flappyScores");
+        refreshLeaderboard("subwayScores");
         refreshLeaderboard("unoWins");
         refreshLeaderboard("p4Wins");
         refreshLeaderboard("blockblastScores");
@@ -4014,6 +4041,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       const filesToRestore = [
         "dino_scores.json",
         "flappy_scores.json",
+        "subway_scores.json",
         "uno_wins.json",
         "p4_wins.json",
         "blockblast_scores.json",
@@ -4039,6 +4067,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       // Refresh all leaderboards
       refreshLeaderboard("dinoScores");
       refreshLeaderboard("flappyScores");
+      refreshLeaderboard("subwayScores");
       refreshLeaderboard("unoWins");
       refreshLeaderboard("p4Wins");
       refreshLeaderboard("blockblastScores");
