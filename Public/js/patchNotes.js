@@ -18,7 +18,12 @@
     const text = escapeHtml(rawText);
     const textHtml =
       item && typeof item.textHtml === "string" ? item.textHtml : "";
-    const body = textHtml || (/<a\s/i.test(rawText) ? rawText : text);
+    const body =
+      textHtml ||
+      (/<a\s+href\s*=\s*["'].*?["']/i.test(rawText) ||
+      /<sup\s*\/?>/i.test(rawText)
+        ? rawText
+        : text);
 
     if (strong) {
       return `<li><span class="${tagClass}">${tag}</span> <strong>${strong}</strong> ${body}</li>`;

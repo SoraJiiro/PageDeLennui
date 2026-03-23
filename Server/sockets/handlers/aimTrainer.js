@@ -5,8 +5,11 @@ function registerAimTrainerHandlers({
   FileService,
   leaderboardManager,
 }) {
-  const { recordGameScoreContribution } = require("../../services/guerreClans");
-  const AIM_SCORE_MAX = 5000;
+  const {
+    recordGameScoreContribution,
+    getGameScoreMultiplier,
+  } = require("../../services/guerreClans");
+  const AIM_SCORE_MAX = 50000;
   const AIM_MISSES_MAX = 20000;
 
   const normalizeDuration = (raw) => {
@@ -78,7 +81,7 @@ function registerAimTrainerHandlers({
       pseudo,
       game: `aim_${duration}`,
       score,
-      multiplier: 3,
+      multiplier: getGameScoreMultiplier(`aim_${duration}`),
     });
 
     const durationScores = ensureDurationScores();

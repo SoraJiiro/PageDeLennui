@@ -6,13 +6,23 @@ const { addMoney, spendMoney, getWallet } = require("./wallet");
 
 const STORE_FILE = path.join(config.DATA, "clan_wars.json");
 const CLANS = ["SLAM", "SISR"];
-const TICK_MS = 5000;
-const WAR_SCORE_MULTIPLIER = 3;
+const TICK_MS = 4000;
+const GAME_WAR_MULTIPLIERS = Object.freeze({
+  dino: 2.25,
+  flappy: 715,
+  snake: 715,
+  subway: 1.65,
+  blockblast: 6.75,
+  2048: 6.75,
+  aim_15: 725,
+  aim_30: 717.5,
+  aim_60: 700,
+});
 const WINNER_BADGE_EMOJI = "✪";
 const BETTING_WINDOW_MS = 10 * 60 * 1000;
 const BET_MIN_AMOUNT = 2500;
-const BET_MAX_RATIO = 0.75;
-const BET_WIN_MULTIPLIER = 3.5;
+const BET_MAX_RATIO = 0.83;
+const BET_WIN_MULTIPLIER = 3.75;
 
 let ticker = null;
 
@@ -179,7 +189,7 @@ function addEntry(map, pseudo, value) {
   if (!p) return;
   const n = Number(value);
   if (!Number.isFinite(n)) return;
-  map[p] = (map[p] || 0) + Math.max(0, Math.floor(n)) * WAR_SCORE_MULTIPLIER;
+  map[p] = (map[p] || 0) + Math.max(0, Math.floor(n)) * 1;
 }
 
 function addSimpleBucket(map, bucket) {
@@ -312,19 +322,30 @@ function getActiveWarStore() {
   return { store, activeWar };
 }
 
+function getGameScoreMultiplier(game) {
+  const key = String(game || "").trim();
+  if (!key) return WAR_SCORE_MULTIPLIER;
+  return Math.max(1, Number(GAME_WAR_MULTIPLIERS[key]) || WAR_SCORE_MULTIPLIER);
+}
+
 function recordGameScoreContribution({
   FileService,
   io,
   pseudo,
   game,
   score,
-  multiplier = WAR_SCORE_MULTIPLIER,
+  multiplier = null,
 }) {
   const p = normalizePseudo(pseudo);
   if (!p) return false;
 
-  const raw = Math.floor(Number(score) || 0);
-  const m = Math.max(1, Math.floor(Number(multiplier) || 1));
+  const raw = Number(score);
+  const requestedMultiplier = Number(multiplier);
+  const defaultMultiplier = getGameScoreMultiplier(game);
+  const m =
+    Number.isFinite(requestedMultiplier) && requestedMultiplier > 0
+      ? Math.max(1, requestedMultiplier)
+      : defaultMultiplier;
   if (!Number.isFinite(raw) || raw <= 0) return false;
 
   const { store, activeWar } = getActiveWarStore();
@@ -334,7 +355,7 @@ function recordGameScoreContribution({
   const participant = participants[p];
   if (!participant || !CLANS.includes(participant.clan)) return false;
 
-  const gained = raw * m;
+  const gained = Math.ceil(Math.ceil(raw) * m);
   activeWar.runScoresByPseudo[p] =
     Math.max(0, Math.floor(Number(activeWar.runScoresByPseudo[p]) || 0)) +
     gained;
@@ -438,6 +459,7 @@ function getPublicState(FileService, pseudo) {
   return {
     activeWar: active,
     myBet,
+    gameMultipliers: { ...GAME_WAR_MULTIPLIERS },
     history: (store.history || []).slice().reverse(),
   };
 }
@@ -968,5 +990,6 @@ module.exports = {
   finishWar,
   ensureTicker,
   recordGameScoreContribution,
+  getGameScoreMultiplier,
   placeBet,
 };

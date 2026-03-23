@@ -625,9 +625,9 @@ export function initSubway(socket) {
         }
       }
 
-      const ox = Math.abs(o.x - state.playerX) < (o.w * 0.5 + pHalf) * 0.78;
+      const sameLane = o.lane === state.lane;
       const oy = Math.abs(o.y - pY) < (o.h * 0.5 + pHalf) * 0.78;
-      if (ox && oy) {
+      if (sameLane && oy) {
         if (isInvincible()) {
           o.y = canvas.height + 999;
         } else {
@@ -641,9 +641,9 @@ export function initSubway(socket) {
       c.x = laneX(c.lane);
       c.y += runSpeedPx * dt;
 
-      const cx = Math.abs(c.x - state.playerX) < c.r + pHalf * 0.6;
+      const sameLane = c.lane === state.lane;
       const cy = Math.abs(c.y - pY) < c.r + pHalf * 0.6;
-      if (cx && cy) {
+      if (sameLane && cy) {
         coinPickUpAnim(true);
         setTimeout(() => coinPickUpAnim(false), 150);
         state.coins += 1;
@@ -655,9 +655,9 @@ export function initSubway(socket) {
       p.x = laneX(p.lane);
       p.y += runSpeedPx * dt;
 
-      const hitX = Math.abs(p.x - state.playerX) < p.size + pHalf * 0.55;
+      const sameLane = p.lane === state.lane;
       const hitY = Math.abs(p.y - pY) < p.size + pHalf * 0.55;
-      if (hitX && hitY) {
+      if (sameLane && hitY) {
         state.invincibleUntilMs = Date.now() + world.invincibilityDurationMs;
         p.y = canvas.height + 999;
       }

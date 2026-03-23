@@ -11,7 +11,10 @@ function registerSnakeHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
-  const { recordGameScoreContribution } = require("../../services/guerreClans");
+  const {
+    recordGameScoreContribution,
+    getGameScoreMultiplier,
+  } = require("../../services/guerreClans");
   const SNAKE_MAX_SCORE = 5000;
   let isAlreadyLogged_snake = false;
 
@@ -103,8 +106,7 @@ function registerSnakeHandlers({
 
   socket.on("snake:score", ({ score, elapsedMs, final }) => {
     const s = Math.floor(Number(score));
-
-    if (!Number.isFinite(s) || s < 0 || s > SNAKE_MAX_SCORE) return;
+    if (!Number.isFinite(s) || s < 0) return;
 
     updateReviveContextFromScore(socket, "snake", s);
     if (final === true) {
@@ -161,7 +163,7 @@ function registerSnakeHandlers({
         pseudo,
         game: "snake",
         score: s,
-        multiplier: 3,
+        multiplier: getGameScoreMultiplier("snake"),
       });
       rewardSnakeFinal(s);
       leaderboardManager.broadcastSnakeLB(io);

@@ -18,7 +18,10 @@ function registerBlockblastHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
-  const { recordGameScoreContribution } = require("../../services/guerreClans");
+  const {
+    recordGameScoreContribution,
+    getGameScoreMultiplier,
+  } = require("../../services/guerreClans");
   const {
     getReviveCostForSocket,
     incrementReviveUsed,
@@ -93,8 +96,7 @@ function registerBlockblastHandlers({
   socket.on("blockblast:resumeConsumed", () => consumeRunnerResume());
   socket.on("blockblast:score", ({ score, elapsedMs, final }) => {
     const s = Math.floor(Number(score));
-
-    if (!Number.isFinite(s) || s < 0 || s > BLOCKBLAST_MAX_SCORE) return;
+    if (!Number.isFinite(s) || s < 0) return;
 
     updateReviveContextFromScore(socket, "blockblast", s);
     setRunnerProgress(s);
@@ -150,7 +152,7 @@ function registerBlockblastHandlers({
         pseudo,
         game: "blockblast",
         score: s,
-        multiplier: 3,
+        multiplier: getGameScoreMultiplier("blockblast"),
       });
       rewardBlockblastFinal(s);
       leaderboardManager.broadcastBlockBlastLB(io);

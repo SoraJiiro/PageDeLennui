@@ -11,14 +11,17 @@ function registerDinoFlappyHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
-  const { recordGameScoreContribution } = require("../../services/guerreClans");
+  const {
+    recordGameScoreContribution,
+    getGameScoreMultiplier,
+  } = require("../../services/guerreClans");
   const DINO_MAX_SCORE = 250000;
   const FLAPPY_MAX_SCORE = 10000;
-  const SUBWAY_MAX_SCORE = 250000;
+  const SUBWAY_MAX_SCORE = 5000000;
 
   socket.on("subway:score", ({ score, revivePending } = {}) => {
     const s = Math.floor(Number(score));
-    if (!Number.isFinite(s) || s < 0 || s > SUBWAY_MAX_SCORE) return;
+    if (!Number.isFinite(s) || s < 0) return;
     updateReviveContextFromScore(socket, "subway", s);
     if (revivePending === true) {
       clearRunnerProgress("subway");
@@ -132,7 +135,7 @@ function registerDinoFlappyHandlers({
   // ------- Dino -------
   socket.on("dino:score", ({ score, final } = {}) => {
     const s = Math.floor(Number(score));
-    if (!Number.isFinite(s) || s < 0 || s > DINO_MAX_SCORE) return;
+    if (!Number.isFinite(s) || s < 0) return;
 
     updateReviveContextFromScore(socket, "dino", s);
     if (final === true) {
@@ -165,7 +168,7 @@ function registerDinoFlappyHandlers({
         pseudo,
         game: "dino",
         score: s,
-        multiplier: 3,
+        multiplier: getGameScoreMultiplier("dino"),
       });
       rewardFinalRun("dino", s);
       leaderboardManager.broadcastDinoLB(io);
@@ -191,7 +194,7 @@ function registerDinoFlappyHandlers({
   // ------- Flappy -------
   socket.on("flappy:score", ({ score, final } = {}) => {
     const s = Math.floor(Number(score));
-    if (!Number.isFinite(s) || s < 0 || s > FLAPPY_MAX_SCORE) return;
+    if (!Number.isFinite(s) || s < 0) return;
 
     updateReviveContextFromScore(socket, "flappy", s);
     if (final === true) {
@@ -224,7 +227,7 @@ function registerDinoFlappyHandlers({
         pseudo,
         game: "flappy",
         score: s,
-        multiplier: 3,
+        multiplier: getGameScoreMultiplier("flappy"),
       });
       rewardFinalRun("flappy", s);
       leaderboardManager.broadcastFlappyLB(io);
@@ -252,7 +255,7 @@ function registerDinoFlappyHandlers({
     const s = Math.floor(Number(score));
     const c = Math.floor(Number(coins));
 
-    if (!Number.isFinite(s) || s < 0 || s > SUBWAY_MAX_SCORE) return;
+    if (!Number.isFinite(s) || s < 0) return;
     if (!Number.isFinite(c) || c < 0) return;
 
     updateReviveContextFromScore(socket, "subway", s);
@@ -262,7 +265,7 @@ function registerDinoFlappyHandlers({
       pseudo,
       game: "subway",
       score: s,
-      multiplier: 3,
+      multiplier: getGameScoreMultiplier("subway"),
     });
     clearRunnerProgress("subway");
     setRunnerState("subway", false);
@@ -280,9 +283,10 @@ function registerDinoFlappyHandlers({
       }
       FileService.data.subwayScores[pseudo] = s;
       FileService.save("subwayScores", FileService.data.subwayScores);
-      if (leaderboardManager?.broadcastSubwayLB) {
-        leaderboardManager.broadcastSubwayLB(io);
-      }
+    }
+
+    if (leaderboardManager?.broadcastSubwayLB) {
+      leaderboardManager.broadcastSubwayLB(io);
     }
 
     // Anti-abus: limite pieces plausible en fonction du score.

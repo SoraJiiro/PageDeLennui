@@ -10,7 +10,10 @@ function register2048Handlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
-  const { recordGameScoreContribution } = require("../../services/guerreClans");
+  const {
+    recordGameScoreContribution,
+    getGameScoreMultiplier,
+  } = require("../../services/guerreClans");
   const SCORE_2048_MAX = 2000000;
   const TILE_2048_MAX = 65536;
 
@@ -119,7 +122,7 @@ function register2048Handlers({
       pseudo,
       game: "2048",
       score: s,
-      multiplier: 3,
+      multiplier: getGameScoreMultiplier("2048"),
     });
     setRunnerProgress(s);
 
