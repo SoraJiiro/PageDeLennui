@@ -625,9 +625,9 @@ export function initSubway(socket) {
         }
       }
 
-      const sameLane = o.lane === state.lane;
+      const ox = Math.abs(o.x - state.playerX) < (o.w * 0.5 + pHalf) * 0.78;
       const oy = Math.abs(o.y - pY) < (o.h * 0.5 + pHalf) * 0.78;
-      if (sameLane && oy) {
+      if (ox && oy) {
         if (isInvincible()) {
           o.y = canvas.height + 999;
         } else {
@@ -641,9 +641,9 @@ export function initSubway(socket) {
       c.x = laneX(c.lane);
       c.y += runSpeedPx * dt;
 
-      const sameLane = c.lane === state.lane;
+      const cx = Math.abs(c.x - state.playerX) < c.r + pHalf * 0.6;
       const cy = Math.abs(c.y - pY) < c.r + pHalf * 0.6;
-      if (sameLane && cy) {
+      if (cx && cy) {
         coinPickUpAnim(true);
         setTimeout(() => coinPickUpAnim(false), 150);
         state.coins += 1;
@@ -655,9 +655,9 @@ export function initSubway(socket) {
       p.x = laneX(p.lane);
       p.y += runSpeedPx * dt;
 
-      const sameLane = p.lane === state.lane;
+      const hitX = Math.abs(p.x - state.playerX) < p.size + pHalf * 0.55;
       const hitY = Math.abs(p.y - pY) < p.size + pHalf * 0.55;
-      if (sameLane && hitY) {
+      if (hitX && hitY) {
         state.invincibleUntilMs = Date.now() + world.invincibilityDurationMs;
         p.y = canvas.height + 999;
       }
@@ -1008,6 +1008,8 @@ export function initSubway(socket) {
     }
   });
   window.addEventListener("resize", () => {
+    // Mettre le jeu en pause lors du resize pour éviter les abus
+    pauseRun("resize");
     resizeCanvas();
     draw();
   });

@@ -1,3 +1,36 @@
+// Permettre à tous de récupérer la liste des multiplicateurs actuels
+socket.on("clanwar:multipliers:get", () => {
+  const { getAllGameWarMultipliers } = require("../../services/guerreClans");
+  socket.emit("clanwar:multipliers:update", getAllGameWarMultipliers());
+});
+// Admin: modification des multiplicateurs de guerre de clans en temps réel
+socket.on("admin:clanwar:set_multiplier", ({ game, value }) => {
+  if (!isAdmin) return;
+  const {
+    setGameWarMultiplier,
+    getAllGameWarMultipliers,
+  } = require("../../services/guerreClans");
+  const numValue = Number(value);
+  if (!game || !Number.isFinite(numValue) || numValue <= 0) {
+    return socket.emit("admin:clanwar:set_multiplier:result", {
+      success: false,
+      message: "Paramètres invalides",
+    });
+  }
+  const ok = setGameWarMultiplier(game, numValue);
+  if (!ok) {
+    return socket.emit("admin:clanwar:set_multiplier:result", {
+      success: false,
+      message: "Impossible de modifier le multiplicateur.",
+    });
+  }
+  // Notifier tous les clients (admins et users)
+  io.emit("clanwar:multipliers:update", getAllGameWarMultipliers());
+  socket.emit("admin:clanwar:set_multiplier:result", {
+    success: true,
+    message: `Multiplicateur pour ${game} mis à jour à ${numValue}`,
+  });
+});
 const {
   ensureTicker,
   getPublicState,
@@ -278,6 +311,32 @@ function registerAdminHandlers({
         success: false,
         message: "IP manquante",
       });
+    // Protection : un modérateur ne peut pas blacklister l'admin ou un autre modérateur par IP
+    if (!isAdmin) {
+      // On cherche si l'IP correspond à un modérateur ou à l'admin
+      let isProtected = false;
+      io.sockets.sockets.forEach((s) => {
+        try {
+          const sIp = getIpFromSocket(s);
+          const sPseudo = getSocketPseudo(s);
+          const lower = (sPseudo || "").trim().toLowerCase();
+          if (
+            sIp === ip &&
+            (lower === "admin" ||
+              lower === "moderateur1" ||
+              lower === "moderateur2")
+          ) {
+            isProtected = true;
+          }
+        } catch (e) {}
+      });
+      if (isProtected) {
+        return socket.emit("admin:blacklist:result", {
+          success: false,
+          message: "Impossible de blacklister un modérateur ou l'admin par IP.",
+        });
+      }
+    }
     try {
       if (!Array.isArray(config.BLACKLIST)) config.BLACKLIST = [];
       if (!config.BLACKLIST.includes(ip)) config.BLACKLIST.push(ip);
@@ -332,6 +391,18 @@ function registerAdminHandlers({
         message: "Utilisateur introuvable",
       });
     }
+    // Protection : un modérateur ne peut pas blacklister un autre modérateur ni l'admin
+    const lowerTarget = canonicalPseudo.trim().toLowerCase();
+    const isTargetAdmin = lowerTarget === "admin";
+    const isTargetMod = ["moderateur1", "moderateur2"].includes(lowerTarget);
+    if (!isAdmin && (isTargetAdmin || isTargetMod)) {
+      return socket.emit("admin:blacklist:result", {
+        success: false,
+        message: "Impossible de blacklister un modérateur ou l'admin.",
+      });
+    }
+    // Protection supplémentaire : empêcher toute action de ban sur l'admin ou un modérateur (si d'autres handlers similaires existent)
+    // (à dupliquer dans d'autres handlers si besoin)
     try {
       if (!Array.isArray(config.BLACKLIST_PSEUDOS))
         config.BLACKLIST_PSEUDOS = [];

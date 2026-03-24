@@ -7,7 +7,7 @@ const { addMoney, spendMoney, getWallet } = require("./wallet");
 const STORE_FILE = path.join(config.DATA, "clan_wars.json");
 const CLANS = ["SLAM", "SISR"];
 const TICK_MS = 4000;
-const GAME_WAR_MULTIPLIERS = Object.freeze({
+let GAME_WAR_MULTIPLIERS = {
   dino: 2.25,
   flappy: 715,
   snake: 715,
@@ -17,7 +17,17 @@ const GAME_WAR_MULTIPLIERS = Object.freeze({
   aim_15: 725,
   aim_30: 717.5,
   aim_60: 700,
-});
+};
+
+function setGameWarMultiplier(game, value) {
+  if (!game || typeof value !== "number" || value <= 0) return false;
+  GAME_WAR_MULTIPLIERS[game] = value;
+  return true;
+}
+
+function getAllGameWarMultipliers() {
+  return { ...GAME_WAR_MULTIPLIERS };
+}
 const WINNER_BADGE_EMOJI = "✪";
 const BETTING_WINDOW_MS = 10 * 60 * 1000;
 const BET_MIN_AMOUNT = 2500;
@@ -992,4 +1002,6 @@ module.exports = {
   recordGameScoreContribution,
   getGameScoreMultiplier,
   placeBet,
+  setGameWarMultiplier,
+  getAllGameWarMultipliers,
 };
