@@ -1,16 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
   let reloadScheduled = false;
 
-  if (!window.__pdeSimpleCursorBootstrapped) {
-    window.__pdeSimpleCursorBootstrapped = true;
-
-    if (typeof window.initSimpleCursor === "function") {
-      window.initSimpleCursor();
-    } else {
-      const cursorScript = document.createElement("script");
-      cursorScript.src = "/js/custom_cursor.js";
-      cursorScript.defer = true;
-      document.head.appendChild(cursorScript);
+  // Respecte la préférence utilisateur
+  const enabled = localStorage.getItem("pde_custom_cursor_enabled");
+  if (enabled === null || enabled === "1") {
+    if (!window.__pdeSimpleCursorBootstrapped) {
+      window.__pdeSimpleCursorBootstrapped = true;
+      if (typeof window.initSimpleCursor === "function") {
+        window.initSimpleCursor();
+      } else {
+        const cursorScript = document.createElement("script");
+        cursorScript.src = "/js/custom_cursor.js";
+        cursorScript.defer = true;
+        document.head.appendChild(cursorScript);
+      }
     }
   }
 

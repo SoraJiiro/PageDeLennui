@@ -32,18 +32,18 @@ export function initDino(socket) {
   const c = ui.canvas.getContext("2d");
   if (ui.yourScoreEl) ui.yourScoreEl.textContent = "0";
 
-  // ---------- Constantes Gameplay ----------
-  const GRAVITY_ASCENT = 0.8;
-  const GRAVITY_DESCENT = 1.35;
-  const MIN_JUMP_VELOCITY = 19;
-  const MAX_JUMP_VELOCITY = 20;
-  const INITIAL_SPEED = 6;
-  const SPEED_INCREMENT = 0.22;
-  const MAX_SPEED = 18;
-  const MIN_OBSTACLE_DISTANCE = 310;
-  const MAX_OBSTACLE_DISTANCE = 610;
-  const OBSTACLES_BETWEEN_SPEED_UP = 3;
-  const CACTUS_SPACING = 32;
+  // ---------- Variables Gameplay dynamiques ----------
+  let GRAVITY_ASCENT = 0.8;
+  let GRAVITY_DESCENT = 1.35;
+  let MIN_JUMP_VELOCITY = 19;
+  let MAX_JUMP_VELOCITY = 20;
+  let INITIAL_SPEED = 6;
+  let SPEED_INCREMENT = 0.22;
+  let MAX_SPEED = 18;
+  let MIN_OBSTACLE_DISTANCE = 310;
+  let MAX_OBSTACLE_DISTANCE = 610;
+  let OBSTACLES_BETWEEN_SPEED_UP = 3;
+  let CACTUS_SPACING = 32;
 
   // ---------- Etat local ----------
   const state = {
@@ -336,7 +336,20 @@ export function initDino(socket) {
         c.imageSmoothingQuality = "high";
       }
 
-      // mettre à jour les tailles dynamiques utilisées par le jeu (basé sur les pixels CSS)
+      // Mettre à jour les tailles et constantes dynamiques utilisées par le jeu (basé sur les pixels CSS)
+      // Gravité et saut proportionnels à la hauteur du canvas
+      GRAVITY_ASCENT = Math.max(0.5, CLIENT_H * 0.0018);
+      GRAVITY_DESCENT = Math.max(1, CLIENT_H * 0.003);
+      MIN_JUMP_VELOCITY = Math.max(8, CLIENT_H * 0.042);
+      MAX_JUMP_VELOCITY = Math.max(10, CLIENT_H * 0.045);
+      INITIAL_SPEED = Math.max(3, CLIENT_W * 0.0075);
+      SPEED_INCREMENT = Math.max(0.08, CLIENT_W * 0.00028);
+      MAX_SPEED = Math.max(8, CLIENT_W * 0.022);
+      MIN_OBSTACLE_DISTANCE = Math.max(80, CLIENT_W * 0.38);
+      MAX_OBSTACLE_DISTANCE = Math.max(120, CLIENT_W * 0.76);
+      OBSTACLES_BETWEEN_SPEED_UP = 3;
+      CACTUS_SPACING = Math.max(8, CLIENT_W * 0.04);
+
       dino.x = Math.floor(CLIENT_W * 0.1);
       dino.width = Math.max(8, Math.floor(CLIENT_W * 0.05));
       dino.height = Math.max(8, Math.floor(CLIENT_H * 0.09));

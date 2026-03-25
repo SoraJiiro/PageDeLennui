@@ -283,11 +283,11 @@ export function initFlappy(socket) {
     const cssH = Math.round(ui.canvas.height / dpr);
     if (!cssW || !cssH) return;
 
-    gravity = cssH * 0.00035;
-    jump = -cssH * 0.009;
-    pipeGap = cssH * 0.25;
-    pipeWidth = cssW * 0.08;
-    pipeSpeed = cssW * 0.0035;
+    gravity = Math.max(0.08, cssH * 0.00035);
+    jump = Math.min(-2, -cssH * 0.009);
+    pipeGap = Math.max(24, cssH * 0.25);
+    pipeWidth = Math.max(8, cssW * 0.08);
+    pipeSpeed = Math.max(0.8, cssW * 0.0035);
   }
 
   const bird = {

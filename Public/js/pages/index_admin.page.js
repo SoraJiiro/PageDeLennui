@@ -223,6 +223,14 @@ function initSocket() {
     console.log("> Connecté au serveur");
   });
 
+  socket.on("connect_error", (err) => {
+    console.error("socket connect_error:", err);
+  });
+
+  socket.on("reconnect_failed", () => {
+    console.error("socket reconnect_failed");
+  });
+
   // Auto-reload sur modification de fichiers
   socket.on("reload", (data) => {
     const file = data?.file || "";

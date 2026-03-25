@@ -1323,9 +1323,13 @@ function registerChatHandlers({
     }
   });
 
-  // Admin: supprimer un fichier
+  function isModerator(pseudo) {
+    return ["Admin", "Moderateur1", "Moderateur2"].includes(pseudo);
+  }
+
+  // Modérateur/Admin: supprimer un fichier
   socket.on("chat:deleteFile", ({ fileId }) => {
-    if (pseudo !== "Admin") return;
+    if (!isModerator(pseudo)) return;
 
     try {
       const target = FileService.data.sharedFiles?.[fileId];
@@ -1447,8 +1451,9 @@ function registerChatHandlers({
     }
   });
 
+  // Modérateur/Admin: supprimer un message
   socket.on("chat:delete", ({ id }) => {
-    if (pseudo !== "Admin") return;
+    if (!isModerator(pseudo)) return;
     const idx = FileService.data.historique.findIndex((m) => m.id === id);
     if (idx !== -1) {
       FileService.data.historique.splice(idx, 1);

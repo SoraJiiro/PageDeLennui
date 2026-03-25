@@ -858,7 +858,11 @@ export function initChat(socket) {
         avatarImage.addEventListener("click", () => showPfpModal(pfp, auteur));
       }
 
-      if (myPseudo === "Admin" && id) {
+      // Afficher les boutons d'action pour les modérateurs
+      const isModerator = ["Admin", "Moderateur1", "Moderateur2"].includes(
+        myPseudo,
+      );
+      if (isModerator && id) {
         const btn = document.createElement("button");
         btn.className = "msg-delete-btn";
         btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
@@ -868,7 +872,7 @@ export function initChat(socket) {
         };
         el.appendChild(btn);
 
-        // Admin peut aussi supprimer les fichiers
+        // Modérateur/Admin peut aussi supprimer les fichiers
         if (file) {
           const fileDelBtn = document.createElement("button");
           fileDelBtn.className = "msg-delete-btn file-delete-btn";
@@ -880,7 +884,7 @@ export function initChat(socket) {
           el.appendChild(fileDelBtn);
         }
 
-        // Mute / Unmute buttons (Admin)
+        // Mute / Unmute buttons (Admin/Modérateur)
         const muteBtn = document.createElement("button");
         muteBtn.className = "msg-mute-btn";
         muteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';

@@ -2,6 +2,66 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.1.2",
+      "date": "25/03/2026 ",
+      "sections": [
+        {
+          "title": "Nouveautés",
+          "icon": "fa-star",
+          "items": [
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Paramètres :",
+              "text": "Vous pouvez maintenant désactiver les notifications bulles et le curseur custom dans la section paramètres de la sidebar."
+            },
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Entrées FAQ :",
+              "text": "De nouvelles réponses à certaines questions ont été ajoutées dans la page FAQ, notamment concernant les Guerres de Clans et le Shop. N'hésitez pas à aller y jeter un coup d'oeil! Lien de la <a href=\"/faq.html\">page FAQ</a>. (vérifier les sections \"questions générales\" et \"jeux & scores\")"
+            }
+          ]
+        },
+        {
+          "title": "Améliorations —",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Subway Surfer :",
+              "text": "Passé au dela de 2.65 de vitesse le spawn des obstacle est augmenté. Les items d'invicibilité (triangles bleus) ne spanw désormais plus dans les obstacles."
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "Canvas (Dino, Flappy, Subway):",
+              "text": "Bug de la redimension de fenêtre / page corrigé. Les jeux ont désormais une taille minimale définie et les valeurs telles que la gravité et la taille des différents objets sont relatives à la taille actuelle de la fenêtre / page. [TL;PL : Plus de triche possible sur ces jeux]"
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "UI (texte) :",
+              "text": "Correction des problèmes d'affichage du texte sur la page principale. Des textes obsolètes ont également été mis à jour."
+            }
+          ]
+        },
+        {
+          "title": "Retraits / Resets",
+          "icon": "fa-arrow-right-arrow-left",
+          "items": [
+            {
+              "tagClass": "tag-removed",
+              "tag": "[RESET]",
+              "strong": "Reset Subway Surfer :",
+              "text": "Reset des scores du Subway Surfer pour tout le monde, histoire de repartir sur une base legit. (encore, pour de vrai)"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.1.1",
       "date": "22/03/2026 ",
       "sections": [
@@ -28,18 +88,6 @@
               "text": "Correction du bug de course infinie en redimensionnant la fenêtre du jeu pendant une partie."
             }
           ]
-        },
-        {
-          "title": "Retraits / Resets",
-          "icon": "fa-arrow-right-arrow-left",
-          "items": [
-            {
-              "tagClass": "tag-removed",
-              "tag": "[RESET]",
-              "strong": "Reset Subway Surfer :",
-              "text": "Reset des scores du Subway Surfer pour tout le monde, histoire de repartir sur une base legit (encore)."
-            }
-          ]
         }
       ]
     },
@@ -48,7 +96,7 @@
       "date": "15/03/2026 ",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -96,7 +144,7 @@
       "date": "18/03/2026 ",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -144,7 +192,7 @@
       "date": "15/03/2026 ",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -192,7 +240,7 @@
       "date": "11/03/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -240,7 +288,7 @@
       "date": "08/03/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -307,7 +355,7 @@
       "date": "05/03/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -373,7 +421,7 @@
       "date": "03/03/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -487,7 +535,7 @@
       "date": "02/03/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -559,7 +607,7 @@
       "date": "Vacances d'Hiver",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -641,7 +689,7 @@
       "date": "9/2/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -683,7 +731,7 @@
       "date": "7/2/2026 - 9/2/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -833,7 +881,7 @@
       "date": "30/01/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -869,7 +917,7 @@
       "date": "27/01/2026 - 27/01/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -923,7 +971,7 @@
       "date": "25/01/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -959,7 +1007,7 @@
       "date": "21/01/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {
@@ -995,7 +1043,7 @@
       "date": "17/01/2026 - 18/01/2026",
       "sections": [
         {
-          "title": "Nouveautes",
+          "title": "Nouveautés",
           "icon": "fa-star",
           "items": [
             {

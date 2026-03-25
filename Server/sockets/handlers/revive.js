@@ -15,9 +15,15 @@ function registerReviveHandlers({
   const { consumeLife, getLivesCount } = require("../../services/reviveLives");
   const { spendMoney } = require("../../services/wallet");
 
-  socket.on("revive:getLives", () => {
+  // On attend un paramètre "game" pour savoir pour quel jeu envoyer le prix
+  socket.on("revive:getLives", ({ game } = {}) => {
     const lives = getLivesCount(FileService, pseudo);
-    socket.emit("revive:lives", { lives });
+    let reviveCost = null;
+    if (game) {
+      const info = getReviveCostForSocket(socket, game);
+      reviveCost = info && info.cost != null ? info.cost : null;
+    }
+    socket.emit("revive:lives", { lives, reviveCost });
   });
 
   function handleRevive(game, label, successEvent, errorEvent, color) {

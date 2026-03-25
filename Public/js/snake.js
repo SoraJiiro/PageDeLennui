@@ -48,6 +48,7 @@ class SnakeGame {
     this.scoreAttente = null;
     this.resumeScore = null;
     this.revivesUsed = 0;
+    this.reviveCost = null; // prix exact reçu du serveur
 
     this.initSettings();
     this.bindEvents();
@@ -135,18 +136,11 @@ class SnakeGame {
 
   requestReviveLives() {
     try {
-      this.socket.emit("revive:getLives");
+      this.socket.emit("revive:getLives", { game: "snake" });
     } catch {}
   }
 
-  computeRevivePrice() {
-    const base = 4000;
-    const multiplier = 45;
-    const escalation = 1 + this.revivesUsed * 0.5;
-    let price = Math.floor(base + this.state.score * multiplier * escalation);
-    price = Math.max(4000, Math.min(2200000, price));
-    return price;
-  }
+  // On n'utilise plus de calcul local, on affiche reviveCost reçu du serveur
 
   updateReviveOverlayContent() {
     if (
@@ -158,7 +152,7 @@ class SnakeGame {
     if (this.ui.reviveCount) this.ui.reviveCount.textContent = remainingRevives;
 
     const hasShopLife = this.availableReviveLives > 0;
-    const price = this.computeRevivePrice();
+    const price = this.reviveCost != null ? this.reviveCost : 0;
     let modeEl = this.ui.reviveOverlay.querySelector(".snake-revive-mode");
     if (!modeEl) {
       modeEl = document.createElement("p");
@@ -280,8 +274,9 @@ class SnakeGame {
       } catch (e) {}
     });
 
-    this.socket.on("revive:lives", ({ lives } = {}) => {
+    this.socket.on("revive:lives", ({ lives, reviveCost: cost }) => {
       this.availableReviveLives = this.normalizeLives(lives);
+      this.reviveCost = cost;
       this.updateReviveOverlayContent();
     });
 

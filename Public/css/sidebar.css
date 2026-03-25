@@ -344,3 +344,7 @@ input[type="color"]::-webkit-color-swatch {
   min-width: 1rem;
   text-align: center;
 }
+
+.sidebar::-webkit-scrollbar {
+  display: none;
+}

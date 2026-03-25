@@ -84,17 +84,17 @@ export function initSubway(socket) {
 
   const world = {
     laneCount: 3,
-    playerSize: 34,
-    baseSpeedPx: 380,
-    speedGrowthPerSec: 0.006,
+    playerSize: 34, // sera dynamique
+    baseSpeedPx: 380, // sera dynamique
+    speedGrowthPerSec: 0.006, // sera dynamique
     speedStepEveryObstacles: 3,
-    speedStepAmount: 0.05,
-    maxSpeed: 3.5,
+    speedStepAmount: 0.05, // sera dynamique
+    maxSpeed: 3.5, // sera dynamique
     minObstacleSpawn: 0.26,
     maxObstacleSpawn: 0.74,
     struggleDuration: 0.16,
-    struggleAmplitude: 7,
-    invincibilityUnlockSpeed: 2.75,
+    struggleAmplitude: 7, // sera dynamique
+    invincibilityUnlockSpeed: 2.75, // sera dynamique
     invincibilityDurationMs: 5000,
     invincibilitySpawnChance: 0.33,
     invincibilityScoreStep: 3250,
@@ -146,18 +146,12 @@ export function initSubway(socket) {
     return computeBaseGain() + Math.max(0, state.coins);
   }
 
-  function computeRevivePrice() {
-    const s = Math.max(0, Math.floor(Number(state.score) || 0));
-    const escalation = 1 + Math.max(0, state.revivesUsed) * 0.75;
-    let price = Math.floor(s * 75 * escalation);
-    if (!Number.isFinite(price) || price < 0) price = 5000;
-    price = Math.max(5000, Math.min(5_000_000, price));
-    return price;
-  }
+  // On n'utilise plus de calcul local, on affiche reviveCost reçu du serveur
+  let reviveCost = null;
 
   function requestReviveLives() {
     try {
-      socket.emit("revive:getLives");
+      socket.emit("revive:getLives", { game: "subway" });
     } catch {}
   }
 
@@ -279,58 +273,58 @@ export function initSubway(socket) {
     gainEl.textContent = `Gain final: ${computeFinalGain()}`;
   }
 
-  function updatePauseButton() {
-    if (!pauseBtn) return;
-    if (state.running && state.paused) {
-      pauseBtn.textContent = `Reprendre (${pauseKeyText})`;
-      return;
-    }
-    pauseBtn.textContent = `Pause (${pauseKeyText})`;
-  }
+  function updateReviveOverlayContent() {
+    if (!reviveOverlay || reviveOverlay.style.display !== "flex") return;
+    const remainingRevives = Math.max(0, 3 - state.revivesUsed);
+    if (reviveCountEl) reviveCountEl.textContent = String(remainingRevives);
 
-  function pauseRun(source = "manual") {
-    if (
-      !state.running ||
-      state.gameOver ||
-      state.awaitingRevive ||
-      state.paused
-    ) {
-      return false;
-    }
-    state.paused = true;
-    state.pauseSource = source;
-    state.resumeCountdown = 0;
-    state.resumeCountdownTickAtMs = 0;
-    updatePauseButton();
-    try {
-      socket.emit("subway:score", { score: Math.floor(state.score) });
-    } catch {}
-    if (source === "manual") {
-      try {
-        openSearchNoSocket();
-      } catch {}
-    }
-    return true;
-  }
+    const hasShopLife = availableReviveLives > 0;
+    const price = reviveCost != null ? reviveCost : 0;
 
-  function resumeRun() {
-    if (!state.running || !state.paused) return false;
-    // Reprise plus douce apres pause: on baisse legerement la vitesse courante.
-    state.speed = Math.max(1, state.speed * 0.92);
-    state.paused = false;
-    state.pauseSource = null;
-    state.resumeCountdown = 0;
-    state.resumeCountdownTickAtMs = 0;
-    updatePauseButton();
-    return true;
-  }
+    let modeEl = reviveOverlay.querySelector(".subway-revive-mode");
+    if (!modeEl) {
+      modeEl = document.createElement("p");
+      modeEl.className = "subway-revive-mode";
+      modeEl.style.color = "#fff";
+      modeEl.style.marginBottom = "10px";
+      modeEl.style.fontSize = "0.95rem";
+      reviveOverlay.insertBefore(modeEl, reviveBtn);
+    }
+    if (modeEl) {
+      modeEl.textContent = hasShopLife
+        ? "Choix: vie du shop ou paiement en monnaie"
+        : "Choix: paiement en monnaie";
+    }
 
-  function startResumeCountdown() {
-    if (!state.running || !state.paused) return false;
-    state.resumeCountdown = 3;
-    state.resumeCountdownTickAtMs = Date.now() + 1000;
-    updatePauseButton();
-    return true;
+    let payBtnEl = reviveOverlay.querySelector(".dino-revive-pay-btn");
+    if (!payBtnEl) {
+      payBtnEl = document.createElement("button");
+      payBtnEl.className = "dino-revive-pay-btn";
+      payBtnEl.style.display = "none";
+      payBtnEl.style.marginTop = "8px";
+      payBtnEl.style.padding = "8px 12px";
+      payBtnEl.style.background = "transparent";
+      payBtnEl.style.border = "1px solid #fff";
+      payBtnEl.style.color = "#fff";
+      reviveOverlay.insertBefore(payBtnEl, cancelBtn);
+    }
+
+    reviveBtn.innerHTML = hasShopLife
+      ? `Utiliser 1 vie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`
+      : `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`;
+    reviveBtn.onclick = () => {
+      if (hasShopLife) {
+        socket.emit("subway:payToContinue", { mode: "life" });
+      } else {
+        socket.emit("subway:payToContinue", { mode: "pay" });
+      }
+    };
+
+    payBtnEl.textContent = `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
+    payBtnEl.onclick = () => {
+      socket.emit("subway:payToContinue", { mode: "pay" });
+    };
+  }
   }
 
   function showReviveOverlay() {
@@ -343,6 +337,14 @@ export function initSubway(socket) {
   }
 
   function resizeCanvas() {
+    // Adapter dynamiquement les valeurs critiques selon la taille du canvas
+    world.playerSize = Math.max(18, Math.round(canvas.height * 0.075));
+    world.baseSpeedPx = Math.max(120, Math.round(canvas.width * 0.36));
+    world.speedGrowthPerSec = Math.max(0.002, canvas.width * 0.000015);
+    world.speedStepAmount = Math.max(0.02, canvas.width * 0.00011);
+    world.maxSpeed = Math.max(1.5, canvas.width * 0.0034);
+    world.struggleAmplitude = Math.max(3, Math.round(canvas.height * 0.016));
+    world.invincibilityUnlockSpeed = Math.max(1.2, canvas.width * 0.0027);
     const wrap = canvas.parentElement;
     if (!wrap) return;
 
@@ -491,6 +493,7 @@ export function initSubway(socket) {
     let chosenLane = -1;
     for (let tries = 0; tries < 8; tries += 1) {
       const lane = Math.floor(Math.random() * world.laneCount);
+      // Empêcher le spawn si la lane est occupée par un obstacle (collision stricte)
       const blocked = state.obstacles.some(
         (o) =>
           o.lane === lane &&
@@ -579,10 +582,17 @@ export function initSubway(socket) {
     }
 
     state.obstacleTimer += dt;
-    const obstacleEvery = Math.max(
+    let obstacleEvery = Math.max(
       world.minObstacleSpawn,
       world.maxObstacleSpawn - state.speed * 0.045,
     );
+    // Si la vitesse dépasse 2.65, on augmente encore la fréquence de spawn
+    if (state.speed > 2.65) {
+      obstacleEvery = Math.max(
+        world.minObstacleSpawn * 0.55,
+        obstacleEvery * 0.65,
+      );
+    }
     if (state.obstacleTimer >= obstacleEvery) {
       state.obstacleTimer = 0;
       spawnObstacle();
@@ -911,9 +921,10 @@ export function initSubway(socket) {
     }
   }
 
-  socket.on("revive:lives", ({ lives } = {}) => {
+  socket.on("revive:lives", ({ lives, reviveCost: cost }) => {
     const parsed = Math.floor(Number(lives) || 0);
     availableReviveLives = Math.max(0, parsed);
+    reviveCost = cost;
     if (state.awaitingRevive) {
       updateReviveOverlayContent();
     }

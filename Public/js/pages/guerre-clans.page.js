@@ -203,7 +203,7 @@ function renderActiveWar(activeWar) {
                             : canBet
                               ? `<div class="war-bet-form">
                                     <input id="betAmountInput" class="bet-amount-input" type="number" min="2500" step="1" placeholder="Montant en monnaie (min 2500)">
-                                    <div class="bet-message">Mise min: 2500 • Mise max: 75% de ta monnaie actuelle</div>
+                                    <div class="bet-message">Mise min: 2500 • Mise max: 83% de ta monnaie actuelle</div>
                                     <div class="war-bet-actions">
                                       <button id="betSlamBtn" class="vote-btn">Parier SLAM</button>
                                       <button id="betSisrBtn" class="vote-btn">Parier SISR</button>

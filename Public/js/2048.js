@@ -19,6 +19,7 @@ export function init2048(socket) {
   let nextId = 1;
   let revivesUsed = 0;
   let availableReviveLives = 0;
+  let reviveCost = null; // prix exact reçu du serveur
   let uiColor = "#00ff00";
 
   // --- Shutdown resume glue (score-only) ---
@@ -64,18 +65,11 @@ export function init2048(socket) {
 
   function requestReviveLives() {
     try {
-      socket.emit("revive:getLives");
+      socket.emit("revive:getLives", { game: "2048" });
     } catch {}
   }
 
-  function computeRevivePrice() {
-    const base = 3000;
-    const multiplier = 2.2;
-    const escalation = 1 + revivesUsed * 0.45;
-    let price = Math.floor(base + score * multiplier * escalation);
-    price = Math.max(3000, Math.min(2000000, price));
-    return price;
-  }
+  // On n'utilise plus de calcul local, on affiche reviveCost reçu du serveur
 
   function updateReviveOverlayContent() {
     const reviveOverlay = document.querySelector(".game-2048-revive-overlay");
@@ -83,7 +77,7 @@ export function init2048(socket) {
 
     const remainingRevives = 3 - revivesUsed;
     const hasShopLife = availableReviveLives > 0;
-    const price = computeRevivePrice();
+    const price = reviveCost != null ? reviveCost : 0;
     const modeEl = reviveOverlay.querySelector(".revive-mode");
     const costEl = reviveOverlay.querySelector(".cost");
     const countEl = reviveOverlay.querySelector(".revive-count");
@@ -179,8 +173,9 @@ export function init2048(socket) {
     updateScoreDisplay();
   });
 
-  socket.on("revive:lives", ({ lives } = {}) => {
+  socket.on("revive:lives", ({ lives, reviveCost: cost }) => {
     availableReviveLives = normalizeLives(lives);
+    reviveCost = cost;
     updateReviveOverlayContent();
   });
 

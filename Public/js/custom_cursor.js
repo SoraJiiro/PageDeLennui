@@ -1,4 +1,9 @@
 (function () {
+  // Respecte la préférence utilisateur (empêche l'activation si désactivé)
+  try {
+    const enabled = localStorage.getItem("pde_custom_cursor_enabled");
+    if (enabled === "0") return;
+  } catch (e) {}
   if (window.__pdeSimpleCursorReady) return;
 
   function canUseCustomCursor() {

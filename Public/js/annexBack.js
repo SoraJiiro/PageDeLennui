@@ -29,7 +29,7 @@
     btn.type = "button";
     btn.className = "annex-back-btn";
     btn.setAttribute("aria-label", "Retour à la page précédente");
-    btn.textContent = "← Retour";
+    btn.innerHTML = "<b>🠔</b> <b>Retour</b>";
     btn.addEventListener("click", goBackToPreviousPage);
 
     document.body.appendChild(btn);

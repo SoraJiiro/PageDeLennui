@@ -23,6 +23,10 @@ html {
   outline-offset: 2px;
 }
 
+iframe::-webkit-scrollbar {
+  display: none;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -802,15 +806,23 @@ button.sidebar-close:hover {
   left: 14px;
   z-index: 1200;
   min-height: 38px;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border: 1px solid var(--primary-color);
   background: var(--bg-color);
   color: var(--primary-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
 }
 
 .annex-back-btn:hover {
   background: var(--primary-color);
   color: var(--bg-color);
+}
+
+.annex-back-btn b:first-child {
+  font-size: 1.65rem;
 }
 
 section,

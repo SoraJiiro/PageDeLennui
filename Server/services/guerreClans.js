@@ -19,14 +19,68 @@ let GAME_WAR_MULTIPLIERS = {
   aim_60: 700,
 };
 
+// Clan-specific temporary boosts: { SLAM: { multiplier: Number, expiresAt: msEpoch }, SISR: {...} }
+let CLAN_BOOSTS = {
+  SLAM: { multiplier: 1, expiresAt: null },
+  SISR: { multiplier: 1, expiresAt: null },
+};
+
 function setGameWarMultiplier(game, value) {
   if (!game || typeof value !== "number" || value <= 0) return false;
   GAME_WAR_MULTIPLIERS[game] = value;
   return true;
 }
 
+function setClanBoost(clan, multiplier, durationMs) {
+  const c = String(clan || "").toUpperCase();
+  if (!CLANS.includes(c)) return false;
+  const m = Number(multiplier);
+  if (!Number.isFinite(m) || m <= 0) return false;
+  // If durationMs is provided and >0, set an expiry; otherwise make it persistent until cleared
+  const d = Number(durationMs);
+  const expiresAt =
+    Number.isFinite(d) && d > 0
+      ? Date.now() + Math.max(0, Math.floor(d))
+      : null;
+  CLAN_BOOSTS[c] = { multiplier: m, expiresAt };
+  return true;
+}
+
+function getClanBoostMultiplier(clan) {
+  const c = String(clan || "").toUpperCase();
+  if (!CLANS.includes(c)) return 1;
+  const entry = CLAN_BOOSTS[c] || { multiplier: 1, expiresAt: null };
+  // persistent boost if expiresAt === null
+  if (entry.expiresAt === null) return Number(entry.multiplier) || 1;
+  if (
+    !Number.isFinite(Number(entry.expiresAt)) ||
+    Date.now() > Number(entry.expiresAt)
+  )
+    return 1;
+  return Number(entry.multiplier) || 1;
+}
+
 function getAllGameWarMultipliers() {
   return { ...GAME_WAR_MULTIPLIERS };
+}
+function getAllClanBoosts() {
+  // return copy with remaining durations in ms
+  const out = {};
+  for (const k of CLANS) {
+    const e = CLAN_BOOSTS[k] || { multiplier: 1, expiresAt: 0 };
+    let remaining = null;
+    if (e.expiresAt === null) remaining = null;
+    else remaining = Math.max(0, (Number(e.expiresAt) || 0) - Date.now());
+    out[k] = { multiplier: Number(e.multiplier) || 1, remainingMs: remaining };
+  }
+  return out;
+}
+
+function clearClanBoost(clan) {
+  const c = String(clan || "").toUpperCase();
+  if (!CLANS.includes(c)) return false;
+  CLAN_BOOSTS[c] = { multiplier: 1, expiresAt: null };
+  return true;
 }
 const WINNER_BADGE_EMOJI = "✪";
 const BETTING_WINDOW_MS = 10 * 60 * 1000;
@@ -365,10 +419,18 @@ function recordGameScoreContribution({
   const participant = participants[p];
   if (!participant || !CLANS.includes(participant.clan)) return false;
 
-  const gained = Math.ceil(Math.ceil(raw) * m);
+  // Appliquer un éventuel boost de clan
+  const clanBoost = getClanBoostMultiplier(participant.clan) || 1;
+  // Appliquer d'abord le multiplicateur du jeu (ou demandé) au score brut,
+  // puis appliquer le boost de clan sur le gain final (et non pas multiplier le multiplicateur).
+  const baseGain = Math.ceil(raw * m);
+  const gained = Math.ceil(baseGain * clanBoost);
+  // Retirer 8% du résultat final (taxe/retrait)
+  const withheld = Math.floor(gained * 0.08);
+  const finalGained = Math.max(0, gained - withheld);
   activeWar.runScoresByPseudo[p] =
     Math.max(0, Math.floor(Number(activeWar.runScoresByPseudo[p]) || 0)) +
-    gained;
+    finalGained;
 
   if (
     !activeWar.runScoresByGame[p] ||
@@ -379,7 +441,7 @@ function recordGameScoreContribution({
   const g = String(game || "unknown");
   activeWar.runScoresByGame[p][g] =
     Math.max(0, Math.floor(Number(activeWar.runScoresByGame[p][g]) || 0)) +
-    gained;
+    finalGained;
 
   writeStore(store);
 
@@ -528,14 +590,14 @@ function placeBet({ FileService, io, pseudo, clan, amount }) {
   if (maxStake < BET_MIN_AMOUNT) {
     return {
       ok: false,
-      message: `Tu dois avoir au moins ${Math.ceil(BET_MIN_AMOUNT / BET_MAX_RATIO)} monnaie pour miser (max 75%).`,
+      message: `Tu dois avoir au moins ${Math.ceil(BET_MIN_AMOUNT / BET_MAX_RATIO)} monnaie pour miser (max 83%).`,
       wallet: walletBefore,
     };
   }
   if (stake > maxStake) {
     return {
       ok: false,
-      message: `Mise max autorisee: ${maxStake} monnaie (75% de ton solde).`,
+      message: `Mise max autorisee: ${maxStake} monnaie (83% de ton solde).`,
       wallet: walletBefore,
     };
   }
@@ -1004,4 +1066,8 @@ module.exports = {
   placeBet,
   setGameWarMultiplier,
   getAllGameWarMultipliers,
+  setClanBoost,
+  getAllClanBoosts,
+  getClanBoostMultiplier,
+  clearClanBoost,
 };

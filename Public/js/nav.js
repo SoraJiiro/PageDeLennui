@@ -115,17 +115,31 @@ document.addEventListener("DOMContentLoaded", () => {
       badge.className = "notification-badge";
       targetEl.appendChild(badge);
     }
+    // Désactive l'affichage si l'option utilisateur est à 0
+    try {
+      const enabled = localStorage.getItem("pde_notif_bubbles_enabled");
+      if (enabled === "0") {
+        badge.style.display = "none";
+      }
+    } catch (e) {}
     return badge;
   }
 
   function setBadge(targetEl, text) {
     const badge = ensureBadge(targetEl);
     if (!badge) return;
+    // Désactive l'affichage si l'option utilisateur est à 0
+    try {
+      const enabled = localStorage.getItem("pde_notif_bubbles_enabled");
+      if (enabled === "0") {
+        badge.style.display = "none";
+        return;
+      }
+    } catch (e) {}
     if (text === null || text === undefined || text === "" || text === 0) {
       badge.style.display = "none";
       return;
     }
-
     // Si on dépasse un certain seuil, on compacte.
     if (typeof text === "number" && text > 99) {
       badge.innerHTML = "<b>99+</b>";

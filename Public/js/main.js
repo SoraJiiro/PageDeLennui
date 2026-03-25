@@ -7,6 +7,37 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
   if (window.socketInitialized) return;
   window.socketInitialized = true;
 
+  // Gestion du curseur custom (toggle)
+  document.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.getElementById("toggleCustomCursor");
+    if (!toggle) return;
+    // Charger la préférence
+    const enabled = localStorage.getItem("pde_custom_cursor_enabled");
+    toggle.checked = enabled === null || enabled === "1";
+    toggle.addEventListener("change", () => {
+      localStorage.setItem(
+        "pde_custom_cursor_enabled",
+        toggle.checked ? "1" : "0",
+      );
+      window.location.reload();
+    });
+  });
+
+  // Gestion des pastilles de notification (toggle)
+  document.addEventListener("DOMContentLoaded", () => {
+    const toggleNotif = document.getElementById("toggleNotifBubbles");
+    if (!toggleNotif) return;
+    const enabled = localStorage.getItem("pde_notif_bubbles_enabled");
+    toggleNotif.checked = enabled === null || enabled === "1";
+    toggleNotif.addEventListener("change", () => {
+      localStorage.setItem(
+        "pde_notif_bubbles_enabled",
+        toggleNotif.checked ? "1" : "0",
+      );
+      window.location.reload();
+    });
+  });
+
   const subPageName = document.URL;
   const sidebar = document.getElementById("sidebar");
 
