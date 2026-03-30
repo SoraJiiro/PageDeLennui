@@ -80,32 +80,7 @@ function renderAdminClanWarState(state) {
     .join("");
 }
 
-function clanWarStart() {
-  const socket = window.adminSocket;
-  if (!socket) return alert("Socket not ready");
-
-  const input = document.getElementById("admin-clanwar-badge-name");
-  const winnerBadgeName = String(input && input.value ? input.value : "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!winnerBadgeName) {
-    showNotification(
-      "❌ Saisis un nom de badge avant de lancer la guerre.",
-      "error",
-    );
-    return;
-  }
-
-  socket.emit("admin:clanwar:start", { winnerBadgeName });
-}
-
-function clanWarFinish() {
-  const socket = window.adminSocket;
-  if (!socket) return alert("Socket not ready");
-  if (!confirm("Cloturer la guerre maintenant ?")) return;
-  socket.emit("admin:clanwar:finish");
-}
+// Fonctions guerre des clans supprimées
 
 window.clanWarStart = clanWarStart;
 window.clanWarFinish = clanWarFinish;

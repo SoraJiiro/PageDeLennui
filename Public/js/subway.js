@@ -9,322 +9,255 @@ export function initSubway(socket) {
     return Math.min(MAX_RENDER_DPR, base * DPI_BOOST);
   }
 
-  const stage = document.getElementById("stage20");
-  const canvas = document.getElementById("subway-canvas");
-  const scoreEl = document.getElementById("subway-score");
-  const speedEl = document.getElementById("subway-speed");
-  const coinsEl = document.getElementById("subway-coins");
-  const gainEl = document.getElementById("subway-gain");
-  const pauseBtn = document.getElementById("subway-pause-btn");
-  const reviveOverlay = document.getElementById("subway-revive-overlay");
-  const reviveBtn = document.getElementById("subway-revive-btn");
-  const reviveCountEl = document.getElementById("subway-revive-count");
-  const cancelBtn = document.getElementById("subway-cancel-btn");
+  function tryInit() {
+    const stage = document.getElementById("stage20");
+    const canvas = document.getElementById("subway-canvas");
+    const scoreEl = document.getElementById("subway-score");
+    const speedEl = document.getElementById("subway-speed");
+    const coinsEl = document.getElementById("subway-coins");
+    const gainEl = document.getElementById("subway-gain");
+    const pauseBtn = document.getElementById("subway-pause-btn");
+    const reviveOverlay = document.getElementById("subway-revive-overlay");
+    const reviveBtn = document.getElementById("subway-revive-btn");
+    const reviveCountEl = document.getElementById("subway-revive-count");
+    const cancelBtn = document.getElementById("subway-cancel-btn");
 
-  if (
-    !stage ||
-    !canvas ||
-    !scoreEl ||
-    !speedEl ||
-    !coinsEl ||
-    !gainEl ||
-    !pauseBtn ||
-    !reviveOverlay ||
-    !reviveBtn ||
-    !reviveCountEl ||
-    !cancelBtn
-  )
-    return;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  let uiColor =
-    getComputedStyle(document.documentElement)
-      .getPropertyValue("--primary-color")
-      .trim() || "#00ff66";
-  let bgColor =
-    getComputedStyle(document.documentElement)
-      .getPropertyValue("--bg-color")
-      .trim() || "#000000";
-
-  const state = {
-    running: false,
-    paused: false,
-    pauseSource: null,
-    resumeCountdown: 0,
-    resumeCountdownTickAtMs: 0,
-    gameOver: false,
-    score: 0,
-    speed: 1,
-    lane: 1,
-    playerX: 0,
-    playerTargetX: 0,
-    coins: 0,
-    obstacles: [],
-    pickups: [],
-    powerups: [],
-    obstacleTimer: 0,
-    coinTimer: 0,
-    obstaclesPassed: 0,
-    lastObstacleLane: null,
-    lastTs: 0,
-    rewarded: false,
-    revivesUsed: 0,
-    awaitingRevive: false,
-    struggleTime: 0,
-    struggleDir: 0,
-    invincibleUntilMs: 0,
-    nextInvincibilityRollScore: 3250,
-  };
-  let availableReviveLives = 0;
-  let resumeScore = null;
-  let resumeConsumed = false;
-  let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
-
-  const world = {
-    laneCount: 3,
-    playerSize: 34, // sera dynamique
-    baseSpeedPx: 380, // sera dynamique
-    speedGrowthPerSec: 0.006, // sera dynamique
-    speedStepEveryObstacles: 3,
-    speedStepAmount: 0.05, // sera dynamique
-    maxSpeed: 3.5, // sera dynamique
-    minObstacleSpawn: 0.26,
-    maxObstacleSpawn: 0.74,
-    struggleDuration: 0.16,
-    struggleAmplitude: 7, // sera dynamique
-    invincibilityUnlockSpeed: 2.75, // sera dynamique
-    invincibilityDurationMs: 5000,
-    invincibilitySpawnChance: 0.33,
-    invincibilityScoreStep: 3250,
-  };
-
-  function coinPickUpAnim(bool = true) {
-    function popEase(v) {
-      const p = 0.6;
-      if (v < p) {
-        return (v / p) * (v / p) - Math.PI * v + p - 1;
-      }
-      return 1 - ((Math.min(v, p) + 3 * Math.PI) * p - v * 2);
-    }
-
-    popEase(world.spawnChance);
-
-    if (bool) {
-      world.playerSize = 39;
-    } else {
-      world.playerSize = 29;
-    }
-  }
-
-  function isStageActive() {
-    return stage.classList.contains("is-active");
-  }
-
-  function laneX(idx) {
-    const laneGap = canvas.width * 0.22;
-    const start = canvas.width * 0.5 - laneGap;
-    return start + laneGap * idx;
-  }
-
-  function playerY() {
-    return canvas.height - canvas.height * 0.14;
-  }
-
-  function initPlayerLanePosition() {
-    const x = laneX(state.lane);
-    state.playerX = x;
-    state.playerTargetX = x;
-  }
-
-  function computeBaseGain() {
-    return Math.floor(Math.max(0, state.score) / 750) * 2;
-  }
-
-  function computeFinalGain() {
-    return computeBaseGain() + Math.max(0, state.coins);
-  }
-
-  // On n'utilise plus de calcul local, on affiche reviveCost reçu du serveur
-  let reviveCost = null;
-
-  function requestReviveLives() {
-    try {
-      socket.emit("revive:getLives", { game: "subway" });
-    } catch {}
-  }
-
-  function refreshThemeColors() {
-    try {
-      const styles = getComputedStyle(document.documentElement);
-      uiColor = styles.getPropertyValue("--primary-color").trim() || uiColor;
-      bgColor = styles.getPropertyValue("--bg-color").trim() || bgColor;
-    } catch {}
-  }
-
-  function clearDangerAroundPlayer() {
-    const py = playerY();
-    const playerHalf = world.playerSize * 0.5;
-    state.obstacles = state.obstacles.filter(
-      (o) =>
-        !(
-          o.lane === state.lane &&
-          Math.abs(o.y - py) < o.h * 0.6 + playerHalf * 1.2
-        ),
-    );
-    state.pickups = state.pickups.filter((c) => Math.abs(c.y - py) > c.r * 1.2);
-  }
-
-  function isInvincible() {
-    return Date.now() < state.invincibleUntilMs;
-  }
-
-  function syncInvincibilityMilestoneFromScore() {
-    const s = Math.max(0, Math.floor(Number(state.score) || 0));
-    state.nextInvincibilityRollScore =
-      (Math.floor(s / world.invincibilityScoreStep) + 1) *
-      world.invincibilityScoreStep;
-  }
-
-  function pushProgress() {
-    try {
-      if (!socket) return;
-      if (state.gameOver || state.awaitingRevive || !state.running) return;
-      const s = Math.max(0, Math.floor(Number(state.score) || 0));
-      if (s <= 0) return;
-      socket.emit("subway:progress", { score: s });
-    } catch {}
-  }
-
-  function updateReviveOverlayContent() {
-    if (!reviveOverlay || reviveOverlay.style.display !== "flex") return;
-    const remainingRevives = Math.max(0, 3 - state.revivesUsed);
-    if (reviveCountEl) reviveCountEl.textContent = String(remainingRevives);
-
-    const hasShopLife = availableReviveLives > 0;
-    const price = computeRevivePrice();
-
-    let modeEl = reviveOverlay.querySelector(".subway-revive-mode");
-    if (!modeEl) {
-      modeEl = document.createElement("p");
-      modeEl.className = "subway-revive-mode";
-      modeEl.style.color = "#fff";
-      modeEl.style.marginBottom = "10px";
-      modeEl.style.fontSize = "0.95rem";
-      reviveOverlay.insertBefore(modeEl, reviveBtn);
-    }
-
-    modeEl.textContent = hasShopLife
-      ? "Choix: vie du shop ou paiement en monnaie"
-      : "Choix: paiement en monnaie";
-
-    let payBtnEl = reviveOverlay.querySelector(".dino-revive-pay-btn");
-    if (!payBtnEl) {
-      payBtnEl = document.createElement("button");
-      payBtnEl.className = "dino-revive-pay-btn";
-      payBtnEl.style.display = "none";
-      payBtnEl.style.marginTop = "8px";
-      payBtnEl.style.padding = "8px 12px";
-      payBtnEl.style.cursor = "pointer";
-      payBtnEl.style.background = "transparent";
-      payBtnEl.style.border = "1px solid #fff";
-      payBtnEl.style.color = "#fff";
-      if (cancelBtn && cancelBtn.parentNode) {
-        cancelBtn.parentNode.insertBefore(payBtnEl, cancelBtn);
-      }
-    }
-
-    reviveBtn.innerHTML = hasShopLife
-      ? `Utiliser 1 vie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`
-      : `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`;
-
-    reviveBtn.onclick = () => {
-      socket.emit("subway:payToContinue", {
-        mode: hasShopLife ? "life" : "pay",
-      });
-    };
-
-    if (payBtnEl) {
-      if (hasShopLife) {
-        payBtnEl.style.display = "block";
-        payBtnEl.disabled = false;
-        payBtnEl.style.opacity = "1";
-        payBtnEl.style.cursor = "pointer";
-        payBtnEl.textContent = `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
-        payBtnEl.onclick = () => {
-          socket.emit("subway:payToContinue", { mode: "pay" });
-        };
+    if (
+      !stage ||
+      !canvas ||
+      !scoreEl ||
+      !speedEl ||
+      !coinsEl ||
+      !gainEl ||
+      !pauseBtn ||
+      !reviveOverlay ||
+      !reviveBtn ||
+      !reviveCountEl ||
+      !cancelBtn
+    ) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", tryInit, { once: true });
       } else {
-        payBtnEl.style.display = "block";
-        payBtnEl.disabled = true;
-        payBtnEl.style.opacity = "0.6";
-        payBtnEl.style.cursor = "default";
-        payBtnEl.textContent = "Pas de vie disponible";
-        payBtnEl.onclick = null;
+        // DOM déjà prêt mais éléments pas là, réessayer dans 50ms (cas rare)
+        setTimeout(tryInit, 50);
       }
+      return;
     }
-  }
+    proceedWithInit(
+      stage,
+      canvas,
+      scoreEl,
+      speedEl,
+      coinsEl,
+      gainEl,
+      pauseBtn,
+      reviveOverlay,
+      reviveBtn,
+      reviveCountEl,
+      cancelBtn,
+      ctx,
+    );
 
-  function refreshHud() {
-    scoreEl.textContent = `Score: ${Math.floor(state.score)}`;
-    speedEl.textContent = `Vitesse: ${state.speed.toFixed(2)}x`;
-    coinsEl.textContent = `Pieces: ${state.coins}`;
-    gainEl.textContent = `Gain final: ${computeFinalGain()}`;
-  }
+    // Listeners sur les boutons (doivent être ici pour que cancelBtn/pauseBtn existent)
+    cancelBtn.addEventListener("click", () => {
+      if (!state.awaitingRevive) return;
+      finalizeRun();
+    });
+    pauseBtn.addEventListener("click", () => {
+      if (
+        !isStageActive() ||
+        !state.running ||
+        state.awaitingRevive ||
+        state.gameOver
+      )
+        return;
+      if (state.paused) {
+        if (!state.resumeCountdown) startResumeCountdown();
+      } else pauseRun("manual");
+    });
 
-  function updateReviveOverlayContent() {
-    if (!reviveOverlay || reviveOverlay.style.display !== "flex") return;
-    const remainingRevives = Math.max(0, 3 - state.revivesUsed);
-    if (reviveCountEl) reviveCountEl.textContent = String(remainingRevives);
-
-    const hasShopLife = availableReviveLives > 0;
-    const price = reviveCost != null ? reviveCost : 0;
-
-    let modeEl = reviveOverlay.querySelector(".subway-revive-mode");
-    if (!modeEl) {
-      modeEl = document.createElement("p");
-      modeEl.className = "subway-revive-mode";
-      modeEl.style.color = "#fff";
-      modeEl.style.marginBottom = "10px";
-      modeEl.style.fontSize = "0.95rem";
-      reviveOverlay.insertBefore(modeEl, reviveBtn);
+    // --- TOUT LE RESTE DU CODE DU JEU (fonctions, listeners, etc.) DOIT ÊTRE DANS CE SCOPE ---
+    // Copie/colle ici tout ce qui était après les anciennes variables globales jusqu'à la fin du fichier.
+    // Cela garantit que cancelBtn, pauseBtn, etc. sont toujours définis avant usage.
+    // ...existing code...
+    function requestReviveLives() {
+      try {
+        socket.emit("revive:getLives", { game: "subway" });
+      } catch {}
     }
-    if (modeEl) {
+
+    function refreshThemeColors() {
+      try {
+        const styles = getComputedStyle(document.documentElement);
+        uiColor = styles.getPropertyValue("--primary-color").trim() || uiColor;
+        bgColor = styles.getPropertyValue("--bg-color").trim() || bgColor;
+      } catch {}
+    }
+
+    function clearDangerAroundPlayer() {
+      const py = playerY();
+      const playerHalf = world.playerSize * 0.5;
+      state.obstacles = state.obstacles.filter(
+        (o) =>
+          !(
+            o.lane === state.lane &&
+            Math.abs(o.y - py) < o.h * 0.6 + playerHalf * 1.2
+          ),
+      );
+      state.pickups = state.pickups.filter(
+        (c) => Math.abs(c.y - py) > c.r * 1.2,
+      );
+    }
+
+    function isInvincible() {
+      return Date.now() < state.invincibleUntilMs;
+    }
+
+    function syncInvincibilityMilestoneFromScore() {
+      const s = Math.max(0, Math.floor(Number(state.score) || 0));
+      state.nextInvincibilityRollScore =
+        (Math.floor(s / world.invincibilityScoreStep) + 1) *
+        world.invincibilityScoreStep;
+    }
+
+    function pushProgress() {
+      try {
+        if (!socket) return;
+        if (state.gameOver || state.awaitingRevive || !state.running) return;
+        const s = Math.max(0, Math.floor(Number(state.score) || 0));
+        if (s <= 0) return;
+        socket.emit("subway:progress", { score: s });
+      } catch {}
+    }
+
+    function updateReviveOverlayContent() {
+      if (!reviveOverlay || reviveOverlay.style.display !== "flex") return;
+      const remainingRevives = Math.max(0, 3 - state.revivesUsed);
+      if (reviveCountEl) reviveCountEl.textContent = String(remainingRevives);
+
+      const hasShopLife = availableReviveLives > 0;
+      const price = computeRevivePrice();
+
+      let modeEl = reviveOverlay.querySelector(".subway-revive-mode");
+      if (!modeEl) {
+        modeEl = document.createElement("p");
+        modeEl.className = "subway-revive-mode";
+        modeEl.style.color = "#fff";
+        modeEl.style.marginBottom = "10px";
+        modeEl.style.fontSize = "0.95rem";
+        reviveOverlay.insertBefore(modeEl, reviveBtn);
+      }
+
       modeEl.textContent = hasShopLife
         ? "Choix: vie du shop ou paiement en monnaie"
         : "Choix: paiement en monnaie";
-    }
 
-    let payBtnEl = reviveOverlay.querySelector(".dino-revive-pay-btn");
-    if (!payBtnEl) {
-      payBtnEl = document.createElement("button");
-      payBtnEl.className = "dino-revive-pay-btn";
-      payBtnEl.style.display = "none";
-      payBtnEl.style.marginTop = "8px";
-      payBtnEl.style.padding = "8px 12px";
-      payBtnEl.style.background = "transparent";
-      payBtnEl.style.border = "1px solid #fff";
-      payBtnEl.style.color = "#fff";
-      reviveOverlay.insertBefore(payBtnEl, cancelBtn);
-    }
-
-    reviveBtn.innerHTML = hasShopLife
-      ? `Utiliser 1 vie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`
-      : `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`;
-    reviveBtn.onclick = () => {
-      if (hasShopLife) {
-        socket.emit("subway:payToContinue", { mode: "life" });
-      } else {
-        socket.emit("subway:payToContinue", { mode: "pay" });
+      let payBtnEl = reviveOverlay.querySelector(".dino-revive-pay-btn");
+      if (!payBtnEl) {
+        payBtnEl = document.createElement("button");
+        payBtnEl.className = "dino-revive-pay-btn";
+        payBtnEl.style.display = "none";
+        payBtnEl.style.marginTop = "8px";
+        payBtnEl.style.padding = "8px 12px";
+        payBtnEl.style.cursor = "pointer";
+        payBtnEl.style.background = "transparent";
+        payBtnEl.style.border = "1px solid #fff";
+        payBtnEl.style.color = "#fff";
+        if (cancelBtn && cancelBtn.parentNode) {
+          cancelBtn.parentNode.insertBefore(payBtnEl, cancelBtn);
+        }
       }
-    };
 
-    payBtnEl.textContent = `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
-    payBtnEl.onclick = () => {
-      socket.emit("subway:payToContinue", { mode: "pay" });
-    };
-  }
+      reviveBtn.innerHTML = hasShopLife
+        ? `Utiliser 1 vie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`
+        : `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`;
+
+      reviveBtn.onclick = () => {
+        socket.emit("subway:payToContinue", {
+          mode: hasShopLife ? "life" : "pay",
+        });
+      };
+
+      if (payBtnEl) {
+        if (hasShopLife) {
+          payBtnEl.style.display = "block";
+          payBtnEl.disabled = false;
+          payBtnEl.style.opacity = "1";
+          payBtnEl.style.cursor = "pointer";
+          payBtnEl.textContent = `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
+          payBtnEl.onclick = () => {
+            socket.emit("subway:payToContinue", { mode: "pay" });
+          };
+        } else {
+          payBtnEl.style.display = "block";
+          payBtnEl.disabled = true;
+          payBtnEl.style.opacity = "0.6";
+          payBtnEl.style.cursor = "default";
+          payBtnEl.textContent = "Pas de vie disponible";
+          payBtnEl.onclick = null;
+        }
+      }
+    }
+
+    function refreshHud() {
+      scoreEl.textContent = `Score: ${Math.floor(state.score)}`;
+      speedEl.textContent = `Vitesse: ${state.speed.toFixed(2)}x`;
+      coinsEl.textContent = `Pieces: ${state.coins}`;
+      gainEl.textContent = `Gain final: ${computeFinalGain()}`;
+    }
+
+    function updateReviveOverlayContent() {
+      if (!reviveOverlay || reviveOverlay.style.display !== "flex") return;
+      const remainingRevives = Math.max(0, 3 - state.revivesUsed);
+      if (reviveCountEl) reviveCountEl.textContent = String(remainingRevives);
+
+      const hasShopLife = availableReviveLives > 0;
+      const price = reviveCost != null ? reviveCost : 0;
+
+      let modeEl = reviveOverlay.querySelector(".subway-revive-mode");
+      if (!modeEl) {
+        modeEl = document.createElement("p");
+        modeEl.className = "subway-revive-mode";
+        modeEl.style.color = "#fff";
+        modeEl.style.marginBottom = "10px";
+        modeEl.style.fontSize = "0.95rem";
+        reviveOverlay.insertBefore(modeEl, reviveBtn);
+      }
+      if (modeEl) {
+        modeEl.textContent = hasShopLife
+          ? "Choix: vie du shop ou paiement en monnaie"
+          : "Choix: paiement en monnaie";
+      }
+
+      let payBtnEl = reviveOverlay.querySelector(".dino-revive-pay-btn");
+      if (!payBtnEl) {
+        payBtnEl = document.createElement("button");
+        payBtnEl.className = "dino-revive-pay-btn";
+        payBtnEl.style.display = "none";
+        payBtnEl.style.marginTop = "8px";
+        payBtnEl.style.padding = "8px 12px";
+        payBtnEl.style.background = "transparent";
+        payBtnEl.style.border = "1px solid #fff";
+        payBtnEl.style.color = "#fff";
+        reviveOverlay.insertBefore(payBtnEl, cancelBtn);
+      }
+
+      reviveBtn.innerHTML = hasShopLife
+        ? `Utiliser 1 vie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`
+        : `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (<span id=\"subway-revive-count\">${remainingRevives}</span> restants)`;
+      reviveBtn.onclick = () => {
+        if (hasShopLife) {
+          socket.emit("subway:payToContinue", { mode: "life" });
+        } else {
+          socket.emit("subway:payToContinue", { mode: "pay" });
+        }
+      };
+
+      payBtnEl.textContent = `Payer ${price.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")} monnaie (${remainingRevives} restants)`;
+      payBtnEl.onclick = () => {
+        socket.emit("subway:payToContinue", { mode: "pay" });
+      };
+    }
   }
 
   function showReviveOverlay() {
@@ -921,14 +854,7 @@ export function initSubway(socket) {
     }
   }
 
-  socket.on("revive:lives", ({ lives, reviveCost: cost }) => {
-    const parsed = Math.floor(Number(lives) || 0);
-    availableReviveLives = Math.max(0, parsed);
-    reviveCost = cost;
-    if (state.awaitingRevive) {
-      updateReviveOverlayContent();
-    }
-  });
+  // ...existing code...
 
   socket.on("subway:reviveSuccess", ({ usedLife, remainingLives } = {}) => {
     state.revivesUsed += 1;
@@ -974,28 +900,107 @@ export function initSubway(socket) {
       updatePauseButton();
     }
   });
-  window.addEventListener("uiColor:changed", (e) => {
-    if (e?.detail?.color) uiColor = String(e.detail.color);
-    refreshThemeColors();
-    draw();
-  });
-  cancelBtn.addEventListener("click", () => {
-    if (!state.awaitingRevive) return;
-    finalizeRun();
-  });
-  pauseBtn.addEventListener("click", () => {
-    if (
-      !isStageActive() ||
-      !state.running ||
-      state.awaitingRevive ||
-      state.gameOver
-    )
-      return;
-    if (state.paused) {
-      if (!state.resumeCountdown) startResumeCountdown();
-    } else pauseRun("manual");
-  });
+  // ...existing code...
 
+  // Place ce listener dans proceedWithInit pour garantir l'accès à uiColor
+
+  function proceedWithInit(
+    stage,
+    canvas,
+    scoreEl,
+    speedEl,
+    coinsEl,
+    gainEl,
+    pauseBtn,
+    reviveOverlay,
+    reviveBtn,
+    reviveCountEl,
+    cancelBtn,
+    ctx,
+  ) {
+    let uiColor =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--primary-color")
+        .trim() || "#00ff66";
+    let bgColor =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--bg-color")
+        .trim() || "#000000";
+    let availableReviveLives = 0;
+    let reviveCost = null;
+    const state = {
+      running: false,
+      paused: false,
+      pauseSource: null,
+      resumeCountdown: 0,
+      resumeCountdownTickAtMs: 0,
+      gameOver: false,
+      score: 0,
+      speed: 1,
+      lane: 1,
+      playerX: 0,
+      playerTargetX: 0,
+      coins: 0,
+      obstacles: [],
+      pickups: [],
+      powerups: [],
+      obstacleTimer: 0,
+      coinTimer: 0,
+      obstaclesPassed: 0,
+      lastObstacleLane: null,
+      lastTs: 0,
+      rewarded: false,
+      revivesUsed: 0,
+      awaitingRevive: false,
+      struggleTime: 0,
+      struggleDir: 0,
+      invincibleUntilMs: 0,
+      nextInvincibilityRollScore: 3250,
+    };
+    let resumeScore = null;
+    let resumeConsumed = false;
+    let pauseKeyText = (keys && keys.default && keys.default[0]) || "P";
+    const world = {
+      laneCount: 3,
+      playerSize: 34, // sera dynamique
+      baseSpeedPx: 380, // sera dynamique
+      speedGrowthPerSec: 0.006, // sera dynamique
+      speedStepEveryObstacles: 3,
+      speedStepAmount: 0.05, // sera dynamique
+      maxSpeed: 3.5, // sera dynamique
+      minObstacleSpawn: 0.26,
+      maxObstacleSpawn: 0.74,
+      struggleDuration: 0.16,
+      struggleAmplitude: 7, // sera dynamique
+      invincibilityUnlockSpeed: 2.75, // sera dynamique
+      invincibilityDurationMs: 5000,
+      invincibilitySpawnChance: 0.33,
+      invincibilityScoreStep: 3250,
+    };
+
+    // Listeners sur les boutons (doivent être ici pour que cancelBtn/pauseBtn existent)
+    cancelBtn.addEventListener("click", () => {
+      if (!state.awaitingRevive) return;
+      finalizeRun();
+    });
+    pauseBtn.addEventListener("click", () => {
+      if (
+        !isStageActive() ||
+        !state.running ||
+        state.awaitingRevive ||
+        state.gameOver
+      )
+        return;
+      if (state.paused) {
+        if (!state.resumeCountdown) startResumeCountdown();
+      } else pauseRun("manual");
+    });
+
+    // --- TOUT LE RESTE DU CODE DU JEU (fonctions, listeners, etc.) DOIT ÊTRE DANS CE SCOPE ---
+    // ...existing code...
+  }
+
+  // Tous les listeners et initialisations globaux doivent être dans ce scope !
   window.addEventListener("pde:stage-nav-guard", (e) => {
     const detail = e?.detail;
     if (!detail || detail.stageId !== "stage20") return;
@@ -1052,13 +1057,4 @@ export function initSubway(socket) {
       hideReviveOverlay();
     }
   });
-
-  resizeCanvas();
-  refreshThemeColors();
-  requestReviveLives();
-  hideReviveOverlay();
-  refreshHud();
-  updatePauseButton();
-  draw();
-  requestAnimationFrame(loop);
 }

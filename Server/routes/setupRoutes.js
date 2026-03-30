@@ -18,7 +18,7 @@ function setupRoutes(
     pixelWarGame,
     tagRoutes,
     surveyRoutesFactory,
-    guerreClansRoutesFactory,
+    // guerreClansRoutesFactory supprimé
     suggestionRoutes,
     easterEggRoutes,
   },
@@ -34,7 +34,7 @@ function setupRoutes(
   );
   app.use("/api/tag", tagRoutes);
   app.use("/api/surveys", surveyRoutesFactory(io));
-  app.use("/api/guerre-clans", guerreClansRoutesFactory());
+  // app.use("/api/guerre-clans", guerreClansRoutesFactory()); supprimé
   app.use("/api/suggestions", suggestionRoutes);
   app.use("/api/x9", easterEggRoutes);
   app.use("/api/profile", requireAuth, profileRoutes);

@@ -11,10 +11,7 @@ function registerSnakeHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
-  const {
-    recordGameScoreContribution,
-    getGameScoreMultiplier,
-  } = require("../../services/guerreClans");
+  // Fonctions guerre des clans supprimées
   const SNAKE_MAX_SCORE = 5000;
   let isAlreadyLogged_snake = false;
 

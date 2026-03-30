@@ -76,47 +76,59 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
   }
 
   try {
-    const modules = await Promise.all([
-      import("./chat.js"),
-      import("./clicker.js"),
-      import("./economie_leaderboard.js"),
-      import("./dino.js"),
-      import("./dino_leaderboard.js"),
-      import("./uno.js"),
-      import("./flappy.js"),
-      import("./flappy_leaderboard.js"),
-      import("./uno_leaderboard.js"),
-      import("./puissance4.js"),
-      import("./p4_leaderboard.js"),
-      import("./blockblast.js"),
-      import("./blockblast_leaderboard.js"),
-      import("./snake.js"),
-      import("./snake_leaderboard.js"),
-      import("./system.js"),
-      import("./motus.js"),
-      import("./coinflip.js"),
-      import("./blackjack.js"),
-      import("./motus_leaderboard.js"),
-      import("./2048.js"),
-      import("./2048_leaderboard.js"),
-      import("./password_change.js"),
-      import("./mash.js"),
-      import("./mash_leaderboard.js"),
-      import("./blackjack_leaderboard.js"),
-      import("./coinflip_leaderboard.js"),
-      import("./pixelwar.js"),
-      import("./pixelwar_leaderboard.js"),
-      import("./roulette.js"),
-      import("./slots.js"),
-      import("./roulette_leaderboard.js"),
-      import("./slots_leaderboard.js"),
-      import("./sudoku.js"),
-      import("./sudoku_leaderboard.js"),
-      import("./subway_leaderboard.js"),
-      import("./subway.js"),
-      import("./aim_trainer.js"),
-      import("./aim_trainer_leaderboard.js"),
-    ]);
+    const moduleNames = [
+      "chat.js",
+      "clicker.js",
+      "economie_leaderboard.js",
+      "dino.js",
+      "dino_leaderboard.js",
+      "uno.js",
+      "flappy.js",
+      "flappy_leaderboard.js",
+      "uno_leaderboard.js",
+      "puissance4.js",
+      "p4_leaderboard.js",
+      "blockblast.js",
+      "blockblast_leaderboard.js",
+      "snake.js",
+      "snake_leaderboard.js",
+      "system.js",
+      "motus.js",
+      "coinflip.js",
+      "blackjack.js",
+      "motus_leaderboard.js",
+      "2048.js",
+      "2048_leaderboard.js",
+      "password_change.js",
+      "mash.js",
+      "mash_leaderboard.js",
+      "blackjack_leaderboard.js",
+      "coinflip_leaderboard.js",
+      "pixelwar.js",
+      "pixelwar_leaderboard.js",
+      "roulette.js",
+      "slots.js",
+      "roulette_leaderboard.js",
+      "slots_leaderboard.js",
+      "sudoku.js",
+      "sudoku_leaderboard.js",
+      "subway_leaderboard.js",
+      "subway.js",
+      "aim_trainer.js",
+      "aim_trainer_leaderboard.js",
+    ];
+
+    const modules = [];
+    for (const name of moduleNames) {
+      try {
+        const mod = await import(`./${name}`);
+        modules.push(mod);
+        console.log(`[OK] Module chargé : ${name}`);
+      } catch (err) {
+        console.error(`[ERREUR] lors de l'import du module : ${name}`, err);
+        throw err;
+      }
+    }
 
     const [
       chat,

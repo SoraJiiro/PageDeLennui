@@ -16,7 +16,7 @@ const {
   createAdminRouter,
   tagRoutes,
   surveyRoutesFactory,
-  guerreClansRoutesFactory,
+  // guerreClansRoutesFactory supprimé
   suggestionRoutes,
   easterEggRoutes,
 } = require("./routeGetter");
@@ -75,7 +75,7 @@ setupRoutes(app, {
   pixelWarGame,
   tagRoutes,
   surveyRoutesFactory,
-  guerreClansRoutesFactory,
+  // guerreClansRoutesFactory supprimé
   suggestionRoutes,
   easterEggRoutes,
 });

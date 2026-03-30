@@ -5,10 +5,7 @@ function registerAimTrainerHandlers({
   FileService,
   leaderboardManager,
 }) {
-  const {
-    recordGameScoreContribution,
-    getGameScoreMultiplier,
-  } = require("../../services/guerreClans");
+  // Fonctions guerre des clans supprimées
   const AIM_SCORE_MAX = 50000;
   const AIM_MISSES_MAX = 20000;
 

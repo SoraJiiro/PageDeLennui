@@ -11,10 +11,7 @@ function registerDinoFlappyHandlers({
   const { updateReviveContextFromScore } = require("../../services/economy");
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
-  const {
-    recordGameScoreContribution,
-    getGameScoreMultiplier,
-  } = require("../../services/guerreClans");
+  // Fonctions guerre des clans supprimées
   const DINO_MAX_SCORE = 250000;
   const FLAPPY_MAX_SCORE = 10000;
   const SUBWAY_MAX_SCORE = 5000000;

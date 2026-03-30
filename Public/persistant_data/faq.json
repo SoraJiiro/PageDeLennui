@@ -108,11 +108,8 @@
         {
           "q": "Que faire si mon dessin se fait attaquer sur la PixelWar ?",
           "a": "Si votre dessin se fait attaquer, vous pouvez éventuellement discuter avec l'attaquant pour trouver un terrain d'entente ou simplement ignorer l'attaque. Cependant, si vous pensez que l'attaque est injuste ou abusive, vous pouvez signaler le comportement à l'Admin pour qu'il puisse enquêter et prendre les mesures appropriées. Rappelez-vous que la PixelWar est tout de même un espace de conflits, mais cela ne vous empêche pas d'agir pacifiquement et amicalement sur celle-ci."
-        },
-        {
-          "q": "Quels sont les multiplicateurs de score pendant la Guerre de Clans ?",
-          "a": "Pendant la Guerre de Clans, les multiplicateurs sont choisis par l'Admin (et Modérateurs éventuellement) en fonction de différents critères tels que l'équilibre entre les clans, la popularité des jeux et les retours de la communauté. Les multiplicateurs peuvent varier d'une guerre à l'autre pour maintenir une compétition dynamique et équitable. Il ne sont et ne seront donc jamais annoncés ou montrés publiquement."
         }
+        // ...question supprimée (guerre de clans)
       ]
     },
     {
@@ -123,10 +120,7 @@
           "q": "Comment obtenir / afficher des badges ?",
           "a": "Pour en savoir plus sur l'obtention de badges, lisez la <a href='/badges.html'>page des badges</a>. Pour afficher / désafficher des badges déjà obtenus, cela se passe dans votre <a href='/profil.html'>profil</a>. Vous pouvez afficher <b>jusqu'à 5</b> badges à la fois. Les badges affichés sont visibles par tous les autres utilisateurs sur votre profil et à côté de votre pseudo dans le Chat."
         },
-        {
-          "q": "C'est quoi les Guerres de Clans ?",
-          "a": "Les Guerres de Clans sont des Events saisoniers où les SLAM et les SISR s'affrontent sur la PDE. Le clan qui aura obtenu le plus grand nombre de score sur tous les jeux disponibles et confondus (clicker exclu), sera déclaré vainqueur. Le clan gagnant obtiendra des récompenses qui seront distribués à ses membres. Les récompenses peuvent inclures de la monnaie (FCO), des Pixels et d'autres cosmétiques exclusifs. Il est important de noter que les menaces / insultes d'un clan envers l'autre sont interdites et le clan fautif sera sanctionné! Pour voir la guerre active, ses récompense et ses infos ou simplement l'historique des guerres précédentes, rendez-vous sur la <a href='/guerre-clans.html'>page des Guerres de Clans</a>."
-        },
+        // ...question supprimée (guerre de clans)
         {
           "q": "Pourquoi il n'y a pas plus d'items / cosmétiques au Shop ?",
           "a": "Si vous trouvez que le Shop manque d'items ou de cosmétiques, n'hésitez pas à faire des suggestions pour de nouveaux items ou cosmétiques que vous aimeriez voir dans le Shop. Vous pouvez faire vos suggestions depuis la <a href='/suggestions.html'>page des suggestions</a>. L'Admin examine régulièrement les suggestions et ajoute de nouveaux items ou cosmétiques au Shop en fonction de la popularité et de la faisabilité des idées proposées."

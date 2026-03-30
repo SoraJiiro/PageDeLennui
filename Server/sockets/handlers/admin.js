@@ -1,9 +1,4 @@
-const {
-  ensureTicker,
-  getPublicState,
-  startWar,
-  finishWar,
-} = require("../../services/guerreClans");
+// Fonctions guerre des clans supprimées
 
 function registerAdminHandlers({
   io,
@@ -46,151 +41,26 @@ function registerAdminHandlers({
     return rec && rec.pseudo ? rec.pseudo : null;
   };
 
-  ensureTicker({ FileService, io, broadcastSystemMessage });
+  // ensureTicker supprimé (guerre des clans)
 
-  socket.on("clanwar:get_state", () => {
-    try {
-      const state = getPublicState(FileService);
-      socket.emit("clanwar:update", state.activeWar || null);
-      socket.emit("clanwar:history", (state.history || []).slice(0, 50));
-    } catch (e) {
-      socket.emit("clanwar:update", null);
-      socket.emit("clanwar:history", []);
-    }
-  });
+  // Handlers guerre des clans supprimés
 
   // ------- Admin Events -------
   // Permettre à tous de récupérer la liste des multiplicateurs actuels
-  socket.on("clanwar:multipliers:get", () => {
-    const { getAllGameWarMultipliers } = require("../../services/guerreClans");
-    socket.emit("clanwar:multipliers:update", getAllGameWarMultipliers());
-  });
+  // Handler guerre des clans supprimé
+  // Handler clanwar supprimé
   // Permettre à tous de récupérer l'état des boosts de clan
-  socket.on("clanwar:boosts:get", () => {
-    const { getAllClanBoosts } = require("../../services/guerreClans");
-    try {
-      socket.emit("clanwar:boosts:update", getAllClanBoosts());
-    } catch (e) {
-      socket.emit("clanwar:boosts:update", {});
-    }
-  });
+  // Handler guerre des clans supprimé
   // Admin: modification des multiplicateurs de guerre de clans en temps réel
-  socket.on("admin:clanwar:set_multiplier", ({ game, value }) => {
-    if (!isAdmin) return;
-    const {
-      setGameWarMultiplier,
-      getAllGameWarMultipliers,
-    } = require("../../services/guerreClans");
-    const numValue = Number(value);
-    if (!game || !Number.isFinite(numValue) || numValue <= 0) {
-      return socket.emit("admin:clanwar:set_multiplier:result", {
-        success: false,
-        message: "Paramètres invalides",
-      });
-    }
-    const ok = setGameWarMultiplier(game, numValue);
-    if (!ok) {
-      return socket.emit("admin:clanwar:set_multiplier:result", {
-        success: false,
-        message: "Impossible de modifier le multiplicateur.",
-      });
-    }
-    // Notifier tous les clients (admins et users)
-    io.emit("clanwar:multipliers:update", getAllGameWarMultipliers());
-    socket.emit("admin:clanwar:set_multiplier:result", {
-      success: true,
-      message: `Multiplicateur pour ${game} mis à jour à ${numValue}`,
-    });
-  });
+  // Handler guerre des clans supprimé
 
   // Admin: set multiple multipliers at once
-  socket.on("admin:clanwar:set_multipliers", ({ multipliers }) => {
-    if (!isAdmin) return;
-    const {
-      setGameWarMultiplier,
-      getAllGameWarMultipliers,
-    } = require("../../services/guerreClans");
-    try {
-      const entries =
-        multipliers && typeof multipliers === "object"
-          ? Object.entries(multipliers)
-          : [];
-      let changed = 0;
-      for (const [g, v] of entries) {
-        const num = Number(v);
-        if (!g || !Number.isFinite(num) || num <= 0) continue;
-        const ok = setGameWarMultiplier(g, num);
-        if (ok) changed++;
-      }
-      io.emit("clanwar:multipliers:update", getAllGameWarMultipliers());
-      socket.emit("admin:clanwar:set_multipliers:result", {
-        success: true,
-        changed,
-      });
-    } catch (e) {
-      socket.emit("admin:clanwar:set_multipliers:result", {
-        success: false,
-        message: e.message,
-      });
-    }
-  });
+  // Handler guerre des clans supprimé
 
   // Admin: set a temporary boost for a clan
-  socket.on(
-    "admin:clanwar:set_clan_boost",
-    ({ clan, multiplier, durationMs }) => {
-      if (!isAdmin) return;
-      const {
-        setClanBoost,
-        getAllClanBoosts,
-      } = require("../../services/guerreClans");
-      try {
-        const ok = setClanBoost(clan, Number(multiplier), Number(durationMs));
-        if (!ok) {
-          return socket.emit("admin:clanwar:set_clan_boost:result", {
-            success: false,
-            message: "Paramètres invalides",
-          });
-        }
-        io.emit("clanwar:boosts:update", getAllClanBoosts());
-        socket.emit("admin:clanwar:set_clan_boost:result", {
-          success: true,
-          message: `Boost appliqué à ${clan}`,
-        });
-      } catch (e) {
-        socket.emit("admin:clanwar:set_clan_boost:result", {
-          success: false,
-          message: e.message,
-        });
-      }
-    },
-  );
+  // Handler guerre des clans supprimé
 
-  socket.on("admin:clanwar:clear_clan_boost", ({ clan }) => {
-    if (!isAdmin) return;
-    const {
-      clearClanBoost,
-      getAllClanBoosts,
-    } = require("../../services/guerreClans");
-    try {
-      const ok = clearClanBoost(clan);
-      if (!ok)
-        return socket.emit("admin:clanwar:clear_clan_boost:result", {
-          success: false,
-          message: "Paramètres invalides",
-        });
-      io.emit("clanwar:boosts:update", getAllClanBoosts());
-      socket.emit("admin:clanwar:clear_clan_boost:result", {
-        success: true,
-        message: `Boost retiré pour ${clan}`,
-      });
-    } catch (e) {
-      socket.emit("admin:clanwar:clear_clan_boost:result", {
-        success: false,
-        message: e.message,
-      });
-    }
-  });
+  // Handler guerre des clans supprimé
   // ------- Reset complet -------
   socket.on("admin:server:softReset", async () => {
     if (!isAdmin) return;

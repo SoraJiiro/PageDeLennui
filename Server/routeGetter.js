@@ -34,9 +34,7 @@ defineLazyExport("tagRoutes", () =>
 defineLazyExport("surveyRoutesFactory", () =>
   requireCached("surveyRoutesFactory", "./routes/surveyRoutes"),
 );
-defineLazyExport("guerreClansRoutesFactory", () =>
-  requireCached("guerreClansRoutesFactory", "./routes/guerreClansRoutes"),
-);
+// defineLazyExport("guerreClansRoutesFactory", ...) supprimé (guerre des clans)
 defineLazyExport("suggestionRoutes", () =>
   requireCached("suggestionRoutes", "./routes/suggestionRoutes"),
 );
