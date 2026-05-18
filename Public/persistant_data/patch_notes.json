@@ -6,6 +6,36 @@
       "date": "25/03/2026 ",
       "sections": [
         {
+          "title": "Améliorations —",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "Subway Surfer :",
+              "text": "Fix des derniers bug (ou presque) existant sur la PDE. Si vous trouvez encore d'autres bugs, je ne les fixerai pas."
+            }
+          ]
+        },
+        {
+          "title": "Retraits / Resets",
+          "icon": "fa-arrow-right-arrow-left",
+          "items": [
+            {
+              "tagClass": "tag-removed",
+              "tag": "[RESET]",
+              "strong": "Reset Global",
+              "text": "Reset global de fin de PDE. Merci à tous d'avoir participé à cette aventure, c'était un plaisir de la partager avec vous. J'espère que la PDE aura assez comblé votre ennui!"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v3.1.2",
+      "date": "25/03/2026 ",
+      "sections": [
+        {
           "title": "Nouveautés",
           "icon": "fa-star",
           "items": [

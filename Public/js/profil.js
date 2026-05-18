@@ -10,21 +10,43 @@ function getQueryPseudo() {
   return p || null;
 }
 
+const htmlEscapes = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, (char) => htmlEscapes[char]);
+}
+
+function sanitizeCssColor(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw)) return raw;
+  return "";
+}
+
 function renderTag(tag) {
   if (!tag) return "";
-  if (typeof tag === "string") return tag;
+  if (typeof tag === "string") return escapeHtml(tag);
   if (typeof tag === "object" && tag.text) {
     if (Array.isArray(tag.colors) && tag.colors.length) {
       const words = tag.text.split(/\s+/);
       return words
         .map((w, i) => {
-          const c = tag.colors[i] || tag.colors[0] || "#ffffff";
-          return `<span style="color:${c}">${w}</span>`;
+          const rawColor = tag.colors[i] || tag.colors[0] || "";
+          const c = sanitizeCssColor(rawColor);
+          const style = c ? ` style="color:${c}"` : "";
+          return `<span${style}>${escapeHtml(w)}</span>`;
         })
         .join(" ");
     }
-    const style = tag.color ? `style="color:${tag.color}"` : "";
-    return `<span ${style}>${tag.text}</span>`;
+    const c = sanitizeCssColor(tag.color);
+    const style = c ? `style="color:${c}"` : "";
+    return `<span${style}>${escapeHtml(tag.text)}</span>`;
   }
   return "";
 }
@@ -72,7 +94,13 @@ function renderBadgesRow(container, badges, max = 5) {
   toRender.forEach((b) => {
     const el = document.createElement("span");
     el.className = "badge-chip";
-    el.innerHTML = `<span class="badge-emoji">${b.emoji || "🏷️"}</span><span>${b.name || b.id}</span>`;
+    const emoji = document.createElement("span");
+    emoji.className = "badge-emoji";
+    emoji.textContent = b.emoji || "🏷️";
+    const label = document.createElement("span");
+    label.textContent = b.name || b.id || "";
+    el.appendChild(emoji);
+    el.appendChild(label);
     container.appendChild(el);
   });
 }
@@ -163,9 +191,14 @@ function renderStats(stats) {
   rows.forEach(([label, value]) => {
     const el = document.createElement("div");
     el.className = "stat";
-    el.innerHTML = `<div class="label">${label}</div><div class="value">${
-      value ?? 0
-    }</div>`;
+    const labelEl = document.createElement("div");
+    labelEl.className = "label";
+    labelEl.textContent = label;
+    const valueEl = document.createElement("div");
+    valueEl.className = "value";
+    valueEl.textContent = value ?? 0;
+    el.appendChild(labelEl);
+    el.appendChild(valueEl);
     container.appendChild(el);
   });
 }
@@ -182,9 +215,17 @@ function renderCustomColors(colors) {
 
   container.innerHTML = "";
   list.forEach((hex) => {
+    const safeHex = sanitizeCssColor(hex);
+    if (!safeHex) return;
     const chip = document.createElement("div");
     chip.className = "custom-color-chip";
-    chip.innerHTML = `<span class="custom-color-swatch" style="background:${hex}"></span><span>${hex}</span>`;
+    const swatch = document.createElement("span");
+    swatch.className = "custom-color-swatch";
+    swatch.style.background = safeHex;
+    const label = document.createElement("span");
+    label.textContent = safeHex;
+    chip.appendChild(swatch);
+    chip.appendChild(label);
     container.appendChild(chip);
   });
 }
@@ -200,6 +241,11 @@ function renderMedals(container, medals) {
 
   const html = list
     .map((m) => {
+      const rawName = String(m && m.name ? m.name : "");
+      const safeName = escapeHtml(rawName);
+      const safeColors = Array.isArray(m && m.colors)
+        ? m.colors.map(sanitizeCssColor).filter(Boolean)
+        : [];
       let styleStr = "";
       let innerContent = "";
       const isSpecial = [
@@ -209,54 +255,56 @@ function renderMedals(container, medals) {
         "Diamant",
         "Rubis",
         "Saphir",
-      ].includes(m.name);
+      ].includes(rawName);
 
-      if (m.colors && m.colors.length) {
+      if (safeColors.length) {
         if (
-          m.name &&
-          (m.name.startsWith("Médaille") || m.name === "Tricheur")
+          rawName &&
+          (rawName.startsWith("Médaille") || rawName === "Tricheur")
         ) {
-          m.colors.forEach((c, i) => (styleStr += `--grad${i + 1}: ${c}; `));
+          safeColors.forEach((c, i) => (styleStr += `--grad${i + 1}: ${c}; `));
         } else if (
           !isSpecial &&
-          m.name !== "Légendaire" &&
-          m.name !== "Rainbow"
+          rawName !== "Légendaire" &&
+          rawName !== "Rainbow"
         ) {
           const bg =
-            m.colors.length > 1
-              ? `linear-gradient(120deg, ${m.colors[0]} 30%, ${m.colors[1]} 60%)`
-              : m.colors[0];
+            safeColors.length > 1
+              ? `linear-gradient(120deg, ${safeColors[0]} 30%, ${safeColors[1]} 60%)`
+              : safeColors[0];
           styleStr = `background: ${bg} !important; border: 5px solid #fff;`;
         }
       }
 
-      if (m.name === "Légendaire") {
+      if (rawName === "Légendaire") {
         innerContent = '<div class="medal-index">7</div>';
-      } else if (m.name && /^Médaille\s+Prestige/i.test(m.name)) {
-        const match = m.name.match(/Médaille\s+Prestige\s*[-–:]?\s*(\d+)/i);
+      } else if (rawName && /^Médaille\s+Prestige/i.test(rawName)) {
+        const match = rawName.match(/Médaille\s+Prestige\s*[-–:]?\s*(\d+)/i);
         const num = match
           ? match[1]
-          : m.name
+          : rawName
               .replace(/Médaille\s+Prestige/i, "")
               .replace(/[^0-9]/g, "")
               .trim() || "";
         innerContent = `<div class="medal-index">${num}</div>`;
-      } else if (m.name && m.name.startsWith("Médaille")) {
-        const num = m.name.replace("Médaille ", "");
+      } else if (rawName && rawName.startsWith("Médaille")) {
+        const num = rawName.replace("Médaille ", "");
         innerContent = `<div class="medal-index">${num}</div>`;
-      } else if (m.name === "Tricheur") {
+      } else if (rawName === "Tricheur") {
         innerContent =
           '<div class="medal-index"><i class="fa-solid fa-ban"></i></div>';
       }
 
       const titleContent =
-        m.colors && m.colors.length > 0
-          ? `${m.name}\n${m.colors.join("\n")}`
-          : m.name;
-      const nameAttr = m.name ? `data-name="${m.name}"` : "";
+        safeColors.length > 0
+          ? `${rawName}\n${safeColors.join("\n")}`
+          : rawName;
+      const nameAttr = rawName ? `data-name="${safeName}"` : "";
       const shownClass = "shown";
 
-      return `<div class="medal ${shownClass}" ${nameAttr} style="${styleStr}" title="${titleContent}">${innerContent}</div>`;
+      return `<div class="medal ${shownClass}" ${nameAttr} style="${styleStr}" title="${escapeHtml(
+        titleContent,
+      )}">${innerContent}</div>`;
     })
     .join("");
 
@@ -280,11 +328,18 @@ function renderBadgesPicker(assigned, selectedIds) {
   list.forEach((b) => {
     const row = document.createElement("label");
     row.className = "badge-pick";
-    row.innerHTML = `
-      <input type="checkbox" value="${b.id}" ${selected.has(b.id) ? "checked" : ""} />
-      <span class="badge-emoji">${b.emoji || "🏷️"}</span>
-      <span>${b.name || b.id}</span>
-    `;
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = b.id || "";
+    if (selected.has(b.id)) input.checked = true;
+    const emoji = document.createElement("span");
+    emoji.className = "badge-emoji";
+    emoji.textContent = b.emoji || "🏷️";
+    const label = document.createElement("span");
+    label.textContent = b.name || b.id || "";
+    row.appendChild(input);
+    row.appendChild(emoji);
+    row.appendChild(label);
     picker.appendChild(row);
   });
 }

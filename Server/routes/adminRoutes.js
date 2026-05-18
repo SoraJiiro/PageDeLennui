@@ -20,6 +20,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
   const router = express.Router();
   const AIM_DURATION_FIELDS = ["15", "30", "60"];
 
+  function normalizeHexColor(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw)) return raw;
+    return null;
+  }
+
   function normalizeAimDurationField(field) {
     const normalized = String(field || "").trim();
     return AIM_DURATION_FIELDS.includes(normalized) ? normalized : null;
@@ -1343,7 +1350,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         data.createdAt = userRec.creeAt || userRec.createdAt || null;
         data.createdFromIp =
           userRec.creeDepuis || userRec.createdFromIp || null;
-        data.password = userRec.password || null;
+        data.password = null;
         data.passwordHash =
           userRec["passwordHashé"] || userRec.passwordHash || null;
 
@@ -4145,7 +4152,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
     if (!FileService.data.tags) FileService.data.tags = {};
 
-    if (!tag || tag.trim() === "") {
+    const safeTag = String(tag || "").trim();
+    if (!safeTag) {
       // Si tag vide, on le supprime
       if (FileService.data.tags[pseudo]) {
         delete FileService.data.tags[pseudo];
@@ -4155,15 +4163,26 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       return res.json({ message: `Aucun tag à supprimer pour ${pseudo}` });
     }
 
-    FileService.data.tags[pseudo] = { text: tag.trim(), color: color || null };
+    if (safeTag.length > 32) {
+      return res
+        .status(400)
+        .json({ message: "Tag invalide (max 32 caractères)" });
+    }
+
+    const safeColor = normalizeHexColor(color);
+
+    FileService.data.tags[pseudo] = {
+      text: safeTag,
+      color: safeColor || null,
+    };
     FileService.save("tags", FileService.data.tags);
 
     console.log({
       level: "action",
-      message: `Tag défini pour ${pseudo} : [${tag}] (couleur : ${color})`,
+      message: `Tag défini pour ${pseudo} : [${safeTag}] (couleur : ${safeColor || ""})`,
     });
 
-    res.json({ message: `Tag [${tag}] défini pour ${pseudo}` });
+    res.json({ message: `Tag [${safeTag}] défini pour ${pseudo}` });
   });
 
   // Supprimer un tag
@@ -4340,7 +4359,14 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     try {
       if (fs.existsSync(reqFile)) {
         const data = JSON.parse(fs.readFileSync(reqFile, "utf-8"));
-        res.json(data.requests || []);
+        const safe = (data.requests || []).map((r) => {
+          if (!r || typeof r !== "object") return r;
+          const out = { ...r };
+          delete out.newPassword;
+          delete out.newPasswordHash;
+          return out;
+        });
+        res.json(safe);
       } else {
         res.json([]);
       }
@@ -4376,8 +4402,17 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         const user = users.users.find((u) => u.pseudo === request.pseudo);
 
         if (user) {
-          const passHash = await bcrypt.hash(request.newPassword, 12);
-          user.password = request.newPassword;
+          let passHash = request.newPasswordHash;
+          if (!passHash && request.newPassword) {
+            passHash = await bcrypt.hash(request.newPassword, 12);
+          }
+          if (!passHash) {
+            return res
+              .status(400)
+              .json({ message: "Demande invalide: hash manquant" });
+          }
+
+          user.password = undefined;
           user.passwordHashé = passHash;
           dbUsers.writeAll(users);
 
@@ -4395,7 +4430,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         );
       }
 
-      data.requests.splice(requestIndex, 1); // remove from pending or keep log? User didn't specify. I'll remove done requests to keep it clean.
+      data.requests.splice(requestIndex, 1); // keep file clean
       fs.writeFileSync(reqFile, JSON.stringify(data, null, 2));
 
       emitAdminRefresh("password-requests");

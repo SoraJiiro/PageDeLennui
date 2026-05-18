@@ -8,6 +8,13 @@ const router = express.Router();
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
 const REQUESTS_FILE = path.join(DATA_DIR, "tag_requests.json");
 
+function normalizeHexColor(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw)) return raw;
+  return null;
+}
+
 function getRequests() {
   if (!fs.existsSync(REQUESTS_FILE)) return [];
   try {
@@ -72,6 +79,11 @@ router.post("/request", (req, res) => {
     return res.status(400).json({ message: "Nombre de couleurs incorrect" });
   }
 
+  const normalizedColors = colors.map(normalizeHexColor);
+  if (normalizedColors.some((c) => !c)) {
+    return res.status(400).json({ message: "Couleurs invalides" });
+  }
+
   // Vérifier les tricheurs
   let cheaters = [];
   try {
@@ -107,7 +119,7 @@ router.post("/request", (req, res) => {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     pseudo: user.pseudo,
     tag: tag.trim(),
-    colors: colors,
+    colors: normalizedColors,
     time: Date.now(),
     fulfilled: false,
   };

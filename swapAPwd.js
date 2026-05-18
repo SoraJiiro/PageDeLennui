@@ -48,7 +48,6 @@ async function main() {
 
     const hashed = await bcrypt.hash(password, 12);
     const updated = dbUsers.updateUserFields("Admin", {
-      password,
       passwordHashé: hashed,
     });
 

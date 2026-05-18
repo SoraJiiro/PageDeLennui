@@ -37,6 +37,25 @@ function normalizePanelText(value) {
     .trim();
 }
 
+const htmlEscapes = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, (c) => htmlEscapes[c]);
+}
+
+function sanitizeCssColor(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw)) return raw;
+  return "";
+}
+
 function applyModeratorView() {
   document.title = "Moderation - PDE";
 
@@ -2155,7 +2174,9 @@ function displayUserInfo(data) {
   const pseudoEl = document.getElementById("userInfoPseudo");
   const statsEl = document.getElementById("userInfoStats");
 
-  pseudoEl.innerHTML = `<i class="fa-solid fa-user"></i> ${data.pseudo}`;
+  pseudoEl.innerHTML = `<i class="fa-solid fa-user"></i> ${escapeHtml(
+    data.pseudo,
+  )}`;
   const metaHtml = `
                 <div class="user-meta">
                     <div class="user-stat">
@@ -2172,6 +2193,16 @@ function displayUserInfo(data) {
                     </div>
                 </div>
             `;
+
+  const safeTagHtml = (() => {
+    if (typeof data.tag === "object" && data.tag !== null) {
+      const safeColor = sanitizeCssColor(data.tag.color) || "inherit";
+      const safeText = escapeHtml(data.tag.text || "");
+      return `<span style="color:${safeColor}">${safeText}</span>`;
+    }
+    if (data.tag) return escapeHtml(data.tag);
+    return "—";
+  })();
 
   statsEl.innerHTML = `
                 <div class="user-stat">
@@ -2360,12 +2391,8 @@ function displayUserInfo(data) {
                     </div>
                 </div>
                 <div class="user-stat">
-                    <span class="label">Tag:</span>
-                    <span class="value">${
-                      typeof data.tag === "object" && data.tag !== null
-                        ? `<span style="color:${data.tag.color || "inherit"}">${data.tag.text}</span>`
-                        : data.tag || "—"
-                    }</span>
+                  <span class="label">Tag:</span>
+                  <span class="value">${safeTagHtml}</span>
                 </div>
                 <div class="user-stat">
                     <span class="label">Couleurs custom PixelWar:</span>
@@ -2373,21 +2400,16 @@ function displayUserInfo(data) {
                 </div>
             `;
 
-  pwdLength = data.password ? data.password.length : 0;
-  hashedPwdLength = data.password ? data.passwordHash.length : 0;
+  const hashedPwdLength = data.passwordHash ? data.passwordHash.length : 0;
 
   const pwdHtml = `
                 <div class="user-passwords">
-                    <div class="user-stat">
-                        <span class="label">MPD :</span>
-                        <span class="value" id="pwdPlain">${data.password ? "•".repeat(pwdLength) : "—"}</span>
-                    </div>
                     <div class="user-stat">
                         <span class="label">MDP HASH :</span>
                         <span class="value" id="pwdHash">${data.passwordHash ? "•".repeat(hashedPwdLength) : "—"}</span>
                     </div>
                     <div class="action-buttons">
-                        <button type="button" class="btn" id="togglePwdBtn">Afficher les mdp</button>
+              <button type="button" class="btn" id="togglePwdBtn">Afficher le hash</button>
                     </div>
                 </div>
             `;
@@ -2401,26 +2423,23 @@ function displayUserInfo(data) {
   const toggleBtn = document.getElementById("togglePwdBtn");
   if (toggleBtn) {
     toggleBtn.addEventListener("click", () => {
-      const plainEl = document.getElementById("pwdPlain");
       const hashEl = document.getElementById("pwdHash");
-      if (!plainEl || !hashEl) return;
+      if (!hashEl) return;
 
-      const visible = plainEl.dataset.visible === "1";
+      const visible = hashEl.dataset.visible === "1";
       if (visible) {
-        plainEl.textContent = data.password ? "••••••" : "—";
         hashEl.textContent = data.passwordHash ? "••••••" : "—";
-        plainEl.dataset.visible = "0";
-        toggleBtn.textContent = "Afficher les mdp";
+        hashEl.dataset.visible = "0";
+        toggleBtn.textContent = "Afficher le hash";
       } else {
-        plainEl.textContent = data.password || "—";
         hashEl.textContent = data.passwordHash || "—";
-        plainEl.dataset.visible = "1";
-        toggleBtn.textContent = "Masquer les mdp";
+        hashEl.dataset.visible = "1";
+        toggleBtn.textContent = "Masquer le hash";
       }
     });
     // initialiser état masqué
-    const plainElInit = document.getElementById("pwdPlain");
-    if (plainElInit) plainElInit.dataset.visible = "0";
+    const hashElInit = document.getElementById("pwdHash");
+    if (hashElInit) hashElInit.dataset.visible = "0";
   }
 
   // Attacher listeners pour Motus (reset + modifier essais)

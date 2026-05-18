@@ -71,6 +71,23 @@ export function initChat(socket) {
       const file = e.target.files[0];
       if (!file) return;
 
+      const safeName = (file.name || "").trim();
+      if (!safeName) {
+        alert("Nom de fichier invalide");
+        fileInput.value = "";
+        return;
+      }
+      if (safeName.length > 200) {
+        alert("Nom de fichier trop long (max 200 caractères)");
+        fileInput.value = "";
+        return;
+      }
+      if (!Number.isFinite(file.size) || file.size <= 0) {
+        alert("Fichier vide ou invalide");
+        fileInput.value = "";
+        return;
+      }
+
       const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
       if (file.size > MAX_SIZE) {
         alert(
@@ -114,6 +131,10 @@ export function initChat(socket) {
               fileSize: file.size,
             });
           }
+        };
+        reader.onerror = () => {
+          console.error("Erreur lecture fichier");
+          alert("Erreur lors de la lecture du fichier");
         };
         reader.readAsDataURL(file);
 
@@ -465,6 +486,13 @@ export function initChat(socket) {
     return String(value || "").replace(/[&<>"']/g, (char) => htmlEscapes[char]);
   }
 
+  function sanitizeCssColor(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw)) return raw;
+    return "";
+  }
+
   function registerKnownUsers(list) {
     const arr = Array.isArray(list) ? list : [];
     arr.forEach((raw) => {
@@ -607,20 +635,25 @@ export function initChat(socket) {
       let tagHtml = "";
       if (tag) {
         if (typeof tag === "string") {
-          tagHtml = ` [<span class="user-tag">${tag}</span>]`;
+          tagHtml = ` [<span class="user-tag">${escapeHtml(tag)}</span>]`;
         } else if (typeof tag === "object" && tag.text) {
           if (tag.colors && Array.isArray(tag.colors)) {
             const words = tag.text.split(/\s+/);
             const coloredWords = words.map((word, i) => {
-              const color = tag.colors[i] || tag.colors[0] || "#ffffff";
-              return `<span style="color:${color}">${word}</span>`;
+              const rawColor = tag.colors[i] || tag.colors[0] || "";
+              const color = sanitizeCssColor(rawColor);
+              const style = color ? ` style="color:${color}"` : "";
+              return `<span${style}>${escapeHtml(word)}</span>`;
             });
             tagHtml = ` [<span class="user-tag">${coloredWords.join(
               " ",
             )}</span>]`;
           } else {
-            const style = tag.color ? `style="color:${tag.color}"` : "";
-            tagHtml = ` [<span class="user-tag" ${style}>${tag.text}</span>]`;
+            const color = sanitizeCssColor(tag.color);
+            const style = color ? `style="color:${color}"` : "";
+            tagHtml = ` [<span class="user-tag" ${style}>${escapeHtml(
+              tag.text,
+            )}</span>]`;
           }
         }
       }
@@ -632,13 +665,13 @@ export function initChat(socket) {
           .map(
             (b) =>
               `<span class="chat-badge" title="${String(
-                b.name || b.id || "",
-              ).replaceAll('"', "&quot;")}">${b.emoji || "🏷️"}</span>`,
+                escapeHtml(b.name || b.id || ""),
+              )}">${escapeHtml(b.emoji || "🏷️")}</span>`,
           )
           .join("")}</span>`;
       }
 
-      const safeAuthor = auteur.replaceAll('"', "&quot;");
+      const safeAuthor = escapeHtml(auteur);
       const pseudoLink = `/profil.html?pseudo=${encodeURIComponent(auteur)}`;
       const avatarTitle = `Avatar de ${safeAuthor}`;
       const avatarHtml = pfp
@@ -647,7 +680,7 @@ export function initChat(socket) {
 
       el.innerHTML = `
       <div class="meta">
-        <span class="meta-left">${avatarHtml}<a class="auteur auteur-link" href="${pseudoLink}">${auteur}</a>${tagHtml}${badgesHtml}</span>
+        <span class="meta-left">${avatarHtml}<a class="auteur auteur-link" href="${pseudoLink}">${safeAuthor}</a>${tagHtml}${badgesHtml}</span>
         <span class="time"><i>${time}</i></span>
       </div>
       <div class="text"></div>`;
@@ -662,15 +695,18 @@ export function initChat(socket) {
         const fileIcon = getFileIcon(file.type, file.name);
         const fileSize = formatFileSize(file.size || 0);
 
+        const safeFileId = escapeHtml(file.id || "");
+        const safeFileName = escapeHtml(file.name || "Fichier");
+
         fileDiv.innerHTML = `
           <div class="file-info">
             <i class="${fileIcon}"></i>
             <div class="file-details">
-              <div class="file-name">${file.name || "Fichier"}</div>
+              <div class="file-name">${safeFileName}</div>
               <div class="file-size">${fileSize}</div>
             </div>
           </div>
-          <button class="file-download" data-file-id="${file.id}" title="Télécharger">
+          <button class="file-download" data-file-id="${safeFileId}" title="Télécharger">
             <i class="fa-solid fa-download"></i>
           </button>
         `;

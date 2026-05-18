@@ -11,6 +11,26 @@ const SPAM_WINDOW_MS = 10 * 1000; // 10s window
 const SPAM_MAX_MESSAGES = 5; // max messages in window before auto-mute
 const SPAM_AUTO_MUTE_MS = 30 * 1000; // auto-mute duration (30s)
 
+function estimateBase64Size(base64) {
+  const raw = String(base64 || "").replace(/\s+/g, "");
+  if (!raw) return 0;
+  let padding = 0;
+  if (raw.endsWith("==")) padding = 2;
+  else if (raw.endsWith("=")) padding = 1;
+  return Math.max(0, Math.floor((raw.length * 3) / 4) - padding);
+}
+
+function getEffectiveFileSize(fileData, declaredSize) {
+  const actual = estimateBase64Size(fileData);
+  const declared = Number(declaredSize);
+  const actualOk = Number.isFinite(actual) && actual > 0;
+  const declaredOk = Number.isFinite(declared) && declared > 0;
+  if (actualOk && declaredOk) return Math.max(actual, declared);
+  if (actualOk) return actual;
+  if (declaredOk) return declared;
+  return 0;
+}
+
 function maskWordKeepFirst(word) {
   const value = String(word || "");
   if (!value) return value;
@@ -356,7 +376,8 @@ function registerChatHandlers({
 
   function storeSharedFile({ fileName, fileData, fileType, fileSize }) {
     const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
-    if (Number(fileSize) > MAX_FILE_SIZE) {
+    const effectiveSize = getEffectiveFileSize(fileData, fileSize);
+    if (effectiveSize > MAX_FILE_SIZE) {
       throw new Error(
         "Fichier trop volumineux (max " +
           MAX_FILE_SIZE / (1024 * 1024) +
@@ -516,7 +537,7 @@ function registerChatHandlers({
       id: fileId,
       name: safeName,
       type: fileType,
-      size: fileSize,
+      size: effectiveSize || Number(fileSize) || 0,
       diskPath: path.join("uploads", savedName),
       url: `/uploads/${savedName}`,
       uploader: pseudo,
@@ -533,7 +554,7 @@ function registerChatHandlers({
         fileId,
         name: safeName,
         uploader: pseudo,
-        size: fileSize,
+        size: effectiveSize || Number(fileSize) || 0,
         at: new Date().toISOString(),
       });
     } catch (e) {}
@@ -988,7 +1009,8 @@ function registerChatHandlers({
     try {
       // Validation
       const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
-      if (fileSize > MAX_FILE_SIZE) {
+      const effectiveSize = getEffectiveFileSize(fileData, fileSize);
+      if (effectiveSize > MAX_FILE_SIZE) {
         socket.emit(
           "chat:fileError",
           "Fichier trop volumineux (max " +
@@ -1163,7 +1185,7 @@ function registerChatHandlers({
         id: fileId,
         name: safeName,
         type: fileType,
-        size: fileSize,
+        size: effectiveSize || Number(fileSize) || 0,
         // chemin relatif côté serveur (servi via express.static Public)
         diskPath: path.join("uploads", savedName),
         url: `/uploads/${savedName}`,
@@ -1181,7 +1203,7 @@ function registerChatHandlers({
           fileId,
           name: safeName,
           uploader: pseudo,
-          size: fileSize,
+          size: effectiveSize || Number(fileSize) || 0,
           at: new Date().toISOString(),
         });
       } catch (e) {}
@@ -1299,27 +1321,6 @@ function registerChatHandlers({
     } catch (err) {
       console.error("Erreur download fichier:", err);
       socket.emit("chat:fileError", "Erreur lors du téléchargement");
-    }
-  });
-
-  // Admin: obtenir la liste des fichiers partagés
-  socket.on("admin:getSharedFiles", () => {
-    if (pseudo !== "Admin") return;
-    try {
-      const all = FileService.data.sharedFiles || {};
-      const list = Object.values(all).map((f) => ({
-        id: f.id,
-        name: f.name,
-        type: f.type,
-        size: f.size,
-        uploader: f.uploader,
-        uploadedAt: f.uploadedAt,
-        expiresAt: f.expiresAt,
-        url: f.url || null,
-      }));
-      socket.emit("admin:sharedFiles", list);
-    } catch (err) {
-      console.error("Erreur admin:getSharedFiles", err);
     }
   });
 
