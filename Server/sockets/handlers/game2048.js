@@ -113,14 +113,6 @@ function register2048Handlers({
     if (maxTile > 0 && s > 0 && maxTile > s * 2) return;
 
     updateReviveContextFromScore(socket, "2048", s);
-    recordGameScoreContribution({
-      FileService,
-      io,
-      pseudo,
-      game: "2048",
-      score: s,
-      multiplier: getGameScoreMultiplier("2048"),
-    });
     setRunnerProgress(s);
 
     if (!FileService.data.scores2048) FileService.data.scores2048 = {};

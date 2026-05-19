@@ -41,26 +41,7 @@ function registerAdminHandlers({
     return rec && rec.pseudo ? rec.pseudo : null;
   };
 
-  // ensureTicker supprimé (guerre des clans)
-
-  // Handlers guerre des clans supprimés
-
   // ------- Admin Events -------
-  // Permettre à tous de récupérer la liste des multiplicateurs actuels
-  // Handler guerre des clans supprimé
-  // Handler clanwar supprimé
-  // Permettre à tous de récupérer l'état des boosts de clan
-  // Handler guerre des clans supprimé
-  // Admin: modification des multiplicateurs de guerre de clans en temps réel
-  // Handler guerre des clans supprimé
-
-  // Admin: set multiple multipliers at once
-  // Handler guerre des clans supprimé
-
-  // Admin: set a temporary boost for a clan
-  // Handler guerre des clans supprimé
-
-  // Handler guerre des clans supprimé
   // ------- Reset complet -------
   socket.on("admin:server:softReset", async () => {
     if (!isAdmin) return;
@@ -769,44 +750,6 @@ function registerAdminHandlers({
       io.emit("pixelwar:init", { board: Array.from(pixelWarGame.board) });
     } catch (e) {
       console.error("admin:pixelwar:clear_square error:", e);
-    }
-  });
-
-  socket.on("admin:clanwar:start", ({ winnerBadgeName } = {}) => {
-    if (!isAdmin) return;
-    try {
-      const out = startWar({
-        FileService,
-        io,
-        startedBy: pseudo,
-        winnerBadgeName,
-        broadcastSystemMessage,
-      });
-      socket.emit("admin:clanwar:result", out);
-    } catch (e) {
-      socket.emit("admin:clanwar:result", {
-        ok: false,
-        message: "Erreur au demarrage de la guerre.",
-      });
-    }
-  });
-
-  socket.on("admin:clanwar:finish", () => {
-    if (!isAdmin) return;
-    try {
-      const out = finishWar({
-        FileService,
-        io,
-        endedBy: pseudo,
-        reason: "manual",
-        broadcastSystemMessage,
-      });
-      socket.emit("admin:clanwar:result", out);
-    } catch (e) {
-      socket.emit("admin:clanwar:result", {
-        ok: false,
-        message: "Erreur lors de la cloture de la guerre.",
-      });
     }
   });
 }

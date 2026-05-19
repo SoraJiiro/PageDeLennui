@@ -25,66 +25,6 @@ function pixelWarResetBoardAndParams() {
   showNotification("✅ Reset board + params command sent", "success");
 }
 
-function formatClanWarDuration(ms) {
-  const total = Math.max(0, Math.floor(Number(ms) || 0));
-  const sec = Math.floor(total / 1000);
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  if (h > 0) {
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function renderAdminClanWarState(state) {
-  const status = document.getElementById("admin-clanwar-status");
-  const timer = document.getElementById("admin-clanwar-timer");
-  const slam = document.getElementById("admin-clanwar-slam");
-  const sisr = document.getElementById("admin-clanwar-sisr");
-  const list = document.getElementById("admin-clanwar-contribs");
-
-  if (!status || !timer || !slam || !sisr || !list) return;
-
-  if (!state) {
-    status.textContent = "Aucune guerre en cours.";
-    timer.textContent = "--:--";
-    slam.textContent = "0";
-    sisr.textContent = "0";
-    list.innerHTML = '<li style="opacity:.7">Aucun contributeur</li>';
-    return;
-  }
-
-  const badgeText =
-    state && state.winnerBadgeName
-      ? ` | Badge: ${state.winnerBadgeName} (✪)`
-      : "";
-  status.textContent = `Guerre active depuis ${new Date(state.startedAt).toLocaleString()}${badgeText}`;
-  timer.textContent = formatClanWarDuration(state.elapsedMs || 0);
-  slam.textContent = String((state.clanScores && state.clanScores.SLAM) || 0);
-  sisr.textContent = String((state.clanScores && state.clanScores.SISR) || 0);
-
-  const contribs = Array.isArray(state.contributors)
-    ? state.contributors.slice(0, 8)
-    : [];
-  if (!contribs.length) {
-    list.innerHTML = '<li style="opacity:.7">Aucun contributeur</li>';
-    return;
-  }
-
-  list.innerHTML = contribs
-    .map(
-      (row, idx) =>
-        `<li>#${idx + 1} ${row.pseudo} <b>[${row.clan}]</b> : +${row.gain}</li>`,
-    )
-    .join("");
-}
-
-// Fonctions guerre des clans supprimées
-
-window.clanWarStart = clanWarStart;
-window.clanWarFinish = clanWarFinish;
-
 // -----------------------------
 // Admin realtime viewer + 4-point clear
 // -----------------------------
@@ -315,25 +255,9 @@ function adminPwAttachSocketHandlers(sock) {
     adminPwDrawPixel(x, y, data.colorIndex);
   });
 
-  sock.on("clanwar:update", (state) => {
-    renderAdminClanWarState(state || null);
-  });
-
-  sock.on("admin:clanwar:result", (payload) => {
-    if (!payload || !payload.ok) {
-      showNotification(
-        `❌ ${(payload && payload.message) || "Action guerre impossible"}`,
-        "error",
-      );
-      return;
-    }
-    showNotification("✅ Action guerre executee", "success");
-  });
-
   if (sock.connected) {
     try {
       sock.emit("pixelwar:join");
-      sock.emit("clanwar:get_state");
     } catch (e) {}
   }
 }

@@ -159,14 +159,6 @@ function registerDinoFlappyHandlers({
       );
     }
     if (final === true) {
-      recordGameScoreContribution({
-        FileService,
-        io,
-        pseudo,
-        game: "dino",
-        score: s,
-        multiplier: getGameScoreMultiplier("dino"),
-      });
       rewardFinalRun("dino", s);
       leaderboardManager.broadcastDinoLB(io);
     }
@@ -218,14 +210,6 @@ function registerDinoFlappyHandlers({
       );
     }
     if (final === true) {
-      recordGameScoreContribution({
-        FileService,
-        io,
-        pseudo,
-        game: "flappy",
-        score: s,
-        multiplier: getGameScoreMultiplier("flappy"),
-      });
       rewardFinalRun("flappy", s);
       leaderboardManager.broadcastFlappyLB(io);
     }
@@ -256,14 +240,6 @@ function registerDinoFlappyHandlers({
     if (!Number.isFinite(c) || c < 0) return;
 
     updateReviveContextFromScore(socket, "subway", s);
-    recordGameScoreContribution({
-      FileService,
-      io,
-      pseudo,
-      game: "subway",
-      score: s,
-      multiplier: getGameScoreMultiplier("subway"),
-    });
     clearRunnerProgress("subway");
     setRunnerState("subway", false);
     consumeRunnerResume("subway");

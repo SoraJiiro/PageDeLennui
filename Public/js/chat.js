@@ -470,7 +470,6 @@ export function initChat(socket) {
     "/pz2.html": "Consulter l'Easter Egg Tracker",
     "/dons.html": "Faire un don",
     "/badges.html": "Voir les badges",
-    "/guerre-clan.html": "Voir la Guerre des Clans",
     "/hall-des-oublies.html": "Voir le Hall des Oubliés",
     "/annonces.html": "Voir l'historique des annonces",
   };

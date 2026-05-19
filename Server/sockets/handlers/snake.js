@@ -154,14 +154,6 @@ function registerSnakeHandlers({
     }
 
     if (final === true) {
-      recordGameScoreContribution({
-        FileService,
-        io,
-        pseudo,
-        game: "snake",
-        score: s,
-        multiplier: getGameScoreMultiplier("snake"),
-      });
       rewardSnakeFinal(s);
       leaderboardManager.broadcastSnakeLB(io);
     }

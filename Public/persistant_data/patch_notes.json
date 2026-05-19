@@ -180,12 +180,6 @@
             {
               "tagClass": "tag-new",
               "tag": "[NEW]",
-              "strong": "La Guerre de Clans :",
-              "text": "La guerre est déclarée! Aidez votre clan à rassembler le plus de score possible avant la fin pour gagner! Plus d'infos sur la <a href=\"/faq.html\">page FAQ</a> et sur la page de la <a href=\"/guerre-clans.html\">Guerre de Clans</a>."
-            },
-            {
-              "tagClass": "tag-new",
-              "tag": "[NEW]",
               "strong": "Censure Chat :",
               "text": "Un système de censure a été implémenté dans le Chat, il est toujours expérimental et s'affinera au fur et à mesure."
             },

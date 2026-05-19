@@ -143,14 +143,6 @@ function registerBlockblastHandlers({
     }
 
     if (final === true) {
-      recordGameScoreContribution({
-        FileService,
-        io,
-        pseudo,
-        game: "blockblast",
-        score: s,
-        multiplier: getGameScoreMultiplier("blockblast"),
-      });
       rewardBlockblastFinal(s);
       leaderboardManager.broadcastBlockBlastLB(io);
     }
