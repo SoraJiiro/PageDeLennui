@@ -72,15 +72,6 @@ function registerAimTrainerHandlers({
     if (!Number.isFinite(misses) || misses < 0 || misses > AIM_MISSES_MAX)
       return;
 
-    recordGameScoreContribution({
-      FileService,
-      io,
-      pseudo,
-      game: `aim_${duration}`,
-      score,
-      multiplier: getGameScoreMultiplier(`aim_${duration}`),
-    });
-
     const durationScores = ensureDurationScores();
     if (!FileService.data.aimTrainerStats)
       FileService.data.aimTrainerStats = {};
