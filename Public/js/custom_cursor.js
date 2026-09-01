@@ -1,9 +1,11 @@
 (function () {
-  // Respecte la préférence utilisateur (empêche l'activation si désactivé)
+  let enabled;
   try {
-    const enabled = localStorage.getItem("pde_custom_cursor_enabled");
+    enabled = localStorage.getItem("pde_custom_cursor_enabled");
     if (enabled === "0") return;
-  } catch (e) {}
+  } catch (e) {
+    enabled = false;
+  }
   if (window.__pdeSimpleCursorReady) return;
 
   function canUseCustomCursor() {

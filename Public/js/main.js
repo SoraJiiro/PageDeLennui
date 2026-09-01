@@ -325,6 +325,13 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
     });
 
     socket.connect();
+
+    var cursorEnabled = localStorage.getItem("pde_custom_cursor_enabled");
+
+    const shouldPoint = document.querySelectorAll("a, button, [role='button']");
+    shouldPoint.forEach((el) => {
+      if (!cursorEnabled) el.style.cursor = "pointer !important";
+    });
   } catch (err) {
     console.error("Erreur chargement modules : ", err);
   }
