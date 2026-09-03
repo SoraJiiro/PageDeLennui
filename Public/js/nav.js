@@ -726,8 +726,12 @@ document.addEventListener("DOMContentLoaded", () => {
     fitSectionToViewport(active);
   }
 
-  function openExternalStage(url, title) {
+  function openExternalStage(url, title, target) {
     if (!url) return;
+    if (target === "_blank") {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
     window.location.href = url;
   }
 
@@ -841,7 +845,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await checkReglement({ markSeen: true });
       }
 
-      openExternalStage(url, title);
+      openExternalStage(url, title, btn.dataset.externalTarget);
     });
   });
 
