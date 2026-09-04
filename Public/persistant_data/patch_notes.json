@@ -11,6 +11,24 @@
           "items": [
             {
               "tagClass": "tag-fix",
+              "tag": "[CHANGE]",
+              "strong": "Mots de passe :",
+              "text": "L'Admin peut désormais modifier les mots de passe utilisateurs depuis le panel. Aussi, lorsqu'un utilisateur veut changer son mot de passe, son mot de passe actuel lui sera demander avant d'en choisir un nouveau et d'envoyer la demande de changement."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v3.1.3",
+      "date": "25/03/2026 ",
+      "sections": [
+        {
+          "title": "Améliorations —",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-fix",
               "tag": "[FIX]",
               "strong": "Subway Surfer :",
               "text": "Fix des derniers bug (ou presque) existant sur la PDE. Si vous trouvez encore d'autres bugs, je ne les fixerai pas."

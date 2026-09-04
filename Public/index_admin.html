@@ -1122,6 +1122,39 @@
                         </div>
                     </section>
 
+                    <section class="admin-section" style="order: 1;">
+                        <h2><i class="fa-solid fa-key"
+                                style="margin-right: 10px;"></i>/Mot de passe utilisateur</h2>
+                        <div class="control-group">
+                            <p>Réinitialiser le mot de passe d'un utilisateur en cas d'oubli ou de problème.</p>
+                            <div class="control-form">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="adminPasswordUser">Pseudo</label>
+                                        <input type="text" id="adminPasswordUser"
+                                            placeholder="Pseudo de l'utilisateur" autocomplete="off" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="adminNewPassword">Nouveau mot de passe</label>
+                                        <input type="password" id="adminNewPassword"
+                                            placeholder="6 caractères minimum" autocomplete="new-password" />
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="adminNewPasswordConfirmation">Confirmation</label>
+                                        <input type="password" id="adminNewPasswordConfirmation"
+                                            placeholder="Retaper le mot de passe" autocomplete="new-password" />
+                                    </div>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-red" type="button"
+                                            onclick="changeAdminUserPassword()">
+                                            <i class="fa-solid fa-key"></i> Modifier
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- ADMINISTRATION -->
                     <section class="admin-section" style="order: 8;">
                         <h2><i class="fa-solid fa-gear"></i> /Commandes</h2>

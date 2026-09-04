@@ -278,6 +278,26 @@ function initSocket() {
     scheduleAdminRefresh("transactions");
   });
 
+  socket.on("admin:user:changePassword:result", (res) => {
+    if (!res?.success) {
+      showNotification(
+        `❌ ${res?.message || "Modification impossible"}`,
+        "error",
+      );
+      return;
+    }
+
+    showNotification(`✅ ${res.message}`, "success");
+    [
+      "adminPasswordUser",
+      "adminNewPassword",
+      "adminNewPasswordConfirmation",
+    ].forEach((id) => {
+      const input = document.getElementById(id);
+      if (input) input.value = "";
+    });
+  });
+
   const onSurveyChange = () => scheduleAdminRefresh("surveys");
   socket.on("survey:new", onSurveyChange);
   socket.on("survey:update", onSurveyChange);
@@ -3559,6 +3579,36 @@ async function deleteUser() {
     console.error(err);
     showNotification("⚠️ Erreur lors de la suppression", "error");
   }
+}
+
+function changeAdminUserPassword() {
+  const pseudo = document.getElementById("adminPasswordUser")?.value.trim();
+  const newPassword = document.getElementById("adminNewPassword")?.value || "";
+  const confirmation =
+    document.getElementById("adminNewPasswordConfirmation")?.value || "";
+
+  if (!pseudo || !newPassword || !confirmation) {
+    showNotification("⚠️ Tous les champs sont requis", "error");
+    return;
+  }
+  if (newPassword.length < 6) {
+    showNotification(
+      "⚠️ Le mot de passe doit contenir au moins 6 caractères",
+      "error",
+    );
+    return;
+  }
+  if (newPassword !== confirmation) {
+    showNotification("⚠️ Les mots de passe ne correspondent pas", "error");
+    return;
+  }
+  if (!confirm(`Modifier le mot de passe de "${pseudo}" ?`)) return;
+
+  socket.emit("admin:user:changePassword", {
+    pseudo,
+    newPassword,
+    confirmation,
+  });
 }
 
 // Supprimer des Leaderboards (sans supprimer l'utilisateur)

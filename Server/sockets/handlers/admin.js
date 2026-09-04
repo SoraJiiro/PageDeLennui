@@ -1,5 +1,7 @@
 // Fonctions guerre des clans supprimées
 
+const bcrypt = require("bcryptjs");
+
 function registerAdminHandlers({
   io,
   socket,
@@ -42,6 +44,73 @@ function registerAdminHandlers({
   };
 
   // ------- Admin Events -------
+  socket.on("admin:user:changePassword", async (payload = {}) => {
+    if (!isAdmin) {
+      socket.emit("admin:user:changePassword:result", {
+        success: false,
+        message: "Action réservée à l'administrateur",
+      });
+      return;
+    }
+
+    const target = String(payload.pseudo || "").trim();
+    const newPassword = String(payload.newPassword || "");
+    const confirmation = String(payload.confirmation || "");
+
+    if (!target || !newPassword || !confirmation) {
+      socket.emit("admin:user:changePassword:result", {
+        success: false,
+        message: "Pseudo et mot de passe requis",
+      });
+      return;
+    }
+    if (newPassword.length < 6) {
+      socket.emit("admin:user:changePassword:result", {
+        success: false,
+        message: "Le mot de passe doit contenir au moins 6 caractères",
+      });
+      return;
+    }
+    if (newPassword !== confirmation) {
+      socket.emit("admin:user:changePassword:result", {
+        success: false,
+        message: "Les mots de passe ne correspondent pas",
+      });
+      return;
+    }
+
+    try {
+      const user = dbUsers?.findBypseudo?.(target);
+      if (!user) {
+        socket.emit("admin:user:changePassword:result", {
+          success: false,
+          message: "Utilisateur introuvable",
+        });
+        return;
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      const updated = dbUsers.updateUserFields(user.pseudo, {
+        passwordHashé: passwordHash,
+        passHash: passwordHash,
+        password: undefined,
+      });
+      if (!updated) throw new Error("Utilisateur introuvable");
+
+      socket.emit("admin:user:changePassword:result", {
+        success: true,
+        pseudo: user.pseudo,
+        message: `Mot de passe de ${user.pseudo} modifié`,
+      });
+    } catch (error) {
+      console.error("Erreur changement mot de passe admin:", error);
+      socket.emit("admin:user:changePassword:result", {
+        success: false,
+        message: "Erreur lors de la modification du mot de passe",
+      });
+    }
+  });
+
   // ------- Reset complet -------
   socket.on("admin:server:softReset", async () => {
     if (!isAdmin) return;

@@ -310,12 +310,31 @@ router.post("/verify-password", async (req, res) => {
 
 router.post("/request-password-change", requireAuth, async (req, res) => {
   const pseudo = req.session?.user?.pseudo;
+  const rawCurrentPassword = req.body ? req.body.currentPassword : "";
+  const currentPassword = String(rawCurrentPassword || "");
   const rawPassword = req.body ? req.body.newPassword : "";
   const newPassword = String(rawPassword || "").trim();
   const ip = extractClientIp(req);
 
-  if (!pseudo || !newPassword) {
+  if (!pseudo || !currentPassword || !newPassword) {
     return res.status(400).json({ message: "Champs manquants." });
+  }
+
+  const users = readUsers();
+  const user = users.find(
+    (u) => u.pseudo.toLowerCase() === pseudo.toLowerCase(),
+  );
+  if (!user) {
+    return res.status(404).json({ message: "Utilisateur introuvable." });
+  }
+
+  const currentPasswordMatches = await verifyPasswordAndMigrate(
+    users,
+    user,
+    currentPassword,
+  );
+  if (!currentPasswordMatches) {
+    return res.status(401).json({ message: "Mot de passe actuel incorrect." });
   }
 
   const reqFile = path.join(

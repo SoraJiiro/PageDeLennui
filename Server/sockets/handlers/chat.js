@@ -1133,6 +1133,9 @@ function registerChatHandlers({
         "audio/*",
         "application/octet-stream",
         "binary/octet-stream",
+        "text/sql",
+        "application/json",
+        "application/xml",
       ]);
 
       const isAllowedMime =
@@ -1153,12 +1156,10 @@ function registerChatHandlers({
         return;
       }
 
-      // Créer une entrée de fichier
       if (!FileService.data.sharedFiles) FileService.data.sharedFiles = {};
 
       const fileId =
         Date.now().toString(36) + Math.random().toString(36).substr(2);
-      // Sanitize filename to avoid path traversal or weird chars
       const safeName = path
         .basename(safeNameRaw)
         .replace(/\0/g, "")
@@ -1186,7 +1187,6 @@ function registerChatHandlers({
         name: safeName,
         type: fileType,
         size: effectiveSize || Number(fileSize) || 0,
-        // chemin relatif côté serveur (servi via express.static Public)
         diskPath: path.join("uploads", savedName),
         url: `/uploads/${savedName}`,
         uploader: pseudo,
