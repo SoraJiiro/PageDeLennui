@@ -37,8 +37,8 @@
         <link rel="stylesheet" type="text/css" href="css/stage17.css" />
         <link rel="stylesheet" type="text/css" href="css/stage18.css" />
         <link rel="stylesheet" type="text/css" href="css/stage19.css" />
-        <link rel="stylesheet" type="text/css" href="css/stage20.css" />
         <link rel="stylesheet" type="text/css" href="css/stage21.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage22.css" />
         <link rel="stylesheet" type="text/css" href="css/sidebar.css" />
 
         <link rel="icon" type="img/png" href="imgs/icon_d.png"
@@ -603,17 +603,16 @@
                             class="hub-card-img" src="imgs/defaultGame.svg"
                             alt aria-hidden="true"><span
                             class="hub-card-label">Sudoku</span></button>
-                    <button class="hub-card sec20" data-game="Subway"
-                        data-emoji="🚇" type="button"><img
-                            class="hub-card-img" src="imgs/defaultGame.svg"
-                            alt aria-hidden="true"><span
-                            class="hub-card-label">Subway
-                            Surfer</span></button>
                     <button class="hub-card sec21" data-game="Aim Trainer"
                         data-emoji="🎯" type="button"><img
                             class="hub-card-img" src="imgs/defaultGame.svg"
                             alt aria-hidden="true"><span
                             class="hub-card-label">Aim Trainer</span></button>
+                    <button class="hub-card sec22" data-game="PDE Hero"
+                        data-emoji="🎸" type="button"><img
+                            class="hub-card-img" src="imgs/defaultGame.svg"
+                            alt aria-hidden="true"><span
+                            class="hub-card-label">PDE Hero</span></button>
                 </div>
 
                 <div class="hub-links" aria-label="Liens utiles">
@@ -803,7 +802,6 @@
                 <button data-board="roulette">Roulette</button>
                 <button data-board="slots">Slots</button>
                 <button data-board="sudoku">Sudoku</button>
-                <button data-board="subway">Subway</button>
                 <button data-board="aim-trainer">Aim Trainer</button>
                 <button data-board="pixelwar">PixelWar</button>
                 <button data-board="clicks-cps">Clicks + Peak CPS</button>
@@ -811,7 +809,7 @@
 
             <center>
                 <p class="info-leaderboard">Le premier du Leaderboard Dino,
-                    Flappy Bird, Snake, Subway Surfer et 2048 à
+                    Flappy Bird, Snake et 2048 à
                     la fin de chaque session obtiendra <mark
                         style="background: var(--primary-color)!important; color: #000!important; padding: 7px 7px; text-align: center; display: inline-block; text-decoration: underline; text-decoration-color: #000; text-decoration-thickness: 1.5px; text-underline-offset: 3px;">500</mark>
                     Monnaie
@@ -986,13 +984,15 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <!-- LEADERBOARD SUBWAY -->
+            <!-- LEADERBOARD PDE HERO -->
             <div class="leaderboard-card">
                 <div class="leaderboard-header">
-                    <h2>Subway Leaderboard.exe</h2>
+                    <h2>PDE Hero Leaderboard.exe</h2>
                 </div>
-                <table class="board" id="subway-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th></tr></thead>
+                <table class="board" id="pde-hero-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Best score all
+                                time</th><th>Partie la plus
+                                longue</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -1531,9 +1531,9 @@
                 <div class="slots-paytable" aria-label="Charte des gains">
                     <h4>Charte des gains</h4>
                     <ul>
-                        <li>3 identiques (hors 7️⃣): x3</li>
-                        <li>3 x 7️⃣: x5</li>
-                        <li>2 symboles identiques alignés a gauche: x1.25</li>
+                        <li>3 identiques (hors 7️⃣): x4</li>
+                        <li>3 x 7️⃣: x8</li>
+                        <li>2 symboles identiques alignés a gauche: x1.5</li>
                     </ul>
                     <p class="slots-paytable-note">Les probabilites de gain sont
                         legerement reduites pour limiter les abus.</p>
@@ -1557,42 +1557,6 @@
                         case</button>
                 </div>
                 <div id="sudoku-msg" class="sudoku-msg"></div>
-            </div>
-        </section>
-
-        <section id="stage20">
-            <div class="subway-card">
-                <div class="subway-head">
-                    <h2>Subway Surfer.exe</h2>
-                    <button id="subway-pause-btn" class="subway-pause-btn"
-                        type="button">Pause (P)</button>
-                    <div class="subway-stats">
-                        <span id="subway-score">Score: 0</span>
-                        <span id="subway-speed">Vitesse: 1.00x</span>
-                        <span id="subway-coins">Pieces: 0</span>
-                        <span id="subway-gain">Gain final: 0</span>
-                    </div>
-                </div>
-
-                <div class="subway-wrap">
-                    <canvas id="subway-canvas" width="900" height="500"
-                        aria-label="Jeu Subway Surfer simplifie"></canvas>
-
-                    <div id="subway-revive-overlay"
-                        class="subway-revive-overlay"
-                        style="display: none;">
-                        <h3>GAME OVER</h3>
-                        <p>Continuer la partie ?</p>
-                        <button id="subway-revive-btn"
-                            class="dino-revive-btn">Payer
-                            & Continuer <br>(<span
-                                id="subway-revive-count">3</span>
-                            restants)</button>
-                        <button id="subway-cancel-btn"
-                            class="dino-cancel-btn">Non
-                            merci</button>
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -1639,6 +1603,53 @@
                         partie.</div>
                 </div>
 
+            </div>
+        </section>
+
+        <section id="stage22">
+            <div class="pde-hero-card">
+                <div class="pde-hero-head">
+                    <h2>PDE Hero.exe</h2>
+                    <div class="pde-hero-stats">
+                        <span id="pde-hero-score">Score: 0</span>
+                        <span id="pde-hero-combo">Combo: 0</span>
+                        <span id="pde-hero-misses">Misses: 0/5</span>
+                        <span id="pde-hero-overhits">Over hit: 0/5</span>
+                        <span id="pde-hero-time">Temps: 0s</span>
+                    </div>
+                </div>
+                <div class="pde-hero-wrap">
+                    <canvas id="pde-hero-canvas"
+                        aria-label="Jeu de rythme PDE Hero"></canvas>
+                    <div id="pde-hero-game-over" class="pde-hero-game-over"
+                        hidden>
+                        <h3>GAME OVER</h3>
+                        <p id="pde-hero-final-score">Score : 0</p>
+                        <p id="pde-hero-final-time">Duree : 0s</p>
+                        <p id="pde-hero-final-misses">Misses : 0 | Over hit :
+                            0</p>
+                        <button id="pde-hero-restart"
+                            type="button">Rejouer</button>
+                    </div>
+                </div>
+                <div class="pde-hero-controls">
+                    <button id="pde-hero-start" type="button">Lancer la
+                        partie</button>
+                    <span id="pde-hero-status">Choisissez vos touches puis
+                        lancez.</span>
+                </div>
+                <div class="pde-hero-keys" aria-label="Touches PDE Hero">
+                    <label>Lane 1 <input class="pde-hero-key"
+                            maxlength="1" /></label>
+                    <label>Lane 2 <input class="pde-hero-key"
+                            maxlength="1" /></label>
+                    <label>Lane 3 <input class="pde-hero-key"
+                            maxlength="1" /></label>
+                    <label>Lane 4 <input class="pde-hero-key"
+                            maxlength="1" /></label>
+                    <label>Lane 5 <input class="pde-hero-key"
+                            maxlength="1" /></label>
+                </div>
             </div>
         </section>
 

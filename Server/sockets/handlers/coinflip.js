@@ -249,13 +249,13 @@ function registerCoinflipHandlers({
     const bet = parsed.bet;
 
     const symbols = ["🍒", "🍋", "🔔", "💎", "7️⃣"];
-    // Pondération légère pour rendre les combinaisons premium un peu moins fréquentes.
+    // Pondération des symboles premium sans supprimer l'avantage de la maison.
     const weightedSymbols = [
-      { symbol: "🍒", weight: 31 },
-      { symbol: "🍋", weight: 27 },
+      { symbol: "🍒", weight: 29 },
+      { symbol: "🍋", weight: 25 },
       { symbol: "🔔", weight: 21 },
-      { symbol: "💎", weight: 14 },
-      { symbol: "7️⃣", weight: 7 },
+      { symbol: "💎", weight: 16 },
+      { symbol: "7️⃣", weight: 9 },
     ];
     const totalWeight = weightedSymbols.reduce((acc, s) => acc + s.weight, 0);
 
@@ -285,14 +285,14 @@ function registerCoinflipHandlers({
 
     let multiplier = 0;
     if (reels[0] === reels[1] && reels[1] === reels[2]) {
-      multiplier = reels[0] === "7️⃣" ? 5 : 3;
+      multiplier = reels[0] === "7️⃣" ? 8 : 4;
     } else if (reels[0] === reels[1] && reels[1] !== reels[2]) {
-      multiplier = 1.25;
+      multiplier = 1.5;
     }
 
     // Mini algo anti-abus: petite chance de casser une main gagnante.
     if (multiplier > 0) {
-      const houseEdge = bet >= 50000 ? 0.2 : bet >= 10000 ? 0.17 : 0.14;
+      const houseEdge = bet >= 50000 ? 0.16 : bet >= 10000 ? 0.13 : 0.1;
       if (Math.random() < houseEdge) {
         if (reels[0] === reels[1] && reels[1] === reels[2]) {
           reels[2] = pickDifferent(reels[0]);

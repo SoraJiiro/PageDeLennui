@@ -315,9 +315,6 @@ function initSocket() {
   socket.on("flappy:leaderboard", (data) =>
     updateLeaderboard("flappy", data, "score"),
   );
-  socket.on("subway:leaderboard", (data) =>
-    updateLeaderboard("subway", data, "score"),
-  );
   socket.on("uno:leaderboard", (data) =>
     updateLeaderboard("uno", data, "wins"),
   );
@@ -3629,7 +3626,6 @@ async function clearFromLeaderboard() {
     clicker: "Clicker",
     dino: "Dino",
     flappy: "Flappy",
-    subway: "Subway",
     uno: "UNO",
     p4: "P4",
     blockblast: "Block Blast",

@@ -14,20 +14,6 @@ function registerDinoFlappyHandlers({
   // Fonctions guerre des clans supprimées
   const DINO_MAX_SCORE = 250000;
   const FLAPPY_MAX_SCORE = 10000;
-  const SUBWAY_MAX_SCORE = 5000000;
-
-  socket.on("subway:score", ({ score, revivePending } = {}) => {
-    const s = Math.floor(Number(score));
-    if (!Number.isFinite(s) || s < 0) return;
-    updateReviveContextFromScore(socket, "subway", s);
-    if (revivePending === true) {
-      clearRunnerProgress("subway");
-      setRunnerState("subway", false);
-      return;
-    }
-    setRunnerProgress("subway", s);
-  });
-
   function rewardFinalRun(game, score) {
     const s = Math.max(0, Math.floor(Number(score) || 0));
     if (s <= 0) return;
@@ -107,7 +93,6 @@ function registerDinoFlappyHandlers({
         resume[pseudo].dino != null ||
         resume[pseudo].flappy != null ||
         resume[pseudo].snake != null ||
-        resume[pseudo].subway != null ||
         resume[pseudo]["2048"] != null ||
         resume[pseudo].blockblast != null;
       if (!hasAny) delete resume[pseudo];
@@ -124,11 +109,6 @@ function registerDinoFlappyHandlers({
   // Consommation (anti-abus): une fois la reprise utilisée, on l'efface
   socket.on("dino:resumeConsumed", () => consumeRunnerResume("dino"));
   socket.on("flappy:resumeConsumed", () => consumeRunnerResume("flappy"));
-  socket.on("subway:resumeConsumed", () => consumeRunnerResume("subway"));
-  socket.on("subway:progress", ({ score }) =>
-    setRunnerProgress("subway", score),
-  );
-
   // ------- Dino -------
   socket.on("dino:score", ({ score, final } = {}) => {
     const s = Math.floor(Number(score));
@@ -229,72 +209,6 @@ function registerDinoFlappyHandlers({
     );
     leaderboardManager.broadcastFlappyLB(io);
     socket.emit("flappy:resetConfirm", { success: true });
-  });
-
-  // ------- Subway Surfer -------
-  socket.on("subway:final", ({ score, coins } = {}) => {
-    const s = Math.floor(Number(score));
-    const c = Math.floor(Number(coins));
-
-    if (!Number.isFinite(s) || s < 0) return;
-    if (!Number.isFinite(c) || c < 0) return;
-
-    updateReviveContextFromScore(socket, "subway", s);
-    clearRunnerProgress("subway");
-    setRunnerState("subway", false);
-    consumeRunnerResume("subway");
-
-    const currentBest = Math.floor(
-      Number((FileService.data.subwayScores || {})[pseudo]) || 0,
-    );
-    if (s > currentBest) {
-      if (
-        !FileService.data.subwayScores ||
-        typeof FileService.data.subwayScores !== "object"
-      ) {
-        FileService.data.subwayScores = {};
-      }
-      FileService.data.subwayScores[pseudo] = s;
-      FileService.save("subwayScores", FileService.data.subwayScores);
-    }
-
-    if (leaderboardManager?.broadcastSubwayLB) {
-      leaderboardManager.broadcastSubwayLB(io);
-    }
-
-    // Anti-abus: limite pieces plausible en fonction du score.
-    const maxCoins = Math.floor(s / 25) + 50;
-    const safeCoins = Math.min(c, Math.max(0, maxCoins));
-
-    // 2 monnaie par tranche de 750 points + bonus des pieces ramassees.
-    const gainFromScore = Math.floor(s / 750) * 2;
-    const gain = Math.max(0, gainFromScore + safeCoins);
-    if (gain <= 0) return;
-
-    // Anti-spam: eviter plusieurs rewards successifs en quelques ms.
-    const now = Date.now();
-    const lastAt = Number(socket?.data?.subwayRewardAt || 0);
-    if (now - lastAt < 1500) return;
-    if (!socket.data) socket.data = {};
-    socket.data.subwayRewardAt = now;
-
-    const wallet = addMoney(
-      FileService,
-      pseudo,
-      gain,
-      FileService.data.clicks[pseudo] || 0,
-      "jeu:subway",
-    );
-
-    io.to("user:" + pseudo).emit("economy:wallet", wallet);
-    io.to("user:" + pseudo).emit("economy:gameMoney", {
-      game: "subway",
-      gained: gain,
-      total: gain,
-      final: true,
-      score: s,
-      coins: safeCoins,
-    });
   });
 }
 

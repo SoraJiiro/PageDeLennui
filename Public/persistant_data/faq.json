@@ -95,7 +95,7 @@
         },
         {
           "q": "Qu'est-ce que la charte de gains des jeux ?",
-          "a": "Voici le bareme actuel des gains en monnaie (FCO) : <ul><li>Dino : <b>+7</b> monnaie par <b>1000 points</b></li><li>Flappy : <b>+5</b> monnaie par <b>10 points</b></li><li>Snake : <b>+2</b> monnaie par <b>5 points</b></li><li>Block Blast : <b>+3</b> monnaie par <b>400 points</b></li><li>Subway : <b>+2</b> monnaie par <b>750 points</b> + bonus sur les pieces ramassees</li><li>2048 : pas de gain direct au score, mais <b>+5</b> monnaie a chaque nouveau palier de tuile max atteint</li><li>Motus : <b>+100</b> monnaie par mot trouve</li><li>Sudoku : <b>+250</b> monnaie par grille validee</li><li>UNO / Puissance 4 / Mash : <b>+250</b> monnaie pour le gagnant</li></ul>Les valeurs peuvent etre ajustees en cas de reequilibrage economique."
+          "a": "Voici le bareme actuel des gains en monnaie (FCO) : <ul><li>Dino : <b>+7</b> monnaie par <b>1000 points</b></li><li>Flappy : <b>+5</b> monnaie par <b>10 points</b></li><li>Snake : <b>+2</b> monnaie par <b>5 points</b></li><li>Block Blast : <b>+3</b> monnaie par <b>400 points</b></li><li>2048 : pas de gain direct au score, mais <b>+5</b> monnaie a chaque nouveau palier de tuile max atteint</li><li>Motus : <b>+100</b> monnaie par mot trouve</li><li>Sudoku : <b>+250</b> monnaie par grille validee</li><li>UNO / Puissance 4 / Mash : <b>+250</b> monnaie pour le gagnant</li></ul>Les valeurs peuvent etre ajustees en cas de reequilibrage economique."
         },
         {
           "q": "Où acheter des boosts pour les jeux et/ou des Vies de revive pour le Dino, Flappy etc... ?",
@@ -109,7 +109,6 @@
           "q": "Que faire si mon dessin se fait attaquer sur la PixelWar ?",
           "a": "Si votre dessin se fait attaquer, vous pouvez éventuellement discuter avec l'attaquant pour trouver un terrain d'entente ou simplement ignorer l'attaque. Cependant, si vous pensez que l'attaque est injuste ou abusive, vous pouvez signaler le comportement à l'Admin pour qu'il puisse enquêter et prendre les mesures appropriées. Rappelez-vous que la PixelWar est tout de même un espace de conflits, mais cela ne vous empêche pas d'agir pacifiquement et amicalement sur celle-ci."
         }
-        // ...question supprimée (guerre de clans)
       ]
     },
     {
@@ -120,7 +119,6 @@
           "q": "Comment obtenir / afficher des badges ?",
           "a": "Pour en savoir plus sur l'obtention de badges, lisez la <a href='/badges.html'>page des badges</a>. Pour afficher / désafficher des badges déjà obtenus, cela se passe dans votre <a href='/profil.html'>profil</a>. Vous pouvez afficher <b>jusqu'à 5</b> badges à la fois. Les badges affichés sont visibles par tous les autres utilisateurs sur votre profil et à côté de votre pseudo dans le Chat."
         },
-        // ...question supprimée (guerre de clans)
         {
           "q": "Pourquoi il n'y a pas plus d'items / cosmétiques au Shop ?",
           "a": "Si vous trouvez que le Shop manque d'items ou de cosmétiques, n'hésitez pas à faire des suggestions pour de nouveaux items ou cosmétiques que vous aimeriez voir dans le Shop. Vous pouvez faire vos suggestions depuis la <a href='/suggestions.html'>page des suggestions</a>. L'Admin examine régulièrement les suggestions et ajoute de nouveaux items ou cosmétiques au Shop en fonction de la popularité et de la faisabilité des idées proposées."

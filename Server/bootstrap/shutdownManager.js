@@ -57,7 +57,7 @@ function awardDailyShutdownLeaderboardMoney({
   io,
   force = false,
 }) {
-  // +500 monnaie au 1er de chaque leaderboard (Dino, Flappy, Snake, Subway, 2048)
+  // +500 monnaie au 1er de chaque leaderboard (Dino, Flappy, Snake, 2048)
   const REWARD = 500;
 
   try {
@@ -87,10 +87,6 @@ function awardDailyShutdownLeaderboardMoney({
       {
         game: "snake",
         pseudo: getTopPseudoSimpleScore(FileService.data.snakeScores),
-      },
-      {
-        game: "subway",
-        pseudo: getTopPseudoSimpleScore(FileService.data.subwayScores),
       },
       {
         game: "2048",
@@ -178,7 +174,6 @@ function collectRunnerProgressFromSockets(io) {
       const dinoInRun = isRunnerActive(rs, "dino");
       const flappyInRun = isRunnerActive(rs, "flappy");
       const snakeInRun = isRunnerActive(rs, "snake");
-      const subwayInRun = isRunnerActive(rs, "subway");
       const game2048InRun =
         safeNumber((s.data.runnerProgress || {})["2048"]) > 0;
       const blockblastInRun =
@@ -192,8 +187,6 @@ function collectRunnerProgressFromSockets(io) {
           mergeProgressIntoResume(resume, pseudo, "flappy", rp.flappy);
         if (snakeInRun)
           mergeProgressIntoResume(resume, pseudo, "snake", rp.snake);
-        if (subwayInRun)
-          mergeProgressIntoResume(resume, pseudo, "subway", rp.subway);
         if (game2048InRun)
           mergeProgressIntoResume(resume, pseudo, "2048", rp["2048"]);
         if (blockblastInRun)
@@ -358,11 +351,6 @@ async function requestShutdown(reason = "unknown", options = {}) {
           merged[pseudo].snake = Math.max(
             safeNumber(merged[pseudo].snake),
             safeNumber(entry.snake),
-          );
-        if (entry.subway)
-          merged[pseudo].subway = Math.max(
-            safeNumber(merged[pseudo].subway),
-            safeNumber(entry.subway),
           );
         if (entry["2048"])
           merged[pseudo]["2048"] = Math.max(

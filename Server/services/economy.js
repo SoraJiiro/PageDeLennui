@@ -66,7 +66,7 @@ function applyDailyProfitCap({ FileService, pseudo, profit, currentClicks }) {
     return { allowedProfit: 0, capped: false, cap: 0, earned: 0, remaining: 0 };
   }
 
-  // NOTE: Cap disabled — on enregistre simplement le profit complet
+  // NOTE: Cap disabled enregistrement simple du profit complet
   // pour monitoring journalier, sans le restreindre.
   const dailyEarnings = ensureDailyEarningsBucket(FileService);
   const today = getTodayKey();
@@ -189,7 +189,6 @@ const REVIVE_PRICING = {
   dino: { multiplier: 50, min: 5000, max: 5_000_000 },
   flappy: { multiplier: 150, min: 5000, max: 5_000_000 },
   snake: { multiplier: 75, min: 5000, max: 5_000_000 },
-  subway: { multiplier: 75, min: 5000, max: 5_000_000 },
   2048: { multiplier: 10, min: 5000, max: 5_000_000 },
   blockblast: { multiplier: 25, min: 5000, max: 5_000_000 },
 };

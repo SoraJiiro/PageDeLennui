@@ -23,7 +23,6 @@ body {
 #stage17,
 #stage18,
 #stage19,
-#stage20,
 #stage21 {
   display: none !important;
   width: 100%;
@@ -50,7 +49,6 @@ body {
 #stage17.is-active,
 #stage18.is-active,
 #stage19.is-active,
-#stage20.is-active,
 #stage21.is-active {
   display: flex !important;
   align-items: center;

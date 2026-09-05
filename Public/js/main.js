@@ -112,10 +112,10 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       "slots_leaderboard.js",
       "sudoku.js",
       "sudoku_leaderboard.js",
-      "subway_leaderboard.js",
-      "subway.js",
       "aim_trainer.js",
       "aim_trainer_leaderboard.js",
+      "pde_hero.js",
+      "pde_hero_leaderboard.js",
     ];
 
     const modules = [];
@@ -166,10 +166,10 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       slotsLeaderboard,
       sudoku,
       sudokuLeaderboard,
-      subwayLeaderboard,
-      subway,
       aimTrainer,
       aimTrainerLeaderboard,
+      pdeHero,
+      pdeHeroLeaderboard,
     ] = modules;
 
     const socket = io({
@@ -295,12 +295,12 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       if (sudoku?.initSudoku) sudoku.initSudoku(socket);
       if (sudokuLeaderboard?.initSudokuLeaderboard)
         sudokuLeaderboard.initSudokuLeaderboard(socket);
-      if (subwayLeaderboard?.initSubwayLeaderboard)
-        subwayLeaderboard.initSubwayLeaderboard(socket);
-      if (subway?.initSubway) subway.initSubway(socket);
       if (aimTrainer?.initAimTrainer) aimTrainer.initAimTrainer(socket);
       if (aimTrainerLeaderboard?.initAimTrainerLeaderboard)
         aimTrainerLeaderboard.initAimTrainerLeaderboard(socket);
+      if (pdeHero?.initPdeHero) pdeHero.initPdeHero(socket);
+      if (pdeHeroLeaderboard?.initPdeHeroLeaderboard)
+        pdeHeroLeaderboard.initPdeHeroLeaderboard(socket);
       if (passwordChange?.setupPasswordChange)
         passwordChange.setupPasswordChange(socket);
     } else {

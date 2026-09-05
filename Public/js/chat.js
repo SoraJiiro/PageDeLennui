@@ -1313,9 +1313,7 @@ export function initChat(socket) {
             removeDmBox();
           };
 
-          // mousedown plutôt que click: évite de perdre le focus
           item.onmousedown = accept;
-          // fallback click (certains navigateurs / devices)
           item.onclick = accept;
 
           suggestionBox.appendChild(item);

@@ -596,8 +596,6 @@
                                     data-board="flappy">Flappy Bird
                                 </button>
                                 <button class="lb-tab"
-                                    data-board="subway">Subway</button>
-                                <button class="lb-tab"
                                     data-board="uno">UNO</button>
                                 <button class="lb-tab"
                                     data-board="p4">Puissance 4</button>
@@ -671,19 +669,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lb-flappy"></tbody>
-                            </table>
-                        </div>
-
-                        <div class="leaderboard-content" data-board="subway">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Rang</th>
-                                        <th>Pseudo</th>
-                                        <th>Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="lb-subway"></tbody>
                             </table>
                         </div>
 
@@ -1124,30 +1109,43 @@
 
                     <section class="admin-section" style="order: 1;">
                         <h2><i class="fa-solid fa-key"
-                                style="margin-right: 10px;"></i>/Mot de passe utilisateur</h2>
+                                style="margin-right: 10px;"></i>/Mot de passe
+                            utilisateur</h2>
                         <div class="control-group">
-                            <p>Réinitialiser le mot de passe d'un utilisateur en cas d'oubli ou de problème.</p>
+                            <p>Réinitialiser le mot de passe d'un utilisateur en
+                                cas d'oubli ou de problème.</p>
                             <div class="control-form">
                                 <div class="form-row">
                                     <div class="form-field">
-                                        <label for="adminPasswordUser">Pseudo</label>
-                                        <input type="text" id="adminPasswordUser"
-                                            placeholder="Pseudo de l'utilisateur" autocomplete="off" />
+                                        <label
+                                            for="adminPasswordUser">Pseudo</label>
+                                        <input type="text"
+                                            id="adminPasswordUser"
+                                            placeholder="Pseudo de l'utilisateur"
+                                            autocomplete="off" />
                                     </div>
                                     <div class="form-field">
-                                        <label for="adminNewPassword">Nouveau mot de passe</label>
-                                        <input type="password" id="adminNewPassword"
-                                            placeholder="6 caractères minimum" autocomplete="new-password" />
+                                        <label for="adminNewPassword">Nouveau
+                                            mot de passe</label>
+                                        <input type="password"
+                                            id="adminNewPassword"
+                                            placeholder="6 caractères minimum"
+                                            autocomplete="new-password" />
                                     </div>
                                     <div class="form-field">
-                                        <label for="adminNewPasswordConfirmation">Confirmation</label>
-                                        <input type="password" id="adminNewPasswordConfirmation"
-                                            placeholder="Retaper le mot de passe" autocomplete="new-password" />
+                                        <label
+                                            for="adminNewPasswordConfirmation">Confirmation</label>
+                                        <input type="password"
+                                            id="adminNewPasswordConfirmation"
+                                            placeholder="Retaper le mot de passe"
+                                            autocomplete="new-password" />
                                     </div>
                                     <div class="action-buttons">
-                                        <button class="btn btn-red" type="button"
+                                        <button class="btn btn-red"
+                                            type="button"
                                             onclick="changeAdminUserPassword()">
-                                            <i class="fa-solid fa-key"></i> Modifier
+                                            <i class="fa-solid fa-key"></i>
+                                            Modifier
                                         </button>
                                     </div>
                                 </div>
@@ -1183,8 +1181,6 @@
                                                     value="dinoScores">Dino</option>
                                                 <option
                                                     value="flappyScores">Flappy</option>
-                                                <option
-                                                    value="subwayScores">Subway</option>
                                                 <option
                                                     value="unoWins">UNO</option>
                                                 <option
@@ -1408,8 +1404,6 @@
                                                     value="dino">Dino</option>
                                                 <option
                                                     value="flappy">Flappy</option>
-                                                <option
-                                                    value="subway">Subway</option>
                                                 <option value="uno">UNO</option>
                                                 <option value="p4">P4</option>
                                                 <option value="blockblast">Block

@@ -73,8 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "stage17",
     "stage18",
     "stage19",
-    "stage20",
     "stage21",
+    "stage22",
   ];
   const stageSections = sectionIds
     .map((id) => document.getElementById(id))
@@ -99,8 +99,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "stage17",
     "stage18",
     "stage19",
-    "stage20",
     "stage21",
+    "stage22",
   ];
 
   let lastSurveyActiveIds = [];
@@ -627,7 +627,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const currentSectionId = active && active.id ? active.id : "hubStage";
     if (!currentSectionId || currentSectionId === nextSectionId) return true;
 
-    const guardedStages = ["stage2", "stage6", "stage10", "stage20", "stage21"];
+    const guardedStages = ["stage2", "stage6", "stage10", "stage21", "stage22"];
     if (!guardedStages.includes(currentSectionId)) return true;
 
     const guardDetail = {
@@ -816,8 +816,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ".sec17": "stage17",
     ".sec18": "stage18",
     ".sec19": "stage19",
-    ".sec20": "stage20",
     ".sec21": "stage21",
+    ".sec22": "stage22",
   };
 
   for (const [selector, target] of Object.entries(navButtons)) {

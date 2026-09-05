@@ -90,7 +90,6 @@ function registerSnakeHandlers({
         resume[pseudo].dino != null ||
         resume[pseudo].flappy != null ||
         resume[pseudo].snake != null ||
-        resume[pseudo].subway != null ||
         resume[pseudo]["2048"] != null ||
         resume[pseudo].blockblast != null;
       if (!hasAny) delete resume[pseudo];

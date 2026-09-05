@@ -151,18 +151,6 @@ function registerReviveHandlers({
     ),
   );
 
-  // ------- Subway Revive -------
-  socket.on(
-    "subway:payToContinue",
-    handleRevive(
-      "subway",
-      "Subway",
-      "subway:reviveSuccess",
-      "subway:reviveError",
-      colors.green,
-    ),
-  );
-
   // ------- 2048 Revive -------
   socket.on(
     "2048:payToContinue",

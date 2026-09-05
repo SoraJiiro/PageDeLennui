@@ -40,6 +40,7 @@ const {
 } = require("./sockets/handlers/blackjack");
 const { registerSudokuHandlers } = require("./sockets/handlers/sudoku");
 const { registerAimTrainerHandlers } = require("./sockets/handlers/aimTrainer");
+const { registerPdeHeroHandlers } = require("./sockets/handlers/pdeHero");
 
 const PixelWarGame = require("./games/pixelWarGame");
 const { registerPixelWarHandlers } = require("./sockets/handlers/pixelWar");
@@ -106,7 +107,6 @@ function persistRunnerResumeFromSocket(socket, pseudo) {
     const dinoInRun = isRunnerActive(rs, "dino");
     const flappyInRun = isRunnerActive(rs, "flappy");
     const snakeInRun = isRunnerActive(rs, "snake");
-    const subwayInRun = isRunnerActive(rs, "subway");
     const game2048InRun = safeNumber(rp?.["2048"]) > 0;
     const blockblastInRun = safeNumber(rp?.blockblast) > 0;
 
@@ -114,7 +114,6 @@ function persistRunnerResumeFromSocket(socket, pseudo) {
       (dinoInRun && safeNumber(rp?.dino) > 0) ||
       (flappyInRun && safeNumber(rp?.flappy) > 0) ||
       (snakeInRun && safeNumber(rp?.snake) > 0) ||
-      (subwayInRun && safeNumber(rp?.subway) > 0) ||
       game2048InRun ||
       blockblastInRun ||
       safeNumber(rc?.["2048"]?.lastScore) > 0 ||
@@ -132,8 +131,6 @@ function persistRunnerResumeFromSocket(socket, pseudo) {
       mergeProgressIntoResume(existing, pseudo, "flappy", rp?.flappy);
     if (snakeInRun)
       mergeProgressIntoResume(existing, pseudo, "snake", rp?.snake);
-    if (subwayInRun)
-      mergeProgressIntoResume(existing, pseudo, "subway", rp?.subway);
     mergeProgressIntoResume(existing, pseudo, "2048", rp?.["2048"]);
     mergeProgressIntoResume(existing, pseudo, "blockblast", rp?.blockblast);
 
@@ -608,12 +605,25 @@ const leaderboardManager = {
     }));
     io.emit("sudoku:leaderboard", arr);
   },
-  broadcastSubwayLB(io) {
-    let arr = Object.entries(FileService.data.subwayScores || {})
-      .map(([u, s]) => ({ pseudo: u, score: Number(s) || 0 }))
-      .sort((a, b) => b.score - a.score || a.pseudo.localeCompare(b.pseudo));
-    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, score: 0 }));
-    io.emit("subway:leaderboard", arr);
+  broadcastPdeHeroLB(io) {
+    let arr = Object.entries(FileService.data.pdeHeroScores || {})
+      .map(([pseudo, value]) => ({
+        pseudo,
+        bestScore: Number(value?.bestScore) || 0,
+        longestGame: Number(value?.longestGame) || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.bestScore - a.bestScore ||
+          b.longestGame - a.longestGame ||
+          a.pseudo.localeCompare(b.pseudo),
+      );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      bestScore: 0,
+      longestGame: 0,
+    }));
+    io.emit("pdehero:leaderboard", arr);
   },
   broadcastAimTrainerLB(io, selectedDuration = "30", targetSocket = null) {
     const src = FileService.data.aimTrainerScores || {};
@@ -712,8 +722,6 @@ function initSocketHandlers(io, socket, gameState) {
           socket.emit("flappy:resume", { score: entry.flappy });
         if (entry.snake != null)
           socket.emit("snake:resume", { score: entry.snake });
-        if (entry.subway != null)
-          socket.emit("subway:resume", { score: entry.subway });
         if (entry["2048"] != null)
           socket.emit("2048:resume", { score: entry["2048"] });
         if (entry.blockblast != null)
@@ -1116,7 +1124,15 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastRouletteLB(io);
   leaderboardManager.broadcastSlotsLB(io);
   leaderboardManager.broadcastSudokuLB(io);
-  leaderboardManager.broadcastSubwayLB(io);
+  leaderboardManager.broadcastPdeHeroLB(io);
+
+  registerPdeHeroHandlers({
+    io,
+    socket,
+    pseudo,
+    FileService,
+    leaderboardManager,
+  });
   leaderboardManager.broadcastAimTrainerLB(io);
 
   emitUsersPresence();
