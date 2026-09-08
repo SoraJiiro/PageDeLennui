@@ -1,5 +1,52 @@
 const DEFAULT_KEYS = ["d", "f", "j", "k", "l"];
 const COLORS = ["#ff4f64", "#ffb347", "#ffe14a", "#63e6be", "#74a7ff"];
+const ERROR_LIMIT = 7;
+const NOTE_PATTERNS = [
+  [
+    [1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 1],
+  ],
+  [
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+  ],
+  [
+    [1, 0, 1, 0, 1],
+    [0, 0, 0, 0, 0],
+    [0, 1, 0, 1, 0],
+    [0, 0, 0, 0, 0],
+    [1, 0, 1, 0, 1],
+  ],
+  [
+    [0, 1, 0, 1, 0],
+    [1, 0, 0, 0, 1],
+    [0, 0, 1, 0, 0],
+    [1, 0, 0, 0, 1],
+    [0, 1, 0, 1, 0],
+  ],
+  [
+    [1, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 1],
+    [0, 0, 1, 0, 0],
+    [1, 1, 0, 0, 0],
+  ],
+  [
+    [0, 0, 0, 1, 1],
+    [0, 0, 1, 0, 0],
+    [1, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 1],
+  ],
+];
+const NOTE_PATTERN_ROW_DELAY = 800;
+const NOTE_PATTERN_GAP = 180;
 
 export function initPdeHero(socket) {
   const stage = document.getElementById("stage22");
@@ -29,8 +76,10 @@ export function initPdeHero(socket) {
     longest: 0,
     startedAt: 0,
     notes: [],
+    pendingNotes: [],
     particles: [],
-    lastSpawn: 0,
+    nextPatternAt: 0,
+    patternActive: false,
     animation: 0,
     lastFrame: 0,
     missFlashUntil: 0,
@@ -93,7 +142,6 @@ export function initPdeHero(socket) {
     ctx.fillRect(0, 0, width, height);
     const laneWidth = width / 5;
     const hitY = height - 48;
-    const noteHeight = 28;
     for (let lane = 0; lane < 5; lane++) {
       ctx.fillStyle =
         lane % 2 ? "rgba(255,255,255,.035)" : "rgba(255,255,255,.07)";
@@ -120,12 +168,15 @@ export function initPdeHero(socket) {
         0,
         (now - note.spawnAt) / (note.missAt - note.spawnAt),
       );
-      const x = note.lane * laneWidth + 6;
+      const radius = Math.min(14, laneWidth / 2 - 8);
+      const x = note.lane * laneWidth + laneWidth / 2;
       const y = progress * hitY;
       ctx.fillStyle = COLORS[note.lane];
       ctx.shadowColor = COLORS[note.lane];
       ctx.shadowBlur = 12;
-      ctx.fillRect(x, y, laneWidth - 12, 28);
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
       ctx.shadowBlur = 0;
     });
     state.particles = state.particles.filter(
@@ -153,45 +204,76 @@ export function initPdeHero(socket) {
     }
   }
 
+  function schedulePatternNotes(
+    pattern,
+    patternStart,
+    travelTime,
+    timePastHitZone,
+  ) {
+    let noteIndex = 0;
+    pattern.forEach((row) => {
+      row.forEach((hasNote, lane) => {
+        if (hasNote !== 1) return;
+        const spawnAt = patternStart + noteIndex * NOTE_PATTERN_ROW_DELAY;
+        state.pendingNotes.push({
+          lane,
+          spawnAt,
+          travelTime,
+          timePastHitZone,
+        });
+        noteIndex += 1;
+      });
+    });
+  }
+
   function frame(now) {
     if (!state.running) return;
     state.lastFrame = now;
     const elapsed = (now - state.startedAt) / 1000;
-    const spawnInterval = Math.max(170, 520 - elapsed * 12);
     const travelTime = Math.max(680, 1550 - elapsed * 18);
     const hitY = state.viewHeight - 48;
-    const noteHeight = 28;
+    const laneWidth = state.viewWidth / 5;
+    const noteDiameter = Math.min(28, laneWidth - 16);
     const timePastHitZone =
-      travelTime * (noteHeight / Math.max(1, hitY - noteHeight / 2));
-    if (now - state.lastSpawn >= spawnInterval) {
-      const hitAt = now + travelTime;
+      travelTime * (noteDiameter / Math.max(1, hitY - noteDiameter / 2));
+    if (!state.patternActive && now >= state.nextPatternAt) {
+      const pattern =
+        NOTE_PATTERNS[Math.floor(Math.random() * NOTE_PATTERNS.length)];
+      schedulePatternNotes(pattern, now, travelTime, timePastHitZone);
+      state.patternActive = true;
+      state.nextPatternAt = Number.POSITIVE_INFINITY;
+    }
+    while (
+      state.pendingNotes.length > 0 &&
+      state.pendingNotes[0].spawnAt <= now
+    ) {
+      const pendingNote = state.pendingNotes.shift();
+      const hitAt = pendingNote.spawnAt + pendingNote.travelTime;
       state.notes.push({
-        lane: Math.floor(Math.random() * 5),
-        spawnAt: now,
+        lane: pendingNote.lane,
+        spawnAt: pendingNote.spawnAt,
         hitAt,
-        missAt: hitAt + timePastHitZone,
+        missAt: hitAt + pendingNote.timePastHitZone,
       });
-      state.lastSpawn = now;
-      if (elapsed > 12 && Math.random() < Math.min(0.42, elapsed / 120)) {
-        const hitAt = now + travelTime + 70;
-        state.notes.push({
-          lane: Math.floor(Math.random() * 5),
-          spawnAt: now,
-          hitAt,
-          missAt: hitAt + timePastHitZone,
-        });
-      }
     }
     const expired = state.notes.filter((note) => note.missAt < now);
     expired.forEach(() => registerMiss());
     state.notes = state.notes.filter((note) => note.missAt >= now);
     if (!state.running) return;
+    if (
+      state.patternActive &&
+      state.pendingNotes.length === 0 &&
+      state.notes.length === 0
+    ) {
+      state.patternActive = false;
+      state.nextPatternAt = now + NOTE_PATTERN_GAP;
+    }
     const liveElapsed = (now - state.startedAt) / 1000;
     state.longest = Math.max(state.longest, liveElapsed);
     scoreEl.textContent = `Score: ${state.score}`;
     comboEl.textContent = `Combo: ${state.combo}`;
-    missesEl.textContent = `Misses: ${state.misses}/5`;
-    overHitsEl.textContent = `Over hit: ${state.overHits}/5`;
+    missesEl.textContent = `Misses: ${state.misses}/${ERROR_LIMIT}`;
+    overHitsEl.textContent = `Over hit: ${state.overHits}/${ERROR_LIMIT}`;
     timeEl.textContent = `Temps: ${Math.floor(liveElapsed)}s`;
     draw(now);
     state.animation = requestAnimationFrame(frame);
@@ -202,11 +284,11 @@ export function initPdeHero(socket) {
     state.misses += 1;
     state.combo = 0;
     state.missFlashUntil = performance.now() + 180;
-    missesEl.textContent = `Misses: ${state.misses}/5`;
+    missesEl.textContent = `Misses: ${state.misses}/${ERROR_LIMIT}`;
     draw(performance.now());
     window.setTimeout(() => draw(performance.now()), 190);
-    if (state.misses >= 5) {
-      finish("5 misses");
+    if (state.misses >= ERROR_LIMIT) {
+      finish(`${ERROR_LIMIT} misses`);
     }
   }
 
@@ -215,11 +297,11 @@ export function initPdeHero(socket) {
     state.overHits += 1;
     state.combo = 0;
     state.missFlashUntil = performance.now() + 180;
-    overHitsEl.textContent = `Over hit: ${state.overHits}/5`;
+    overHitsEl.textContent = `Over hit: ${state.overHits}/${ERROR_LIMIT}`;
     draw(performance.now());
     window.setTimeout(() => draw(performance.now()), 190);
-    if (state.overHits >= 5) {
-      finish("5 over hits");
+    if (state.overHits >= ERROR_LIMIT) {
+      finish(`${ERROR_LIMIT} over hits`);
     }
   }
 
@@ -252,14 +334,16 @@ export function initPdeHero(socket) {
     state.overHits = 0;
     state.longest = 0;
     state.notes = [];
+    state.pendingNotes = [];
     state.particles = [];
     state.startedAt = performance.now();
-    state.lastSpawn = state.startedAt;
+    state.nextPatternAt = state.startedAt;
+    state.patternActive = false;
     state.lastFrame = state.startedAt;
     startButton.disabled = true;
     statusEl.textContent = "En jeu";
-    missesEl.textContent = "Misses: 0/5";
-    overHitsEl.textContent = "Over hit: 0/5";
+    missesEl.textContent = `Misses: 0/${ERROR_LIMIT}`;
+    overHitsEl.textContent = `Over hit: 0/${ERROR_LIMIT}`;
     state.animation = requestAnimationFrame(frame);
   }
 
@@ -284,6 +368,15 @@ export function initPdeHero(socket) {
     }
     state.notes.splice(index, 1);
     state.combo += 1;
+    if (state.combo % 10 === 0) {
+      if (state.misses >= state.overHits && state.misses > 0) {
+        state.misses -= 1;
+      } else if (state.overHits > 0) {
+        state.overHits -= 1;
+      }
+      missesEl.textContent = `Misses: ${state.misses}/${ERROR_LIMIT}`;
+      overHitsEl.textContent = `Over hit: ${state.overHits}/${ERROR_LIMIT}`;
+    }
     state.score += 100 + Math.min(400, state.combo * 10);
     const laneWidth = state.viewWidth / 5;
     state.particles.push(
