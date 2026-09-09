@@ -1,0 +1,32 @@
+#stage23 { width: 100%; display: flex; justify-content: center; padding: 50px 0; }
+.chess-card { width: min(760px, 94vw); padding: 1rem; color: var(--primary-color); border: 2px solid var(--primary-color); background: var(--bg-color); }
+.chess-header, .chess-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.chess-header h2 { margin: 0 0 1rem; padding: 0.3rem 0.6rem; color: var(--bg-color); background: var(--primary-color); }
+.chess-status { padding: 0.45rem 0.7rem; color: var(--bg-color); background: var(--primary-color); }
+.chess-lobby { padding: 1rem; text-align: center; border: 2px solid var(--primary-color); }
+.chess-players { min-height: 80px; margin: 1rem 0; padding: 0.6rem; border: 1px solid var(--primary-color); }
+.chess-spectators, .chess-spectator { margin-top: 1rem; padding: 0.6rem; border: 1px dashed var(--primary-color); text-align: center; }
+.chess-actions button { padding: 0.7rem 1rem; }
+.chess-game { display: none; }
+.chess-game.active { display: block; }
+.chess-board { display: grid; grid-template-columns: repeat(8, minmax(32px, 72px)); width: min(100%, 576px); margin: 1.2rem auto; aspect-ratio: 1; }
+.chess-cell { display: flex; align-items: center; justify-content: center; min-width: 0; border: 0; cursor: pointer; }
+.chess-cell.light { background: #ead9b8; }
+.chess-cell.dark { background: #9c6945; }
+.chess-cell.selected { outline: 4px solid var(--primary-color); outline-offset: -4px; }
+.chess-piece { width: 82%; height: 82%; background-image: url("../imgs/pieces_echec.svg"); background-repeat: no-repeat; background-size: 600% 200%; }
+.chess-piece.white { filter: none; }
+.chess-piece.black { filter: none; }
+.piece-k { background-position: 0 0; }
+.piece-q { background-position: 20% 0; }
+.piece-b { background-position: 40% 0; }
+.piece-n { background-position: 60% 0; }
+.piece-r { background-position: 80% 0; }
+.piece-p { background-position: 100% 0; }
+.chess-piece.black.piece-k { background-position: 0 100%; }
+.chess-piece.black.piece-q { background-position: 20% 100%; }
+.chess-piece.black.piece-b { background-position: 40% 100%; }
+.chess-piece.black.piece-n { background-position: 60% 100%; }
+.chess-piece.black.piece-r { background-position: 80% 100%; }
+.chess-piece.black.piece-p { background-position: 100% 100%; }
+@media (max-width: 520px) { .chess-header { align-items: flex-start; flex-direction: column; } .chess-status { align-self: stretch; text-align: center; } }

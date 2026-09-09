@@ -88,6 +88,8 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       "uno_leaderboard.js",
       "puissance4.js",
       "p4_leaderboard.js",
+      "chess.js",
+      "chess_leaderboard.js",
       "blockblast.js",
       "blockblast_leaderboard.js",
       "snake.js",
@@ -142,6 +144,8 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       unoLeaderboard,
       puissance4,
       p4Leaderboard,
+      chess,
+      chessLeaderboard,
       blockblast,
       blockblastLeaderboard,
       snake,
@@ -261,6 +265,9 @@ import { initSiteMoneyAverageWidget } from "./site_money_average.js";
       if (puissance4?.initPuissance4) puissance4.initPuissance4(socket);
       if (p4Leaderboard?.initP4Leaderboard)
         p4Leaderboard.initP4Leaderboard(socket);
+      if (chess?.initChess) chess.initChess(socket);
+      if (chessLeaderboard?.initChessLeaderboard)
+        chessLeaderboard.initChessLeaderboard(socket);
       if (blockblast?.initBlockBlast) blockblast.initBlockBlast(socket);
       if (blockblastLeaderboard?.initBlockBlastLeaderboard)
         blockblastLeaderboard.initBlockBlastLeaderboard(socket);

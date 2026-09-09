@@ -44,9 +44,244 @@ const NOTE_PATTERNS = [
     [0, 0, 1, 0, 0],
     [0, 0, 0, 1, 1],
   ],
+  [
+    [1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+  ],
+  [
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 1],
+  ],
+  [
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+  ],
+  [
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0],
+    [0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1],
+  ],
+  [
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+  ],
+  [
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 1, 0],
+    [0, 0, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+  ],
+  [
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+  ],
+  [
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 1],
+  ],
+  [
+    [1, 0, 0, 0, 1],
+    [0, 1, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 1, 0],
+    [1, 0, 0, 0, 1],
+  ],
+
+  [
+    [1, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 1],
+    [0, 0, 1, 0, 0],
+    [1, 0, 0, 0, 0],
+  ],
+
+  [
+    [0, 0, 0, 0, 1],
+    [0, 0, 1, 0, 0],
+    [1, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 1],
+  ],
+
+  [
+    [1, 0, 0, 0, 0],
+    [1, 1, 0, 0, 0],
+    [0, 1, 1, 0, 0],
+    [0, 0, 1, 1, 0],
+    [0, 0, 0, 1, 1],
+  ],
+
+  [
+    [0, 0, 0, 1, 1],
+    [0, 0, 1, 1, 0],
+    [0, 1, 1, 0, 0],
+    [1, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+  ],
+
+  [
+    [1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0],
+  ],
+
+  [
+    [1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 1],
+    [0, 1, 1, 0, 0],
+    [0, 0, 1, 1, 0],
+    [1, 1, 0, 0, 0],
+  ],
+
+  [
+    [1, 0, 0, 0, 1],
+    [0, 0, 1, 0, 0],
+    [1, 0, 0, 0, 1],
+    [0, 0, 1, 0, 0],
+    [1, 0, 0, 0, 1],
+  ],
+
+  [
+    [1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 1, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 1, 1, 0],
+  ],
+
+  [
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 1, 0],
+    [0, 0, 1, 1, 0],
+    [0, 0, 1, 0, 0],
+    [0, 1, 1, 0, 0],
+  ],
+
+  [
+    [1, 1, 0, 0, 0],
+    [0, 1, 0, 0, 1],
+    [0, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0],
+    [0, 0, 0, 1, 1],
+  ],
+
+  [
+    [1, 0, 1, 0, 0],
+    [0, 1, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 1, 0],
+    [0, 0, 1, 0, 1],
+  ],
+  [
+    [0, 0, 1, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 1, 0, 0],
+  ],
+  [
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+  ],
+  [
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 1, 0],
+    [1, 0, 0, 0, 1],
+    [0, 1, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+  ],
+  [
+    [1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1],
+  ],
+  [
+    [0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0],
+  ],
+  [
+    [1, 0, 0, 1, 0],
+    [0, 1, 0, 0, 1],
+    [1, 0, 0, 1, 0],
+    [0, 1, 0, 0, 1],
+    [1, 0, 0, 1, 0],
+  ],
+  [
+    [0, 1, 0, 0, 1],
+    [1, 0, 0, 1, 0],
+    [0, 1, 0, 0, 1],
+    [1, 0, 0, 1, 0],
+    [0, 1, 0, 0, 1],
+  ],
+  [
+    [1, 1, 0, 0, 0],
+    [0, 1, 1, 0, 0],
+    [0, 0, 1, 1, 0],
+    [0, 0, 0, 1, 1],
+    [0, 0, 0, 1, 1],
+  ],
+  [
+    [0, 0, 0, 1, 1],
+    [0, 0, 1, 1, 0],
+    [0, 1, 1, 0, 0],
+    [1, 1, 0, 0, 0],
+    [1, 1, 0, 0, 0],
+  ],
+  [
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0],
+    [0, 0, 1, 0, 0],
+  ],
+  [
+    [0, 0, 1, 0, 0],
+    [0, 1, 0, 1, 0],
+    [1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+  ],
+  [
+    [1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 1],
+    [1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 1],
+    [1, 1, 0, 0, 0],
+  ],
 ];
-const NOTE_PATTERN_ROW_DELAY = 800;
-const NOTE_PATTERN_GAP = 180;
+const NOTE_PATTERN_ROW_DELAY = 512;
+const NOTE_PATTERN_GAP = 256;
 
 export function initPdeHero(socket) {
   const stage = document.getElementById("stage22");
@@ -79,7 +314,6 @@ export function initPdeHero(socket) {
     pendingNotes: [],
     particles: [],
     nextPatternAt: 0,
-    patternActive: false,
     animation: 0,
     lastFrame: 0,
     missFlashUntil: 0,
@@ -157,23 +391,35 @@ export function initPdeHero(socket) {
         height - 14,
       );
     }
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, hitY);
     ctx.lineTo(width, hitY);
     ctx.stroke();
+
+    // Hit zone légère (bande et récepteurs sur chaque voie)
+    const targetRadius = Math.min(24, laneWidth / 2 - 5);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.fillRect(0, hitY - targetRadius - 4, width, (targetRadius + 4) * 2);
+
+    for (let lane = 0; lane < 5; lane++) {
+      const cx = lane * laneWidth + laneWidth / 2;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, hitY, targetRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     state.notes.forEach((note) => {
-      const progress = Math.max(
-        0,
-        (now - note.spawnAt) / (note.missAt - note.spawnAt),
-      );
-      const radius = Math.min(14, laneWidth / 2 - 8);
+      const progress = Math.max(0, (now - note.spawnAt) / note.travelTime);
+      const radius = Math.min(20, laneWidth / 2 - 6);
       const x = note.lane * laneWidth + laneWidth / 2;
       const y = progress * hitY;
       ctx.fillStyle = COLORS[note.lane];
       ctx.shadowColor = COLORS[note.lane];
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 14;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
@@ -224,6 +470,7 @@ export function initPdeHero(socket) {
         noteIndex += 1;
       });
     });
+    return noteIndex;
   }
 
   function frame(now) {
@@ -233,15 +480,22 @@ export function initPdeHero(socket) {
     const travelTime = Math.max(680, 1550 - elapsed * 18);
     const hitY = state.viewHeight - 48;
     const laneWidth = state.viewWidth / 5;
-    const noteDiameter = Math.min(28, laneWidth - 16);
+    const noteDiameter = Math.min(42, laneWidth - 16);
+    const distanceAfterHitZone = state.viewHeight - hitY + noteDiameter / 2;
     const timePastHitZone =
-      travelTime * (noteDiameter / Math.max(1, hitY - noteDiameter / 2));
-    if (!state.patternActive && now >= state.nextPatternAt) {
+      travelTime * (distanceAfterHitZone / Math.max(1, hitY));
+    while (now >= state.nextPatternAt) {
       const pattern =
         NOTE_PATTERNS[Math.floor(Math.random() * NOTE_PATTERNS.length)];
-      schedulePatternNotes(pattern, now, travelTime, timePastHitZone);
-      state.patternActive = true;
-      state.nextPatternAt = Number.POSITIVE_INFINITY;
+      const patternStart = state.nextPatternAt;
+      const noteCount = schedulePatternNotes(
+        pattern,
+        patternStart,
+        travelTime,
+        timePastHitZone,
+      );
+      state.nextPatternAt =
+        patternStart + noteCount * NOTE_PATTERN_ROW_DELAY + NOTE_PATTERN_GAP;
     }
     while (
       state.pendingNotes.length > 0 &&
@@ -252,6 +506,7 @@ export function initPdeHero(socket) {
       state.notes.push({
         lane: pendingNote.lane,
         spawnAt: pendingNote.spawnAt,
+        travelTime: pendingNote.travelTime,
         hitAt,
         missAt: hitAt + pendingNote.timePastHitZone,
       });
@@ -260,14 +515,6 @@ export function initPdeHero(socket) {
     expired.forEach(() => registerMiss());
     state.notes = state.notes.filter((note) => note.missAt >= now);
     if (!state.running) return;
-    if (
-      state.patternActive &&
-      state.pendingNotes.length === 0 &&
-      state.notes.length === 0
-    ) {
-      state.patternActive = false;
-      state.nextPatternAt = now + NOTE_PATTERN_GAP;
-    }
     const liveElapsed = (now - state.startedAt) / 1000;
     state.longest = Math.max(state.longest, liveElapsed);
     scoreEl.textContent = `Score: ${state.score}`;
@@ -338,7 +585,6 @@ export function initPdeHero(socket) {
     state.particles = [];
     state.startedAt = performance.now();
     state.nextPatternAt = state.startedAt;
-    state.patternActive = false;
     state.lastFrame = state.startedAt;
     startButton.disabled = true;
     statusEl.textContent = "En jeu";
@@ -360,12 +606,16 @@ export function initPdeHero(socket) {
     }
     const index = state.notes.findIndex(
       (note) =>
-        note.lane === lane && now >= note.hitAt - 230 && now <= note.missAt,
+        note.lane === lane && now >= note.hitAt - 280 && now <= note.missAt,
     );
     if (index < 0) {
       registerOverHit();
       return;
     }
+    const hitNote = state.notes[index];
+    const hitY = state.viewHeight - 48;
+    const noteProgress = (now - hitNote.spawnAt) / hitNote.travelTime;
+    const noteY = noteProgress * hitY;
     state.notes.splice(index, 1);
     state.combo += 1;
     if (state.combo % 10 === 0) {
@@ -382,7 +632,7 @@ export function initPdeHero(socket) {
     state.particles.push(
       ...Array.from({ length: 12 }, () => ({
         x: lane * laneWidth + laneWidth / 2,
-        y: state.viewHeight - 62,
+        y: noteY,
         vx: (Math.random() - 0.5) * laneWidth * 0.8,
         vy: -(20 + Math.random() * 35),
         size: 2 + Math.random() * 3,

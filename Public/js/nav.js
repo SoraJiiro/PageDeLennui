@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "stage19",
     "stage21",
     "stage22",
+    "stage23",
   ];
   const stageSections = sectionIds
     .map((id) => document.getElementById(id))
@@ -101,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "stage19",
     "stage21",
     "stage22",
+    "stage23",
   ];
 
   let lastSurveyActiveIds = [];
@@ -705,7 +707,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function fitSectionToViewport(section) {
-    if (!section || !section.classList.contains("is-active")) return;
+    if (
+      !section ||
+      !section.classList.contains("is-active") ||
+      !section.id === "stage4"
+    )
+      return;
     const wrapper = ensureViewportWrapper(section);
     if (!wrapper) return;
 
@@ -818,6 +825,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ".sec19": "stage19",
     ".sec21": "stage21",
     ".sec22": "stage22",
+    ".sec23": "stage23",
   };
 
   for (const [selector, target] of Object.entries(navButtons)) {

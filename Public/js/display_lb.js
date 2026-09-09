@@ -9,6 +9,7 @@ function showLeaderboard(name) {
     flappy: "#flappy-leaderboard",
     uno: "#uno-leaderboard",
     p4: "#p4-leaderboard",
+    chess: "#chess-leaderboard",
     blockblast: "#blockblast-leaderboard",
     snake: "#snake-leaderboard",
     motus: "#motus-leaderboard",
@@ -22,6 +23,7 @@ function showLeaderboard(name) {
     "aim-trainer": "#aim-trainer-leaderboard",
     pixelwar: "#pixelwar-leaderboard",
     "clicks-cps": "#clicks-cps-leaderboard",
+    "pde-hero": "#pde-hero-leaderboard",
   };
 
   const key = idMap[name] ? name : "economie";

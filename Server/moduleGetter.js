@@ -23,6 +23,9 @@ defineLazyExport("UnoGame", () => requireCached("UnoGame", "./games/unoGame"));
 defineLazyExport("Puissance4Game", () =>
   requireCached("Puissance4Game", "./games/puissance4Game"),
 );
+defineLazyExport("ChessGame", () =>
+  requireCached("ChessGame", "./games/chessGame"),
+);
 defineLazyExport("MotusGame", () =>
   requireCached("MotusGame", "./games/motusGame"),
 );

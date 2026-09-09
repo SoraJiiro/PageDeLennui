@@ -3,6 +3,60 @@
   "entries": [
     {
       "version": "v3.1.6",
+      "date": "09/09/2026",
+      "sections": [
+        {
+          "title": "Nouveautés",
+          "icon": "fa-star",
+          "items": [
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Echecs :",
+              "text": "Les échecs ont fait leur apparition sur PDE ! Faites travailler vos méninges pour gagner."
+            }
+          ]
+        },
+        {
+          "title": "Améliorations ",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "Leaderboards :",
+              "text": "Le bug d'affichage du Stage Leaderboards a été corrigé."
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "Classement PDE Hero :",
+              "text": "Le leaderboard de PDE Hero est maintenant selectionnable et visible dans le Stage Leaderboards."
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[CHANGE]",
+              "strong": "PDE Hero :",
+              "text": "Les notes ne se génèrent plus aléatoirement, le cap de difficulté a été augmenté et la limite d'overHits et de misses ont été augmentées de 5 à 7. Niveau graphique, les particules de hit se génère à l'endroit exact de la note qui a été hit, les notes défilent maintenant sur tout l'écran avant de sortir de celui-ci pour être comptées comme missed, elle sont passées de rectangles à ronde et la hitzone est désormais visible en surbrillance."
+            }
+          ]
+        },
+        {
+          "title": "Retraits / Resets",
+          "icon": "fa-arrow-right-arrow-left",
+          "items": [
+            {
+              "tagClass": "tag-removed",
+              "tag": "[RESET]",
+              "strong": "PDE Hero :",
+              "text": "Reset global des stats pour PDE Hero à cause du changement de fonctionnement."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v3.1.5",
       "date": "05/09/2026 - 06/09/2026",
       "sections": [
         {
@@ -38,54 +92,6 @@
               "tag": "[REMOVED]",
               "strong": "Jeu Subway Surfer :",
               "text": "Le jeu Subway Surfer a été retiré. Il causait trop de bugs trop dur à fixer, j'ai abandonné."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "v3.1.5",
-      "date": "15/03/2026 ",
-      "sections": [
-        {
-          "title": "Nouveautés",
-          "icon": "fa-star",
-          "items": [
-            {
-              "tagClass": "tag-new",
-              "tag": "[NEW]",
-              "strong": "AimTrainer :",
-              "text": "Un nouveau jeu d'AIM Trainer, montrez nous vos talents de joueurs FPS."
-            }
-          ]
-        },
-        {
-          "title": "Améliorations ",
-          "icon": "fa-wrench",
-          "items": [
-            {
-              "tagClass": "tag-change",
-              "tag": "[CHANGE]",
-              "strong": "UI récompenses quotidiennes:",
-              "text": "L'interface des récompenses quotidiennes a été améliorée."
-            },
-            {
-              "tagClass": "tag-change",
-              "tag": "[FIX]",
-              "strong": "Subway Surfer:",
-              "text": "Correction du bug de sauvegarde du score quand cela n'était pas censé se passer."
-            }
-          ]
-        },
-        {
-          "title": "Retraits / Resets",
-          "icon": "fa-arrow-right-arrow-left",
-          "items": [
-            {
-              "tagClass": "tag-removed",
-              "tag": "[RESET]",
-              "strong": "Reset Subway Surfer :",
-              "text": "Reset des scores du Subway Surfer pour tout le monde, histoire de repartir sur une base legit."
             }
           ]
         }

@@ -22,6 +22,7 @@
         <link rel="stylesheet" type="text/css" href="css/stage2.css" />
         <link rel="stylesheet" type="text/css" href="css/stage3.css" />
         <link rel="stylesheet" type="text/css" href="css/stage4.css" />
+        <link rel="stylesheet" type="text/css" href="css/stage23.css" />
         <link rel="stylesheet" type="text/css" href="css/stage5.css" />
         <link rel="stylesheet" type="text/css" href="css/stage6.css" />
 
@@ -508,7 +509,7 @@
                         Avg monnaie: ...
                     </div>
                     <div class="hub-site-money-average">
-                        [v3.1.2 - 4/9/26]
+                        [v3.1.6 - 9/9/26]
                     </div>
                 </header>
 
@@ -613,6 +614,11 @@
                             class="hub-card-img" src="imgs/defaultGame.svg"
                             alt aria-hidden="true"><span
                             class="hub-card-label">PDE Hero</span></button>
+                    <button class="hub-card sec23" data-game="Échecs"
+                        data-emoji="♟️" type="button"><img
+                            class="hub-card-img" src="imgs/pieces_echec.svg"
+                            alt="" aria-hidden="true"><span
+                            class="hub-card-label">Échecs</span></button>
                 </div>
 
                 <div class="hub-links" aria-label="Liens utiles">
@@ -792,6 +798,7 @@
                 <button data-board="uno">UNO</button>
 
                 <button data-board="p4">Puissance 4</button>
+                <button data-board="chess">Échecs</button>
                 <button data-board="blockblast">Block Blast</button>
                 <button data-board="snake">Snake</button>
                 <button data-board="motus">Motus</button>
@@ -805,6 +812,7 @@
                 <button data-board="aim-trainer">Aim Trainer</button>
                 <button data-board="pixelwar">PixelWar</button>
                 <button data-board="clicks-cps">Clicks + Peak CPS</button>
+                <button data-board="pde-hero">PDE Hero</button>
             </div>
 
             <center>
@@ -871,6 +879,13 @@
                 </div>
                 <table class="board" id="p4-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Victoires</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="leaderboard-card">
+                <div class="leaderboard-header"><h2>Échecs Leaderboard.exe</h2></div>
+                <table class="board" id="chess-leaderboard">
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>Victoires</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -990,9 +1005,8 @@
                     <h2>PDE Hero Leaderboard.exe</h2>
                 </div>
                 <table class="board" id="pde-hero-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Best score all
-                                time</th><th>Partie la plus
-                                longue</th></tr></thead>
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th><th>Temps
+                                (partie la plus longue)</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -1139,6 +1153,25 @@
                         <div class="p4-board"></div>
                     </div>
                     <div class="p4-mode-spec" style="display: none;"></div>
+                </div>
+            </div>
+        </section>
+        <section id="stage23">
+            <div class="chess-card">
+                <div class="chess-header"><h2>Échecs.exe</h2><div class="chess-status"></div></div>
+                <div class="chess-lobby">
+                    <h3>Lobby Échecs</h3>
+                    <div class="chess-players"></div>
+                    <div class="chess-spectators"></div>
+                    <div class="chess-actions">
+                        <button class="chess-join">Rejoindre le lobby</button>
+                        <button class="chess-leave" style="display:none">Quitter le lobby</button>
+                        <button class="chess-start" style="display:none">En attente...</button>
+                    </div>
+                </div>
+                <div class="chess-game">
+                    <div class="chess-board" aria-label="Échiquier"></div>
+                    <div class="chess-spectator" style="display:none">Mode spectateur</div>
                 </div>
             </div>
         </section>

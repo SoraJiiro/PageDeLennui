@@ -10,6 +10,7 @@ const {
   recalculateMedals,
   UnoGame,
   Puissance4Game,
+  ChessGame,
   MotusGame,
   BlackjackGame,
 } = require("./moduleGetter");
@@ -27,6 +28,7 @@ const { registerDinoFlappyHandlers } = require("./sockets/handlers/dinoFlappy");
 const { registerReviveHandlers } = require("./sockets/handlers/revive");
 const { registerUnoHandlers } = require("./sockets/handlers/uno");
 const { registerPuissance4Handlers } = require("./sockets/handlers/puissance4");
+const { registerChessHandlers } = require("./sockets/handlers/chess");
 const { registerBlockblastHandlers } = require("./sockets/handlers/blockblast");
 const { registerSnakeHandlers } = require("./sockets/handlers/snake");
 const { register2048Handlers } = require("./sockets/handlers/game2048");
@@ -220,6 +222,7 @@ function broadcastSiteMoneyStats(io) {
 // ------- Games -------
 let gameActuelle = new UnoGame();
 let p4Game = new Puissance4Game();
+let chessGame = new ChessGame();
 let motusGame = new MotusGame();
 let blackjackGame = new BlackjackGame();
 let mashGame = null; // Will be initialized with broadcastSystemMessage wrapper
@@ -380,6 +383,20 @@ const leaderboardManager = {
       .sort((a, b) => b.wins - a.wins || a.pseudo.localeCompare(b.pseudo));
     arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, wins: 0 }));
     io.emit("p4:leaderboard", arr);
+  },
+  broadcastChessLB(io) {
+    const users = new Set([
+      ...Object.keys(FileService.data.chessGames || {}),
+      ...Object.keys(FileService.data.chessWins || {}),
+    ]);
+    let arr = [...users].map((pseudo) => ({
+      pseudo,
+      games: Number(FileService.data.chessGames?.[pseudo] || 0),
+      wins: Number(FileService.data.chessWins?.[pseudo] || 0),
+    }));
+    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, games: 0, wins: 0 }));
+    arr.sort((a, b) => b.wins - a.wins || b.games - a.games || a.pseudo.localeCompare(b.pseudo));
+    io.emit("chess:leaderboard", arr);
   },
   broadcastMotusLB(io) {
     const totalWords = Number(motusGame.getWordListLength()) || 0;
@@ -1076,6 +1093,17 @@ function initSocketHandlers(io, socket, gameState) {
     colors,
   });
 
+  const chessHooks = registerChessHandlers({
+    io,
+    socket,
+    pseudo,
+    FileService,
+    leaderboardManager,
+    ChessGame,
+    getChessGame: () => chessGame,
+    setChessGame: (game) => (chessGame = game),
+  });
+
   registerBlockblastHandlers({
     io,
     socket,
@@ -1114,6 +1142,7 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastFlappyLB(io);
   leaderboardManager.broadcastUnoLB(io);
   leaderboardManager.broadcastP4LB(io);
+  leaderboardManager.broadcastChessLB(io);
   leaderboardManager.broadcastBlockBlastLB(io);
   leaderboardManager.broadcastSnakeLB(io);
   leaderboardManager.broadcastMotusLB(io);
@@ -1251,6 +1280,9 @@ function initSocketHandlers(io, socket, gameState) {
       // UNO / PUISSANCE 4 (externalisés)
       try {
         unoHooks?.onDisconnect?.();
+      } catch {}
+      try {
+        chessHooks?.onDisconnect?.();
       } catch {}
       try {
         p4Hooks?.onDisconnect?.();

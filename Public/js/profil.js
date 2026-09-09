@@ -131,6 +131,8 @@ function renderStats(stats) {
     ["Snake", s.snakeScore],
     ["UNO (victoires)", s.unoWins],
     ["P4 (victoires)", s.p4Wins],
+    ["Échecs (parties)", s.chessGames],
+    ["Échecs (victoires)", s.chessWins],
     ["BlockBlast", s.blockblastScore],
     ["2048", s.score2048],
     ["Mash (victoires)", s.mashWins],
