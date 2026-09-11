@@ -7,14 +7,26 @@ const { readAll, writeAll } = require("../db/dbUsers");
 const { markStepByCode } = require("../services/easterEggs");
 
 // Configure transporter
+/*
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "pde.suggestions@gmail.com",
     pass: process.env.APP_PSWD,
   },
-  family: 4, // Forcer IPV4 contre le proxy
-  secured: false,
+  family: 4,
+  secure: true,
+});*/
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: "pde.suggestions@gmail.com",
+    pass: process.env.APP_PSWD,
+  },
+  family: 4,
 });
 
 // Verify connection configuration

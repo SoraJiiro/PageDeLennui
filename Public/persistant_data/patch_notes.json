@@ -52,6 +52,18 @@
               "text": "Une barre de recherche a été ajoutée pour rendre la navigation dans la liste des badges moins laborieuse."
             }
           ]
+        },
+        {
+          "title": "Retraits / Resets",
+          "icon": "fa-arrow-right-arrow-left",
+          "items": [
+            {
+              "tagClass": "tag-removed",
+              "tag": "[RESET]",
+              "strong": "PDE Hero & Echecs :",
+              "text": "Reset global des stats pour PDE Hero et Echecs à cause du changement de fonctionnement et des nouveaux badges."
+            }
+          ]
         }
       ]
     },
