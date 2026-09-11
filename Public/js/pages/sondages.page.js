@@ -1,155 +1,177 @@
-        let socket;
-        let currentUser = null;
+let socket;
+let currentUser = null;
 
-        async function init() {
-            try {
-                // Auth check
-                const res = await fetch('/api/session');
-                if (res.status === 401 || !res.ok) {
-                    window.location.href = '/login';
-                    return;
-                }
-                const sessionData = await res.json();
-                currentUser = sessionData.pseudo;
+async function init() {
+  try {
+    // Auth check
+    const res = await fetch("/api/session");
+    if (res.status === 401 || !res.ok) {
+      window.location.href = "/login";
+      return;
+    }
+    const sessionData = await res.json();
+    currentUser = sessionData.pseudo;
 
-                socket = io({
-                    query: { username: currentUser }
-                });
+    socket = io({
+      query: { username: currentUser },
+    });
 
-                if (window.initUiColor) {
-                    window.initUiColor(socket);
-                }
+    if (window.initUiColor) {
+      window.initUiColor(socket);
+    }
 
-                socket.on('survey:new', (survey) => {
-                    addSurveyToList(survey);
-                });
+    socket.on("survey:new", (survey) => {
+      addSurveyToList(survey);
+    });
 
-                socket.on('survey:update', ({ id, results }) => {
-                    updateSurveyResults(id, results);
-                });
+    socket.on("survey:update", ({ id, results }) => {
+      updateSurveyResults(id, results);
+    });
 
-                socket.on('survey:closed', ({ id }) => {
-                    moveSurveyToPast(id);
-                });
-                
-                socket.on('survey:deleted', ({ id }) => {
-                    removeSurvey(id);
-                });
+    socket.on("survey:closed", ({ id }) => {
+      moveSurveyToPast(id);
+    });
 
-                loadSurveys();
-            } catch (e) {
-                console.error("Init error", e);
-            }
-        }
+    socket.on("survey:deleted", ({ id }) => {
+      removeSurvey(id);
+    });
 
-        async function loadSurveys() {
-            try {
-                const res = await fetch('/api/surveys/list');
-                const surveys = await res.json();
+    loadSurveys();
+  } catch (e) {
+    console.error("Init error", e);
+  }
+}
 
-                let seenKey = "seenSurveys";
-                if (currentUser) seenKey = "seenSurveys_" + currentUser;
+async function loadSurveys() {
+  try {
+    const res = await fetch("/api/surveys/list");
+    const surveys = await res.json();
 
-                const seenIds = JSON.parse(localStorage.getItem(seenKey) || "[]");
-                const activeIds = surveys.filter(s => s.status === 'active').map(s => s.id);
-                const newSeen = [...new Set([...seenIds, ...activeIds])];
-                localStorage.setItem(seenKey, JSON.stringify(newSeen));
-                
-                const badge = document.querySelector('.notification-badge');
-                if(badge) badge.style.display = 'none';
+    let seenKey = "seenSurveys";
+    if (currentUser) seenKey = "seenSurveys_" + currentUser;
 
-                document.getElementById('activeList').innerHTML = '';
-                document.getElementById('pastList').innerHTML = '';
+    const seenIds = JSON.parse(localStorage.getItem(seenKey) || "[]");
+    const activeIds = surveys
+      .filter((s) => s.status === "active")
+      .map((s) => s.id);
+    const newSeen = [...new Set([...seenIds, ...activeIds])];
+    localStorage.setItem(seenKey, JSON.stringify(newSeen));
 
-                if (surveys.length === 0) {
-                    document.getElementById('activeList').innerHTML = '<div class="empty-msg">Aucun sondage en cours</div>';
-                    document.getElementById('pastList').innerHTML = '<div class="empty-msg">Aucun sondage terminé</div>';
-                    return;
-                }
+    const badge = document.querySelector(".notification-badge");
+    if (badge) badge.style.display = "none";
 
-                surveys.forEach(addSurveyToList);
-                checkEmptyLists();
-            } catch (err) {
-                console.error(err);
-            }
-        }
+    document.getElementById("activeList").innerHTML = "";
+    document.getElementById("pastList").innerHTML = "";
 
-        function checkEmptyLists() {
-            const activeList = document.getElementById('activeList');
-            const pastList = document.getElementById('pastList');
-            
-            if (!activeList.children.length) activeList.innerHTML = '<div class="empty-msg">Aucun sondage en cours</div>';
-            if (!pastList.children.length) pastList.innerHTML = '<div class="empty-msg">Aucun sondage terminé</div>';
-        }
+    if (surveys.length === 0) {
+      document.getElementById("activeList").innerHTML =
+        '<div class="empty-msg">Aucun sondage en cours</div>';
+      document.getElementById("pastList").innerHTML =
+        '<div class="empty-msg">Aucun sondage terminé</div>';
+      return;
+    }
 
-        function addSurveyToList(survey) {
-            const listId = survey.status === 'active' ? 'activeList' : 'pastList';
-            const list = document.getElementById(listId);
-            if (list.querySelector('.empty-msg')) list.innerHTML = '';
+    surveys.forEach(addSurveyToList);
+    checkEmptyLists();
+  } catch (err) {
+    console.error(err);
+  }
+}
 
-            if (document.getElementById(`survey-${survey.id}`)) return;
+function checkEmptyLists() {
+  const activeList = document.getElementById("activeList");
+  const pastList = document.getElementById("pastList");
 
-            const card = document.createElement('div');
-            card.className = 'survey-card';
-            card.id = `survey-${survey.id}`;
-            
-            renderSurveyContent(card, survey);
-            
-            list.insertBefore(card, list.firstChild);
-        }
+  if (!activeList.children.length)
+    activeList.innerHTML =
+      '<div class="empty-msg">Aucun sondage en cours</div>';
+  if (!pastList.children.length)
+    pastList.innerHTML = '<div class="empty-msg">Aucun sondage terminé</div>';
+}
 
-        function renderSurveyContent(card, survey) {
-            const isClosed = survey.status === 'closed';
-            const hasVoted = survey.hasVoted || (survey.userVote !== null && survey.userVote !== undefined);
-            
-            let content = `
+function addSurveyToList(survey) {
+  const listId = survey.status === "active" ? "activeList" : "pastList";
+  const list = document.getElementById(listId);
+  if (list.querySelector(".empty-msg")) list.innerHTML = "";
+
+  if (document.getElementById(`survey-${survey.id}`)) return;
+
+  const card = document.createElement("div");
+  card.className = "survey-card";
+  card.id = `survey-${survey.id}`;
+
+  renderSurveyContent(card, survey);
+
+  list.insertBefore(card, list.firstChild);
+}
+
+function renderSurveyContent(card, survey) {
+  const isClosed = survey.status === "closed";
+  const hasVoted =
+    survey.hasVoted ||
+    (survey.userVote !== null && survey.userVote !== undefined);
+
+  let content = `
                 <div class="survey-question">${survey.question}</div>
                 <div class="survey-content">
             `;
 
-            if (isClosed || hasVoted) {
-                // Show results
-                content += renderResults(survey);
-            } else {
-                // Show choices
-                content += `<div class="survey-choices">`;
-                survey.choices.forEach((choice, index) => {
-                    content += `
+  if (isClosed || hasVoted) {
+    // Show results
+    content += renderResults(survey);
+  } else {
+    // Show choices
+    const maxBet = survey.betting?.maxTokens || 0;
+    if (survey.betting?.enabled) {
+      content += `
+                        <div class="survey-bet-box">
+                            <label for="bet-${survey.id}">Mise (maximum ${maxBet} tokens)</label>
+                            <input id="bet-${survey.id}" class="survey-bet-input" type="number" min="0" max="${maxBet}" step="1" value="0">
+                        </div>
+                    `;
+    }
+    content += `<div class="survey-choices">`;
+    survey.choices.forEach((choice, index) => {
+      content += `
                         <button class="survey-choice-btn" onclick="vote('${survey.id}', ${index})">
                             ${choice}
                         </button>
                     `;
-                });
-                content += `</div>`;
-            }
+    });
+    content += `</div>`;
+  }
 
-            content += `
+  content += `
                 </div>
                 <div class="survey-meta">
                     <span>Par ${survey.createdBy} • ${new Date(survey.createdAt).toLocaleDateString()}</span>
                     <div>
-                        ${hasVoted ? '<span class="voted-badge">A voté</span>' : ''}
-                        <span class="status-badge status-${survey.status}">${isClosed ? 'Terminé' : 'En cours'}</span>
+                        ${survey.betting?.enabled ? '<span class="betting-badge">Mises autorisées</span>' : ""}
+                        ${isClosed && survey.userPayout ? `<span class="payout-badge">+${survey.userPayout} tokens</span>` : ""}
+                        ${hasVoted ? '<span class="voted-badge">A voté</span>' : ""}
+                        <span class="status-badge status-${survey.status}">${isClosed ? "Terminé" : "En cours"}</span>
                     </div>
                 </div>
             `;
 
-            card.innerHTML = content;
-        }
+  card.innerHTML = content;
+}
 
-        function renderResults(survey) {
-            let html = '<div class="survey-results">';
-            const total = survey.results.total || 0;
-            
-            survey.choices.forEach((choice, index) => {
-                const count = survey.results.counts[index] || 0;
-                const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-                const isUserChoice = survey.userVote === index;
-                
-                html += `
+function renderResults(survey) {
+  let html = '<div class="survey-results">';
+  const total = survey.results.total || 0;
+  const isClosed = survey.status === "closed";
+
+  survey.choices.forEach((choice, index) => {
+    const count = survey.results.counts[index] || 0;
+    const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+    const isUserChoice = survey.userVote === index;
+    const isWinningChoice = isClosed && survey.winningChoice === index;
+
+    html += `
                     <div class="result-row">
                         <div class="result-label">
-                            <span>${choice} ${isUserChoice ? ' (Votre choix)' : ''}</span>
+                            <span>${choice} ${isUserChoice ? " (Votre choix)" : ""}${isWinningChoice ? " (Gagnant)" : ""}</span>
                             <span>${percent}% (${count})</span>
                         </div>
                         <div class="result-bar-bg">
@@ -157,78 +179,96 @@
                         </div>
                     </div>
                 `;
-            });
-            html += '</div>';
-            return html;
-        }
+  });
+  html += "</div>";
+  return html;
+}
 
-        async function vote(surveyId, choiceIndex) {
-            const card = document.getElementById(`survey-${surveyId}`);
-            const choiceButtons = card ? card.querySelectorAll('.survey-choice-btn') : [];
-            const selectedChoice = choiceButtons[choiceIndex]?.textContent?.trim() || `option #${choiceIndex + 1}`;
-            const question = card?.querySelector('.survey-question')?.textContent?.trim() || 'ce sondage';
+async function vote(surveyId, choiceIndex) {
+  const card = document.getElementById(`survey-${surveyId}`);
+  const choiceButtons = card ? card.querySelectorAll(".survey-choice-btn") : [];
+  const selectedChoice =
+    choiceButtons[choiceIndex]?.textContent?.trim() ||
+    `option #${choiceIndex + 1}`;
+  const question =
+    card?.querySelector(".survey-question")?.textContent?.trim() ||
+    "ce sondage";
+  const betInput = card?.querySelector(".survey-bet-input");
+  const betAmount = betInput ? Number(betInput.value) : 0;
 
-            const ok = confirm(`Confirmer votre vote ?\n\nSondage: ${question}\nChoix: ${selectedChoice}`);
-            if (!ok) return;
+  if (
+    !Number.isInteger(betAmount) ||
+    betAmount < 0 ||
+    (betInput && betAmount > Number(betInput.max))
+  ) {
+    alert("Mise invalide");
+    return;
+  }
 
-            try {
-                const res = await fetch('/api/surveys/vote', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ surveyId, choiceIndex })
-                });
-                
-                const data = await res.json();
-                if (res.ok) {
-                    loadSurveys(); 
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Erreur lors du vote");
-            }
-        }
+  const betLabel = betAmount > 0 ? `\nMise: ${betAmount} tokens` : "";
+  const ok = confirm(
+    `Confirmer votre vote ?\n\nSondage: ${question}\nChoix: ${selectedChoice}${betLabel}`,
+  );
+  if (!ok) return;
 
-        function updateSurveyResults(id, results) {
-            const card = document.getElementById(`survey-${id}`);
-            if (!card) return;
-            const resultsContainer = card.querySelector('.survey-results');
-            if (resultsContainer) {
-                const total = results.total || 0;
-                const bars = resultsContainer.querySelectorAll('.result-bar-fill');
-                const labels = resultsContainer.querySelectorAll('.result-label span:last-child');
-                
-                bars.forEach((bar, index) => {
-                    const count = results.counts[index] || 0;
-                    const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-                    bar.style.width = `${percent}%`;
-                    if (labels[index]) labels[index].textContent = `${percent}% (${count})`;
-                });
-            }
-        }
+  try {
+    const res = await fetch("/api/surveys/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ surveyId, choiceIndex, betAmount }),
+    });
 
-        function moveSurveyToPast(id) {
-            const card = document.getElementById(`survey-${id}`);
-            if (!card) return;
-            
-            const pastList = document.getElementById('pastList');
-            const activeList = document.getElementById('activeList');
-            
-            const badge = card.querySelector('.status-badge');
-            if (badge) {
-                badge.className = 'status-badge status-closed';
-                badge.textContent = 'Terminé';
-            }
-            loadSurveys();
-        }
-        
-        function removeSurvey(id) {
-            const card = document.getElementById(`survey-${id}`);
-            if (card) card.remove();
-            checkEmptyLists();
-        }
+    const data = await res.json();
+    if (res.ok) {
+      loadSurveys();
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors du vote");
+  }
+}
 
-        init();
-    
+function updateSurveyResults(id, results) {
+  const card = document.getElementById(`survey-${id}`);
+  if (!card) return;
+  const resultsContainer = card.querySelector(".survey-results");
+  if (resultsContainer) {
+    const total = results.total || 0;
+    const bars = resultsContainer.querySelectorAll(".result-bar-fill");
+    const labels = resultsContainer.querySelectorAll(
+      ".result-label span:last-child",
+    );
 
+    bars.forEach((bar, index) => {
+      const count = results.counts[index] || 0;
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      bar.style.width = `${percent}%`;
+      if (labels[index]) labels[index].textContent = `${percent}% (${count})`;
+    });
+  }
+}
+
+function moveSurveyToPast(id) {
+  const card = document.getElementById(`survey-${id}`);
+  if (!card) return;
+
+  const pastList = document.getElementById("pastList");
+  const activeList = document.getElementById("activeList");
+
+  const badge = card.querySelector(".status-badge");
+  if (badge) {
+    badge.className = "status-badge status-closed";
+    badge.textContent = "Terminé";
+  }
+  loadSurveys();
+}
+
+function removeSurvey(id) {
+  const card = document.getElementById(`survey-${id}`);
+  if (card) card.remove();
+  checkEmptyLists();
+}
+
+init();

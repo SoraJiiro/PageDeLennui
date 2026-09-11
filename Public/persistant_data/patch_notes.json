@@ -2,6 +2,60 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.2.0",
+      "date": "11/09/2026",
+      "sections": [
+        {
+          "title": "Nouveautés",
+          "icon": "fa-star",
+          "items": [
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Sondages Prédictifs :",
+              "text": "Les sondages peuvent désormais être prédictifs! Vous allez pouvoir miser sur une option que vous pensez probable d'arriver. La mise est capée à 75% de vos Tokens max. Si vous gagnez, vous remportez le double de votre mise."
+            },
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Badges :",
+              "text": "De nouveaux badges sont disponibles pour les try harders! Retrouvez leur spécificité dans <a href=\"/badges.html\">la page des Badges</a>."
+            }
+          ]
+        },
+        {
+          "title": "Améliorations ",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "Echecs :",
+              "text": "Les échecs sont désormais fonctionnels et en ligne. L'interface multijoueur a été corrigé ainsi que les couleurs et les évènements de jeu. Le leadeaboard est également réparé."
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[CHANGE]",
+              "strong": "BlackJack :",
+              "text": "Le dealer du BlackJack utilise maintenant jusqu'à 4 paquets de cartes qui se vide sur le long terme et plus à la fin de chaque partie, ce qui rend les victoires clientes plus fréquentes. Vous pouvez voir combien de carte il reste dans le sabot sur l'interface du jeu."
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[CHANGE]",
+              "strong": "PDE Hero :",
+              "text": "Les délais de générations sur le long terme ont été ajustés. Le jeu enregistre maintenant le Combo maximal atteint et 3 patternes ont été ajoutés."
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[CHANGE]",
+              "strong": "Page des Badges :",
+              "text": "Une barre de recherche a été ajoutée pour rendre la navigation dans la liste des badges moins laborieuse."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.1.6",
       "date": "09/09/2026",
       "sections": [

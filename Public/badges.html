@@ -39,6 +39,16 @@
 
             <hr style="margin: 40px auto;">
 
+            <div class="badges-search">
+                <label for="badge-search"><i
+                        class="fa-solid fa-magnifying-glass"
+                        aria-hidden="true"></i> Rechercher</label>
+                <input id="badge-search" type="search"
+                    placeholder="Nom d'un badge ou d'un jeu..."
+                    autocomplete="off">
+                <span id="badge-search-count" aria-live="polite"></span>
+            </div>
+
             <div class="badges-list">
                 <p class="warn">* Les badges montrés ici sont les badges qui
                     <u>peuvent être débloqués</u>. Certains badges ne seront
@@ -194,7 +204,8 @@
 
                 <div class="badge">
                     <h3 class="badge-name"><span
-                            class="badge-emoji">🧩</span> 2048 Master</h3>
+                            class="badge-emoji">🧩</span> 2048
+                        Mathematician</h3>
                     <p class="badge-desc">Ce badge est donné aux utilisateurs
                         qui empilent les tuiles dans 2048.</p>
                     <p class="badge-note"><i
@@ -251,6 +262,28 @@
                     <p class="badge-note"><i
                             class="fa-solid fa-lightbulb"></i> Un minimum de 20
                         grilles complétées est requis pour obtenir ce badge.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">♟️</span> Mastermind</h3>
+                    <p class="badge-desc">Ce badge récompense les joueurs
+                        d'échecs les plus réguliers et victorieux.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Il faut avoir
+                        joué au moins 15 parties d'échecs et obtenu 10
+                        victoires.</p>
+                </div>
+
+                <div class="badge">
+                    <h3 class="badge-name"><span
+                            class="badge-emoji">🎸</span> Rockstar</h3>
+                    <p class="badge-desc">Ce badge récompense les meilleures
+                        performances sur PDE Hero.</p>
+                    <p class="badge-note"><i
+                            class="fa-solid fa-lightbulb"></i> Il faut avoir
+                        atteint au moins 300 secondes de temps maximal, 75000
+                        points et un combo maximal de 100.</p>
                 </div>
 
                 <div class="badge">
@@ -326,5 +359,34 @@
             <p class="badge-note"><i
                     class="fa-solid fa-lightbulb"></i></p>
         </div> -->
+        <script>
+            const badgeSearch = document.getElementById("badge-search");
+            const badgeSearchCount = document.getElementById("badge-search-count");
+            const badgeCards = [...document.querySelectorAll(".badges-list .badge")];
+
+            function normalizeSearchText(value) {
+                return value
+                    .toLocaleLowerCase("fr-FR")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+            }
+
+            function filterBadges() {
+                const query = normalizeSearchText(badgeSearch.value.trim());
+                let visibleCount = 0;
+
+                badgeCards.forEach((badge) => {
+                    const matches = !query || normalizeSearchText(badge.textContent).includes(query);
+                    badge.classList.toggle("badge--hidden", !matches);
+                    if (matches) visibleCount += 1;
+                });
+
+                badgeSearchCount.textContent = `${visibleCount} badge${visibleCount > 1 ? "s" : ""}`;
+            }
+
+            badgeSearch.addEventListener("input", filterBadges);
+            badgeSearch.addEventListener("search", filterBadges);
+            filterBadges();
+        </script>
     </body>
 </html>

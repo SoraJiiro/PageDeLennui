@@ -32,6 +32,10 @@ function ensureBlackjackGameConfigured({
 
   // Init émetteur blackjack si non défini
   if (blackjackGame && !blackjackGame.emitState) {
+    blackjackGame.setShoe(FileService.data.blackjackShoe);
+    blackjackGame.setShoeChangeCallback((deck) => {
+      FileService.save("blackjackShoe", deck);
+    });
     blackjackGame.setEmitter((state) => io.emit("blackjack:state", state));
 
     blackjackGame.setRoundEndCallback((roundStats) => {

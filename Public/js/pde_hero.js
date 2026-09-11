@@ -279,9 +279,30 @@ const NOTE_PATTERNS = [
     [0, 0, 0, 1, 1],
     [1, 1, 0, 0, 0],
   ],
+  [
+    [1, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [1, 1, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [1, 1, 0, 0, 0],
+  ],
+  [
+    [0, 0, 0, 1, 1],
+    [0, 0, 0, 0, 1],
+    [0, 0, 0, 1, 1],
+    [0, 0, 0, 1, 0],
+    [0, 0, 0, 1, 1],
+  ],
+  [
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+  ],
 ];
-const NOTE_PATTERN_ROW_DELAY = 512;
-const NOTE_PATTERN_GAP = 256;
+const NOTE_PATTERN_ROW_DELAY = 256;
+const NOTE_PATTERN_GAP = 128;
 
 export function initPdeHero(socket) {
   const stage = document.getElementById("stage22");
@@ -306,6 +327,7 @@ export function initPdeHero(socket) {
     running: false,
     score: 0,
     combo: 0,
+    maxCombo: 0,
     misses: 0,
     overHits: 0,
     longest: 0,
@@ -477,7 +499,7 @@ export function initPdeHero(socket) {
     if (!state.running) return;
     state.lastFrame = now;
     const elapsed = (now - state.startedAt) / 1000;
-    const travelTime = Math.max(680, 1550 - elapsed * 18);
+    const travelTime = Math.max(768, 1550 - elapsed * 20);
     const hitY = state.viewHeight - 48;
     const laneWidth = state.viewWidth / 5;
     const noteDiameter = Math.min(42, laneWidth - 16);
@@ -568,7 +590,11 @@ export function initPdeHero(socket) {
     finalTimeEl.textContent = `Duree : ${finalDuration}s`;
     finalMissesEl.textContent = `Misses : ${state.misses} | Over hit : ${state.overHits}`;
     gameOverEl.hidden = false;
-    socket.emit("pdehero:final", { score: state.score, duration });
+    socket.emit("pdehero:final", {
+      score: state.score,
+      duration,
+      maxCombo: state.maxCombo,
+    });
   }
 
   function start() {
@@ -577,6 +603,7 @@ export function initPdeHero(socket) {
     gameOverEl.hidden = true;
     state.score = 0;
     state.combo = 0;
+    state.maxCombo = 0;
     state.misses = 0;
     state.overHits = 0;
     state.longest = 0;
@@ -618,6 +645,7 @@ export function initPdeHero(socket) {
     const noteY = noteProgress * hitY;
     state.notes.splice(index, 1);
     state.combo += 1;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
     if (state.combo % 10 === 0) {
       if (state.misses >= state.overHits && state.misses > 0) {
         state.misses -= 1;

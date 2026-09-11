@@ -2,12 +2,16 @@ const { Chess } = require("chess.js");
 
 class ChessGame {
   constructor() {
+    this.initialTimeMs = 10 * 60 * 1000;
     this.joueurs = [];
     this.spectators = [];
     this.chess = new Chess();
     this.gameStarted = false;
     this.winner = null;
     this.draw = false;
+    this.clockMs = { w: this.initialTimeMs, b: this.initialTimeMs };
+    this.lastTurnAt = null;
+    this.clockTimer = null;
   }
 
   addPlayer(pseudo, socketId) {
@@ -39,7 +43,9 @@ class ChessGame {
   }
 
   removeSpectator(pseudo) {
-    this.spectators = this.spectators.filter((entry) => entry.pseudo !== pseudo);
+    this.spectators = this.spectators.filter(
+      (entry) => entry.pseudo !== pseudo,
+    );
   }
 
   updateSocketId(pseudo, socketId) {
@@ -60,7 +66,46 @@ class ChessGame {
     this.gameStarted = true;
     this.winner = null;
     this.draw = false;
+    this.clockMs = { w: this.initialTimeMs, b: this.initialTimeMs };
+    this.lastTurnAt = Date.now();
     return true;
+  }
+
+  startClock(onTimeout, onTick) {
+    this.stopClock();
+    this.clockTimer = setInterval(() => {
+      const expiredColor = this.updateClock();
+      if (expiredColor) onTimeout(expiredColor);
+      else onTick?.();
+    }, 1000);
+  }
+
+  stopClock() {
+    if (this.clockTimer) clearInterval(this.clockTimer);
+    this.clockTimer = null;
+  }
+
+  updateClock(now = Date.now()) {
+    if (
+      !this.gameStarted ||
+      this.winner ||
+      this.draw ||
+      this.lastTurnAt === null
+    )
+      return null;
+    const color = this.chess.turn();
+    const elapsed = Math.max(0, now - this.lastTurnAt);
+    this.clockMs[color] = Math.max(0, this.clockMs[color] - elapsed);
+    this.lastTurnAt = now;
+    if (this.clockMs[color] > 0) return null;
+    this.winner =
+      this.joueurs.find((player) => player.color !== color)?.pseudo || null;
+    return color;
+  }
+
+  getClockMs() {
+    this.updateClock();
+    return { ...this.clockMs };
   }
 
   getPlayer(pseudo) {
@@ -68,10 +113,22 @@ class ChessGame {
   }
 
   playMove(player, move) {
-    if (!player) return { success: false, message: "Tu n'es pas dans la partie" };
-    if (!this.gameStarted) return { success: false, message: "La partie n'a pas commencé" };
-    if (this.winner || this.draw) return { success: false, message: "La partie est terminée" };
-    if (this.chess.turn() !== player.color) return { success: false, message: "Ce n'est pas ton tour !" };
+    if (!player)
+      return { success: false, message: "Tu n'es pas dans la partie" };
+    if (!this.gameStarted)
+      return { success: false, message: "La partie n'a pas commencé" };
+    if (this.winner || this.draw)
+      return { success: false, message: "La partie est terminée" };
+    if (this.updateClock()) {
+      return {
+        success: false,
+        timedOut: true,
+        winner: this.winner,
+        message: "Ton temps est écoulé",
+      };
+    }
+    if (this.chess.turn() !== player.color)
+      return { success: false, message: "Ce n'est pas ton tour !" };
 
     let played;
     try {
@@ -92,14 +149,37 @@ class ChessGame {
       }
     }
 
-    return { success: true, move: played, winner: this.winner, draw: this.draw };
+    if (!this.winner && !this.draw) this.lastTurnAt = Date.now();
+
+    return {
+      success: true,
+      move: played,
+      winner: this.winner,
+      draw: this.draw,
+    };
   }
 
   getState(forUsername) {
+    this.updateClock();
     const player = this.getPlayer(forUsername);
     const currentPlayer = this.joueurs.find(
       (entry) => entry.color === this.chess.turn(),
     );
+    const legalMoves = {};
+    for (const row of this.chess.board()) {
+      for (const piece of row) {
+        if (!piece || piece.color !== this.chess.turn()) continue;
+        legalMoves[piece.square] = this.chess
+          .moves({
+            square: piece.square,
+            verbose: true,
+          })
+          .map((move) => ({
+            to: move.to,
+            capture: Boolean(move.captured),
+          }));
+      }
+    }
     return {
       estSpec: !player,
       estMonTour: Boolean(player && currentPlayer && player === currentPlayer),
@@ -108,10 +188,15 @@ class ChessGame {
       board: this.chess.board(),
       turn: this.chess.turn(),
       fen: this.chess.fen(),
-      joueurs: this.joueurs.map((entry) => ({ pseudo: entry.pseudo, color: entry.color })),
+      joueurs: this.joueurs.map((entry) => ({
+        pseudo: entry.pseudo,
+        color: entry.color,
+      })),
       winner: this.winner,
       draw: this.draw,
       inCheck: this.chess.inCheck(),
+      legalMoves,
+      clocks: this.getClockMs(),
     };
   }
 

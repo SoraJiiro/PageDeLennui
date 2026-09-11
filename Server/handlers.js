@@ -394,8 +394,17 @@ const leaderboardManager = {
       games: Number(FileService.data.chessGames?.[pseudo] || 0),
       wins: Number(FileService.data.chessWins?.[pseudo] || 0),
     }));
-    arr = this._withUsersFallback(arr, (pseudo) => ({ pseudo, games: 0, wins: 0 }));
-    arr.sort((a, b) => b.wins - a.wins || b.games - a.games || a.pseudo.localeCompare(b.pseudo));
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      games: 0,
+      wins: 0,
+    }));
+    arr.sort(
+      (a, b) =>
+        b.wins - a.wins ||
+        b.games - a.games ||
+        a.pseudo.localeCompare(b.pseudo),
+    );
     io.emit("chess:leaderboard", arr);
   },
   broadcastMotusLB(io) {
@@ -628,6 +637,7 @@ const leaderboardManager = {
         pseudo,
         bestScore: Number(value?.bestScore) || 0,
         longestGame: Number(value?.longestGame) || 0,
+        maxCombo: Number(value?.maxCombo) || 0,
       }))
       .sort(
         (a, b) =>
@@ -639,6 +649,7 @@ const leaderboardManager = {
       pseudo,
       bestScore: 0,
       longestGame: 0,
+      maxCombo: 0,
     }));
     io.emit("pdehero:leaderboard", arr);
   },

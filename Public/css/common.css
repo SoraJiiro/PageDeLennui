@@ -16,9 +16,10 @@ html {
   --link-underline-thickness: 2px;
   --link-underline-offset: 3px;
   --container-max-width: 1200px;
+  --chess-cell-dark: rgb(0, 165, 0);
 }
 
-:focus {
+:not(.chess-cell):focus {
   outline: 1.75px solid var(--primary-color);
   outline-offset: 2px;
 }
@@ -282,7 +283,7 @@ button.log-off:hover {
   color: var(--bg-color);
 }
 
-button,
+button:not(.chess-cell, .nav-link, .nav-btn),
 .btn,
 .btns-wrap button,
 .dino-btns-wrap button,
@@ -322,7 +323,7 @@ button,
   outline: 2px solid var(--bg-color);
 }
 
-button:not(:disabled):hover,
+button:not(.chess-cell, .nav-link, .nav-btn):hover,
 .btn:not(:disabled):hover,
 .btns-wrap button:not(:disabled):hover,
 .dino-btns-wrap button:not(:disabled):hover,

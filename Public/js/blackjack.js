@@ -2,6 +2,9 @@ export function initBlackjack(socket, username) {
   const container = document.getElementById("stage14");
   const dealerHandEl = document.querySelector(".dealer-hand");
   const dealerScoreEl = document.querySelector(".dealer-score");
+  const shoeCountEl = document.getElementById("bj-shoe-count");
+  const shoeFillEl = document.getElementById("bj-shoe-fill");
+  const shoeTrackEl = document.querySelector(".bj-shoe-track");
   const messageEl = document.getElementById("bj-message");
   const playersAreaEl = document.querySelector(".players-area");
   const lobbyControlsEl = document.querySelector(".lobby-controls");
@@ -180,6 +183,28 @@ export function initBlackjack(socket, username) {
     syncCards(dealerHandEl, dealerVisibleCards, prevDealerCards);
     prevDealerCards = dealerVisibleCards.map((card) => ({ ...card }));
     if (dealerScoreEl) dealerScoreEl.textContent = state.dealerScore;
+
+    const shoeCapacity = Number(state.shoeCapacity) || 208;
+    const shoeRemaining = Math.max(
+      0,
+      Math.min(shoeCapacity, Number(state.shoeRemaining) || 0),
+    );
+    const shoePercent = (shoeRemaining / shoeCapacity) * 100;
+    if (shoeCountEl) {
+      shoeCountEl.textContent = `${shoeRemaining} / ${shoeCapacity}`;
+    }
+    if (shoeFillEl) {
+      shoeFillEl.style.width = `${shoePercent}%`;
+      shoeFillEl.classList.toggle("low", shoeRemaining <= 52);
+      shoeFillEl.classList.toggle(
+        "warning",
+        shoeRemaining > 52 && shoeRemaining <= 104,
+      );
+    }
+    if (shoeTrackEl) {
+      shoeTrackEl.setAttribute("aria-valuemax", String(shoeCapacity));
+      shoeTrackEl.setAttribute("aria-valuenow", String(shoeRemaining));
+    }
 
     // --- Mise à jour Message ---
     if (messageEl) {

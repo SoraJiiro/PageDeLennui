@@ -54,7 +54,7 @@ const AUTO_BADGES = [
   {
     id: "Tag2048",
     emoji: "🧩",
-    name: "2048 Master",
+    name: "2048 Mathematician",
     isEligible: ({ score2048, maxTile2048 }) => {
       return maxTile2048 >= 1024 || score2048 >= 5000;
     },
@@ -88,6 +88,22 @@ const AUTO_BADGES = [
     emoji: "🔢",
     name: "Sudoku Solver",
     isEligible: ({ sudokuCompleted }) => sudokuCompleted >= 20,
+  },
+  {
+    id: "MastermindTag",
+    emoji: "♟️",
+    name: "Mastermind",
+    isEligible: ({ chessGames, chessWins }) =>
+      chessGames >= 15 && chessWins >= 10,
+  },
+  {
+    id: "RockstarTag",
+    emoji: "🎸",
+    name: "Rockstar",
+    isEligible: ({ pdeHeroLongestGame, pdeHeroBestScore, pdeHeroMaxCombo }) =>
+      pdeHeroLongestGame >= 300 &&
+      pdeHeroBestScore >= 75000 &&
+      pdeHeroMaxCombo >= 100,
   },
   {
     id: "P4Tag",
@@ -218,6 +234,15 @@ function getEligibilitySnapshot(p, FileService) {
     snakeBest: readNum(FileService.data.snakeScores, p),
     blockblastBest: readNum(FileService.data.blockblastScores, p),
     sudokuCompleted: readNum(FileService.data.sudokuScores, p),
+    chessGames: readNum(FileService.data.chessGames, p),
+    chessWins: readNum(FileService.data.chessWins, p),
+    pdeHeroLongestGame: readNum(
+      FileService.data.pdeHeroScores,
+      p,
+      "longestGame",
+    ),
+    pdeHeroBestScore: readNum(FileService.data.pdeHeroScores, p, "bestScore"),
+    pdeHeroMaxCombo: readNum(FileService.data.pdeHeroScores, p, "maxCombo"),
     p4Wins: readNum(FileService.data.p4Wins, p),
     mashWins: readNum(FileService.data.mashWins, p),
     coinflipGames: readNum(FileService.data.coinflipStats, p, "gamesPlayed"),
@@ -271,6 +296,10 @@ function getBadgeUnlockCondition({
       return `blockblastBest >= 10000 (value=${Number(progress.blockblastBest || 0)})`;
     case "SudokuTag":
       return `sudokuCompleted >= 20 (value=${Number(progress.sudokuCompleted || 0)})`;
+    case "MastermindTag":
+      return `chessGames >= 15 AND chessWins >= 10 (values=${Number(progress.chessGames || 0)} / ${Number(progress.chessWins || 0)})`;
+    case "RockstarTag":
+      return `pdeHeroLongestGame >= 300 AND pdeHeroBestScore >= 75000 AND pdeHeroMaxCombo >= 100 (values=${Number(progress.pdeHeroLongestGame || 0)} / ${Number(progress.pdeHeroBestScore || 0)} / ${Number(progress.pdeHeroMaxCombo || 0)})`;
     case "P4Tag":
       return `p4Wins >= 15 (value=${Number(progress.p4Wins || 0)})`;
     case "MashTag":
@@ -366,6 +395,11 @@ function applyAutoBadges({ pseudo, FileService }) {
   const snakeBest = progress.snakeBest;
   const blockblastBest = progress.blockblastBest;
   const sudokuCompleted = progress.sudokuCompleted;
+  const chessGames = progress.chessGames;
+  const chessWins = progress.chessWins;
+  const pdeHeroLongestGame = progress.pdeHeroLongestGame;
+  const pdeHeroBestScore = progress.pdeHeroBestScore;
+  const pdeHeroMaxCombo = progress.pdeHeroMaxCombo;
   const p4Wins = progress.p4Wins;
   const mashWins = progress.mashWins;
   const coinflipGames = progress.coinflipGames;
@@ -407,6 +441,11 @@ function applyAutoBadges({ pseudo, FileService }) {
             snakeBest,
             blockblastBest,
             sudokuCompleted,
+            chessGames,
+            chessWins,
+            pdeHeroLongestGame,
+            pdeHeroBestScore,
+            pdeHeroMaxCombo,
             p4Wins,
             mashWins,
             coinflipGames,

@@ -62,6 +62,62 @@
   min-height: 100px;
 }
 
+.bj-shoe-status {
+  width: min(260px, 80vw);
+  margin-top: 12px;
+  color: #b9c7b9;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+}
+
+.bj-shoe-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.bj-shoe-heading strong {
+  margin-left: auto;
+  color: #f3f7f3;
+  font-variant-numeric: tabular-nums;
+}
+
+.bj-shoe-icon {
+  color: var(--primary-color);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.bj-shoe-track {
+  height: 7px;
+  overflow: hidden;
+  background: #252b25;
+  border: 1px solid #3e493e;
+  border-radius: 999px;
+}
+
+.bj-shoe-fill {
+  width: 0;
+  height: 100%;
+  background: var(--primary-color);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.45);
+  transition:
+    width 0.35s ease,
+    background-color 0.35s ease;
+}
+
+.bj-shoe-fill.warning {
+  background: #e7b93f;
+  box-shadow: 0 0 8px rgba(231, 185, 63, 0.45);
+}
+
+.bj-shoe-fill.low {
+  background: #ed5b52;
+  box-shadow: 0 0 8px rgba(237, 91, 82, 0.5);
+}
+
 .players-area {
   display: flex;
   justify-content: space-around;

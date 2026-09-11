@@ -617,7 +617,7 @@
                     <button class="hub-card sec23" data-game="Échecs"
                         data-emoji="♟️" type="button"><img
                             class="hub-card-img" src="imgs/pieces_echec.svg"
-                            alt="" aria-hidden="true"><span
+                            alt aria-hidden="true"><span
                             class="hub-card-label">Échecs</span></button>
                 </div>
 
@@ -883,7 +883,8 @@
                 </table>
             </div>
             <div class="leaderboard-card">
-                <div class="leaderboard-header"><h2>Échecs Leaderboard.exe</h2></div>
+                <div class="leaderboard-header"><h2>Échecs
+                        Leaderboard.exe</h2></div>
                 <table class="board" id="chess-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>Victoires</th></tr></thead>
                     <tbody></tbody>
@@ -1006,7 +1007,8 @@
                 </div>
                 <table class="board" id="pde-hero-leaderboard">
                     <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th><th>Temps
-                                (partie la plus longue)</th></tr></thead>
+                                (partie la plus longue)</th><th>Combo
+                                max</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -1153,25 +1155,6 @@
                         <div class="p4-board"></div>
                     </div>
                     <div class="p4-mode-spec" style="display: none;"></div>
-                </div>
-            </div>
-        </section>
-        <section id="stage23">
-            <div class="chess-card">
-                <div class="chess-header"><h2>Échecs.exe</h2><div class="chess-status"></div></div>
-                <div class="chess-lobby">
-                    <h3>Lobby Échecs</h3>
-                    <div class="chess-players"></div>
-                    <div class="chess-spectators"></div>
-                    <div class="chess-actions">
-                        <button class="chess-join">Rejoindre le lobby</button>
-                        <button class="chess-leave" style="display:none">Quitter le lobby</button>
-                        <button class="chess-start" style="display:none">En attente...</button>
-                    </div>
-                </div>
-                <div class="chess-game">
-                    <div class="chess-board" aria-label="Échiquier"></div>
-                    <div class="chess-spectator" style="display:none">Mode spectateur</div>
                 </div>
             </div>
         </section>
@@ -1343,6 +1326,22 @@
                         <div style="color:white; margin-top:5px">DEALER</div>
                         <div class="dealer-score player-score"
                             style="margin-top: 5px;">0</div>
+                        <div class="bj-shoe-status"
+                            aria-label="Cartes restantes dans le sabot">
+                            <div class="bj-shoe-heading">
+                                <span class="bj-shoe-icon"
+                                    aria-hidden="true">▤</span>
+                                <span>Sabot</span>
+                                <strong id="bj-shoe-count">0 / 208</strong>
+                            </div>
+                            <div class="bj-shoe-track" role="progressbar"
+                                aria-valuemin="0"
+                                aria-valuemax="208" aria-valuenow="0"
+                                aria-label="Cartes restantes">
+                                <div id="bj-shoe-fill"
+                                    class="bj-shoe-fill"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="bj-message" class="bj-message">En attente...</div>
@@ -1682,6 +1681,40 @@
                             maxlength="1" /></label>
                     <label>Lane 5 <input class="pde-hero-key"
                             maxlength="1" /></label>
+                </div>
+            </div>
+        </section>
+        <section id="stage23">
+            <div class="chess-card">
+                <div class="chess-header"><h2>Échecs.exe</h2><div
+                        class="chess-clocks"><span
+                            class="chess-clock chess-clock-white"><b>Blancs</b>
+                            <time>10:00</time></span><span
+                            class="chess-clock chess-clock-black"><b>Noirs</b>
+                            <time>10:00</time></span></div><div
+                        class="chess-status"></div></div>
+                <div class="chess-lobby">
+                    <h3>Lobby Échecs</h3>
+                    <div class="chess-players"></div>
+                    <div class="chess-spectators"></div>
+                    <div class="chess-actions">
+                        <button class="chess-join">Rejoindre le lobby</button>
+                        <button class="chess-leave" style="display:none">Quitter
+                            le lobby</button>
+                        <button class="chess-start" style="display:none">En
+                            attente...</button>
+                    </div>
+                </div>
+                <div class="chess-game">
+                    <div class="chess-board" aria-label="Échiquier"></div>
+                    <div class="chess-spectator" style="display:none">Mode
+                        spectateur</div>
+                </div>
+                <div class="chess-result" hidden>
+                    <h3 class="chess-result-title">Partie terminée</h3>
+                    <p class="chess-result-message"></p>
+                    <p class="chess-result-reward"></p>
+                    <button class="chess-result-back">Retour au lobby</button>
                 </div>
             </div>
         </section>

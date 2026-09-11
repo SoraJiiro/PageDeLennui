@@ -710,7 +710,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (
       !section ||
       !section.classList.contains("is-active") ||
-      !section.id === "stage4"
+      section.id === "stage4"
     )
       return;
     const wrapper = ensureViewportWrapper(section);

@@ -4198,6 +4198,8 @@ async function respondTag(requestId, action) {
 async function createSurvey() {
   const question = document.getElementById("surveyQuestion").value.trim();
   const choicesText = document.getElementById("surveyChoices").value.trim();
+  const allowBets =
+    document.getElementById("surveyAllowBets")?.checked === true;
 
   if (!question) return alert("Question requise");
   if (!choicesText) return alert("Choix requis");
@@ -4212,13 +4214,15 @@ async function createSurvey() {
     const res = await fetch("/api/surveys/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, choices }),
+      body: JSON.stringify({ question, choices, allowBets }),
     });
 
     if (res.ok) {
       showNotification("✅ Sondage créé", "success");
       document.getElementById("surveyQuestion").value = "";
       document.getElementById("surveyChoices").value = "";
+      const allowBetsInput = document.getElementById("surveyAllowBets");
+      if (allowBetsInput) allowBetsInput.checked = false;
       loadAdminSurveys();
     } else {
       const data = await res.json();
@@ -4281,7 +4285,8 @@ async function loadAdminSurveys() {
                             <div style="font-weight:bold; color:#fff; margin-bottom: 4px;">${s.question}</div>
                             <div style="font-size:0.8rem; color:#aaa">
                                 Status: <span class="${statusClass}">${s.status}</span> • 
-                                Votes: ${s.results.total}
+                                Votes: ${s.results.total} •
+                              ${s.allowBets === true ? "Mises activées" : "Mises désactivées"}
                             </div>
                             ${votersHtml}
                         </div>
@@ -4310,14 +4315,50 @@ async function loadAdminSurveys() {
 }
 
 async function closeSurvey(surveyId) {
+  let winningChoice = null;
+  try {
+    const listRes = await fetch("/api/surveys/list");
+    const surveys = await listRes.json();
+    const survey = surveys.find((item) => item.id === surveyId);
+
+    if (survey?.allowBets === true) {
+      const choices = survey.choices
+        .map((choice, index) => `${index + 1}. ${choice}`)
+        .join("\n");
+      const answer = prompt(
+        `Quelle option doit rapporter les gains ?\n\n${choices}\n\nEntrez le numéro de l'option :`,
+      );
+      if (answer === null) return;
+      const selected = Number(answer) - 1;
+      if (
+        !Number.isInteger(selected) ||
+        selected < 0 ||
+        selected >= survey.choices.length
+      ) {
+        alert("Option invalide");
+        return;
+      }
+      winningChoice = selected;
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Impossible de récupérer les options du sondage");
+    return;
+  }
+
   if (!confirm("Clore ce sondage ?")) return;
   try {
     const res = await fetch("/api/surveys/close", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ surveyId }),
+      body: JSON.stringify({ surveyId, winningChoice }),
     });
-    if (res.ok) loadAdminSurveys();
+    if (res.ok) {
+      loadAdminSurveys();
+    } else {
+      const data = await res.json();
+      alert(data.message || "Erreur lors de la clôture");
+    }
   } catch (e) {
     console.error(e);
   }

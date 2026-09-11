@@ -17,6 +17,7 @@ class BlackjackGame {
     this.betTimeoutMs = 15000;
     this.emitState = null;
     this.onRoundEnd = null;
+    this.onShoeChange = null;
   }
 
   setEmitter(fn) {
@@ -25,6 +26,18 @@ class BlackjackGame {
 
   setRoundEndCallback(fn) {
     this.onRoundEnd = fn;
+  }
+
+  setShoe(deck) {
+    if (!Array.isArray(deck)) return;
+    this.deck = deck.filter(
+      (card) =>
+        card && typeof card.suit === "string" && typeof card.value === "string",
+    );
+  }
+
+  setShoeChangeCallback(fn) {
+    this.onShoeChange = fn;
   }
 
   addPlayer(pseudo, socketId) {
@@ -154,7 +167,6 @@ class BlackjackGame {
     this.processQueue();
 
     this.phase = "lobby";
-    this.deck = [];
     this.dealerHand = [];
     this.currentPlayerIndex = 0;
     this.turnDeadline = 0;
@@ -192,11 +204,13 @@ class BlackjackGame {
     ];
     this.deck = [];
 
-    suits.forEach((suit) => {
-      values.forEach((value) => {
-        this.deck.push({ suit, value });
+    for (let deckIndex = 0; deckIndex < 4; deckIndex++) {
+      suits.forEach((suit) => {
+        values.forEach((value) => {
+          this.deck.push({ suit, value });
+        });
       });
-    });
+    }
 
     for (let i = this.deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -277,7 +291,9 @@ class BlackjackGame {
     if (!this.canStart()) return false;
     this.gameStarted = true;
     this.phase = "betting";
-    this.createDeck();
+    if (this.deck.length <= 52) {
+      this.createDeck();
+    }
 
     this.joueurs.forEach((p) => {
       p.hands = [];
@@ -588,6 +604,9 @@ class BlackjackGame {
     if (this.onRoundEnd) {
       this.onRoundEnd(roundStats);
     }
+    if (this.onShoeChange) {
+      this.onShoeChange(this.deck);
+    }
 
     this.turnDeadline = Date.now() + 5000;
     if (this.emitState) this.emitState(this.getState());
@@ -641,6 +660,8 @@ class BlackjackGame {
       })),
       dealerHand: visibleDealerHand,
       dealerScore: dealerScore,
+      shoeRemaining: this.deck.length,
+      shoeCapacity: 208,
       currentPlayerIndex: this.currentPlayerIndex,
       gameStarted: this.gameStarted,
       waitingList: this.waitingList.map((p) => p.pseudo),
