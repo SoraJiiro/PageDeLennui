@@ -24,7 +24,6 @@ function registerPdeHeroHandlers({
     )
       return;
 
-    // Le client joue en temps reel, mais le score reste borne par une cadence plausible.
     const maxPlausibleScore = safeDuration * 2500 + 1000;
     const verifiedScore = Math.min(safeScore, maxPlausibleScore);
     const scores = FileService.data.pdeHeroScores || {};

@@ -420,7 +420,6 @@ export function initPdeHero(socket) {
     ctx.lineTo(width, hitY);
     ctx.stroke();
 
-    // Hit zone légère (bande et récepteurs sur chaque voie)
     const targetRadius = Math.min(24, laneWidth / 2 - 5);
     ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
     ctx.fillRect(0, hitY - targetRadius - 4, width, (targetRadius + 4) * 2);
@@ -551,6 +550,7 @@ export function initPdeHero(socket) {
   function registerMiss() {
     if (!state.running) return;
     state.misses += 1;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
     state.combo = 0;
     state.missFlashUntil = performance.now() + 180;
     missesEl.textContent = `Misses: ${state.misses}/${ERROR_LIMIT}`;
@@ -564,6 +564,7 @@ export function initPdeHero(socket) {
   function registerOverHit() {
     if (!state.running) return;
     state.overHits += 1;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
     state.combo = 0;
     state.missFlashUntil = performance.now() + 180;
     overHitsEl.textContent = `Over hit: ${state.overHits}/${ERROR_LIMIT}`;
@@ -583,6 +584,7 @@ export function initPdeHero(socket) {
       Math.floor((performance.now() - state.startedAt) / 1000),
     );
     state.longest = Math.max(state.longest, duration);
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
     startButton.disabled = false;
     statusEl.textContent = `${message} - ${state.score} points`;
     const finalDuration = Math.floor(duration);
