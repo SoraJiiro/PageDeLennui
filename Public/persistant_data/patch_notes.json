@@ -2,6 +2,36 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.2.1",
+      "date": "14/09/2026",
+      "sections": [
+        {
+          "title": "Améliorations ",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "PDE Hero :",
+              "text": "Le maxCombo a été fixé, il prend maintenant le combo maximal d'un joueur au lieu de l'incrémenter."
+            }
+          ]
+        },
+        {
+          "title": "Retraits / Resets",
+          "icon": "fa-arrow-right-arrow-left",
+          "items": [
+            {
+              "tagClass": "tag-removed",
+              "tag": "[RESET]",
+              "strong": "PDE Hero :",
+              "text": "Reset global des stats pour PDE Hero (post fix maxCombo)."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.2.0",
       "date": "11/09/2026",
       "sections": [
