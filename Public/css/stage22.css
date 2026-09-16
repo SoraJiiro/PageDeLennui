@@ -94,7 +94,8 @@
   justify-content: space-between;
 }
 .pde-hero-controls button,
-.pde-hero-key {
+.pde-hero-key,
+#pde-hero-difficulty {
   min-height: 34px;
   border: 1px solid var(--primary-color);
   background: var(--bg-color);
@@ -104,6 +105,16 @@
 .pde-hero-controls button {
   padding: 6px 14px;
   cursor: pointer;
+}
+.pde-hero-difficulty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+#pde-hero-difficulty {
+  min-height: 34px;
+  padding: 4px 8px;
 }
 .pde-hero-controls button:disabled {
   opacity: 0.45;

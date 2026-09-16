@@ -303,13 +303,51 @@ const NOTE_PATTERNS = [
 ];
 const NOTE_PATTERN_ROW_DELAY = 256;
 const NOTE_PATTERN_GAP = 128;
+// Each entry is a distinct chart for a difficulty.
+const DIFFICULTY_PATTERNS = {
+  easy: [
+    [{ lane: 2 }],
+    [{ lane: 1 }, { lane: 3 }],
+    [{ lane: 0 }, { lane: 2 }],
+    [{ lane: 4 }],
+    [{ lane: 2 }, { lane: 1 }],
+  ],
+  medium: [
+    [{ lane: 0 }, { lane: 2 }, { lane: 4 }],
+    [{ lane: 4 }, { lane: 2 }, { lane: 0 }],
+    [{ lane: 1 }, { lane: 3 }, { lane: 2 }],
+    [{ lane: 0 }, { lane: 2 }],
+    [{ lane: 4 }, { lane: 1 }],
+  ],
+  hard: [
+    [{ lane: 0 }, { lane: 1 }, { lane: 2 }, { lane: 3 }, { lane: 4 }],
+    [{ lane: 4 }, { lane: 3 }, { lane: 2 }, { lane: 1 }, { lane: 0 }],
+    [{ lane: 0 }, { lane: 2 }, { lane: 4 }, { lane: 2 }, { lane: 0 }],
+    [{ lane: 1 }, { lane: 3 }, { lane: 2 }],
+    [{ lane: 0 }, { lane: 4 }, { lane: 2 }],
+  ],
+  expert: [
+    [{ lane: 0 }, { lane: 2 }, { lane: 4 }, { lane: 1 }, { lane: 3 }, { lane: 2 }],
+    [{ lane: 4 }, { lane: 1 }, { lane: 3 }, { lane: 0 }, { lane: 2 }, { lane: 4 }],
+    [{ lane: 0 }, { lane: 1 }, { lane: 3 }, { lane: 4 }, { lane: 2 }],
+    [{ lane: 4 }, { lane: 2 }, { lane: 0 }, { lane: 3 }, { lane: 1 }],
+    [{ lane: 1 }, { lane: 3 }, { lane: 0 }, { lane: 4 }, { lane: 2 }, { lane: 1 }],
+  ],
+};
+const DIFFICULTIES = {
+  easy: { label: "Facile", scoreMultiplier: 0.25, travelTime: 3200 },
+  medium: { label: "Moyen", scoreMultiplier: 0.5, travelTime: 2400 },
+  hard: { label: "Difficile", scoreMultiplier: 1, travelTime: 1450 },
+  expert: { label: "Expert", scoreMultiplier: 1.75, travelTime: 1100 },
+};
 
 export function initPdeHero(socket) {
   const stage = document.getElementById("stage22");
   const canvas = document.getElementById("pde-hero-canvas");
   const startButton = document.getElementById("pde-hero-start");
+  const difficultySelect = document.getElementById("pde-hero-difficulty");
   const keyInputs = [...document.querySelectorAll(".pde-hero-key")];
-  if (!stage || !canvas || !startButton || keyInputs.length !== 5) return;
+  if (!stage || !canvas || !startButton || !difficultySelect || keyInputs.length !== 5) return;
 
   const ctx = canvas.getContext("2d");
   const scoreEl = document.getElementById("pde-hero-score");
@@ -341,6 +379,7 @@ export function initPdeHero(socket) {
     missFlashUntil: 0,
     viewWidth: 0,
     viewHeight: 0,
+    difficulty: difficultySelect.value,
   };
 
   let keys = loadKeys();
@@ -477,28 +516,22 @@ export function initPdeHero(socket) {
     travelTime,
     timePastHitZone,
   ) {
-    let noteIndex = 0;
-    pattern.forEach((row) => {
-      row.forEach((hasNote, lane) => {
-        if (hasNote !== 1) return;
+    pattern.forEach((note, noteIndex) => {
         const spawnAt = patternStart + noteIndex * NOTE_PATTERN_ROW_DELAY;
         state.pendingNotes.push({
-          lane,
+          lane: note.lane,
           spawnAt,
           travelTime,
           timePastHitZone,
         });
-        noteIndex += 1;
-      });
     });
-    return noteIndex;
+    return pattern.length;
   }
 
   function frame(now) {
     if (!state.running) return;
     state.lastFrame = now;
-    const elapsed = (now - state.startedAt) / 1000;
-    const travelTime = Math.max(768, 1550 - elapsed * 20);
+    const travelTime = DIFFICULTIES[state.difficulty].travelTime;
     const hitY = state.viewHeight - 48;
     const laneWidth = state.viewWidth / 5;
     const noteDiameter = Math.min(42, laneWidth - 16);
@@ -506,8 +539,8 @@ export function initPdeHero(socket) {
     const timePastHitZone =
       travelTime * (distanceAfterHitZone / Math.max(1, hitY));
     while (now >= state.nextPatternAt) {
-      const pattern =
-        NOTE_PATTERNS[Math.floor(Math.random() * NOTE_PATTERNS.length)];
+      const patterns = DIFFICULTY_PATTERNS[state.difficulty];
+      const pattern = patterns[Math.floor(Math.random() * patterns.length)];
       const patternStart = state.nextPatternAt;
       const noteCount = schedulePatternNotes(
         pattern,
@@ -575,7 +608,7 @@ export function initPdeHero(socket) {
     }
   }
 
-  function finish(message = "Partie terminee") {
+  function finish(message = "Partie terminee", { save = true } = {}) {
     if (!state.running) return;
     state.running = false;
     cancelAnimationFrame(state.animation);
@@ -588,20 +621,23 @@ export function initPdeHero(socket) {
     startButton.disabled = false;
     statusEl.textContent = `${message} - ${state.score} points`;
     const finalDuration = Math.floor(duration);
-    finalScoreEl.textContent = `Score : ${state.score}`;
+    finalScoreEl.textContent = `Score (${DIFFICULTIES[state.difficulty].label}) : ${state.score}`;
     finalTimeEl.textContent = `Duree : ${finalDuration}s`;
     finalMissesEl.textContent = `Misses : ${state.misses} | Over hit : ${state.overHits}`;
     gameOverEl.hidden = false;
-    socket.emit("pdehero:final", {
-      score: state.score,
-      duration,
-      maxCombo: state.maxCombo,
-    });
+    if (save) {
+      socket.emit("pdehero:final", {
+        score: state.score,
+        duration,
+        difficulty: state.difficulty,
+      });
+    }
   }
 
   function start() {
     if (state.running) return;
     state.running = true;
+    state.difficulty = difficultySelect.value;
     gameOverEl.hidden = true;
     state.score = 0;
     state.combo = 0;
@@ -616,7 +652,7 @@ export function initPdeHero(socket) {
     state.nextPatternAt = state.startedAt;
     state.lastFrame = state.startedAt;
     startButton.disabled = true;
-    statusEl.textContent = "En jeu";
+    statusEl.textContent = `En jeu — ${DIFFICULTIES[state.difficulty].label}`;
     missesEl.textContent = `Misses: 0/${ERROR_LIMIT}`;
     overHitsEl.textContent = `Over hit: 0/${ERROR_LIMIT}`;
     state.animation = requestAnimationFrame(frame);
@@ -657,7 +693,10 @@ export function initPdeHero(socket) {
       missesEl.textContent = `Misses: ${state.misses}/${ERROR_LIMIT}`;
       overHitsEl.textContent = `Over hit: ${state.overHits}/${ERROR_LIMIT}`;
     }
-    state.score += 100 + Math.min(400, state.combo * 10);
+    const baseScore = 100 + Math.min(400, state.combo * 10);
+    state.score += Math.round(
+      baseScore * DIFFICULTIES[state.difficulty].scoreMultiplier,
+    );
     const laneWidth = state.viewWidth / 5;
     state.particles.push(
       ...Array.from({ length: 12 }, () => ({
@@ -675,6 +714,12 @@ export function initPdeHero(socket) {
 
   startButton.addEventListener("click", start);
   restartButton.addEventListener("click", start);
+  difficultySelect.addEventListener("change", () => {
+    if (!state.running) return;
+    const newDifficulty = difficultySelect.value;
+    finish("Partie abandonnée : difficulté modifiée", { save: false });
+    state.difficulty = newDifficulty;
+  });
   window.addEventListener("keydown", (event) => {
     if (event.repeat || event.target.matches("input, textarea, select")) return;
     hit(event.key);

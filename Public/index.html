@@ -1006,9 +1006,8 @@
                     <h2>PDE Hero Leaderboard.exe</h2>
                 </div>
                 <table class="board" id="pde-hero-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score</th><th>Temps
-                                (partie la plus longue)</th><th>Combo
-                                max</th></tr></thead>
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Expert</th><th>Difficile</th><th>Moyen</th><th>Facile</th><th>Temps
+                                (partie la plus longue)</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -1665,6 +1664,14 @@
                     </div>
                 </div>
                 <div class="pde-hero-controls">
+                    <label class="pde-hero-difficulty">Difficulté
+                        <select id="pde-hero-difficulty">
+                            <option value="easy">Facile</option>
+                            <option value="medium">Moyen</option>
+                            <option value="hard" selected>Difficile</option>
+                            <option value="expert">Expert</option>
+                        </select>
+                    </label>
                     <button id="pde-hero-start" type="button">Lancer la
                         partie</button>
                     <span id="pde-hero-status">Choisissez vos touches puis
@@ -1709,6 +1716,15 @@
                     <div class="chess-board" aria-label="Échiquier"></div>
                     <div class="chess-spectator" style="display:none">Mode
                         spectateur</div>
+                    <div class="chess-promotion" hidden>
+                        <p>Promouvoir le pion en :</p>
+                        <div class="chess-promotion-options">
+                            <button type="button" data-piece="q">Dame</button>
+                            <button type="button" data-piece="r">Tour</button>
+                            <button type="button" data-piece="b">Fou</button>
+                            <button type="button" data-piece="n">Cavalier</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="chess-result" hidden>
                     <h3 class="chess-result-title">Partie terminée</h3>

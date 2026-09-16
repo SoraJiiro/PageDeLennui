@@ -19,9 +19,11 @@ export function initChess(socket) {
   const resultMessage = root.querySelector(".chess-result-message");
   const resultReward = root.querySelector(".chess-result-reward");
   const resultBack = root.querySelector(".chess-result-back");
+  const promotionDialog = root.querySelector(".chess-promotion");
   let state = null;
   let selected = null;
   let renderedFen = null;
+  let pendingPromotion = null;
 
   socket.emit("chess:getState");
   root
@@ -30,6 +32,21 @@ export function initChess(socket) {
   leave?.addEventListener("click", () => socket.emit("chess:leave"));
   start?.addEventListener("click", () => socket.emit("chess:start"));
   resultBack?.addEventListener("click", showLobby);
+  root.querySelectorAll(".chess-promotion-options button").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!pendingPromotion) return;
+      const promotion = button.dataset.piece;
+      if (!pendingPromotion.options.has(promotion)) return;
+      socket.emit("chess:play", {
+        from: pendingPromotion.from,
+        to: pendingPromotion.to,
+        promotion,
+      });
+      pendingPromotion = null;
+      promotionDialog.hidden = true;
+      clearSelection();
+    });
+  });
 
   socket.on("chess:lobby", (data) => {
     players.innerHTML = `<p>Joueurs (${data.joueurs.length}/2)</p>${data.joueurs.map((name) => `<div>${name}</div>`).join("") || "<div>Aucun joueur</div>"}`;
@@ -80,6 +97,8 @@ export function initChess(socket) {
     state = null;
     selected = null;
     renderedFen = null;
+    pendingPromotion = null;
+    promotionDialog.hidden = true;
     whiteClock.textContent = "10:00";
     blackClock.textContent = "10:00";
     whiteClockBox.classList.remove("active");
@@ -93,7 +112,11 @@ export function initChess(socket) {
   function update(nextState) {
     const boardChanged = renderedFen !== nextState.fen;
     state = nextState;
-    if (boardChanged) selected = null;
+    if (boardChanged) {
+      selected = null;
+      pendingPromotion = null;
+      promotionDialog.hidden = true;
+    }
     lobby.style.display = "none";
     game.classList.add("active");
     resultScreen.hidden = true;
@@ -174,12 +197,7 @@ export function initChess(socket) {
               (candidate) => candidate.to === cell.dataset.square,
             );
             if (!move) return;
-            socket.emit("chess:play", {
-              from,
-              to: cell.dataset.square,
-              promotion: "q",
-            });
-            clearSelection();
+            submitMove(from, cell.dataset.square);
           });
           cell.addEventListener("click", () => selectCell(cell.dataset.square));
           board.appendChild(cell);
@@ -217,8 +235,7 @@ export function initChess(socket) {
       (candidate) => candidate.to === square,
     );
     if (move) {
-      socket.emit("chess:play", { from: selected, to: square, promotion: "q" });
-      selected = null;
+      submitMove(selected, square);
       return;
     }
 
@@ -235,6 +252,30 @@ export function initChess(socket) {
         cell.classList.remove("selected", "preview-move", "preview-capture"),
       );
     selected = null;
+  }
+
+  function submitMove(from, to) {
+    const moves = state?.legalMoves?.[from]?.filter(
+      (candidate) => candidate.to === to,
+    );
+    if (!moves?.length) return;
+    const promotionOptions = moves
+      .map((candidate) => candidate.promotion)
+      .filter(Boolean);
+    if (promotionOptions.length) {
+      pendingPromotion = {
+        from,
+        to,
+        options: new Set(promotionOptions),
+      };
+      root.querySelectorAll(".chess-promotion-options button").forEach((button) => {
+        button.hidden = !pendingPromotion.options.has(button.dataset.piece);
+      });
+      promotionDialog.hidden = false;
+      return;
+    }
+    socket.emit("chess:play", { from, to });
+    clearSelection();
   }
 
   function formatClock(milliseconds = 0) {

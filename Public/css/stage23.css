@@ -96,6 +96,28 @@
 .chess-game.active {
   display: block;
 }
+.chess-promotion {
+  margin: 0.8rem auto;
+  padding: 0.8rem;
+  width: min(100%, 360px);
+  text-align: center;
+  border: 2px solid var(--primary-color);
+}
+.chess-promotion[hidden] {
+  display: none;
+}
+.chess-promotion p {
+  margin: 0 0 0.65rem;
+}
+.chess-promotion-options {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.chess-promotion-options button {
+  padding: 0.5rem 0.7rem;
+}
 .chess-board {
   display: grid;
   grid-template-columns: repeat(8, minmax(28px, 58px));

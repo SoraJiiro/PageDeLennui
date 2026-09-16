@@ -177,6 +177,7 @@ class ChessGame {
           .map((move) => ({
             to: move.to,
             capture: Boolean(move.captured),
+            promotion: move.promotion || null,
           }));
       }
     }
