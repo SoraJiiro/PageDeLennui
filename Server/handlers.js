@@ -222,7 +222,7 @@ function broadcastSiteMoneyStats(io) {
 // ------- Games -------
 let gameActuelle = new UnoGame();
 let p4Game = new Puissance4Game();
-let chessGame = new ChessGame();
+const chessGames = new Map();
 let motusGame = new MotusGame();
 let blackjackGame = new BlackjackGame();
 let mashGame = null; // Will be initialized with broadcastSystemMessage wrapper
@@ -1117,8 +1117,7 @@ function initSocketHandlers(io, socket, gameState) {
     FileService,
     leaderboardManager,
     ChessGame,
-    getChessGame: () => chessGame,
-    setChessGame: (game) => (chessGame = game),
+    chessGames,
   });
 
   registerBlockblastHandlers({

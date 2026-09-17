@@ -96,6 +96,38 @@
 .chess-game.active {
   display: block;
 }
+.chess-back-to-lobby {
+  margin-left: 0.5rem;
+  padding: 0.4rem 0.6rem;
+}
+.chess-lobby-title,
+.chess-game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.chess-lobby-title h3 {
+  margin: 0;
+}
+.chess-lobby-help {
+  margin: 0.75rem 0;
+}
+.chess-games {
+  display: grid;
+  gap: 0.6rem;
+}
+.chess-game-row {
+  padding: 0.65rem;
+  text-align: left;
+  border: 1px solid var(--primary-color);
+}
+.chess-game-row p {
+  margin: 0.2rem 0;
+}
+.chess-game-row button {
+  padding: 0.45rem 0.65rem;
+}
 .chess-promotion {
   margin: 0.8rem auto;
   padding: 0.8rem;
@@ -124,6 +156,46 @@
   width: min(100%, 464px);
   margin: 0.8rem auto;
   aspect-ratio: 1;
+}
+.chess-last-move {
+  width: min(100%, 464px);
+  margin: 0.8rem auto 0;
+  padding: 0.45rem 0.6rem;
+  text-align: center;
+  border: 1px solid var(--primary-color);
+}
+.chess-captured {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+  width: 100%;
+  margin: 0 auto 0.8rem;
+  font-size: 0.8rem;
+}
+.chess-captured > div {
+  flex: 1;
+}
+.chess-captured > div:last-child {
+  text-align: right;
+  background: var(--primary-color) !important;
+}
+
+.chess-captured-black {
+  display: flex;
+  border: 2px solid #418333;
+}
+
+.chess-captured-white {
+  display: flex;
+  justify-content: end;
+  border: 2px solid #418333;
+}
+
+.chess-captured-piece {
+  display: inline-block;
+  width: 22px !important;
+  height: 22px !important;
+  vertical-align: middle;
 }
 .chess-cell {
   position: relative;
@@ -163,6 +235,34 @@
   outline: 4px solid var(--primary-color);
   outline-offset: -4px;
 }
+.chess-cell.last-move-from::before,
+.chess-cell.last-move-to::before {
+  position: absolute;
+  z-index: 1;
+  content: "";
+  pointer-events: none;
+}
+.chess-cell.last-move-from::before {
+  inset: 8%;
+  border: 4px solid #418333;
+  border-radius: 50%;
+}
+
+.chess-cell.dark.last-move-from::before {
+  border-color: var(--primary-color);
+}
+
+.chess-cell.last-move-to::before {
+  width: 100%;
+  height: 100%;
+  border: 4px dashed #418333;
+  border-radius: 50%;
+}
+
+.chess-cell.dark.last-move-to::before {
+  border-color: var(--primary-color);
+}
+
 .chess-piece {
   display: block;
   width: 100%;

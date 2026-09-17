@@ -26,6 +26,18 @@ function sanitizeCssColor(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
   if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw)) return raw;
+
+  // Les couleurs des médailles Prestige sont persistées au format
+  // `hsl(teinte, saturation%, luminosité%)`. On conserve une validation
+  // stricte avant de les injecter dans un attribut style.
+  const hslMatch = raw.match(
+    /^hsl\(\s*(\d{1,3}(?:\.\d+)?)\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*\)$/i,
+  );
+  if (hslMatch) {
+    const [, hue, saturation, lightness] = hslMatch.map(Number);
+    if (hue <= 360 && saturation <= 100 && lightness <= 100) return raw;
+  }
+
   return "";
 }
 

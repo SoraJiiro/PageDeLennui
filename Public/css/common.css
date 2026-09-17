@@ -283,7 +283,7 @@ button.log-off:hover {
   color: var(--bg-color);
 }
 
-button:not(.chess-cell, .nav-link, .nav-btn),
+button:not(.chess-cell, .nav-link, .nav-btn, .sidebar-close),
 .btn,
 .btns-wrap button,
 .dino-btns-wrap button,
@@ -323,7 +323,7 @@ button:not(.chess-cell, .nav-link, .nav-btn),
   outline: 2px solid var(--bg-color);
 }
 
-button:not(.chess-cell, .nav-link, .nav-btn):hover,
+button:not(.chess-cell, .nav-link, .nav-btn, .sidebar-close):hover,
 .btn:not(:disabled):hover,
 .btns-wrap button:not(:disabled):hover,
 .dino-btns-wrap button:not(:disabled):hover,

@@ -509,7 +509,7 @@
                         Avg monnaie: ...
                     </div>
                     <div class="hub-site-money-average">
-                        [v3.1.6 - 9/9/26]
+                        [v3.2.2 - 17/09/26]
                     </div>
                 </header>
 
@@ -1701,11 +1701,17 @@
                             <time>10:00</time></span></div><div
                         class="chess-status"></div></div>
                 <div class="chess-lobby">
-                    <h3>Lobby Échecs</h3>
-                    <div class="chess-players"></div>
-                    <div class="chess-spectators"></div>
+                    <div class="chess-lobby-title"><h3>Parties
+                            d'Échecs</h3><button class="chess-create">Nouvelle
+                            partie</button></div>
+                    <p class="chess-lobby-help">Rejoignez une table en attente
+                        ou regardez une partie en cours.</p>
+                    <div class="chess-games"></div>
+                    <div class="chess-players" hidden></div>
+                    <div class="chess-spectators" hidden></div>
                     <div class="chess-actions">
-                        <button class="chess-join">Rejoindre le lobby</button>
+                        <button class="chess-join"
+                            style="display:none">Rejoindre le lobby</button>
                         <button class="chess-leave" style="display:none">Quitter
                             le lobby</button>
                         <button class="chess-start" style="display:none">En
@@ -1713,16 +1719,24 @@
                     </div>
                 </div>
                 <div class="chess-game">
+                    <p class="chess-last-move" aria-live="polite">Aucun coup
+                        joué</p>
                     <div class="chess-board" aria-label="Échiquier"></div>
+                    <div class="chess-captured" aria-label="Pièces capturées">
+                        <div><span class="chess-captured-white"></span></div>
+                        <div><span class="chess-captured-black"></span></div>
+                    </div>
                     <div class="chess-spectator" style="display:none">Mode
-                        spectateur</div>
+                        spectateur <button class="chess-back-to-lobby">Retour au
+                            lobby</button></div>
                     <div class="chess-promotion" hidden>
                         <p>Promouvoir le pion en :</p>
                         <div class="chess-promotion-options">
                             <button type="button" data-piece="q">Dame</button>
                             <button type="button" data-piece="r">Tour</button>
                             <button type="button" data-piece="b">Fou</button>
-                            <button type="button" data-piece="n">Cavalier</button>
+                            <button type="button"
+                                data-piece="n">Cavalier</button>
                         </div>
                     </div>
                 </div>

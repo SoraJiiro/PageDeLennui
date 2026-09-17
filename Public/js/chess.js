@@ -4,6 +4,9 @@ export function initChess(socket) {
   const lobby = root.querySelector(".chess-lobby");
   const game = root.querySelector(".chess-game");
   const board = root.querySelector(".chess-board");
+  const lastMove = root.querySelector(".chess-last-move");
+  const capturedWhite = root.querySelector(".chess-captured-white");
+  const capturedBlack = root.querySelector(".chess-captured-black");
   const status = root.querySelector(".chess-status");
   const whiteClock = root.querySelector(".chess-clock-white time");
   const blackClock = root.querySelector(".chess-clock-black time");
@@ -11,10 +14,13 @@ export function initChess(socket) {
   const blackClockBox = root.querySelector(".chess-clock-black");
   const players = root.querySelector(".chess-players");
   const spectators = root.querySelector(".chess-spectators");
+  const games = root.querySelector(".chess-games");
+  const create = root.querySelector(".chess-create");
   const join = root.querySelector(".chess-join");
   const leave = root.querySelector(".chess-leave");
   const start = root.querySelector(".chess-start");
   const spec = root.querySelector(".chess-spectator");
+  const backToLobby = root.querySelector(".chess-back-to-lobby");
   const resultScreen = root.querySelector(".chess-result");
   const resultMessage = root.querySelector(".chess-result-message");
   const resultReward = root.querySelector(".chess-result-reward");
@@ -26,11 +32,13 @@ export function initChess(socket) {
   let pendingPromotion = null;
 
   socket.emit("chess:getState");
-  root
-    .querySelector(".chess-join")
-    ?.addEventListener("click", () => socket.emit("chess:join"));
+  create?.addEventListener("click", () => socket.emit("chess:create"));
   leave?.addEventListener("click", () => socket.emit("chess:leave"));
   start?.addEventListener("click", () => socket.emit("chess:start"));
+  backToLobby?.addEventListener("click", () => {
+    socket.emit("chess:leave");
+    showLobby();
+  });
   resultBack?.addEventListener("click", showLobby);
   root.querySelectorAll(".chess-promotion-options button").forEach((button) => {
     button.addEventListener("click", () => {
@@ -49,17 +57,17 @@ export function initChess(socket) {
   });
 
   socket.on("chess:lobby", (data) => {
-    players.innerHTML = `<p>Joueurs (${data.joueurs.length}/2)</p>${data.joueurs.map((name) => `<div>${name}</div>`).join("") || "<div>Aucun joueur</div>"}`;
-    spectators.textContent = data.spectators?.length
-      ? `Spectateurs : ${data.spectators.join(", ")}`
-      : "";
-    join.style.display = data.estAuLobby ? "none" : "inline-block";
-    leave.style.display = data.estAuLobby ? "inline-block" : "none";
-    start.style.display = data.estAuLobby ? "inline-block" : "none";
-    start.disabled = !data.canStart;
-    start.textContent = data.canStart
-      ? "Démarrer la partie"
-      : `En attente (${data.joueurs.length}/2)`;
+    const entries = data.games || [];
+    games.innerHTML = entries.length
+      ? entries.map((entry) => `<div class="chess-game-row"><div><strong>${entry.gameStarted ? "Partie en cours" : "Table en attente"}</strong><p>${entry.joueurs.join(" vs ") || "En attente d'un joueur"}${entry.gameStarted ? ` · ${entry.spectators} spectateur${entry.spectators > 1 ? "s" : ""}` : ` · ${entry.joueurs.length}/2 joueurs`}</p></div>${entry.id === data.playerGameId ? "<span>Votre table</span>" : data.playerGameId && !entry.gameStarted ? "" : `<button data-game-id="${entry.id}" data-action="${entry.gameStarted ? "spectate" : "join"}">${entry.gameStarted ? "Regarder" : "Rejoindre"}</button>`}</div>`).join("")
+      : "<p>Aucune partie pour le moment. Créez-en une !</p>";
+    games.querySelectorAll("button[data-game-id]").forEach((button) => button.addEventListener("click", () => socket.emit(button.dataset.action === "spectate" ? "chess:spectate" : "chess:join", { gameId: button.dataset.gameId })));
+    const myGame = entries.find((entry) => entry.id === data.playerGameId);
+    create.style.display = data.playerGameId ? "none" : "inline-block";
+    leave.style.display = myGame && !myGame.gameStarted ? "inline-block" : "none";
+    start.style.display = myGame && !myGame.gameStarted ? "inline-block" : "none";
+    start.disabled = !myGame || myGame.joueurs.length !== 2;
+    start.textContent = myGame?.joueurs.length === 2 ? "Démarrer la partie" : `En attente (${myGame?.joueurs.length || 0}/2)`;
   });
 
   socket.on("chess:gameStart", update);
@@ -123,7 +131,9 @@ export function initChess(socket) {
     root.querySelector(".chess-clocks").style.display = "flex";
     status.style.display = "block";
     spec.style.display = nextState.estSpec ? "block" : "none";
-    status.textContent = nextState.winner
+    status.textContent = nextState.pausedBy
+      ? `Partie en pause : reconnexion de ${nextState.pausedBy} (15 s)`
+      : nextState.winner
       ? `${nextState.winner} a gagné`
       : nextState.draw
         ? "Match nul"
@@ -134,12 +144,17 @@ export function initChess(socket) {
     blackClock.textContent = formatClock(nextState.clocks?.b);
     whiteClockBox.classList.toggle(
       "active",
-      nextState.turn === "w" && !nextState.winner && !nextState.draw,
+      nextState.turn === "w" && !nextState.winner && !nextState.draw && !nextState.pausedBy,
     );
     blackClockBox.classList.toggle(
       "active",
-      nextState.turn === "b" && !nextState.winner && !nextState.draw,
+      nextState.turn === "b" && !nextState.winner && !nextState.draw && !nextState.pausedBy,
     );
+    renderCaptured(capturedWhite, nextState.captured?.w, "white");
+    renderCaptured(capturedBlack, nextState.captured?.b, "black");
+    lastMove.textContent = nextState.lastMove
+      ? `Dernier coup : ${nextState.lastMove.san} (${nextState.lastMove.from} → ${nextState.lastMove.to})`
+      : "Aucun coup joué";
 
     const isBlack = nextState.myColor === "b";
     const rowIndices = isBlack
@@ -157,6 +172,12 @@ export function initChess(socket) {
           const cell = document.createElement("button");
           cell.className = `chess-cell ${(rowIndex + colIndex) % 2 ? "dark" : "light"}`;
           cell.dataset.square = `${String.fromCharCode(97 + colIndex)}${8 - rowIndex}`;
+          if (cell.dataset.square === nextState.lastMove?.from) {
+            cell.classList.add("last-move-from");
+          }
+          if (cell.dataset.square === nextState.lastMove?.to) {
+            cell.classList.add("last-move-to");
+          }
           if (piece) {
             const sprite = document.createElement("span");
             sprite.className = `chess-piece ${piece.color === "b" ? "black" : "white"} piece-${piece.type}`;
@@ -213,6 +234,7 @@ export function initChess(socket) {
       !state ||
       state.estSpec ||
       !state.estMonTour ||
+      state.pausedBy ||
       state.winner ||
       state.draw
     )
@@ -283,5 +305,15 @@ export function initChess(socket) {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  function renderCaptured(container, pieces = [], color) {
+    container.replaceChildren();
+    pieces.forEach((type) => {
+      const piece = document.createElement("span");
+      piece.className = `chess-captured-piece chess-piece ${color} piece-${type}`;
+      piece.setAttribute("aria-label", type);
+      container.appendChild(piece);
+    });
   }
 }

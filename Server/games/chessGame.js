@@ -12,6 +12,9 @@ class ChessGame {
     this.clockMs = { w: this.initialTimeMs, b: this.initialTimeMs };
     this.lastTurnAt = null;
     this.clockTimer = null;
+    this.pausedBy = null;
+    this.pauseDeadline = null;
+    this.pauseTimer = null;
   }
 
   addPlayer(pseudo, socketId) {
@@ -88,6 +91,7 @@ class ChessGame {
   updateClock(now = Date.now()) {
     if (
       !this.gameStarted ||
+      this.pausedBy ||
       this.winner ||
       this.draw ||
       this.lastTurnAt === null
@@ -166,6 +170,16 @@ class ChessGame {
       (entry) => entry.color === this.chess.turn(),
     );
     const legalMoves = {};
+    const captured = { w: [], b: [] };
+    const history = this.chess.history({ verbose: true });
+    history.forEach((move) => {
+      if (!move.captured) return;
+      captured[move.color === "w" ? "b" : "w"].push(move.captured);
+    });
+    const pieceOrder = { p: 0, n: 1, b: 2, r: 3, q: 4 };
+    captured.w.sort((a, b) => pieceOrder[a] - pieceOrder[b]);
+    captured.w.reverse();
+    captured.b.sort((a, b) => pieceOrder[a] - pieceOrder[b]);
     for (const row of this.chess.board()) {
       for (const piece of row) {
         if (!piece || piece.color !== this.chess.turn()) continue;
@@ -196,7 +210,11 @@ class ChessGame {
       winner: this.winner,
       draw: this.draw,
       inCheck: this.chess.inCheck(),
+      pausedBy: this.pausedBy,
+      pauseDeadline: this.pauseDeadline,
       legalMoves,
+      captured,
+      lastMove: history.length ? history.at(-1) : null,
       clocks: this.getClockMs(),
     };
   }
