@@ -16,10 +16,13 @@ export function initChess(socket) {
   const spectators = root.querySelector(".chess-spectators");
   const games = root.querySelector(".chess-games");
   const create = root.querySelector(".chess-create");
+  const createTimer = root.querySelector("#chess-timer-select");
+  const createVsBot = root.querySelector("#chess-vs-bot-toggle");
   const join = root.querySelector(".chess-join");
   const leave = root.querySelector(".chess-leave");
   const start = root.querySelector(".chess-start");
   const spec = root.querySelector(".chess-spectator");
+  const quit = root.querySelector(".chess-quit");
   const backToLobby = root.querySelector(".chess-back-to-lobby");
   const resultScreen = root.querySelector(".chess-result");
   const resultMessage = root.querySelector(".chess-result-message");
@@ -32,8 +35,22 @@ export function initChess(socket) {
   let pendingPromotion = null;
 
   socket.emit("chess:getState");
-  create?.addEventListener("click", () => socket.emit("chess:create"));
+  create?.addEventListener("click", () => {
+    const timeMinutes = Number(createTimer?.value || 10);
+    const clamped = Math.min(
+      30,
+      Math.max(1, Number.isFinite(timeMinutes) ? timeMinutes : 10),
+    );
+    socket.emit("chess:create", {
+      timeMinutes: clamped,
+      vsBot: Boolean(createVsBot?.checked),
+    });
+  });
   leave?.addEventListener("click", () => socket.emit("chess:leave"));
+  quit?.addEventListener("click", () => {
+    socket.emit("chess:leave");
+    showLobby();
+  });
   start?.addEventListener("click", () => socket.emit("chess:start"));
   backToLobby?.addEventListener("click", () => {
     socket.emit("chess:leave");
@@ -59,15 +76,45 @@ export function initChess(socket) {
   socket.on("chess:lobby", (data) => {
     const entries = data.games || [];
     games.innerHTML = entries.length
-      ? entries.map((entry) => `<div class="chess-game-row"><div><strong>${entry.gameStarted ? "Partie en cours" : "Table en attente"}</strong><p>${entry.joueurs.join(" vs ") || "En attente d'un joueur"}${entry.gameStarted ? ` · ${entry.spectators} spectateur${entry.spectators > 1 ? "s" : ""}` : ` · ${entry.joueurs.length}/2 joueurs`}</p></div>${entry.id === data.playerGameId ? "<span>Votre table</span>" : data.playerGameId && !entry.gameStarted ? "" : `<button data-game-id="${entry.id}" data-action="${entry.gameStarted ? "spectate" : "join"}">${entry.gameStarted ? "Regarder" : "Rejoindre"}</button>`}</div>`).join("")
+      ? entries
+          .map(
+            (entry) =>
+              `<div class="chess-game-row"><div><strong>${entry.gameStarted ? "Partie en cours" : "Table en attente"}</strong><p>${entry.joueurs.join(" vs ") || "En attente d'un joueur"}${entry.gameStarted ? ` · ${entry.spectators} spectateur${entry.spectators > 1 ? "s" : ""}` : ` · ${entry.joueurs.length}/2 joueurs`}</p></div>${entry.id === data.playerGameId ? "<span>Votre table</span>" : data.playerGameId && !entry.gameStarted ? "" : `<button data-game-id="${entry.id}" data-action="${entry.gameStarted ? "spectate" : "join"}">${entry.gameStarted ? "Regarder" : "Rejoindre"}</button>`}</div>`,
+          )
+          .join("")
       : "<p>Aucune partie pour le moment. Créez-en une !</p>";
-    games.querySelectorAll("button[data-game-id]").forEach((button) => button.addEventListener("click", () => socket.emit(button.dataset.action === "spectate" ? "chess:spectate" : "chess:join", { gameId: button.dataset.gameId })));
+    games
+      .querySelectorAll("button[data-game-id]")
+      .forEach((button) =>
+        button.addEventListener("click", () =>
+          socket.emit(
+            button.dataset.action === "spectate"
+              ? "chess:spectate"
+              : "chess:join",
+            { gameId: button.dataset.gameId },
+          ),
+        ),
+      );
     const myGame = entries.find((entry) => entry.id === data.playerGameId);
     create.style.display = data.playerGameId ? "none" : "inline-block";
-    leave.style.display = myGame && !myGame.gameStarted ? "inline-block" : "none";
-    start.style.display = myGame && !myGame.gameStarted ? "inline-block" : "none";
-    start.disabled = !myGame || myGame.joueurs.length !== 2;
-    start.textContent = myGame?.joueurs.length === 2 ? "Démarrer la partie" : `En attente (${myGame?.joueurs.length || 0}/2)`;
+    leave.style.display =
+      myGame && !myGame.gameStarted ? "inline-block" : "none";
+    start.style.display =
+      myGame && !myGame.gameStarted ? "inline-block" : "none";
+    const readyPlayers = myGame?.vsBot
+      ? Math.max(2, myGame.joueurs.length)
+      : myGame?.joueurs.length || 0;
+    start.disabled =
+      !myGame || (myGame.vsBot ? readyPlayers < 2 : readyPlayers !== 2);
+    start.textContent = myGame
+      ? myGame.vsBot
+        ? readyPlayers >= 2
+          ? "Démarrer la partie"
+          : "En attente (1/2)"
+        : readyPlayers === 2
+          ? "Démarrer la partie"
+          : `En attente (${readyPlayers || 0}/2)`
+      : "En attente...";
   });
 
   socket.on("chess:gameStart", update);
@@ -128,27 +175,44 @@ export function initChess(socket) {
     lobby.style.display = "none";
     game.classList.add("active");
     resultScreen.hidden = true;
-    root.querySelector(".chess-clocks").style.display = "flex";
+    const isBotGame = Boolean(nextState.vsBot);
+    root.querySelector(".chess-clocks").style.display = isBotGame
+      ? "none"
+      : "flex";
+    quit.style.display =
+      isBotGame && !nextState.winner && !nextState.draw ? "block" : "none";
     status.style.display = "block";
     spec.style.display = nextState.estSpec ? "block" : "none";
     status.textContent = nextState.pausedBy
       ? `Partie en pause : reconnexion de ${nextState.pausedBy} (15 s)`
       : nextState.winner
-      ? `${nextState.winner} a gagné`
-      : nextState.draw
-        ? "Match nul"
-        : nextState.estMonTour
-          ? "À toi de jouer"
-          : `Tour de ${nextState.currentPlayer}`;
-    whiteClock.textContent = formatClock(nextState.clocks?.w);
-    blackClock.textContent = formatClock(nextState.clocks?.b);
+        ? `${nextState.winner} a gagné`
+        : nextState.draw
+          ? "Match nul"
+          : isBotGame
+            ? nextState.estSpec
+              ? "Homme contre machine."
+              : nextState.estMonTour
+                ? "À toi de jouer"
+                : "Le bot réfléchit..."
+            : nextState.estMonTour
+              ? "À toi de jouer"
+              : `Tour de ${nextState.currentPlayer}`;
+    whiteClock.textContent = isBotGame ? "∞" : formatClock(nextState.clocks?.w);
+    blackClock.textContent = isBotGame ? "∞" : formatClock(nextState.clocks?.b);
     whiteClockBox.classList.toggle(
       "active",
-      nextState.turn === "w" && !nextState.winner && !nextState.draw && !nextState.pausedBy,
+      nextState.turn === "w" &&
+        !nextState.winner &&
+        !nextState.draw &&
+        !nextState.pausedBy,
     );
     blackClockBox.classList.toggle(
       "active",
-      nextState.turn === "b" && !nextState.winner && !nextState.draw && !nextState.pausedBy,
+      nextState.turn === "b" &&
+        !nextState.winner &&
+        !nextState.draw &&
+        !nextState.pausedBy,
     );
     renderCaptured(capturedWhite, nextState.captured?.w, "white");
     renderCaptured(capturedBlack, nextState.captured?.b, "black");
@@ -290,9 +354,11 @@ export function initChess(socket) {
         to,
         options: new Set(promotionOptions),
       };
-      root.querySelectorAll(".chess-promotion-options button").forEach((button) => {
-        button.hidden = !pendingPromotion.options.has(button.dataset.piece);
-      });
+      root
+        .querySelectorAll(".chess-promotion-options button")
+        .forEach((button) => {
+          button.hidden = !pendingPromotion.options.has(button.dataset.piece);
+        });
       promotionDialog.hidden = false;
       return;
     }

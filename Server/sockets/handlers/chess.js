@@ -28,6 +28,8 @@ function registerChessHandlers({
       joueurs: game.joueurs.map((p) => p.pseudo),
       spectators: game.spectators.length,
       gameStarted: game.gameStarted,
+      vsBot: Boolean(game.vsBot),
+      timeMinutes: Math.round((game.initialTimeMs || 600000) / 60000),
     }));
   const broadcastLobby = () =>
     io.sockets.sockets.forEach((client) => {
@@ -121,14 +123,12 @@ function registerChessHandlers({
     }
     refreshIds(game);
     [...game.joueurs, ...game.spectators].forEach((entry) =>
-      io.sockets.sockets
-        .get(entry.socketId)
-        ?.emit("chess:gameEnd", {
-          winner,
-          draw,
-          reason,
-          gained: entry.pseudo === winner ? 175 : 0,
-        }),
+      io.sockets.sockets.get(entry.socketId)?.emit("chess:gameEnd", {
+        winner,
+        draw,
+        reason,
+        gained: entry.pseudo === winner ? 175 : 0,
+      }),
     );
     chessGames.delete(id);
     broadcastLobby();
@@ -140,12 +140,10 @@ function registerChessHandlers({
     clearTimeout(game.pauseTimer);
     refreshIds(game);
     [...game.joueurs, ...game.spectators].forEach((entry) =>
-      io.sockets.sockets
-        .get(entry.socketId)
-        ?.emit("chess:gameEnd", {
-          winner: "Partie annulée !",
-          reason: `${leavingPseudo} est parti`,
-        }),
+      io.sockets.sockets.get(entry.socketId)?.emit("chess:gameEnd", {
+        winner: "Partie annulée !",
+        reason: `${leavingPseudo} est parti`,
+      }),
     );
     chessGames.delete(id);
   };
@@ -153,6 +151,11 @@ function registerChessHandlers({
     const found = findUserGame();
     if (!found) return;
     const [id, game] = found;
+    if (game.vsBot) {
+      chessGames.delete(id);
+      selectedGameId = null;
+      return;
+    }
     if (game.getPlayer(pseudo) && game.gameStarted) cancelGame(id, pseudo);
     else {
       game.removePlayer(pseudo);
@@ -176,7 +179,7 @@ function registerChessHandlers({
         gameId: selectedGameId,
       });
   });
-  socket.on("chess:create", () => {
+  socket.on("chess:create", ({ timeMinutes = 10, vsBot = false } = {}) => {
     const found = findUserGame();
     if (found?.[1].getPlayer(pseudo))
       return socket.emit(
@@ -185,8 +188,12 @@ function registerChessHandlers({
       );
     leaveCurrent();
     const id = `chess-${Date.now()}-${socket.id}`;
-    const game = new ChessGame();
+    const game = new ChessGame({
+      timeMinutes: Number(timeMinutes),
+      vsBot: Boolean(vsBot),
+    });
     game.addPlayer(pseudo, socket.id);
+    if (game.vsBot) game.addBot();
     chessGames.set(id, game);
     selectedGameId = id;
     broadcastLobby();
@@ -195,6 +202,11 @@ function registerChessHandlers({
     const game = getGame(id);
     if (!game || game.gameStarted)
       return socket.emit("chess:error", "Cette table n'est plus disponible");
+    if (game.vsBot)
+      return socket.emit(
+        "chess:error",
+        "Cette table est en mode solo contre l'ordi",
+      );
     const found = findUserGame();
     if (found?.[1].getPlayer(pseudo) && found[0] !== id)
       return socket.emit(
@@ -228,18 +240,18 @@ function registerChessHandlers({
     if (!game?.getPlayer(pseudo) || !game.startGame())
       return socket.emit(
         "chess:error",
-        "Impossible de démarrer (2 joueurs requis)",
+        game?.vsBot
+          ? "Impossible de démarrer (1 joueur requis en solo)"
+          : "Impossible de démarrer (2 joueurs requis)",
       );
     const id = selectedGameId;
     startGameClock(id, game);
     refreshIds(game);
     game.joueurs.forEach((player) =>
-      io.sockets.sockets
-        .get(player.socketId)
-        ?.emit("chess:gameStart", {
-          ...game.getState(player.pseudo),
-          gameId: id,
-        }),
+      io.sockets.sockets.get(player.socketId)?.emit("chess:gameStart", {
+        ...game.getState(player.pseudo),
+        gameId: id,
+      }),
     );
     broadcastLobby();
   });
@@ -266,7 +278,22 @@ function registerChessHandlers({
         winner: result.winner,
         draw: result.draw,
       });
+
     broadcastGame(selectedGameId);
+
+    if (game.vsBot && game.chess.turn() === "b") {
+      setTimeout(() => {
+        const currentGame = getGame(selectedGameId);
+        if (!currentGame || !currentGame.gameStarted) return;
+        const botResult = currentGame.playBotMove();
+        if (botResult?.winner || botResult?.draw)
+          return finishGame(selectedGameId, {
+            winner: botResult.winner,
+            draw: botResult.draw,
+          });
+        if (botResult?.success) broadcastGame(selectedGameId);
+      }, 220);
+    }
   });
   return {
     onDisconnect() {

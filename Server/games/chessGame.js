@@ -1,8 +1,10 @@
 const { Chess } = require("chess.js");
 
 class ChessGame {
-  constructor() {
-    this.initialTimeMs = 10 * 60 * 1000;
+  constructor({ timeMinutes = 10, vsBot = false } = {}) {
+    this.initialTimeMs = this.clampTimeMs(timeMinutes);
+    this.vsBot = Boolean(vsBot);
+    this.botPlayer = null;
     this.joueurs = [];
     this.spectators = [];
     this.chess = new Chess();
@@ -17,8 +19,28 @@ class ChessGame {
     this.pauseTimer = null;
   }
 
+  clampTimeMs(timeMinutes) {
+    const minutes = Number(timeMinutes);
+    const safeMinutes = Number.isFinite(minutes) ? minutes : 10;
+    return Math.min(30, Math.max(1, safeMinutes)) * 60 * 1000;
+  }
+
+  addBot() {
+    if (!this.vsBot || this.botPlayer) return;
+    this.botPlayer = {
+      pseudo: "Bot",
+      socketId: null,
+      color: "b",
+      isBot: true,
+    };
+    this.joueurs.push(this.botPlayer);
+  }
+
   addPlayer(pseudo, socketId) {
     if (this.gameStarted) return { success: false, reason: "gameStarted" };
+    if (this.vsBot && this.joueurs.some((player) => player.isBot)) {
+      return { success: false, reason: "botMode" };
+    }
     if (this.joueurs.length >= 2) return { success: false, reason: "full" };
     if (this.joueurs.some((player) => player.pseudo === pseudo)) {
       return { success: false, reason: "alreadyIn" };
@@ -60,7 +82,8 @@ class ChessGame {
   }
 
   canStart() {
-    return this.joueurs.length === 2 && !this.gameStarted;
+    const minimumPlayers = this.vsBot ? 1 : 2;
+    return this.joueurs.length >= minimumPlayers && !this.gameStarted;
   }
 
   startGame() {
@@ -75,6 +98,7 @@ class ChessGame {
   }
 
   startClock(onTimeout, onTick) {
+    if (this.vsBot) return;
     this.stopClock();
     this.clockTimer = setInterval(() => {
       const expiredColor = this.updateClock();
@@ -89,6 +113,7 @@ class ChessGame {
   }
 
   updateClock(now = Date.now()) {
+    if (this.vsBot) return null;
     if (
       !this.gameStarted ||
       this.pausedBy ||
@@ -114,6 +139,176 @@ class ChessGame {
 
   getPlayer(pseudo) {
     return this.joueurs.find((player) => player.pseudo === pseudo);
+  }
+
+  evaluatePosition(chess) {
+    const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+    const centerSquares = new Set([
+      "d4",
+      "d5",
+      "e4",
+      "e5",
+      "c4",
+      "c5",
+      "f4",
+      "f5",
+    ]);
+
+    let score = 0;
+    const board = chess.board();
+
+    board.forEach((row, rowIndex) => {
+      row.forEach((piece, colIndex) => {
+        if (!piece) return;
+
+        const square = `${String.fromCharCode(97 + colIndex)}${8 - rowIndex}`;
+        const baseScore = pieceValues[piece.type] || 0;
+        const colorMultiplier = piece.color === "b" ? 1 : -1;
+        const centralityBonus = centerSquares.has(square) ? 15 : 0;
+        const mobilityBonus = piece.color === "b" ? 3 : -3;
+
+        score +=
+          (baseScore + centralityBonus + mobilityBonus) * colorMultiplier;
+
+        if (piece.type === "p") {
+          const pawnProgress = piece.color === "w" ? 7 - rowIndex : rowIndex;
+          score += piece.color === "b" ? pawnProgress * 2 : -pawnProgress * 2;
+        }
+      });
+    });
+
+    if (chess.isCheckmate()) {
+      return chess.turn() === "w" ? -100000 : 100000;
+    }
+    if (chess.isDraw()) {
+      return 0;
+    }
+
+    return score;
+  }
+
+  minimax(chess, depth, alpha, beta, maximizingBlack) {
+    if (depth === 0 || chess.isGameOver()) {
+      return this.evaluatePosition(chess);
+    }
+
+    const moves = chess.moves({ verbose: true });
+    if (!moves.length) {
+      if (chess.isCheckmate()) {
+        return chess.turn() === "w" ? -100000 : 100000;
+      }
+      return 0;
+    }
+
+    if (maximizingBlack) {
+      let maxEval = -Infinity;
+      for (const move of moves) {
+        const next = new Chess(chess.fen());
+        next.move({
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion || "q",
+        });
+        const value = this.minimax(next, depth - 1, alpha, beta, false);
+        maxEval = Math.max(maxEval, value);
+        alpha = Math.max(alpha, value);
+        if (beta <= alpha) break;
+      }
+      return maxEval;
+    }
+
+    let minEval = Infinity;
+    for (const move of moves) {
+      const next = new Chess(chess.fen());
+      next.move({
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion || "q",
+      });
+      const value = this.minimax(next, depth - 1, alpha, beta, true);
+      minEval = Math.min(minEval, value);
+      beta = Math.min(beta, value);
+      if (beta <= alpha) break;
+    }
+    return minEval;
+  }
+
+  chooseBotMove() {
+    const moves = this.chess.moves({ verbose: true });
+    if (!moves.length) return null;
+
+    const orderedMoves = [...moves].sort((a, b) => {
+      const scoreA =
+        (a.captured ? 10 : 0) +
+        (a.promotion ? 8 : 0) +
+        (a.san.includes("+") || a.san.includes("#") ? 5 : 0);
+      const scoreB =
+        (b.captured ? 10 : 0) +
+        (b.promotion ? 8 : 0) +
+        (b.san.includes("+") || b.san.includes("#") ? 5 : 0);
+      return scoreB - scoreA;
+    });
+
+    let bestMove = orderedMoves[0];
+    let bestScore = -Infinity;
+    const depth = this.chess.board().flat().filter(Boolean).length > 12 ? 2 : 3;
+
+    for (const move of orderedMoves) {
+      const next = new Chess(this.chess.fen());
+      next.move({
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion || "q",
+      });
+
+      const evaluation = this.minimax(
+        next,
+        depth - 1,
+        -Infinity,
+        Infinity,
+        false,
+      );
+      if (evaluation > bestScore) {
+        bestScore = evaluation;
+        bestMove = move;
+      }
+    }
+
+    return {
+      from: bestMove.from,
+      to: bestMove.to,
+      promotion: bestMove.promotion || "q",
+    };
+  }
+
+  playBotMove() {
+    if (!this.vsBot || !this.gameStarted || this.winner || this.draw)
+      return { success: false };
+    if (this.chess.turn() !== "b") return { success: false };
+
+    const move = this.chooseBotMove();
+    if (!move) {
+      this.draw = true;
+      return { success: true, draw: true };
+    }
+
+    const played = this.chess.move(move);
+
+    if (this.chess.isGameOver()) {
+      if (this.chess.isCheckmate()) {
+        this.winner = "Bot";
+      } else {
+        this.draw = true;
+      }
+    }
+
+    this.lastTurnAt = Date.now();
+    return {
+      success: true,
+      move: played,
+      winner: this.winner,
+      draw: this.draw,
+    };
   }
 
   playMove(player, move) {
@@ -203,6 +398,7 @@ class ChessGame {
       board: this.chess.board(),
       turn: this.chess.turn(),
       fen: this.chess.fen(),
+      vsBot: this.vsBot,
       joueurs: this.joueurs.map((entry) => ({
         pseudo: entry.pseudo,
         color: entry.color,

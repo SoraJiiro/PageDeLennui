@@ -100,12 +100,43 @@
   margin-left: 0.5rem;
   padding: 0.4rem 0.6rem;
 }
+.chess-quit {
+  display: block;
+  width: 100%;
+  margin: 0.8rem auto 0;
+  padding: 0.7rem 1rem;
+}
 .chess-lobby-title,
 .chess-game-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+.chess-create-settings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.8rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--primary-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+.chess-create-settings label {
+  font-size: 0.85rem;
+}
+.chess-create-settings select {
+  padding: 0.35rem 0.5rem;
+  min-width: 90px;
+  background: var(--bg-color);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+.chess-vs-bot-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 .chess-lobby-title h3 {
   margin: 0;
@@ -182,13 +213,13 @@
 
 .chess-captured-black {
   display: flex;
-  border: 2px solid #418333;
+  border: 2px solid var(--chess-cell-dark);
 }
 
 .chess-captured-white {
   display: flex;
   justify-content: end;
-  border: 2px solid #418333;
+  border: 2px solid var(--chess-cell-dark);
 }
 
 .chess-captured-piece {

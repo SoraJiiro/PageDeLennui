@@ -1,9 +1,16 @@
-// Appliquer la couleur sauvegardée immédiatement pour éviter le FOUC
+// Appliquer les couleurs sauvegardées immédiatement pour éviter le FOUC
 (function () {
   const savedColor = localStorage.getItem("uiColor");
   if (savedColor) {
     document.documentElement.style.setProperty("--primary-color", savedColor);
   }
+
+  const savedChessColor =
+    localStorage.getItem("chessSecondaryColor") || "#00a500";
+  document.documentElement.style.setProperty(
+    "--chess-cell-dark",
+    savedChessColor,
+  );
 })();
 
 // Load simple div-based cursor once for pages using uiColor.js.
@@ -33,6 +40,7 @@
 // Exposer la fonction init pour main.js et les autres pages
 window.initUiColor = (socket) => {
   const colorPicker = document.getElementById("mainColorPicker");
+  const chessColorPicker = document.getElementById("chessSecondaryColorPicker");
 
   // Écouter les mises à jour de couleur du serveur si le socket est fourni
   if (socket) {
@@ -56,6 +64,28 @@ window.initUiColor = (socket) => {
       if (socket) {
         socket.emit("ui:saveColor", { color });
       }
+    });
+  }
+
+  if (chessColorPicker) {
+    const currentChessColor =
+      localStorage.getItem("chessSecondaryColor") || "#00a500";
+    chessColorPicker.value = currentChessColor;
+    document.documentElement.style.setProperty(
+      "--chess-cell-dark",
+      currentChessColor,
+    );
+
+    chessColorPicker.addEventListener("input", (e) => {
+      const color = e.target.value;
+      document.documentElement.style.setProperty("--chess-cell-dark", color);
+      localStorage.setItem("chessSecondaryColor", color);
+    });
+
+    chessColorPicker.addEventListener("change", (e) => {
+      const color = e.target.value;
+      document.documentElement.style.setProperty("--chess-cell-dark", color);
+      localStorage.setItem("chessSecondaryColor", color);
     });
   }
 };
@@ -85,9 +115,13 @@ window.toggleRainbowMode = () => {
 // Initialiser la logique UI locale (aperçu)
 document.addEventListener("DOMContentLoaded", () => {
   const colorPicker = document.getElementById("mainColorPicker");
+  const chessColorPicker = document.getElementById("chessSecondaryColorPicker");
 
   // Couleur par défaut si pas encore chargée
   if (colorPicker && !colorPicker.value) colorPicker.value = "#00ff00";
+  if (chessColorPicker && !chessColorPicker.value)
+    chessColorPicker.value =
+      localStorage.getItem("chessSecondaryColor") || "#00a500";
 
   if (colorPicker) {
     // Mise à jour visuelle fluide pendant la sélection (aperçu)
@@ -97,6 +131,14 @@ document.addEventListener("DOMContentLoaded", () => {
       window.dispatchEvent(
         new CustomEvent("uiColor:changed", { detail: { color } }),
       );
+    });
+  }
+
+  if (chessColorPicker) {
+    chessColorPicker.addEventListener("input", (e) => {
+      const color = e.target.value;
+      document.documentElement.style.setProperty("--chess-cell-dark", color);
+      localStorage.setItem("chessSecondaryColor", color);
     });
   }
 });

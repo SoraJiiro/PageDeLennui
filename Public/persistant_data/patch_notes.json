@@ -2,6 +2,24 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.2.3",
+      "date": "17/09/2026",
+      "sections": [
+        {
+          "title": "Améliorations ",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Echecs :",
+              "text": "Possibilité de jouer contre un bot acquise et modification de la couleur secondaire de l'échequier possible via la Sidebar."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.2.2",
       "date": "17/09/2026",
       "sections": [

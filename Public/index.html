@@ -168,6 +168,13 @@
                         </div>
 
                         <div class="control-item">
+                            <label for="chessSecondaryColorPicker">2e couleur
+                                échecs</label>
+                            <input type="color" id="chessSecondaryColorPicker"
+                                class="ui-color-picker">
+                        </div>
+
+                        <div class="control-item">
                             <label for="toggleCustomCursor"
                                 style="font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
                                 <input type="checkbox" id="toggleCustomCursor"
@@ -237,7 +244,7 @@
             </div>
             <div class="sidebar-footer">
                 <button class="log-off-btn"
-                    onclick="localStorage.removeItem('uiColor'); window.location.replace('/login');">
+                    onclick="localStorage.removeItem('uiColor'); localStorage.removeItem('chessSecondaryColor'); window.location.replace('/login');">
                     <i class="fa-solid fa-power-off"></i> Déconnexion
                 </button>
             </div>
@@ -1704,6 +1711,35 @@
                     <div class="chess-lobby-title"><h3>Parties
                             d'Échecs</h3><button class="chess-create">Nouvelle
                             partie</button></div>
+                    <div class="chess-create-settings">
+                        <label for="chess-timer-select">Temps</label>
+                        <select id="chess-timer-select"
+                            aria-label="Choisir le temps de partie">
+                            <option value="1">1 min</option>
+                            <option value="2">2 min</option>
+                            <option value="3">3 min</option>
+                            <option value="4">4 min</option>
+                            <option value="5">5 min</option>
+                            <option value="6">6 min</option>
+                            <option value="7">7 min</option>
+                            <option value="8">8 min</option>
+                            <option value="9">9 min</option>
+                            <option value="10" selected>10 min</option>
+                            <option value="11">11 min</option>
+                            <option value="12">12 min</option>
+                            <option value="13">13 min</option>
+                            <option value="14">14 min</option>
+                            <option value="15">15 min</option>
+                            <option value="20">20 min</option>
+                            <option value="25">25 min</option>
+                            <option value="30">30 min</option>
+                        </select>
+                        <label class="chess-vs-bot-toggle"
+                            for="chess-vs-bot-toggle">
+                            <input id="chess-vs-bot-toggle" type="checkbox" />
+                            Solo vs bot
+                        </label>
+                    </div>
                     <p class="chess-lobby-help">Rejoignez une table en attente
                         ou regardez une partie en cours.</p>
                     <div class="chess-games"></div>
@@ -1729,6 +1765,8 @@
                     <div class="chess-spectator" style="display:none">Mode
                         spectateur <button class="chess-back-to-lobby">Retour au
                             lobby</button></div>
+                    <button class="chess-quit" type="button"
+                        style="display:none">Quitter</button>
                     <div class="chess-promotion" hidden>
                         <p>Promouvoir le pion en :</p>
                         <div class="chess-promotion-options">
