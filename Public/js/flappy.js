@@ -318,7 +318,10 @@ export function initFlappy(socket) {
       const cssH = Math.round(ui.canvas.height / dpr);
       if (!cssW || !cssH) return;
 
-      ui.ctx.fillStyle = "#000";
+      ui.ctx.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--secondary-color")
+          .trim() || "#000000";
       ui.ctx.fillRect(0, 0, cssW, cssH);
 
       ui.ctx.fillStyle = uiColor;
@@ -415,7 +418,10 @@ export function initFlappy(socket) {
       const dpr = getRenderRatio();
       const cssW = Math.round(ui.canvas.width / dpr);
       const cssH = Math.round(ui.canvas.height / dpr);
-      ui.ctx.fillStyle = "#000";
+      ui.ctx.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--secondary-color")
+          .trim() || "#000000";
       ui.ctx.fillRect(0, 0, cssW, cssH);
     } catch {}
   }
@@ -496,7 +502,10 @@ export function initFlappy(socket) {
     }
 
     ui.ctx.clearRect(0, 0, cssW, cssH);
-    ui.ctx.fillStyle = "#000";
+    ui.ctx.fillStyle =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--secondary-color")
+        .trim() || "#000000";
     ui.ctx.fillRect(0, 0, cssW, cssH);
 
     birdVel += gravity;

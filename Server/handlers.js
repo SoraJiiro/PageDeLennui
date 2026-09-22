@@ -795,6 +795,7 @@ function initSocketHandlers(io, socket, gameState) {
   // Joindre la room admin si Admin ou moderateurs autorises
   if (
     pseudo === "Admin" ||
+    pseudo === "Admin2" ||
     pseudo === "Moderateur1" ||
     pseudo === "Moderateur2"
   ) {
@@ -1007,6 +1008,15 @@ function initSocketHandlers(io, socket, gameState) {
       : null;
   if (savedUiColor) {
     socket.emit("ui:color", { color: savedUiColor });
+  }
+
+  const savedUiSecondaryColor =
+    FileService.data.uiSecondaryColors &&
+    FileService.data.uiSecondaryColors[pseudo]
+      ? FileService.data.uiSecondaryColors[pseudo]
+      : null;
+  if (savedUiSecondaryColor) {
+    socket.emit("ui:secondaryColor", { color: savedUiSecondaryColor });
   }
 
   // --- Socket handler modules (extraits de ce fichier) ---

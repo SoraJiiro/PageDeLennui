@@ -40,6 +40,12 @@ function setupRoutes(
   app.use("/api/profile", requireAuth, profileRoutes);
 
   // Shop catalog (auth)
+  app.get("/api/ui-config", (_, res) => {
+    res.json({
+      secondaryUiDisabled: Boolean(config.SECONDARY_UI_KILLSWITCH),
+    });
+  });
+
   app.get("/api/shop/catalog", requireAuth, (req, res) => {
     const items = listShopItems();
     res.json({ items });
@@ -138,7 +144,7 @@ function setupRoutes(
 
   // Admin
   app.get("/admin", requireAuth, (req, res) => {
-    const allowed = new Set(["Admin", "Moderateur1", "Moderateur2"]);
+    const allowed = new Set(["Admin", "Admin2", "Moderateur1", "Moderateur2"]);
     if (!allowed.has(req.session.user.pseudo)) {
       return res.redirect("/");
     }
@@ -150,6 +156,15 @@ function setupRoutes(
       return res.redirect("/admin?view=mod");
     }
     res.sendFile(path.join(config.PUBLIC, "index_admin.html"));
+  });
+
+  // Panel admin 2 (acces restreint)
+  app.get("/admin2", requireAuth, (req, res) => {
+    const allowedAdmins = new Set(["Admin", "Admin2"]);
+    if (!allowedAdmins.has(req.session.user.pseudo)) {
+      return res.redirect("/");
+    }
+    return res.redirect("/admin");
   });
 
   // Panel moderateur (acces restreint)
@@ -172,7 +187,7 @@ function setupRoutes(
 
   // Page des logs - réservée à l'Admin et au Moderateur
   app.get("/admin/logs", requireAuth, (req, res) => {
-    const allowed = new Set(["Admin", "Moderateur1", "Moderateur2"]);
+    const allowed = new Set(["Admin", "Admin2", "Moderateur1", "Moderateur2"]);
     if (!allowed.has(req.session.user.pseudo)) {
       return res.redirect("/");
     }

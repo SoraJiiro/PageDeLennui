@@ -205,7 +205,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       return res.status(403).json({ message: "Accès refusé" });
     }
 
-    if (pseudo === "Admin") {
+    if (pseudo === "Admin" || pseudo === "Admin2") {
       return next();
     }
 

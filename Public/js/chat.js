@@ -894,9 +894,12 @@ export function initChat(socket) {
       }
 
       // Afficher les boutons d'action pour les modérateurs
-      const isModerator = ["Admin", "Moderateur1", "Moderateur2"].includes(
-        myPseudo,
-      );
+      const isModerator = [
+        "Admin",
+        "Admin2",
+        "Moderateur1",
+        "Moderateur2",
+      ].includes(myPseudo);
       if (isModerator && id) {
         const btn = document.createElement("button");
         btn.className = "msg-delete-btn";

@@ -65,7 +65,10 @@ class SnakeGame {
       this.resize();
 
       const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
-      this.ctx.fillStyle = "#000";
+      this.ctx.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--secondary-color")
+          .trim() || "#000000";
       this.ctx.fillRect(0, 0, cssSize, cssSize);
 
       // petite grille pour éviter l'écran vide
@@ -797,7 +800,10 @@ class SnakeGame {
     const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
 
     // Arrière-plan
-    this.ctx.fillStyle = "#000";
+    this.ctx.fillStyle =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--secondary-color")
+        .trim() || "#000000";
     this.ctx.fillRect(0, 0, cssSize, cssSize);
 
     // Grille
@@ -992,7 +998,10 @@ class SnakeGame {
 
   clearToBlack() {
     const cssSize = this.cellSize * CONSTANTS.GRID_SIZE;
-    this.ctx.fillStyle = "#000";
+    this.ctx.fillStyle =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--secondary-color")
+        .trim() || "#000000";
     this.ctx.fillRect(0, 0, cssSize, cssSize);
   }
 

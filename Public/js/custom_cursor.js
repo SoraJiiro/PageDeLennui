@@ -27,8 +27,16 @@
     return value || "#00ff00";
   }
 
+  function getSecondaryCursorColor() {
+    const root = document.documentElement;
+    const isLight =
+      getComputedStyle(root).getPropertyValue("--secondary-is-light").trim() ===
+      "1";
+    return isLight ? "#000000" : getPrimaryColor();
+  }
+
   function applyColor(dot) {
-    const color = getPrimaryColor();
+    const color = getSecondaryCursorColor();
     dot.style.setProperty("--pde-cursor-color", color);
     dot.style.backgroundColor = color;
   }

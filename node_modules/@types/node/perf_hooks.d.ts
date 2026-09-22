@@ -1,34 +1,3 @@
-/**
- * This module provides an implementation of a subset of the W3C [Web Performance APIs](https://w3c.github.io/perf-timing-primer/) as well as additional APIs for
- * Node.js-specific performance measurements.
- *
- * Node.js supports the following [Web Performance APIs](https://w3c.github.io/perf-timing-primer/):
- *
- * * [High Resolution Time](https://www.w3.org/TR/hr-time-2)
- * * [Performance Timeline](https://w3c.github.io/performance-timeline/)
- * * [User Timing](https://www.w3.org/TR/user-timing/)
- * * [Resource Timing](https://www.w3.org/TR/resource-timing-2/)
- *
- * ```js
- * import { PerformanceObserver, performance } from 'node:perf_hooks';
- *
- * const obs = new PerformanceObserver((items) => {
- *   console.log(items.getEntries()[0].duration);
- *   performance.clearMarks();
- * });
- * obs.observe({ type: 'measure' });
- * performance.measure('Start to Now');
- *
- * performance.mark('A');
- * doSomeLongRunningProcess(() => {
- *   performance.measure('A to Now', 'A');
- *
- *   performance.mark('B');
- *   performance.measure('A to B', 'A', 'B');
- * });
- * ```
- * @see [source](https://github.com/nodejs/node/blob/v25.x/lib/perf_hooks.js)
- */
 declare module "node:perf_hooks" {
     import { InternalEventTargetEventProperties } from "node:events";
     // #region web types
@@ -42,6 +11,7 @@ declare module "node:perf_hooks" {
         | "measure" // available on the Web
         | "net" // Node.js only
         | "node" // Node.js only
+        | "quic" // Node.js only
         | "resource"; // available on the Web
     interface ConnectionTimingInfo {
         domainLookupStartTime: number;
@@ -83,9 +53,6 @@ declare module "node:perf_hooks" {
         entryTypes?: EntryType[];
         type?: EntryType;
     }
-    // TODO: remove in next major
-    /** @deprecated Use `TimerifyOptions` instead. */
-    interface PerformanceTimerifyOptions extends TimerifyOptions {}
     interface PerformanceEventMap {
         "resourcetimingbufferfull": Event;
     }
@@ -248,7 +215,7 @@ declare module "node:perf_hooks" {
          * @since v16.0.0
          */
         readonly detail: any;
-        readonly entryType: "dns" | "function" | "gc" | "http2" | "http" | "net" | "node";
+        readonly entryType: "dns" | "function" | "gc" | "http2" | "http" | "net" | "node" | "quic";
     }
     interface UVMetrics {
         /**
@@ -334,6 +301,7 @@ declare module "node:perf_hooks" {
     namespace constants {
         const NODE_PERFORMANCE_GC_MAJOR: number;
         const NODE_PERFORMANCE_GC_MINOR: number;
+        const NODE_PERFORMANCE_GC_MINOR_MARK_SWEEP: number;
         const NODE_PERFORMANCE_GC_INCREMENTAL: number;
         const NODE_PERFORMANCE_GC_WEAKCB: number;
         const NODE_PERFORMANCE_GC_FLAGS_NO: number;
@@ -346,9 +314,14 @@ declare module "node:perf_hooks" {
     }
     interface EventLoopMonitorOptions {
         /**
-         * The sampling rate in milliseconds.
-         * Must be greater than zero.
-         * @default 10
+         * When `true`, samples are taken once per
+         * event loop iteration. **Default:** `false`.
+         */
+        samplePerIteration?: boolean | undefined;
+        /**
+         * The sampling rate in milliseconds for interval-based
+         * sampling. Must be greater than zero. This option is ignored when
+         * `samplePerIteration` is `true`. **Default:** `10`.
          */
         resolution?: number | undefined;
     }
@@ -432,21 +405,25 @@ declare module "node:perf_hooks" {
          */
         readonly stddev: number;
     }
-    interface IntervalHistogram extends Histogram {
+    /**
+     * A `Histogram` that records event loop delay, returned by
+     * `perf_hooks.monitorEventLoopDelay()`.
+     */
+    interface ELDHistogram extends Histogram {
         /**
-         * Enables the update interval timer. Returns `true` if the timer was
-         * started, `false` if it was already started.
-         * @since v11.10.0
-         */
-        enable(): boolean;
-        /**
-         * Disables the update interval timer. Returns `true` if the timer was
+         * Disables event loop delay sampling. Returns `true` if sampling was
          * stopped, `false` if it was already stopped.
          * @since v11.10.0
          */
         disable(): boolean;
         /**
-         * Disables the update interval timer when the histogram is disposed.
+         * Enables event loop delay sampling. Returns `true` if sampling was
+         * started, `false` if it was already started.
+         * @since v11.10.0
+         */
+        enable(): boolean;
+        /**
+         * Disables event loop delay sampling when the histogram is disposed.
          *
          * ```js
          * const { monitorEventLoopDelay } = require('node:perf_hooks');
@@ -490,7 +467,7 @@ declare module "node:perf_hooks" {
      * Event Loop Utilization (ELU).
      *
      * If bootstrapping has not yet finished on the main thread the properties have
-     * the value of `0`. The ELU is immediately available on [Worker threads](https://nodejs.org/docs/latest-v25.x/api/worker_threads.html#worker-threads) since
+     * the value of `0`. The ELU is immediately available on [Worker threads](https://nodejs.org/docs/latest-v26.x/api/worker_threads.html#worker-threads) since
      * bootstrap happens within the event loop.
      *
      * Both `utilization1` and `utilization2` are optional parameters.
@@ -541,14 +518,16 @@ declare module "node:perf_hooks" {
     /**
      * _This property is an extension by Node.js. It is not available in Web browsers._
      *
-     * Creates an `IntervalHistogram` object that samples and reports the event loop
-     * delay over time. The delays will be reported in nanoseconds.
+     * Creates a histogram object that samples and reports the event loop delay over
+     * time. The delays will be reported in nanoseconds.
      *
-     * Using a timer to detect approximate event loop delay works because the
-     * execution of timers is tied specifically to the lifecycle of the libuv
-     * event loop. That is, a delay in the loop will cause a delay in the execution
-     * of the timer, and those delays are specifically what this API is intended to
-     * detect.
+     * By default, the histogram is updated by a timer using the configured
+     * `resolution`. When `samplePerIteration` is `true`, samples are taken once per
+     * event loop iteration using `uv_prepare_t` and `uv_check_t` hooks. In that mode,
+     * the histogram does not keep the loop alive or force additional iterations when
+     * the application is idle.
+     * The two sampling modes produce significantly different results and should not
+     * be compared directly.
      *
      * ```js
      * import { monitorEventLoopDelay } from 'node:perf_hooks';
@@ -566,7 +545,7 @@ declare module "node:perf_hooks" {
      * ```
      * @since v11.10.0
      */
-    function monitorEventLoopDelay(options?: EventLoopMonitorOptions): IntervalHistogram;
+    function monitorEventLoopDelay(options?: EventLoopMonitorOptions): ELDHistogram;
     interface TimerifyOptions {
         /**
          * A histogram object created using
@@ -632,11 +611,6 @@ declare module "node:perf_hooks" {
      * @since v15.9.0, v14.18.0
      */
     function createHistogram(options?: CreateHistogramOptions): RecordableHistogram;
-    // TODO: remove these in a future major
-    /** @deprecated Use the canonical `PerformanceMarkOptions` instead. */
-    interface MarkOptions extends PerformanceMarkOptions {}
-    /** @deprecated Use the canonical `PerformanceMeasureOptions` instead. */
-    interface MeasureOptions extends PerformanceMeasureOptions {}
 }
 declare module "perf_hooks" {
     export * from "node:perf_hooks";

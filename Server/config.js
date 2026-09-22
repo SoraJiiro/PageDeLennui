@@ -42,6 +42,10 @@ module.exports = {
   // Logs des connexions sockets (LOG_SOCKET_EVENTS=true pour activer)
   LOG_SOCKET_EVENTS: (process.env.LOG_SOCKET_EVENTS || "false") === "true",
 
+  // Killswitch: force la couleur secondaire a revenir au noir par defaut
+  SECONDARY_UI_KILLSWITCH:
+    (process.env.SECONDARY_UI_KILLSWITCH || "false") === "true",
+
   // Charger la blacklist selon la config (R, K ou S)
   loadBlacklist(config) {
     // Simplifié : ne garder que la liste alwaysBlocked (fusionnée avec les IP forcées).

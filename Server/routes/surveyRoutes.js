@@ -23,7 +23,7 @@ function saveSurveys(surveys) {
 
 module.exports = function (io) {
   const router = express.Router();
-  const staff = new Set(["Admin", "Moderateur1", "Moderateur2"]);
+  const staff = new Set(["Admin", "Admin2", "Moderateur1", "Moderateur2"]);
 
   // Middleware pour vérifier si l'utilisateur est connecté
   router.use((req, res, next) => {

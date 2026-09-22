@@ -209,7 +209,7 @@
   border-radius: 10px 10px 0 10px;
   min-width: 100%;
   animation: slideIn 0.2s ease-out;
-  color: #fff;
+  color: var(--chat-text-color, #fff);
 }
 
 .msg.dm-in {

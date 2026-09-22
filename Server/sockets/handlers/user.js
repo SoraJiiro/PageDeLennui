@@ -57,6 +57,15 @@ function registerUserHandlers({
     FileService.save("uis", FileService.data.uis);
   });
 
+  socket.on("ui:saveSecondaryColor", ({ color }) => {
+    if (!color || typeof color !== "string") return;
+    if (!FileService.data.uiSecondaryColors) {
+      FileService.data.uiSecondaryColors = {};
+    }
+    FileService.data.uiSecondaryColors[pseudo] = color;
+    FileService.save("uiSecondaryColors", FileService.data.uiSecondaryColors);
+  });
+
   socket.on("user:setTagColor", ({ color }) => {
     if (!color || typeof color !== "string") return;
 

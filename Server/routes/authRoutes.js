@@ -275,6 +275,16 @@ router.get("/session", (req, res) => {
 });
 
 router.post("/logout", (req, res) => {
+  if (req.session) {
+    delete req.session.user;
+    delete req.session.modo;
+    delete req.session.admin;
+    delete req.session.adminPanelHidden;
+    req.session.user = null;
+    req.session.modo = null;
+    req.session.admin = null;
+  }
+
   req.session.destroy(() => {
     res.json({ message: "Déconnecté." });
   });

@@ -64,7 +64,10 @@ export function initRoulette(socket) {
 
     ctx.beginPath();
     ctx.arc(cx, cy, 34, 0, TWO_PI);
-    ctx.fillStyle = "#000";
+    ctx.fillStyle =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--secondary-color")
+        .trim() || "#000000";
     ctx.fill();
     ctx.strokeStyle = themeColor;
     ctx.lineWidth = 2;

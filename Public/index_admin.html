@@ -77,7 +77,7 @@
                             onclick="disconnectOtherAdmins()">Déco
                             autres</button>
                         <button class="deco"
-                            onclick="localStorage.removeItem('uiColor'); window.location.replace('/login');">Se
+                            onclick="(async () => { try { await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }); } catch (e) {} try { if (window.socket && typeof window.socket.disconnect === 'function') window.socket.disconnect(); } catch (e) {} localStorage.removeItem('uiColor'); localStorage.removeItem('secondaryUiColor'); localStorage.removeItem('chessSecondaryColor'); window.username = null; window.location.replace('/login'); })();">Se
                             déconnecter</button>
                         <button id="shutdown-bonus-toggle-btn"
                             class="shutdown-bonus-toggle-btn shutdown-admin-only"
@@ -102,6 +102,14 @@
                         <input type="color" id="mainColorPicker"
                             class="admin-ui-color-picker"
                             aria-label="Choisir la couleur de l'interface" />
+                    </label>
+                    <label class="admin-ui-color-control"
+                        for="secondaryColorPicker"
+                        title="Changer la couleur secondaire de l'UI">
+                        <span>Sec.</span>
+                        <input type="color" id="secondaryColorPicker"
+                            class="admin-ui-color-picker"
+                            aria-label="Choisir la couleur secondaire de l'interface" />
                     </label>
                 </div>
                 <div class="admin-sections">

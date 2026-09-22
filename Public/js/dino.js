@@ -233,7 +233,10 @@ export function initDino(socket) {
   function drawStartScreen() {
     try {
       // fond
-      c.fillStyle = "#000";
+      c.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--secondary-color")
+          .trim() || "#000000";
       c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
       // sol
@@ -599,7 +602,10 @@ export function initDino(socket) {
     if (state.countdown > 0) {
       state.frameCount++;
 
-      c.fillStyle = "#000";
+      c.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--secondary-color")
+          .trim() || "#000000";
       c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
       c.fillStyle = uiColor;
@@ -631,7 +637,10 @@ export function initDino(socket) {
 
     state.frameCount++;
 
-    c.fillStyle = "#000";
+    c.fillStyle =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--secondary-color")
+        .trim() || "#000000";
     c.fillRect(0, 0, CLIENT_W, CLIENT_H);
 
     c.fillStyle = uiColor;
@@ -869,7 +878,10 @@ export function initDino(socket) {
 
   function clearToBlack() {
     try {
-      c.fillStyle = "#000";
+      c.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--secondary-color")
+          .trim() || "#000000";
       c.fillRect(0, 0, CLIENT_W, CLIENT_H);
     } catch {}
   }

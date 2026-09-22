@@ -168,6 +168,13 @@
                         </div>
 
                         <div class="control-item">
+                            <label for="secondaryColorPicker">Couleur
+                                secondaire</label>
+                            <input type="color" id="secondaryColorPicker"
+                                class="ui-color-picker">
+                        </div>
+
+                        <div class="control-item">
                             <label for="chessSecondaryColorPicker">2e couleur
                                 échecs</label>
                             <input type="color" id="chessSecondaryColorPicker"
@@ -244,7 +251,7 @@
             </div>
             <div class="sidebar-footer">
                 <button class="log-off-btn"
-                    onclick="localStorage.removeItem('uiColor'); localStorage.removeItem('chessSecondaryColor'); window.location.replace('/login');">
+                    onclick="(async () => { try { await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }); } catch (e) {} try { if (window.socket && typeof window.socket.disconnect === 'function') window.socket.disconnect(); } catch (e) {} localStorage.removeItem('uiColor'); localStorage.removeItem('secondaryUiColor'); localStorage.removeItem('chessSecondaryColor'); window.username = null; window.location.replace('/login'); })();">
                     <i class="fa-solid fa-power-off"></i> Déconnexion
                 </button>
             </div>

@@ -6,7 +6,7 @@
       return;
     }
     const { pseudo } = await r.json();
-    const allowed = new Set(["Admin", "Moderateur1", "Moderateur2"]);
+    const allowed = new Set(["Admin", "Admin2", "Moderateur1", "Moderateur2"]);
     if (!allowed.has(pseudo)) {
       window.location.href = "/";
       return;

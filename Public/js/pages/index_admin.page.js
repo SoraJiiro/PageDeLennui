@@ -120,6 +120,7 @@ async function checkSes() {
 
   if (
     currentUser !== "Admin" &&
+    currentUser !== "Admin2" &&
     currentUser !== "Moderateur1" &&
     currentUser !== "Moderateur2"
   ) {
