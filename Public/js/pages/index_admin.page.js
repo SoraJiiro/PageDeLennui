@@ -2967,19 +2967,22 @@ async function modifyMotusTries(pseudo) {
 // Setup Stat Field Selector
 const complexStats = {
   blackjackStats: [
-    { value: "wins", label: "Victoires" },
-    { value: "losses", label: "Défaites" },
-    { value: "draws", label: "Égalités" },
-    { value: "blackjacks", label: "Blackjacks" },
+    { value: "handsPlayed", label: "Parties" },
+    { value: "handsWon", label: "Victoires" },
+    { value: "handsLost", label: "Défaites" },
+    { value: "biggestBet", label: "Plus grosse mise" },
     { value: "doubles", label: "Doubles" },
+    { value: "bjs", label: "Blackjacks" },
+    { value: "totalBet", label: "Mise totale" },
   ],
   coinflipStats: [
+    { value: "gamesPlayed", label: "Parties" },
     { value: "wins", label: "Victoires" },
     { value: "losses", label: "Défaites" },
+    { value: "biggestBet", label: "Plus grosse mise" },
+    { value: "biggestLoss", label: "Plus grosse perte" },
     { value: "allIns", label: "All-ins" },
-    { value: "highestWin", label: "Plus gros gain" },
-    { value: "totalWon", label: "Total Gagné" },
-    { value: "totalLost", label: "Total Perdu" },
+    { value: "totalBet", label: "Mise totale" },
   ],
   rouletteStats: [
     { value: "gamesPlayed", label: "Parties" },
@@ -3011,6 +3014,13 @@ const complexStats = {
     { value: "15", label: "15 secondes" },
     { value: "30", label: "30 secondes" },
     { value: "60", label: "1 minute" },
+  ],
+  pdeHeroScores: [
+    { value: "easy", label: "Easy" },
+    { value: "medium", label: "Medium" },
+    { value: "hard", label: "Hard" },
+    { value: "expert", label: "Expert" },
+    { value: "longestGame", label: "Plus longue partie" },
   ],
 };
 

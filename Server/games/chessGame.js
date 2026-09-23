@@ -249,9 +249,8 @@ class ChessGame {
       return scoreB - scoreA;
     });
 
-    let bestMove = orderedMoves[0];
-    let bestScore = -Infinity;
     const depth = this.chess.board().flat().filter(Boolean).length > 12 ? 2 : 3;
+    const scoredMoves = [];
 
     for (const move of orderedMoves) {
       const next = new Chess(this.chess.fen());
@@ -268,11 +267,17 @@ class ChessGame {
         Infinity,
         false,
       );
-      if (evaluation > bestScore) {
-        bestScore = evaluation;
-        bestMove = move;
-      }
+      scoredMoves.push({ move, evaluation });
     }
+
+    const bestScore = Math.max(...scoredMoves.map((entry) => entry.evaluation));
+    const candidates = scoredMoves.filter(
+      (entry) => entry.evaluation >= bestScore - 5,
+    );
+    const selected =
+      candidates[Math.floor(Math.random() * candidates.length)] ||
+      scoredMoves[0];
+    const bestMove = selected.move;
 
     return {
       from: bestMove.from,

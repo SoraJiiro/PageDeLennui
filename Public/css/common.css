@@ -6,8 +6,11 @@ html {
 
 :root {
   --primary-color: #0f0;
+  --primary-contrast-text: #000;
   --bg-color: #000;
   --secondary-color: #000;
+  --secondary-contrast-text: #fff;
+  --chat-text-color: #fff;
   --red-color: #ff4444;
   --border-width: 3px;
   --transition-speed: 185ms;
@@ -65,7 +68,7 @@ textarea {
 
 body {
   background: var(--bg-color);
-  color: var(--primary-color);
+  color: var(--secondary-contrast-text);
   font-family: monospace, monospace;
   width: 100vw;
   overflow-x: hidden;
@@ -110,7 +113,7 @@ a:active {
   font-weight: 700;
   font-size: 1rem;
   background: var(--primary-color);
-  color: #000;
+  color: var(--primary-contrast-text);
   border: 2px solid var(--primary-color);
   box-shadow: 0 0 0 2px #000 inset;
   z-index: 10000;
@@ -120,12 +123,12 @@ a:active {
 .pde-notification--success {
   background: var(--primary-color);
   border-color: var(--primary-color);
-  color: #000;
+  color: var(--primary-contrast-text);
 }
 .pde-notification--error {
   background: var(--red-color);
   border-color: var(--red-color);
-  color: var(--bg-color);
+  color: #000;
 }
 .pde-notification--warning {
   background: #ffdb5d;
@@ -259,7 +262,7 @@ body {
 
 ::selection {
   background: var(--primary-color);
-  color: var(--bg-color);
+  color: var(--primary-contrast-text);
 }
 
 button.log-off {
@@ -311,8 +314,8 @@ button:not(.chess-cell, .nav-link, .nav-btn, .sidebar-close),
 .temp-btn,
 .mash-btn,
 .bet-btn {
-  background: var(--bg-color);
-  color: var(--primary-color);
+  background: var(--secondary-color);
+  color: var(--secondary-contrast-text);
   border: 2px solid var(--primary-color);
   padding: clamp(8px, 1vh, 14px) clamp(14px, 2vw, 28px);
   min-height: clamp(40px, 5.5vh, 56px);
@@ -351,9 +354,9 @@ button.log-off:not(:disabled):hover,
 .temp-btn:not(:disabled):hover,
 .mash-btn:not(:disabled):hover,
 .bet-btn:not(:disabled):hover {
-  color: var(--bg-color);
+  color: var(--primary-contrast-text);
   background: var(--primary-color);
-  border: 2px solid var(--bg-color);
+  border: 2px solid var(--primary-contrast-text);
   outline: 2px solid var(--primary-color);
 }
 

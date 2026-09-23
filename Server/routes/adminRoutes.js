@@ -71,6 +71,23 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     return { duration, bucket: all[duration] };
   }
 
+  function getPdeHeroStats(pseudo) {
+    const current = FileService.data.pdeHeroScores?.[pseudo];
+    const scores =
+      current?.scores && typeof current.scores === "object"
+        ? current.scores
+        : {};
+    return {
+      scores: {
+        easy: Math.max(0, Number(scores.easy) || 0),
+        medium: Math.max(0, Number(scores.medium) || 0),
+        hard: Math.max(0, Number(scores.hard) || 0),
+        expert: Math.max(0, Number(scores.expert) || 0),
+      },
+      longestGame: Math.max(0, Number(current?.longestGame) || 0),
+    };
+  }
+
   // Helper pour refresh les leaderboards
   function refreshLeaderboard(statType) {
     if (!leaderboardManager) return;
@@ -89,6 +106,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         break;
       case "p4Wins":
         leaderboardManager.broadcastP4LB(io);
+        break;
+      case "chessGames":
+      case "chessWins":
+        leaderboardManager.broadcastChessLB(io);
+        break;
+      case "pdeHeroScores":
+        leaderboardManager.broadcastPdeHeroLB(io);
         break;
       case "blockblastScores":
         leaderboardManager.broadcastBlockBlastLB(io);
@@ -1288,6 +1312,10 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           (FileService.data.snakeScores &&
             FileService.data.snakeScores[pseudo]) ||
           0,
+        snakeBestTime:
+          (FileService.data.snakeBestTimes &&
+            FileService.data.snakeBestTimes[pseudo]) ||
+          0,
         unoWins:
           (FileService.data.unoWins && FileService.data.unoWins[pseudo]) || 0,
         p4Wins:
@@ -1296,9 +1324,31 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           (FileService.data.blockblastScores &&
             FileService.data.blockblastScores[pseudo]) ||
           0,
+        blockblastBestTime:
+          (FileService.data.blockblastBestTimes &&
+            FileService.data.blockblastBestTimes[pseudo]) ||
+          0,
         score2048: FileService.data.scores2048
           ? FileService.data.scores2048[pseudo] || 0
           : 0,
+        maxTile2048: FileService.data.scores2048MaxTile
+          ? FileService.data.scores2048MaxTile[pseudo] || 0
+          : 0,
+        chessGames: FileService.data.chessGames
+          ? FileService.data.chessGames[pseudo] || 0
+          : 0,
+        chessWins: FileService.data.chessWins
+          ? FileService.data.chessWins[pseudo] || 0
+          : 0,
+        pdeHeroScores: FileService.data.pdeHeroScores
+          ? FileService.data.pdeHeroScores[pseudo] || null
+          : null,
+        blackjackStats: FileService.data.blackjackStats
+          ? FileService.data.blackjackStats[pseudo] || null
+          : null,
+        coinflipStats: FileService.data.coinflipStats
+          ? FileService.data.coinflipStats[pseudo] || null
+          : null,
         sudokuCompleted:
           (FileService.data.sudokuScores &&
             FileService.data.sudokuScores[pseudo]) ||
@@ -1942,11 +1992,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "flappyScores",
       "unoWins",
       "p4Wins",
+      "chessGames",
+      "chessWins",
+      "pdeHeroScores",
       "blockblastScores",
       "snakeScores",
       "motusScores",
       "sudokuScores",
       "scores2048",
+      "scores2048MaxTile",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
@@ -2027,6 +2081,28 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `Score Aim Trainer ${target.duration}s de ${pseudo} mis à jour à ${target.bucket[pseudo]}`,
+      });
+    }
+
+    if (statType === "pdeHeroScores") {
+      if (
+        !field ||
+        !["easy", "medium", "hard", "expert", "longestGame"].includes(field)
+      ) {
+        return res
+          .status(400)
+          .json({ message: "Champ invalide pour PDE Hero" });
+      }
+      const stats = getPdeHeroStats(pseudo);
+      if (field === "longestGame") stats.longestGame = Math.max(0, value);
+      else stats.scores[field] = Math.max(0, value);
+      if (!FileService.data.pdeHeroScores) FileService.data.pdeHeroScores = {};
+      FileService.data.pdeHeroScores[pseudo] = stats;
+      FileService.save("pdeHeroScores", FileService.data.pdeHeroScores);
+      refreshLeaderboard(statType);
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+      return res.json({
+        message: `PDE Hero ${field} de ${pseudo} mis à jour à ${value}`,
       });
     }
 
@@ -2819,11 +2895,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "flappyScores",
       "unoWins",
       "p4Wins",
+      "chessGames",
+      "chessWins",
+      "pdeHeroScores",
       "blockblastScores",
       "snakeScores",
       "motusScores",
       "sudokuScores",
       "scores2048",
+      "scores2048MaxTile",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
@@ -2909,6 +2989,28 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
       return res.json({
         message: `Score Aim Trainer ${target.duration}s de ${pseudo} augmenté de ${value} (total: ${next})`,
+      });
+    }
+
+    if (statType === "pdeHeroScores") {
+      if (
+        !field ||
+        !["easy", "medium", "hard", "expert", "longestGame"].includes(field)
+      ) {
+        return res
+          .status(400)
+          .json({ message: "Champ invalide pour PDE Hero" });
+      }
+      const stats = getPdeHeroStats(pseudo);
+      if (field === "longestGame") stats.longestGame += value;
+      else stats.scores[field] += value;
+      if (!FileService.data.pdeHeroScores) FileService.data.pdeHeroScores = {};
+      FileService.data.pdeHeroScores[pseudo] = stats;
+      FileService.save("pdeHeroScores", FileService.data.pdeHeroScores);
+      refreshLeaderboard(statType);
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+      return res.json({
+        message: `PDE Hero ${field} de ${pseudo} augmenté de ${value}`,
       });
     }
 
@@ -3125,11 +3227,15 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       "flappyScores",
       "unoWins",
       "p4Wins",
+      "chessGames",
+      "chessWins",
+      "pdeHeroScores",
       "blockblastScores",
       "snakeScores",
       "motusScores",
       "sudokuScores",
       "scores2048",
+      "scores2048MaxTile",
       "mashWins",
       "blackjackStats",
       "coinflipStats",
@@ -3216,6 +3322,27 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       return res.json({
         message: `Score Aim Trainer ${target.duration}s de ${pseudo} diminué de ${value} (total: ${next})`,
       });
+    }
+
+    if (statType === "pdeHeroScores") {
+      if (
+        !field ||
+        !["easy", "medium", "hard", "expert", "longestGame"].includes(field)
+      ) {
+        return res
+          .status(400)
+          .json({ message: "Champ invalide pour PDE Hero" });
+      }
+      const stats = getPdeHeroStats(pseudo);
+      if (field === "longestGame")
+        stats.longestGame = Math.max(0, stats.longestGame - value);
+      else stats.scores[field] = Math.max(0, stats.scores[field] - value);
+      if (!FileService.data.pdeHeroScores) FileService.data.pdeHeroScores = {};
+      FileService.data.pdeHeroScores[pseudo] = stats;
+      FileService.save("pdeHeroScores", FileService.data.pdeHeroScores);
+      refreshLeaderboard(statType);
+      emitUserStatsRealtimeUpdate(pseudo, statType);
+      return res.json({ message: `PDE Hero ${field} de ${pseudo} diminué` });
     }
 
     if (
@@ -3582,6 +3709,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       }
     };
 
+    const clearChess = () => {
+      clearSimple("chessGames", "chess");
+      clearSimple("chessWins", "chess");
+    };
+
+    const clearPdeHero = () => clearSimple("pdeHeroScores", "pdehero");
+
     const clearMotus = () => {
       clearSimple("motusScores", "motus");
       // On pourrait aussi reset le state, mais c'est pas un leaderboard
@@ -3654,6 +3788,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         case "p4":
           clearSimple("p4Wins", "p4");
           break;
+        case "chess":
+          clearChess();
+          break;
+        case "pdehero":
+          clearPdeHero();
+          break;
         case "blockblast":
           clearBlockblast();
           break;
@@ -3668,6 +3808,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           break;
         case "2048":
           clearSimple("scores2048", "2048");
+          clearSimple("scores2048MaxTile", "2048");
           break;
         case "blackjack":
           clearBlackjack();
@@ -3703,8 +3844,11 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
           clearSimple("flappyScores", "flappy");
           clearSimple("unoWins", "uno");
           clearSimple("p4Wins", "p4");
+          clearChess();
+          clearPdeHero();
           clearSimple("mashWins", "mash");
           clearSimple("scores2048", "2048");
+          clearSimple("scores2048MaxTile", "2048");
           clearBlockblast();
           clearSnake();
           clearMotus();
@@ -3734,6 +3878,12 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
             break;
           case "p4":
             refreshLeaderboard("p4Wins");
+            break;
+          case "chess":
+            refreshLeaderboard("chessGames");
+            break;
+          case "pdehero":
+            refreshLeaderboard("pdeHeroScores");
             break;
           case "blockblast":
             refreshLeaderboard("blockblastScores");
@@ -3827,6 +3977,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "flappy_scores.json",
         "uno_wins.json",
         "p4_wins.json",
+        "chess_games.json",
+        "chess_wins.json",
+        "pde_hero_scores.json",
         "blockblast_scores.json",
         "blockblast_best_times.json",
         "blockblast_saves.json",
@@ -3834,6 +3987,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "snake_best_times.json",
         "motus_scores.json",
         "2048_scores.json",
+        "2048_max_tiles.json",
         "mash_wins.json",
         "blackjack_stats.json",
         "coinflip_stats.json",
@@ -3872,6 +4026,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         FileService.data.p4Wins = {};
         FileService.save("p4Wins", {});
 
+        FileService.data.chessGames = {};
+        FileService.save("chessGames", {});
+        FileService.data.chessWins = {};
+        FileService.save("chessWins", {});
+        FileService.data.pdeHeroScores = {};
+        FileService.save("pdeHeroScores", {});
+
         FileService.data.blockblastScores = {};
         FileService.save("blockblastScores", {});
         FileService.data.blockblastBestTimes = {};
@@ -3889,6 +4050,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
 
         FileService.data.scores2048 = {};
         FileService.save("scores2048", {});
+        FileService.data.scores2048MaxTile = {};
+        FileService.save("scores2048MaxTile", {});
 
         FileService.data.mashWins = {};
         FileService.save("mashWins", {});
@@ -3916,6 +4079,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         refreshLeaderboard("flappyScores");
         refreshLeaderboard("unoWins");
         refreshLeaderboard("p4Wins");
+        refreshLeaderboard("chessGames");
+        refreshLeaderboard("pdeHeroScores");
         refreshLeaderboard("blockblastScores");
         refreshLeaderboard("snakeScores");
         refreshLeaderboard("motusScores");
@@ -4024,6 +4189,9 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "flappy_scores.json",
         "uno_wins.json",
         "p4_wins.json",
+        "chess_games.json",
+        "chess_wins.json",
+        "pde_hero_scores.json",
         "blockblast_scores.json",
         "blockblast_best_times.json",
         "blockblast_saves.json",
@@ -4031,6 +4199,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "snake_best_times.json",
         "motus_scores.json",
         "2048_scores.json",
+        "2048_max_tiles.json",
+        "mash_wins.json",
+        "blackjack_stats.json",
+        "coinflip_stats.json",
+        "roulette_stats.json",
+        "slots_stats.json",
+        "sudoku_scores.json",
         "aim_trainer_scores.json",
       ];
 
@@ -4049,10 +4224,18 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       refreshLeaderboard("flappyScores");
       refreshLeaderboard("unoWins");
       refreshLeaderboard("p4Wins");
+      refreshLeaderboard("chessGames");
+      refreshLeaderboard("pdeHeroScores");
       refreshLeaderboard("blockblastScores");
       refreshLeaderboard("snakeScores");
       refreshLeaderboard("motusScores");
       refreshLeaderboard("scores2048");
+      refreshLeaderboard("mashWins");
+      refreshLeaderboard("blackjackStats");
+      refreshLeaderboard("coinflipStats");
+      refreshLeaderboard("rouletteStats");
+      refreshLeaderboard("slotsStats");
+      refreshLeaderboard("sudokuScores");
       refreshLeaderboard("aimTrainerScores");
 
       console.log({
@@ -4369,6 +4552,13 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       const request = data.requests[requestIndex];
 
       if (approve) {
+        if (request.pseudo === "Admin" || request.pseudo === "Admin2") {
+          return res.status(403).json({
+            message:
+              "Le mot de passe de cet administrateur ne peut pas être modifié depuis le panneau",
+          });
+        }
+
         // Mettre à jour le mot de passe
         const users = dbUsers.readAll();
         const user = users.users.find((u) => u.pseudo === request.pseudo);

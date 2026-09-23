@@ -9,6 +9,49 @@ function registerUserHandlers({
   getIpFromSocket,
   recalculateMedals,
 }) {
+  const normalizeUiColor = (value, fallback) => {
+    const match = String(value || "")
+      .trim()
+      .match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!match) return fallback;
+    const hex =
+      match[1].length === 3
+        ? match[1]
+            .split("")
+            .map((char) => char + char)
+            .join("")
+        : match[1];
+    return `#${hex.toLowerCase()}`;
+  };
+  const colorsTooSimilar = (first, second) => {
+    const a = normalizeUiColor(first, "#00ff00").slice(1);
+    const b = normalizeUiColor(second, "#000000").slice(1);
+    const rgbA = [0, 2, 4].map((offset) =>
+      parseInt(a.slice(offset, offset + 2), 16),
+    );
+    const rgbB = [0, 2, 4].map((offset) =>
+      parseInt(b.slice(offset, offset + 2), 16),
+    );
+    return (
+      Math.hypot(...rgbA.map((channel, index) => channel - rgbB[index])) < 80
+    );
+  };
+  const rejectSimilarUiColor = (type) => {
+    socket.emit("system:notification", {
+      message:
+        "La couleur primaire et la couleur secondaire doivent être suffisamment différentes.",
+      duration: 4000,
+    });
+    if (type === "primary") {
+      socket.emit("ui:color", {
+        color: FileService.data.uis?.[pseudo] || "#00ff00",
+      });
+    } else {
+      socket.emit("ui:secondaryColor", {
+        color: FileService.data.uiSecondaryColors?.[pseudo] || "#000000",
+      });
+    }
+  };
   const {
     getWallet,
     convertClicksToMoney,
@@ -52,6 +95,9 @@ function registerUserHandlers({
   // ------- UI Color -------
   socket.on("ui:saveColor", ({ color }) => {
     if (!color || typeof color !== "string") return;
+    const secondary = FileService.data.uiSecondaryColors?.[pseudo] || "#000000";
+    if (colorsTooSimilar(color, secondary))
+      return rejectSimilarUiColor("primary");
     if (!FileService.data.uis) FileService.data.uis = {};
     FileService.data.uis[pseudo] = color;
     FileService.save("uis", FileService.data.uis);
@@ -59,6 +105,9 @@ function registerUserHandlers({
 
   socket.on("ui:saveSecondaryColor", ({ color }) => {
     if (!color || typeof color !== "string") return;
+    const primary = FileService.data.uis?.[pseudo] || "#00ff00";
+    if (colorsTooSimilar(primary, color))
+      return rejectSimilarUiColor("secondary");
     if (!FileService.data.uiSecondaryColors) {
       FileService.data.uiSecondaryColors = {};
     }

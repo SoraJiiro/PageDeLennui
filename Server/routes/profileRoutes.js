@@ -77,6 +77,10 @@ function getStatsFor(pseudo) {
     snakeScore:
       (FileService.data.snakeScores && FileService.data.snakeScores[pseudo]) ||
       0,
+    snakeBestTime:
+      (FileService.data.snakeBestTimes &&
+        FileService.data.snakeBestTimes[pseudo]) ||
+      0,
     unoWins:
       (FileService.data.unoWins && FileService.data.unoWins[pseudo]) || 0,
     p4Wins: (FileService.data.p4Wins && FileService.data.p4Wins[pseudo]) || 0,
@@ -88,8 +92,16 @@ function getStatsFor(pseudo) {
       (FileService.data.blockblastScores &&
         FileService.data.blockblastScores[pseudo]) ||
       0,
+    blockblastBestTime:
+      (FileService.data.blockblastBestTimes &&
+        FileService.data.blockblastBestTimes[pseudo]) ||
+      0,
     score2048:
       (FileService.data.scores2048 && FileService.data.scores2048[pseudo]) || 0,
+    maxTile2048:
+      (FileService.data.scores2048MaxTile &&
+        FileService.data.scores2048MaxTile[pseudo]) ||
+      0,
     mashWins:
       (FileService.data.mashWins && FileService.data.mashWins[pseudo]) || 0,
     sudokuCompleted:
@@ -102,6 +114,14 @@ function getStatsFor(pseudo) {
       null,
     slots:
       (FileService.data.slotsStats && FileService.data.slotsStats[pseudo]) ||
+      null,
+    blackjack:
+      (FileService.data.blackjackStats &&
+        FileService.data.blackjackStats[pseudo]) ||
+      null,
+    coinflip:
+      (FileService.data.coinflipStats &&
+        FileService.data.coinflipStats[pseudo]) ||
       null,
     motus:
       (FileService.data.motusScores && FileService.data.motusScores[pseudo]) ||
@@ -116,6 +136,10 @@ function getStatsFor(pseudo) {
     aimTrainerStats:
       (FileService.data.aimTrainerStats &&
         FileService.data.aimTrainerStats[pseudo]) ||
+      null,
+    pdeHero:
+      (FileService.data.pdeHeroScores &&
+        FileService.data.pdeHeroScores[pseudo]) ||
       null,
     clickerUpgrades:
       (FileService.data.clickerUpgrades &&

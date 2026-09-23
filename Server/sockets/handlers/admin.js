@@ -89,6 +89,15 @@ function registerAdminHandlers({
         return;
       }
 
+      if (user.pseudo === "Admin" || user.pseudo === "Admin2") {
+        socket.emit("admin:user:changePassword:result", {
+          success: false,
+          message:
+            "Le mot de passe de cet administrateur ne peut pas être modifié depuis le panneau",
+        });
+        return;
+      }
+
       const passwordHash = await bcrypt.hash(newPassword, 12);
       const updated = dbUsers.updateUserFields(user.pseudo, {
         passwordHashé: passwordHash,

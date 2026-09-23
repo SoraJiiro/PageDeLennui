@@ -1,4 +1,4 @@
-function normalizeHexColor(value, fallback = "#000000") {
+function normalizeHexColor(value, fallback = "#00FF00") {
   const raw = String(value || "").trim();
   if (!raw) return fallback;
 
@@ -31,11 +31,47 @@ function getRelativeLuminance(hexColor) {
   return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
 }
 
+function getContrastText(color, fallback = "#000000") {
+  const safeColor = normalizeHexColor(color, fallback);
+  return getRelativeLuminance(safeColor) > 0.179 ? "#000000" : "#ffffff";
+}
+
+function colorsTooSimilar(first, second) {
+  const a = normalizeHexColor(first, "#00ff00").slice(1);
+  const b = normalizeHexColor(second, "#000000").slice(1);
+  const rgbA = [0, 2, 4].map((offset) =>
+    Number.parseInt(a.slice(offset, offset + 2), 16),
+  );
+  const rgbB = [0, 2, 4].map((offset) =>
+    Number.parseInt(b.slice(offset, offset + 2), 16),
+  );
+  return (
+    Math.hypot(...rgbA.map((channel, index) => channel - rgbB[index])) < 80
+  );
+}
+
+function notifyColorRejected() {
+  const message =
+    "La couleur primaire et la couleur secondaire doivent être suffisamment différentes.";
+  if (typeof window.showNotif === "function") window.showNotif(message, 4000);
+  else if (window.PDENotifications?.show) {
+    window.PDENotifications.show(message, { duration: 4000 });
+  }
+}
+
+function updatePrimaryThemeColor(color) {
+  const root = document.documentElement;
+  const safeColor = normalizeHexColor(color, "#00ff00");
+  root.style.setProperty("--primary-color", safeColor);
+  root.style.setProperty("--primary-contrast-text", getContrastText(safeColor));
+  return safeColor;
+}
+
 function updateSecondaryThemeColor(color) {
   const root = document.documentElement;
   const safeColor = normalizeHexColor(color, "#000000");
   const isLight = getRelativeLuminance(safeColor) > 0.6;
-  const contrastText = isLight ? "#000000" : "#ffffff";
+  const contrastText = getContrastText(safeColor);
 
   root.style.setProperty("--secondary-color", safeColor);
   root.style.setProperty("--bg-color", safeColor);
@@ -53,7 +89,7 @@ window.getSecondaryThemeState = function getSecondaryThemeState() {
       "#000000",
     "#000000",
   );
-  const isLight = getRelativeLuminance(color) > 0.6;
+  const isLight = getContrastText(color) === "#000000";
   const contrastText = isLight ? "#000000" : "#ffffff";
   return { color, isLight, contrastText };
 };
@@ -109,15 +145,16 @@ async function refreshSecondaryUiKillSwitch() {
   }
 }
 
-// Appliquer les couleurs sauvegardées immédiatement pour éviter le FOUC
 (function () {
   const savedColor = localStorage.getItem("uiColor");
   if (savedColor) {
-    document.documentElement.style.setProperty("--primary-color", savedColor);
+    updatePrimaryThemeColor(savedColor);
+  } else {
+    updatePrimaryThemeColor("#00ff00");
   }
 
   const savedSecondaryColor =
-    localStorage.getItem("secondaryUiColor") || "#000000";
+    localStorage.getItem("secondaryUiColor") || "#000";
   updateSecondaryThemeColor(savedSecondaryColor);
 
   const savedChessColor =
@@ -130,7 +167,6 @@ async function refreshSecondaryUiKillSwitch() {
 
 refreshSecondaryUiKillSwitch();
 
-// Load simple div-based cursor once for pages using uiColor.js.
 (function () {
   if (window.__pdeSimpleCursorBootstrapped) return;
   window.__pdeSimpleCursorBootstrapped = true;
@@ -164,7 +200,7 @@ window.initUiColor = (socket) => {
   if (socket) {
     socket.on("ui:color", ({ color }) => {
       if (color) {
-        document.documentElement.style.setProperty("--primary-color", color);
+        updatePrimaryThemeColor(color);
         localStorage.setItem("uiColor", color);
         if (colorPicker) colorPicker.value = color;
         window.dispatchEvent(
@@ -186,6 +222,13 @@ window.initUiColor = (socket) => {
   if (colorPicker) {
     colorPicker.addEventListener("change", (e) => {
       const color = e.target.value;
+      const secondary = localStorage.getItem("secondaryUiColor") || "#000000";
+      if (colorsTooSimilar(color, secondary)) {
+        e.target.value = localStorage.getItem("uiColor") || "#00ff00";
+        notifyColorRejected();
+        return;
+      }
+      updatePrimaryThemeColor(color);
       localStorage.setItem("uiColor", color);
       if (socket) {
         socket.emit("ui:saveColor", { color });
@@ -201,12 +244,24 @@ window.initUiColor = (socket) => {
 
     secondaryColorPicker.addEventListener("input", (e) => {
       const color = e.target.value;
+      const primary = localStorage.getItem("uiColor") || "#00ff00";
+      if (colorsTooSimilar(primary, color)) {
+        e.target.value = localStorage.getItem("secondaryUiColor") || "#000000";
+        notifyColorRejected();
+        return;
+      }
       updateSecondaryThemeColor(color);
       localStorage.setItem("secondaryUiColor", color);
     });
 
     secondaryColorPicker.addEventListener("change", (e) => {
       const color = e.target.value;
+      const primary = localStorage.getItem("uiColor") || "#00ff00";
+      if (colorsTooSimilar(primary, color)) {
+        e.target.value = localStorage.getItem("secondaryUiColor") || "#000000";
+        notifyColorRejected();
+        return;
+      }
       updateSecondaryThemeColor(color);
       localStorage.setItem("secondaryUiColor", color);
       if (socket) {
@@ -248,14 +303,14 @@ window.toggleRainbowMode = () => {
     rainbowInterval = null;
     // Restaurer la couleur sauvegardée
     const savedColor = localStorage.getItem("uiColor") || "#00ff00";
-    document.documentElement.style.setProperty("--primary-color", savedColor);
+    updatePrimaryThemeColor(savedColor);
     const colorPicker = document.getElementById("mainColorPicker");
     if (colorPicker) colorPicker.value = savedColor;
   } else {
     rainbowInterval = setInterval(() => {
       rainbowHue = (rainbowHue + 5) % 360;
       const color = `hsl(${rainbowHue}, 100%, 50%)`;
-      document.documentElement.style.setProperty("--primary-color", color);
+      updatePrimaryThemeColor(color);
     }, 13); // Animation très rapide
   }
 };
@@ -279,7 +334,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Mise à jour visuelle fluide pendant la sélection (aperçu)
     colorPicker.addEventListener("input", (e) => {
       const color = e.target.value;
-      document.documentElement.style.setProperty("--primary-color", color);
+      const secondary = localStorage.getItem("secondaryUiColor") || "#000000";
+      if (colorsTooSimilar(color, secondary)) {
+        e.target.value = localStorage.getItem("uiColor") || "#00ff00";
+        notifyColorRejected();
+        return;
+      }
+      updatePrimaryThemeColor(color);
       window.dispatchEvent(
         new CustomEvent("uiColor:changed", { detail: { color } }),
       );
@@ -289,8 +350,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (secondaryColorPicker) {
     secondaryColorPicker.addEventListener("input", (e) => {
       const color = e.target.value;
-      document.documentElement.style.setProperty("--secondary-color", color);
-      document.documentElement.style.setProperty("--bg-color", color);
+      const primary = localStorage.getItem("uiColor") || "#00ff00";
+      if (colorsTooSimilar(primary, color)) {
+        e.target.value = localStorage.getItem("secondaryUiColor") || "#000000";
+        notifyColorRejected();
+        return;
+      }
+      updateSecondaryThemeColor(color);
       localStorage.setItem("secondaryUiColor", color);
     });
   }

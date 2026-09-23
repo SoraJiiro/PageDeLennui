@@ -141,14 +141,29 @@ function renderStats(stats) {
     ["Dino", s.dinoScore],
     ["Flappy", s.flappyScore],
     ["Snake", s.snakeScore],
+    ["Snake (meilleur temps, ms)", s.snakeBestTime || 0],
     ["UNO (victoires)", s.unoWins],
     ["P4 (victoires)", s.p4Wins],
     ["Échecs (parties)", s.chessGames],
     ["Échecs (victoires)", s.chessWins],
     ["BlockBlast", s.blockblastScore],
+    ["BlockBlast (meilleur temps, ms)", s.blockblastBestTime || 0],
     ["2048", s.score2048],
+    ["2048 (tuile maximale)", s.maxTile2048 || 0],
     ["Mash (victoires)", s.mashWins],
     ["Sudoku (grilles complétées)", s.sudokuCompleted],
+    [
+      "Blackjack (W/L)",
+      s.blackjack
+        ? `${Number(s.blackjack.handsWon || 0)} / ${Number(s.blackjack.handsLost || 0)}`
+        : "0 / 0",
+    ],
+    [
+      "Coinflip (W/L)",
+      s.coinflip
+        ? `${Number(s.coinflip.wins || 0)} / ${Number(s.coinflip.losses || 0)}`
+        : "0 / 0",
+    ],
     [
       "Roulette (W/L)",
       s.roulette
@@ -165,6 +180,19 @@ function renderStats(stats) {
       "Motus (mots trouvés)",
       s.motus && typeof s.motus.words === "number" ? s.motus.words : "—",
     ],
+    [
+      "PDE Hero (easy/medium)",
+      s.pdeHero?.scores
+        ? `${Number(s.pdeHero.scores.easy || 0)} / ${Number(s.pdeHero.scores.medium || 0)}`
+        : "0 / 0",
+    ],
+    [
+      "PDE Hero (hard/expert)",
+      s.pdeHero?.scores
+        ? `${Number(s.pdeHero.scores.hard || 0)} / ${Number(s.pdeHero.scores.expert || 0)}`
+        : "0 / 0",
+    ],
+    ["PDE Hero (plus longue partie, s)", s.pdeHero?.longestGame || 0],
     ["Aim Trainer (best)", s.aimTrainerBest || 0],
     ["Aim Trainer (best 15s)", Number(s.aimTrainerBestByDuration?.["15"] || 0)],
     ["Aim Trainer (best 30s)", Number(s.aimTrainerBestByDuration?.["30"] || 0)],

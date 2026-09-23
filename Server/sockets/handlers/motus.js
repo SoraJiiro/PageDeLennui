@@ -48,9 +48,13 @@ function registerMotusHandlers({
 
     if (state.currentWord) {
       const word = state.currentWord;
-      const hyphens = [];
+      const fixedIndices = [];
+      const fixedChars = {};
       for (let i = 0; i < word.length; i++) {
-        if (word[i] === "-") hyphens.push(i);
+        if (!/[A-Za-zÀ-ÖØ-ÝÑ]/i.test(word[i])) {
+          fixedIndices.push(i);
+          fixedChars[i] = word[i];
+        }
       }
 
       const last = state.history[state.history.length - 1];
@@ -58,13 +62,15 @@ function registerMotusHandlers({
 
       socket.emit("motus:init", {
         length: word.length,
-        hyphens: hyphens,
+        hyphens: fixedIndices.filter((index) => word[index] === "-"),
+        fixedIndices,
+        fixedChars,
         history: state.history,
         won: won,
       });
     } else {
       socket.emit("motus:end", {
-        message: "Tous les pays ont été trouvées !",
+        message: "Toutes les marques d'alcool ont été trouvées !",
       });
     }
   }
@@ -193,19 +199,25 @@ function registerMotusHandlers({
 
     if (!word) {
       socket.emit("motus:end", {
-        message: "Tous les pays ont été trouvés !",
+        message: "Toutes les marques d'alcool ont été trouvées !",
       });
       return;
     }
 
-    const hyphens = [];
+    const fixedIndices = [];
+    const fixedChars = {};
     for (let i = 0; i < word.length; i++) {
-      if (word[i] === "-") hyphens.push(i);
+      if (!/[A-Za-zÀ-ÖØ-ÝÑ]/i.test(word[i])) {
+        fixedIndices.push(i);
+        fixedChars[i] = word[i];
+      }
     }
 
     socket.emit("motus:init", {
       length: word.length,
-      hyphens: hyphens,
+      hyphens: fixedIndices.filter((index) => word[index] === "-"),
+      fixedIndices,
+      fixedChars,
       history: [],
       won: false,
     });
@@ -218,19 +230,25 @@ function registerMotusHandlers({
 
     if (!word) {
       socket.emit("motus:end", {
-        message: "Tous les pays ont été trouvés !",
+        message: "Toutes les marques d'alcool ont été trouvées !",
       });
       return;
     }
 
-    const hyphens = [];
+    const fixedIndices = [];
+    const fixedChars = {};
     for (let i = 0; i < word.length; i++) {
-      if (word[i] === "-") hyphens.push(i);
+      if (!/[A-Za-zÀ-ÖØ-ÝÑ]/i.test(word[i])) {
+        fixedIndices.push(i);
+        fixedChars[i] = word[i];
+      }
     }
 
     socket.emit("motus:init", {
       length: word.length,
-      hyphens: hyphens,
+      hyphens: fixedIndices.filter((index) => word[index] === "-"),
+      fixedIndices,
+      fixedChars,
       history: [],
       won: false,
     });

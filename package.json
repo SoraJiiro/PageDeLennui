@@ -2,7 +2,7 @@
   "name": "pde",
   "version": "2.1.6",
   "description": " La fameuse ",
-  "main": "serveur.js",
+  "main": "Server/init.js",
   "scripts": {
     "start": "node Server/init.js",
     "serve": "node Server/init.js",

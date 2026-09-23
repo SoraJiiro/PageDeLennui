@@ -2,6 +2,42 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.2.4",
+      "date": "23/09/2026",
+      "sections": [
+        {
+          "title": "Nouveautés",
+          "icon": "fa-star",
+          "items": [
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Motus :",
+              "text": "Après plusieurs mois de pays du monde, faites place aux marques d'alcool! 104 marques attendent que vous les trouviez dans le Motus."
+            }
+          ]
+        },
+        {
+          "title": "Améliorations ",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Motus :",
+              "text": "Les espaces, apostrophes et tirets sont maintenant affichés automatiquement. Le clavier propose désormais trois modes : lettres, chiffres et accents, avec les voyelles accentuées et le ñ."
+            },
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Échecs :",
+              "text": "Le bot varie maintenant davantage ses coups tout en conservant un niveau de jeu proche de son meilleur calcul. Les victoires contre le bot donnent toujours leurs récompenses, mais ne comptent plus dans les statistiques, les leaderboards ni les badges."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.2.3",
       "date": "17/09/2026",
       "sections": [

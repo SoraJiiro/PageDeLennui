@@ -82,6 +82,8 @@ function registerChessHandlers({
     broadcastGame(id);
   };
   const recordGame = (game, winner) => {
+    if (game.vsBot) return;
+
     game.joueurs.forEach((player) => {
       FileService.data.chessGames[player.pseudo] =
         (FileService.data.chessGames[player.pseudo] || 0) + 1;

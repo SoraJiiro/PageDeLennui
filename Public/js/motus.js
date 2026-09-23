@@ -10,12 +10,15 @@ export function initMotus(socket) {
 
   if (!grid || !keyboard) return;
 
-  let currentGuess = "";
+  let currentGuess = [];
   let currentRow = 0;
   let wordLength = 5; // Par défaut, sera mis à jour
   let gameActive = true;
   let maxRows = 6;
   let hyphenIndices = [];
+  let fixedIndices = [];
+  let fixedChars = {};
+  let keyboardMode = 0;
   let totalWords = null;
   let foundWordsCount = 0;
   const gridGap = 5;
@@ -27,6 +30,12 @@ export function initMotus(socket) {
     }
   }
 
+  function resetCurrentGuess() {
+    currentGuess = Array.from({ length: wordLength }, (_, index) =>
+      fixedIndices.includes(index) ? fixedChars[index] || "" : "",
+    );
+  }
+
   updateAvancement();
 
   if (skipBtn) {
@@ -35,7 +44,7 @@ export function initMotus(socket) {
       skipBtn.style.display = "none";
       // Réinitialiser l'état local immédiatement pour une meilleure UX
       gameActive = true;
-      currentGuess = "";
+      resetCurrentGuess();
       currentRow = 0;
       // La grille sera reconstruite par l'événement init
     });
@@ -47,7 +56,7 @@ export function initMotus(socket) {
       continueBtn.style.display = "none";
       // Réinitialiser l'état local immédiatement pour une meilleure UX
       gameActive = true;
-      currentGuess = "";
+      resetCurrentGuess();
       currentRow = 0;
       // La grille sera reconstruite par l'événement init
     });
@@ -134,8 +143,8 @@ export function initMotus(socket) {
         const tile = document.createElement("div");
         tile.className = "motus-tile";
 
-        if (hyphenIndices.includes(j)) {
-          tile.textContent = "-";
+        if (fixedIndices.includes(j)) {
+          tile.textContent = fixedChars[j] || "";
           tile.classList.add("fixed-hyphen");
         }
         row.appendChild(tile);
@@ -147,11 +156,47 @@ export function initMotus(socket) {
   }
 
   // Initialiser le clavier
-  const accentRows = ["ÀÁÂÈÉÊÎÏÔ"];
-  const alphabetRows = ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"];
+  const keyboardModes = [
+    { label: "Lettres", rows: ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"] },
+    { label: "Nombres", rows: ["1234567890"] },
+    { label: "Accents", rows: ["ÀÁÂÄ", "ÈÉÊË", "ÌÍÎÏ", "ÒÓÔÖ", "ÙÚÛÜ", "Ñ"] },
+  ];
+
+  function nextEmptyEditableIndex() {
+    return Array.from({ length: wordLength }, (_, index) => index).find(
+      (index) => !fixedIndices.includes(index) && !currentGuess[index],
+    );
+  }
+
+  function saveKeyboardState() {
+    return Array.from(document.querySelectorAll(".motus-key")).reduce(
+      (state, button) => {
+        if (button.dataset.key) {
+          state[button.dataset.key] = {
+            state: button.dataset.state || "",
+            correctIndices: button.dataset.correctIndices || "",
+          };
+        }
+        return state;
+      },
+      {},
+    );
+  }
 
   function createKeyboard() {
+    const previousState = saveKeyboardState();
     keyboard.innerHTML = "";
+    const mode = keyboardModes[keyboardMode];
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "motus-keyboard-toggle";
+    toggle.textContent = `${mode.label} ▾`;
+    toggle.onclick = () => {
+      keyboardMode = (keyboardMode + 1) % keyboardModes.length;
+      createKeyboard();
+    };
+    keyboard.appendChild(toggle);
 
     const renderRow = (rowKeys, options = {}) => {
       const row = document.createElement("div");
@@ -171,10 +216,9 @@ export function initMotus(socket) {
       return row;
     };
 
-    accentRows.forEach((rowKeys) => renderRow(rowKeys, { accent: true }));
-    alphabetRows.forEach((rowKeys, index) => {
+    mode.rows.forEach((rowKeys, index) => {
       const row = renderRow(rowKeys);
-      if (index === alphabetRows.length - 1) {
+      if (index === mode.rows.length - 1) {
         const back = document.createElement("button");
         back.className = "motus-key big";
         back.innerHTML = '<i class="fa-solid fa-delete-left"></i>';
@@ -184,17 +228,15 @@ export function initMotus(socket) {
       }
     });
 
-    const spaceRow = document.createElement("div");
-    spaceRow.className = "motus-key-row motus-space-row";
-
-    const spaceBtn = document.createElement("button");
-    spaceBtn.className = "motus-key motus-key-space";
-    spaceBtn.textContent = "Espace";
-    spaceBtn.dataset.key = " ";
-    spaceBtn.onclick = () => handleKey(" ");
-
-    spaceRow.appendChild(spaceBtn);
-    keyboard.appendChild(spaceRow);
+    Object.entries(previousState).forEach(([key, state]) => {
+      const button = Array.from(document.querySelectorAll(".motus-key")).find(
+        (candidate) => candidate.dataset.key === key,
+      );
+      if (!button) return;
+      if (state.state) button.dataset.state = state.state;
+      if (state.correctIndices)
+        button.dataset.correctIndices = state.correctIndices;
+    });
 
     applyResponsiveGridSizing(wordLength);
   }
@@ -223,8 +265,8 @@ export function initMotus(socket) {
       if (currentGuess[i]) {
         tiles[i].textContent = currentGuess[i];
         tiles[i].dataset.state = "active";
-      } else if (hyphenIndices.includes(i)) {
-        tiles[i].textContent = "-";
+      } else if (fixedIndices.includes(i)) {
+        tiles[i].textContent = fixedChars[i] || "";
         tiles[i].dataset.state = "empty";
       } else {
         tiles[i].textContent = "";
@@ -236,38 +278,13 @@ export function initMotus(socket) {
   function handleKey(key) {
     if (!gameActive) return;
 
-    // Sauter automatiquement les traits d'union si nous sommes actuellement sur l'un d'eux
-    while (
-      hyphenIndices.includes(currentGuess.length) &&
-      currentGuess.length < wordLength
-    ) {
-      currentGuess += "-";
-    }
-
-    // Si l'utilisateur tape "-" mais que nous venons de le remplir automatiquement (ou sommes sur un trait d'union fixe), l'ignorer
-    if (
-      key === "-" &&
-      currentGuess.length > 0 &&
-      currentGuess[currentGuess.length - 1] === "-" &&
-      hyphenIndices.includes(currentGuess.length - 1)
-    ) {
-      return;
-    }
-
-    if (currentGuess.length < wordLength) {
-      currentGuess += key;
-
-      // Vérifier si le SUIVANT est un trait d'union
-      while (
-        hyphenIndices.includes(currentGuess.length) &&
-        currentGuess.length < wordLength
-      ) {
-        currentGuess += "-";
-      }
+    const index = nextEmptyEditableIndex();
+    if (index !== undefined) {
+      currentGuess[index] = key;
 
       updateGrid();
 
-      if (currentGuess.length === wordLength) {
+      if (nextEmptyEditableIndex() === undefined) {
         handleEnter();
       }
     }
@@ -275,28 +292,22 @@ export function initMotus(socket) {
 
   function handleBackspace() {
     if (!gameActive) return;
-    if (currentGuess.length === 0) return;
-
-    currentGuess = currentGuess.slice(0, -1);
-
-    // Si nous atterrissons sur un trait d'union (en reculant), le supprimer aussi
-    while (
-      currentGuess.length > 0 &&
-      hyphenIndices.includes(currentGuess.length - 1)
-    ) {
-      currentGuess = currentGuess.slice(0, -1);
-    }
+    let index = wordLength - 1;
+    while (index >= 0 && (fixedIndices.includes(index) || !currentGuess[index]))
+      index--;
+    if (index < 0) return;
+    currentGuess[index] = "";
 
     updateGrid();
   }
 
   function handleEnter() {
     if (!gameActive) return;
-    if (currentGuess.length !== wordLength) {
+    if (nextEmptyEditableIndex() !== undefined) {
       showMessage("Pas assez de lettres");
       return;
     }
-    socket.emit("motus:guess", { guess: currentGuess });
+    socket.emit("motus:guess", { guess: currentGuess.join("") });
   }
 
   function showMessage(msg) {
@@ -343,7 +354,7 @@ export function initMotus(socket) {
     });
 
     currentRow++;
-    currentGuess = "";
+    resetCurrentGuess();
 
     if (result.every((s) => s === 2)) {
       // gameActive est déjà faux
@@ -362,8 +373,8 @@ export function initMotus(socket) {
         () => {
           Array.from(grid.children).forEach((row) => {
             Array.from(row.children).forEach((tile, index) => {
-              if (hyphenIndices.includes(index)) {
-                tile.textContent = "-";
+              if (fixedIndices.includes(index)) {
+                tile.textContent = fixedChars[index] || "";
                 tile.classList.add("fixed-hyphen");
                 delete tile.dataset.state;
               } else {
@@ -398,97 +409,111 @@ export function initMotus(socket) {
     updateAvancement();
   });
 
-  socket.on("motus:init", ({ length, hyphens, history, won }) => {
-    currentRow = 0;
-    currentGuess = ""; // Réinitialiser la supposition actuelle pour éviter le report
-    gameActive = true; // Réinitialiser l'état du jeu
-    hyphenIndices = hyphens || [];
-    createGrid(length);
-    createKeyboard(); // Reconstruit le clavier (réinitialise les couleurs)
+  socket.on(
+    "motus:init",
+    ({
+      length,
+      hyphens,
+      fixedIndices: incomingFixedIndices,
+      fixedChars: incomingFixedChars,
+      history,
+      won,
+    }) => {
+      currentRow = 0;
+      wordLength = length;
+      fixedIndices = incomingFixedIndices || hyphens || [];
+      fixedChars = incomingFixedChars || {};
+      resetCurrentGuess(); // Réinitialiser la supposition actuelle pour éviter le report
+      gameActive = true; // Réinitialiser l'état du jeu
+      hyphenIndices = hyphens || [];
+      createGrid(length);
+      createKeyboard(); // Reconstruit le clavier (réinitialise les couleurs)
 
-    if (hyphenIndices.length > 0) {
-      const key = document.querySelector('.motus-key[data-key="-"]');
-      if (key) key.dataset.state = "correct";
-    }
-
-    // Logique de visibilité des boutons
-    if (won) {
-      if (continueBtn) continueBtn.style.display = "block";
-      if (skipBtn) skipBtn.style.display = "none";
-      gameActive = false;
-    } else {
-      if (continueBtn) continueBtn.style.display = "none";
-      if (skipBtn) skipBtn.style.display = "block";
-      gameActive = true;
-    }
-
-    // Restaurer l'historique
-    if (history && Array.isArray(history)) {
-      // Mettre à jour le clavier basé sur l'historique COMPLET
-      history.forEach((entry) => {
-        entry.result.forEach((status, i) => {
-          const letter = entry.guess[i];
-          const key = document.querySelector(
-            `.motus-key[data-key="${letter}"]`,
-          );
-          if (status === 2) {
-            if (key) {
-              key.dataset.state = "correct";
-              updateKeyCorrectIndices(letter, i, key);
-            } else {
-              updateKeyCorrectIndices(letter, i);
-            }
-          } else if (status === 1) {
-            if (key && key.dataset.state !== "correct")
-              key.dataset.state = "present";
-          } else {
-            if (
-              key &&
-              key.dataset.state !== "correct" &&
-              key.dataset.state !== "present"
-            )
-              key.dataset.state = "absent";
-          }
-        });
-      });
-
-      // Déterminer l'historique visible pour la grille
-      const last = history[history.length - 1];
-      const won = last && last.result.every((s) => s === 2);
-      let visibleHistory = [];
-
-      if (won) {
-        const pageStart = Math.floor((history.length - 1) / maxRows) * maxRows;
-        visibleHistory = history.slice(pageStart);
-      } else {
-        const pageStart = Math.floor(history.length / maxRows) * maxRows;
-        visibleHistory = history.slice(pageStart);
+      if (hyphenIndices.length > 0) {
+        const key = document.querySelector('.motus-key[data-key="-"]');
+        if (key) key.dataset.state = "correct";
       }
 
-      visibleHistory.forEach((entry) => {
-        // Remplir la grille visuellement
-        const row = grid.children[currentRow];
-        for (let i = 0; i < length; i++) {
-          row.children[i].textContent = entry.guess[i];
-        }
-        // Révéler les couleurs immédiatement (pas d'animation)
-        entry.result.forEach((status, i) => {
-          const tile = row.children[i];
-          if (status === 2) tile.dataset.state = "correct";
-          else if (status === 1) tile.dataset.state = "present";
-          else tile.dataset.state = "absent";
-        });
-        currentRow++;
-      });
-
+      // Logique de visibilité des boutons
       if (won) {
+        if (continueBtn) continueBtn.style.display = "block";
+        if (skipBtn) skipBtn.style.display = "none";
         gameActive = false;
-        // Boutons gérés dans init
+      } else {
+        if (continueBtn) continueBtn.style.display = "none";
+        if (skipBtn) skipBtn.style.display = "block";
+        gameActive = true;
       }
-    }
 
-    scheduleMotusResize();
-  });
+      // Restaurer l'historique
+      if (history && Array.isArray(history)) {
+        // Mettre à jour le clavier basé sur l'historique COMPLET
+        history.forEach((entry) => {
+          entry.result.forEach((status, i) => {
+            const letter = entry.guess[i];
+            const key = document.querySelector(
+              `.motus-key[data-key="${letter}"]`,
+            );
+            if (status === 2) {
+              if (key) {
+                key.dataset.state = "correct";
+                updateKeyCorrectIndices(letter, i, key);
+              } else {
+                updateKeyCorrectIndices(letter, i);
+              }
+            } else if (status === 1) {
+              if (key && key.dataset.state !== "correct")
+                key.dataset.state = "present";
+            } else {
+              if (
+                key &&
+                key.dataset.state !== "correct" &&
+                key.dataset.state !== "present"
+              )
+                key.dataset.state = "absent";
+            }
+          });
+        });
+
+        // Déterminer l'historique visible pour la grille
+        const last = history[history.length - 1];
+        const won = last && last.result.every((s) => s === 2);
+        let visibleHistory = [];
+
+        if (won) {
+          const pageStart =
+            Math.floor((history.length - 1) / maxRows) * maxRows;
+          visibleHistory = history.slice(pageStart);
+        } else {
+          const pageStart = Math.floor(history.length / maxRows) * maxRows;
+          visibleHistory = history.slice(pageStart);
+        }
+
+        visibleHistory.forEach((entry) => {
+          // Remplir la grille visuellement
+          const row = grid.children[currentRow];
+          for (let i = 0; i < length; i++) {
+            row.children[i].textContent = entry.guess[i];
+          }
+          // Révéler les couleurs immédiatement (pas d'animation)
+          entry.result.forEach((status, i) => {
+            const tile = row.children[i];
+            if (status === 2) tile.dataset.state = "correct";
+            else if (status === 1) tile.dataset.state = "present";
+            else tile.dataset.state = "absent";
+          });
+          currentRow++;
+        });
+
+        if (won) {
+          gameActive = false;
+          // Boutons gérés dans init
+        }
+      }
+
+      scheduleMotusResize();
+    },
+  );
 
   socket.on("motus:result", ({ result, guess, won }) => {
     revealRow(result, guess);

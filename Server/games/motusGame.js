@@ -27,6 +27,12 @@ class MotusGame {
       return { error: "Longueur incorrecte" };
     }
 
+    for (let i = 0; i < targetArr.length; i++) {
+      if (!/[A-ZÀ-ÖØ-ÝÑ]/i.test(targetArr[i]) && guessArr[i] !== targetArr[i]) {
+        return { error: "Les espaces, apostrophes et tirets sont fixes" };
+      }
+    }
+
     for (let i = 0; i < guessArr.length; i++) {
       if (guessArr[i] === targetArr[i]) {
         result[i] = 2;
