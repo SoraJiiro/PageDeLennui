@@ -112,6 +112,7 @@ function register2048Handlers({
     if (maxTile > 0 && s > 0 && maxTile > s * 2) return;
 
     updateReviveContextFromScore(socket, "2048", s);
+    consumeRunnerResume();
     setRunnerProgress(s);
 
     if (!FileService.data.scores2048) FileService.data.scores2048 = {};

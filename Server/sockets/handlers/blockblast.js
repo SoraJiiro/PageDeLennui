@@ -95,6 +95,9 @@ function registerBlockblastHandlers({
     if (!Number.isFinite(s) || s < 0) return;
 
     updateReviveContextFromScore(socket, "blockblast", s);
+    if (final === true) {
+      consumeRunnerResume();
+    }
     setRunnerProgress(s);
 
     const current = FileService.data.blockblastScores[pseudo] || 0;
@@ -292,6 +295,8 @@ function registerBlockblastHandlers({
       delete FileService.data.blockblastSaves[pseudo];
       FileService.save("blockblastSaves", FileService.data.blockblastSaves);
     }
+
+    consumeRunnerResume();
     console.log(
       withGame(
         `\n🔄 Reset Block Blast pour [${colors.orange}${pseudo}${colors.green}]\n`,

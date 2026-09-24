@@ -108,6 +108,7 @@ function registerSnakeHandlers({
     if (final === true) {
       clearRunnerProgress();
       setRunnerState(false);
+      consumeRunnerResume();
     } else {
       setRunnerProgress(s);
     }
@@ -161,6 +162,7 @@ function registerSnakeHandlers({
   socket.on("snake:reset", () => {
     clearRunnerProgress();
     setRunnerState(false);
+    consumeRunnerResume();
     console.log(
       withGame(
         `\n🔄 Reset Snake pour [${colors.orange}${pseudo}${colors.green}]\n`,
