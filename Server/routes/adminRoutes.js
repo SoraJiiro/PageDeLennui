@@ -1472,6 +1472,34 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     }
   });
 
+  router.post("/users-birthdays/update", requireAdmin, (req, res) => {
+    const pseudo = String(req.body?.pseudo || "").trim();
+    const birthDate = String(req.body?.birthDate || "").trim();
+    if (!pseudo || (birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate))) {
+      return res.status(400).json({ message: "Pseudo ou date invalide" });
+    }
+    if (birthDate) {
+      const [year, month, day] = birthDate.split("-").map(Number);
+      const parsed = new Date(Date.UTC(year, month - 1, day));
+      if (
+        parsed.getUTCFullYear() !== year ||
+        parsed.getUTCMonth() !== month - 1 ||
+        parsed.getUTCDate() !== day
+      ) {
+        return res.status(400).json({ message: "Date invalide" });
+      }
+    }
+    const user = dbUsers.findBypseudo(pseudo);
+    if (!user)
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    const updated = dbUsers.updateUserFields(user.pseudo, { birthDate });
+    return res.json({
+      success: true,
+      pseudo: updated.pseudo,
+      birthDate: birthDate || null,
+    });
+  });
+
   router.post("/users-birthdays/gift", requireAdmin, (req, res) => {
     const pseudo = String(req.body?.pseudo || "").trim();
     if (!pseudo) {
@@ -3516,6 +3544,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
     if (FileService.data.motusScores)
       delete FileService.data.motusScores[pseudo];
     if (FileService.data.motusState) delete FileService.data.motusState[pseudo];
+    if (FileService.data.chessElo) delete FileService.data.chessElo[pseudo];
 
     // Supprimer aussi des nouveaux leaderboards
     if (FileService.data.blockblastBestTimes) {
@@ -3566,6 +3595,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
       FileService.save("motusScores", FileService.data.motusScores);
     if (FileService.data.motusState)
       FileService.save("motusState", FileService.data.motusState);
+    if (FileService.data.chessElo)
+      FileService.save("chessElo", FileService.data.chessElo);
     FileService.save("medals", FileService.data.medals);
     FileService.save("blockblastSaves", FileService.data.blockblastSaves);
     if (FileService.data.blockblastBestTimes) {
@@ -3979,6 +4010,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "p4_wins.json",
         "chess_games.json",
         "chess_wins.json",
+        "chess_elo.json",
         "pde_hero_scores.json",
         "blockblast_scores.json",
         "blockblast_best_times.json",
@@ -4030,6 +4062,8 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         FileService.save("chessGames", {});
         FileService.data.chessWins = {};
         FileService.save("chessWins", {});
+        FileService.data.chessElo = {};
+        FileService.save("chessElo", {});
         FileService.data.pdeHeroScores = {};
         FileService.save("pdeHeroScores", {});
 
@@ -4191,6 +4225,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         "p4_wins.json",
         "chess_games.json",
         "chess_wins.json",
+        "chess_elo.json",
         "pde_hero_scores.json",
         "blockblast_scores.json",
         "blockblast_best_times.json",

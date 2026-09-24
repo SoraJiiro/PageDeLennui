@@ -39,6 +39,26 @@ document.addEventListener("DOMContentLoaded", () => {
       '[data-external-url="patch-notes.html"], a[href="patch-notes.html"]',
     ),
   );
+
+  async function updateLatestPatchNoteLink() {
+    const summary = document.getElementById("latest-patch-summary");
+    if (!summary) return;
+    try {
+      const response = await fetch("persistant_data/patch_notes.json", {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const latest = Array.isArray(data.entries) ? data.entries[0] : null;
+      if (!latest?.version || !latest?.date) return;
+      if (summary) {
+        summary.textContent = `${latest.version} · ${latest.date}`;
+        summary.title = `Dernier patch : ${latest.version} (${latest.date})`;
+      }
+    } catch {}
+  }
+
+  updateLatestPatchNoteLink();
   const annoncesLinks = Array.from(
     document.querySelectorAll(
       '[data-external-url="annonces.html"], a[href="annonces.html"]',

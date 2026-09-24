@@ -522,8 +522,9 @@
                         class="hub-site-money-average">
                         Avg monnaie: ...
                     </div>
-                    <div class="hub-site-money-average">
-                        [v3.2.4 - 23/09/26]
+                    <div id="latest-patch-summary"
+                        class="hub-site-money-average">
+                        v...
                     </div>
                 </header>
 
@@ -640,7 +641,7 @@
                         data-external-url="sondages.html"
                         data-external-title="Sondages"
                         type="button">Sondages</button>
-                    <button class="hub-link-btn ext-btn"
+                    <button id="latest-patch-note" class="hub-link-btn ext-btn"
                         data-external-url="patch-notes.html"
                         data-external-title="Patch Notes"
                         type="button">Patch Notes</button>
@@ -900,7 +901,7 @@
                 <div class="leaderboard-header"><h2>Échecs
                         Leaderboard.exe</h2></div>
                 <table class="board" id="chess-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Parties</th><th>Victoires</th></tr></thead>
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>ELO</th><th>Parties</th><th>Victoires</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -1708,6 +1709,7 @@
         <section id="stage23">
             <div class="chess-card">
                 <div class="chess-header"><h2>Échecs.exe</h2><div
+                        class="chess-elo-line"></div><div
                         class="chess-clocks"><span
                             class="chess-clock chess-clock-white"><b>Blancs</b>
                             <time>10:00</time></span><span
@@ -1746,7 +1748,14 @@
                             <input id="chess-vs-bot-toggle" type="checkbox" />
                             Solo vs bot
                         </label>
+                        <label for="chess-bot-type">Moteur</label>
+                        <select id="chess-bot-type"
+                            aria-label="Choisir le moteur du bot">
+                            <option value="classic">Classique</option>
+                            <option value="stockfish">Stockfish</option>
+                        </select>
                     </div>
+                    <p class="chess-my-elo">ELO actuel : 500</p>
                     <p class="chess-lobby-help">Rejoignez une table en attente
                         ou regardez une partie en cours.</p>
                     <div class="chess-games"></div>
@@ -1774,6 +1783,12 @@
                             lobby</button></div>
                     <button class="chess-quit" type="button"
                         style="display:none">Quitter</button>
+                    <div class="chess-game-actions">
+                        <button class="chess-resign" type="button"
+                            style="display:none">Abandonner</button>
+                        <button class="chess-draw" type="button"
+                            style="display:none">Proposer nulle</button>
+                    </div>
                     <div class="chess-promotion" hidden>
                         <p>Promouvoir le pion en :</p>
                         <div class="chess-promotion-options">

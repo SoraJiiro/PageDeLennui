@@ -19,6 +19,63 @@ body {
   position: relative;
 }
 
+.admin-toolbar {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 8px;
+  border: 2px solid var(--primary-color);
+  background: var(--bg-color);
+}
+
+.admin-toolbar-label {
+  color: var(--primary-color);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#admin-toolbar-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-toolbar-link {
+  padding: 5px 8px;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.78rem;
+}
+
+.admin-toolbar-link:hover {
+  color: var(--bg-color);
+  background: var(--primary-color);
+}
+
+.admin-scroll-top {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 100;
+  display: none;
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--primary-color);
+  background: var(--bg-color);
+  color: var(--primary-color);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.admin-scroll-top.is-visible {
+  display: block;
+}
+
 @media (max-width: 900px) {
   .admin-header {
     padding: 12px;

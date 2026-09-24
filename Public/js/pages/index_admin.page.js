@@ -2004,7 +2004,7 @@ function renderAdminUsersBirthdays(list) {
   const rows = Array.isArray(list) ? list : [];
   if (!rows.length) {
     tbody.innerHTML =
-      '<tr><td colspan="4" style="text-align:center;color:#9a9a9a;">Aucun utilisateur</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;color:#9a9a9a;">Aucun utilisateur</td></tr>';
     return;
   }
 
@@ -2015,11 +2015,32 @@ function renderAdminUsersBirthdays(list) {
                     <td>${entry.pseudo || "—"}</td>
                     <td>${formatBirthDateForAdminList(entry.birthDate)}</td>
                     <td>${getBirthdayStatusLabel(entry)}</td>
+                    <td><input type="date" value="${entry.birthDate || ""}"
+                      data-birthday-date-pseudo="${entry.pseudo}"
+                      aria-label="Date de naissance de ${entry.pseudo}"></td>
                     <td>${getBirthdayGiftActionHtml(entry)}</td>
                 </tr>
             `,
     )
     .join("");
+}
+
+async function updateBirthdayDate(pseudo, birthDate) {
+  try {
+    const res = await fetch("/api/admin/users-birthdays/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pseudo, birthDate }),
+    });
+    const data = await res.json().catch(() => ({}));
+    showNotification(
+      res.ok ? "Date de naissance mise à jour" : data.message || "Erreur",
+      res.ok ? "success" : "error",
+    );
+    if (res.ok) await refreshAdminUsersBirthdays();
+  } catch {
+    showNotification("Erreur serveur", "error");
+  }
 }
 
 async function giftBirthdayBundle(pseudoRaw) {
@@ -2108,12 +2129,50 @@ if (adminBirthdaysSearchInput) {
 
 const adminBirthdaysList = document.getElementById("adminBirthdaysList");
 if (adminBirthdaysList) {
+  adminBirthdaysList.addEventListener("change", (event) => {
+    const input = event.target.closest("[data-birthday-date-pseudo]");
+    if (input)
+      updateBirthdayDate(input.dataset.birthdayDatePseudo, input.value);
+  });
   adminBirthdaysList.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-birthday-gift-pseudo]");
     if (!btn) return;
     giftBirthdayBundle(btn.dataset.birthdayGiftPseudo);
   });
 }
+
+function setupAdminToolbar() {
+  const links = document.getElementById("admin-toolbar-links");
+  const sections = [...document.querySelectorAll(".admin-section")];
+  if (!links || !sections.length) return;
+  sections.forEach((section, index) => {
+    if (!section.id) section.id = `admin-section-${index + 1}`;
+    const heading = section.querySelector("h2");
+    const label =
+      heading?.textContent.replace(/^\s*\/\s*/, "").trim() ||
+      `Section ${index + 1}`;
+    const button = document.createElement("a");
+    button.href = `#${section.id}`;
+    button.textContent = label;
+    button.className = "admin-toolbar-link";
+    links.appendChild(button);
+  });
+}
+
+function setupAdminScrollTop() {
+  const button = document.getElementById("admin-scroll-top");
+  if (!button) return;
+  const update = () =>
+    button.classList.toggle("is-visible", window.scrollY > 400);
+  window.addEventListener("scroll", update, { passive: true });
+  button.addEventListener("click", () =>
+    window.scrollTo({ top: 0, behavior: "smooth" }),
+  );
+  update();
+}
+
+setupAdminToolbar();
+setupAdminScrollTop();
 
 // Recherche utilisateur
 document

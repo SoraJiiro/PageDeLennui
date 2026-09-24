@@ -126,44 +126,217 @@ function renderStats(stats) {
       ? s.clickerUpgrades
       : {};
 
-  const rows = [
-    ["Clicks", s.clicks],
-    ["Money", s.money],
-    ["Tokens", s.tokens],
-    ["CLKR Upgrade (Click Booster)", Number(upgrades.per_click_1 || 0)],
-    ["CLKR Upgrade (Le Flo)", Number(upgrades.per_click_2 || 0)],
-    ["CLKR Upgrade (AD Laurent)", Number(upgrades.per_click_3 || 0)],
-    ["CLKR Upgrade (CPS Booster)", Number(upgrades.auto_click_1 || 0)],
-    ["CLKR Upgrade (L'Ultime)", Number(upgrades.auto_click_2 || 0)],
-    ["CLKR Upgrade (X-Clicker)", Number(upgrades.auto_click_3 || 0)],
-    ["Peak CPS", s.peakHumanCps ? Number(s.peakHumanCps).toFixed(1) : 0],
-    ["Stockage max PXL", Number(s.pixelwarMaxPixels || 0)],
-    ["Dino", s.dinoScore],
-    ["Flappy", s.flappyScore],
-    ["Snake", s.snakeScore],
-    ["Snake (meilleur temps, ms)", s.snakeBestTime || 0],
-    ["UNO (victoires)", s.unoWins],
-    ["P4 (victoires)", s.p4Wins],
-    ["Échecs (parties)", s.chessGames],
-    ["Échecs (victoires)", s.chessWins],
-    ["BlockBlast", s.blockblastScore],
-    ["BlockBlast (meilleur temps, ms)", s.blockblastBestTime || 0],
+  const groups = [
+    {
+      title: "Clicker",
+      rows: [
+        ["CLKR Upgrade (Click Booster)", Number(upgrades.per_click_1 || 0)],
+        ["CLKR Upgrade (Le Flo)", Number(upgrades.per_click_2 || 0)],
+        ["CLKR Upgrade (AD Laurent)", Number(upgrades.per_click_3 || 0)],
+        ["CLKR Upgrade (CPS Booster)", Number(upgrades.auto_click_1 || 0)],
+        ["CLKR Upgrade (L'Ultime)", Number(upgrades.auto_click_2 || 0)],
+        ["CLKR Upgrade (X-Clicker)", Number(upgrades.auto_click_3 || 0)],
+        ["Peak CPS", s.peakHumanCps ? Number(s.peakHumanCps).toFixed(1) : 0],
+      ],
+    },
+    { title: "Dino", rows: [["Score", s.dinoScore]] },
+    { title: "UNO", rows: [["Victoires", s.unoWins]] },
+    { title: "Flappy", rows: [["Score", s.flappyScore]] },
+    { title: "Puissance 4", rows: [["Victoires", s.p4Wins]] },
+    {
+      title: "Block Blast",
+      rows: [
+        ["Score", s.blockblastScore],
+        ["Meilleur temps (ms)", s.blockblastBestTime || 0],
+      ],
+    },
+    {
+      title: "Snake",
+      rows: [
+        ["Score", s.snakeScore],
+        ["Meilleur temps (ms)", s.snakeBestTime || 0],
+      ],
+    },
+    {
+      title: "Motus",
+      rows: [
+        [
+          "Mots trouvés",
+          s.motus && typeof s.motus.words === "number" ? s.motus.words : "—",
+        ],
+      ],
+    },
+    {
+      title: "2048",
+      rows: [
+        ["Score", s.score2048],
+        ["Tuile maximale", s.maxTile2048 || 0],
+      ],
+    },
+    {
+      title: "Coin Flip",
+      rows: [
+        [
+          "W/L",
+          s.coinflip
+            ? `${Number(s.coinflip.wins || 0)} / ${Number(s.coinflip.losses || 0)}`
+            : "0 / 0",
+        ],
+      ],
+    },
+    {
+      title: "Blackjack",
+      rows: [
+        [
+          "W/L",
+          s.blackjack
+            ? `${Number(s.blackjack.handsWon || 0)} / ${Number(s.blackjack.handsLost || 0)}`
+            : "0 / 0",
+        ],
+      ],
+    },
+    { title: "Mash", rows: [["Victoires", s.mashWins]] },
+    {
+      title: "Pixel War",
+      rows: [["Stockage max", Number(s.pixelwarMaxPixels || 0)]],
+    },
+    {
+      title: "Roulette",
+      rows: [
+        [
+          "W/L",
+          s.roulette
+            ? `${Number(s.roulette.wins || 0)} / ${Number(s.roulette.losses || 0)}`
+            : "0 / 0",
+        ],
+      ],
+    },
+    {
+      title: "Slots",
+      rows: [
+        [
+          "W/L",
+          s.slots
+            ? `${Number(s.slots.wins || 0)} / ${Number(s.slots.losses || 0)}`
+            : "0 / 0",
+        ],
+      ],
+    },
+    { title: "Sudoku", rows: [["Grilles complétées", s.sudokuCompleted]] },
+    {
+      title: "Aim Trainer",
+      rows: [
+        ["Best", s.aimTrainerBest || 0],
+        ["Best 15s", Number(s.aimTrainerBestByDuration?.["15"] || 0)],
+        ["Best 30s", Number(s.aimTrainerBestByDuration?.["30"] || 0)],
+        ["Best 1mn", Number(s.aimTrainerBestByDuration?.["60"] || 0)],
+        [
+          "Précision moyenne",
+          s.aimTrainerStats &&
+          Number.isFinite(Number(s.aimTrainerStats.avgAccuracy))
+            ? `${Number(s.aimTrainerStats.avgAccuracy).toFixed(1)}%`
+            : "0.0%",
+        ],
+        [
+          "Meilleure précision",
+          s.aimTrainerStats &&
+          Number.isFinite(
+            Number(
+              s.aimTrainerStats.bestAccuracy ?? s.aimTrainerStats.lastAccuracy,
+            ),
+          )
+            ? `${Number(s.aimTrainerStats.bestAccuracy ?? s.aimTrainerStats.lastAccuracy).toFixed(1)}%`
+            : "0.0%",
+        ],
+        [
+          "Ratio moyen",
+          s.aimTrainerStats && s.aimTrainerStats.avgRatio
+            ? s.aimTrainerStats.avgRatio
+            : s.aimTrainerStats &&
+                Number.isFinite(Number(s.aimTrainerStats.totalHits)) &&
+                Number.isFinite(Number(s.aimTrainerStats.totalMisses))
+              ? `${Math.max(0, Math.floor(Number(s.aimTrainerStats.totalHits) || 0))}:${Math.max(0, Math.floor(Number(s.aimTrainerStats.totalMisses) || 0))}`
+              : "0:0",
+        ],
+      ],
+    },
+    {
+      title: "PDE Hero",
+      rows: [
+        [
+          "Easy / Medium",
+          s.pdeHero?.scores
+            ? `${Number(s.pdeHero.scores.easy || 0)} / ${Number(s.pdeHero.scores.medium || 0)}`
+            : "0 / 0",
+        ],
+        [
+          "Hard / Expert",
+          s.pdeHero?.scores
+            ? `${Number(s.pdeHero.scores.hard || 0)} / ${Number(s.pdeHero.scores.expert || 0)}`
+            : "0 / 0",
+        ],
+        ["Plus longue partie (s)", s.pdeHero?.longestGame || 0],
+      ],
+    },
+    {
+      title: "Échecs",
+      rows: [
+        ["ELO", Number(s.chessElo || 500)],
+        ["Parties", s.chessGames],
+        ["Victoires", s.chessWins],
+      ],
+    },
+  ];
+
+  container.innerHTML = "";
+  groups.forEach(({ title, rows }) => {
+    const section = document.createElement("section");
+    section.className = "profile-stat-group";
+    const heading = document.createElement("h3");
+    heading.className = "profile-stat-group-title";
+    heading.textContent = title;
+    section.appendChild(heading);
+    const grid = document.createElement("div");
+    grid.className = "stats";
+    rows.forEach(([label, value]) => {
+      const el = document.createElement("div");
+      el.className = "stat";
+      const labelEl = document.createElement("div");
+      labelEl.className = "label";
+      labelEl.textContent = label;
+      const valueEl = document.createElement("div");
+      valueEl.className = "value";
+      valueEl.textContent = value ?? 0;
+      el.appendChild(labelEl);
+      el.appendChild(valueEl);
+      grid.appendChild(el);
+    });
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+
+/* legacy rows removed
+    [
+      "Motus (mots trouvés)",
+      s.motus && typeof s.motus.words === "number" ? s.motus.words : "—",
+    ],
     ["2048", s.score2048],
     ["2048 (tuile maximale)", s.maxTile2048 || 0],
-    ["Mash (victoires)", s.mashWins],
-    ["Sudoku (grilles complétées)", s.sudokuCompleted],
-    [
-      "Blackjack (W/L)",
-      s.blackjack
-        ? `${Number(s.blackjack.handsWon || 0)} / ${Number(s.blackjack.handsLost || 0)}`
-        : "0 / 0",
-    ],
     [
       "Coinflip (W/L)",
       s.coinflip
         ? `${Number(s.coinflip.wins || 0)} / ${Number(s.coinflip.losses || 0)}`
         : "0 / 0",
     ],
+    [
+      "Blackjack (W/L)",
+      s.blackjack
+        ? `${Number(s.blackjack.handsWon || 0)} / ${Number(s.blackjack.handsLost || 0)}`
+        : "0 / 0",
+    ],
+    ["Mash (victoires)", s.mashWins],
+    ["Stockage max PXL", Number(s.pixelwarMaxPixels || 0)],
     [
       "Roulette (W/L)",
       s.roulette
@@ -176,10 +349,11 @@ function renderStats(stats) {
         ? `${Number(s.slots.wins || 0)} / ${Number(s.slots.losses || 0)}`
         : "0 / 0",
     ],
-    [
-      "Motus (mots trouvés)",
-      s.motus && typeof s.motus.words === "number" ? s.motus.words : "—",
-    ],
+    ["Sudoku (grilles complétées)", s.sudokuCompleted],
+    ["Aim Trainer (best)", s.aimTrainerBest || 0],
+    ["Aim Trainer (best 15s)", Number(s.aimTrainerBestByDuration?.["15"] || 0)],
+    ["Aim Trainer (best 30s)", Number(s.aimTrainerBestByDuration?.["30"] || 0)],
+    ["Aim Trainer (best 1mn)", Number(s.aimTrainerBestByDuration?.["60"] || 0)],
     [
       "PDE Hero (easy/medium)",
       s.pdeHero?.scores
@@ -193,10 +367,6 @@ function renderStats(stats) {
         : "0 / 0",
     ],
     ["PDE Hero (plus longue partie, s)", s.pdeHero?.longestGame || 0],
-    ["Aim Trainer (best)", s.aimTrainerBest || 0],
-    ["Aim Trainer (best 15s)", Number(s.aimTrainerBestByDuration?.["15"] || 0)],
-    ["Aim Trainer (best 30s)", Number(s.aimTrainerBestByDuration?.["30"] || 0)],
-    ["Aim Trainer (best 1mn)", Number(s.aimTrainerBestByDuration?.["60"] || 0)],
     [
       "Aim Trainer (precision moyenne)",
       s.aimTrainerStats &&
@@ -227,20 +397,25 @@ function renderStats(stats) {
           ? `${Math.max(0, Math.floor(Number(s.aimTrainerStats.totalHits) || 0))}:${Math.max(0, Math.floor(Number(s.aimTrainerStats.totalMisses) || 0))}`
           : "0:0",
     ],
-  ];
+            ["Échecs (ELO)", Number(s.chessElo || 500)],
+            ["Échecs (parties)", s.chessGames],
+            ["Échecs (victoires)", s.chessWins],
+*/
 
+function renderEconomy(stats) {
+  const container = qs("economyStats");
+  if (!container) return;
   container.innerHTML = "";
-  rows.forEach(([label, value]) => {
+  [
+    ["Clicks", stats?.clicks],
+    ["Money", stats?.money],
+    ["Tokens", stats?.tokens],
+  ].forEach(([label, value]) => {
     const el = document.createElement("div");
     el.className = "stat";
-    const labelEl = document.createElement("div");
-    labelEl.className = "label";
-    labelEl.textContent = label;
-    const valueEl = document.createElement("div");
-    valueEl.className = "value";
-    valueEl.textContent = value ?? 0;
-    el.appendChild(labelEl);
-    el.appendChild(valueEl);
+    el.innerHTML = `<div class="label"></div><div class="value"></div>`;
+    el.querySelector(".label").textContent = label;
+    el.querySelector(".value").textContent = value ?? 0;
     container.appendChild(el);
   });
 }
@@ -433,6 +608,7 @@ async function main() {
     Infinity,
   );
   renderMedals(qs("medalsWrap"), data.medals || []);
+  renderEconomy(data.stats);
   renderStats(data.stats);
   renderCustomColors(data.customPixelColors || []);
   const birthDateDisplay = qs("birthDateValue");

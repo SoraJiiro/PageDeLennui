@@ -88,6 +88,8 @@ function getStatsFor(pseudo) {
       (FileService.data.chessGames && FileService.data.chessGames[pseudo]) || 0,
     chessWins:
       (FileService.data.chessWins && FileService.data.chessWins[pseudo]) || 0,
+    chessElo:
+      (FileService.data.chessElo && FileService.data.chessElo[pseudo]) || 500,
     blockblastScore:
       (FileService.data.blockblastScores &&
         FileService.data.blockblastScores[pseudo]) ||

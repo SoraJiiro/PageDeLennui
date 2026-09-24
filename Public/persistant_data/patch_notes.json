@@ -2,6 +2,60 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.2.5",
+      "date": "24/09/2026",
+      "sections": [
+        {
+          "title": "Nouveautés",
+          "icon": "fa-star",
+          "items": [
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Échecs :",
+              "text": "Ajout d'un système d'ELO initialisé à 500, visible dans le profil, le lobby et pendant les parties. Les parties contre les bots ne modifient pas l'ELO."
+            },
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Bot Stockfish :",
+              "text": "Un mode Stockfish est maintenant disponible pour jouer contre un bot plus puissant."
+            },
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "Échecs :",
+              "text": "Les joueurs peuvent abandonner après la moitié du temps de la partie ou proposer une nulle par accord mutuel."
+            }
+          ]
+        },
+        {
+          "title": "Améliorations ",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Profils :",
+              "text": "Les statistiques sont maintenant regroupées par jeu dans des sous-sections, avec une section Économie séparée pour les clicks, la monnaie et les tokens."
+            },
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Motus :",
+              "text": "Les indices du clavier sont maintenant conservés après chaque tentative et lors du changement de clavier."
+            },
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "Blackjack :",
+              "text": "Lorsque toutes les mains des joueurs sont bust, le croupier révèle directement sa main sans tirer de carte supplémentaire."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.2.4",
       "date": "23/09/2026",
       "sections": [

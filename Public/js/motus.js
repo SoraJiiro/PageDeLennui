@@ -19,6 +19,7 @@ export function initMotus(socket) {
   let fixedIndices = [];
   let fixedChars = {};
   let keyboardMode = 0;
+  const keyboardHints = new Map();
   let totalWords = null;
   let foundWordsCount = 0;
   const gridGap = 5;
@@ -168,23 +169,30 @@ export function initMotus(socket) {
     );
   }
 
-  function saveKeyboardState() {
-    return Array.from(document.querySelectorAll(".motus-key")).reduce(
-      (state, button) => {
-        if (button.dataset.key) {
-          state[button.dataset.key] = {
-            state: button.dataset.state || "",
-            correctIndices: button.dataset.correctIndices || "",
-          };
-        }
-        return state;
-      },
-      {},
-    );
+  function getKeyboardHint(key) {
+    return keyboardHints.get(key) || { state: "", correctIndices: [] };
+  }
+
+  function setKeyboardHint(key, state) {
+    if (!key) return;
+    const current = getKeyboardHint(key);
+    const rank = { "": 0, absent: 1, present: 2, correct: 3 };
+    const nextState = rank[state] > rank[current.state] ? state : current.state;
+    keyboardHints.set(key, {
+      state: nextState,
+      correctIndices: current.correctIndices,
+    });
+  }
+
+  function applyKeyboardHint(button) {
+    const hint = getKeyboardHint(button.dataset.key);
+    if (hint.state) button.dataset.state = hint.state;
+    if (hint.correctIndices.length) {
+      button.dataset.correctIndices = hint.correctIndices.join(",");
+    }
   }
 
   function createKeyboard() {
-    const previousState = saveKeyboardState();
     keyboard.innerHTML = "";
     const mode = keyboardModes[keyboardMode];
 
@@ -210,6 +218,7 @@ export function initMotus(socket) {
         btn.textContent = key;
         btn.dataset.key = key;
         btn.onclick = () => handleKey(key);
+        applyKeyboardHint(btn);
         row.appendChild(btn);
       });
       keyboard.appendChild(row);
@@ -228,33 +237,20 @@ export function initMotus(socket) {
       }
     });
 
-    Object.entries(previousState).forEach(([key, state]) => {
-      const button = Array.from(document.querySelectorAll(".motus-key")).find(
-        (candidate) => candidate.dataset.key === key,
-      );
-      if (!button) return;
-      if (state.state) button.dataset.state = state.state;
-      if (state.correctIndices)
-        button.dataset.correctIndices = state.correctIndices;
-    });
-
     applyResponsiveGridSizing(wordLength);
   }
 
   function updateKeyCorrectIndices(letter, tileIndex, keyElement) {
     const key =
       keyElement || document.querySelector(`.motus-key[data-key="${letter}"]`);
-    if (!key) return;
     const humanIndex = tileIndex + 1;
-    const existing = key.dataset.correctIndices
-      ? key.dataset.correctIndices
-          .split(",")
-          .map((value) => parseInt(value, 10))
-      : [];
+    const hint = getKeyboardHint(letter);
+    const existing = hint.correctIndices;
     if (existing.includes(humanIndex)) return;
     existing.push(humanIndex);
     existing.sort((a, b) => a - b);
-    key.dataset.correctIndices = existing.join(",");
+    keyboardHints.set(letter, { state: "correct", correctIndices: existing });
+    if (key) applyKeyboardHint(key);
   }
 
   function updateGrid() {
@@ -331,24 +327,16 @@ export function initMotus(socket) {
 
         if (status === 2) {
           tile.dataset.state = "correct";
-          if (key) {
-            key.dataset.state = "correct";
-            updateKeyCorrectIndices(letter, i, key);
-          } else {
-            updateKeyCorrectIndices(letter, i);
-          }
+          setKeyboardHint(letter, "correct");
+          updateKeyCorrectIndices(letter, i, key);
         } else if (status === 1) {
           tile.dataset.state = "present";
-          if (key && key.dataset.state !== "correct")
-            key.dataset.state = "present";
+          setKeyboardHint(letter, "present");
+          if (key) applyKeyboardHint(key);
         } else {
           tile.dataset.state = "absent";
-          if (
-            key &&
-            key.dataset.state !== "correct" &&
-            key.dataset.state !== "present"
-          )
-            key.dataset.state = "absent";
+          setKeyboardHint(letter, "absent");
+          if (key) applyKeyboardHint(key);
         }
       }, i * 100);
     });
@@ -423,6 +411,7 @@ export function initMotus(socket) {
       wordLength = length;
       fixedIndices = incomingFixedIndices || hyphens || [];
       fixedChars = incomingFixedChars || {};
+      keyboardHints.clear();
       resetCurrentGuess(); // Réinitialiser la supposition actuelle pour éviter le report
       gameActive = true; // Réinitialiser l'état du jeu
       hyphenIndices = hyphens || [];
@@ -430,8 +419,7 @@ export function initMotus(socket) {
       createKeyboard(); // Reconstruit le clavier (réinitialise les couleurs)
 
       if (hyphenIndices.length > 0) {
-        const key = document.querySelector('.motus-key[data-key="-"]');
-        if (key) key.dataset.state = "correct";
+        setKeyboardHint("-", "correct");
       }
 
       // Logique de visibilité des boutons
@@ -455,22 +443,14 @@ export function initMotus(socket) {
               `.motus-key[data-key="${letter}"]`,
             );
             if (status === 2) {
-              if (key) {
-                key.dataset.state = "correct";
-                updateKeyCorrectIndices(letter, i, key);
-              } else {
-                updateKeyCorrectIndices(letter, i);
-              }
+              setKeyboardHint(letter, "correct");
+              updateKeyCorrectIndices(letter, i, key);
             } else if (status === 1) {
-              if (key && key.dataset.state !== "correct")
-                key.dataset.state = "present";
+              setKeyboardHint(letter, "present");
+              if (key) applyKeyboardHint(key);
             } else {
-              if (
-                key &&
-                key.dataset.state !== "correct" &&
-                key.dataset.state !== "present"
-              )
-                key.dataset.state = "absent";
+              setKeyboardHint(letter, "absent");
+              if (key) applyKeyboardHint(key);
             }
           });
         });

@@ -112,6 +112,10 @@
                             aria-label="Choisir la couleur secondaire de l'interface" />
                     </label>
                 </div>
+                <nav class="admin-toolbar" aria-label="Navigation du panneau">
+                    <span class="admin-toolbar-label">Sections</span>
+                    <div id="admin-toolbar-links"></div>
+                </nav>
                 <div class="admin-sections">
                     <!-- TRANSACTIONS -->
                     <section class="admin-section" style="order: 4;">
@@ -1101,6 +1105,7 @@
                                         <th>Pseudo</th>
                                         <th>Date écrite</th>
                                         <th>Anniversaire</th>
+                                        <th>Modifier</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -1712,6 +1717,8 @@
 
         <script src="/socket.io/socket.io.js"></script>
         <!-- Password Modal -->
+        <button id="admin-scroll-top" class="admin-scroll-top" type="button"
+            aria-label="Retour en haut" title="Retour en haut">↑</button>
         <div id="password-modal" class="modal-overlay" style="display: none;">
             <div class="modal-content">
                 <h3>🔒 Confirmation requise</h3>

@@ -207,12 +207,32 @@
 }
 
 .stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
+.profile-stat-group {
+  flex: 1 1 260px;
+  min-width: min(260px, 100%);
+  margin-bottom: 18px;
+}
+
+.profile-stat-group:last-child {
+  margin-bottom: 0;
+}
+
+.profile-stat-group-title {
+  margin: 0 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
 .stat {
+  flex: 1 1 150px;
+  min-width: 0;
   padding: 10px;
   border: 2px solid var(--primary-color);
   border-radius: 0;

@@ -393,14 +393,23 @@ const leaderboardManager = {
       pseudo,
       games: Number(FileService.data.chessGames?.[pseudo] || 0),
       wins: Number(FileService.data.chessWins?.[pseudo] || 0),
+      losses: Math.max(
+        0,
+        Number(FileService.data.chessGames?.[pseudo] || 0) -
+          Number(FileService.data.chessWins?.[pseudo] || 0),
+      ),
+      elo: Number(FileService.data.chessElo?.[pseudo]) || 500,
     }));
     arr = this._withUsersFallback(arr, (pseudo) => ({
       pseudo,
       games: 0,
       wins: 0,
+      losses: 0,
+      elo: 500,
     }));
     arr.sort(
       (a, b) =>
+        b.elo - a.elo ||
         b.wins - a.wins ||
         b.games - a.games ||
         a.pseudo.localeCompare(b.pseudo),

@@ -9,7 +9,10 @@ function registerChessHandlers({
 }) {
   const { addMoney } = require("../../services/wallet");
   const { applyAutoBadges } = require("../../services/badgesAuto");
+  const DEFAULT_ELO = 500;
+  const ELO_K_FACTOR = 32;
   let selectedGameId = null;
+  const getElo = (name) => Number(FileService.data.chessElo?.[name]) || 500;
   const getGame = (id = selectedGameId) => chessGames.get(id);
   const findUserGame = () =>
     [...chessGames.entries()].find(
@@ -26,6 +29,9 @@ function registerChessHandlers({
     [...chessGames.entries()].map(([id, game]) => ({
       id,
       joueurs: game.joueurs.map((p) => p.pseudo),
+      elos: Object.fromEntries(
+        game.joueurs.map((player) => [player.pseudo, getElo(player.pseudo)]),
+      ),
       spectators: game.spectators.length,
       gameStarted: game.gameStarted,
       vsBot: Boolean(game.vsBot),
@@ -41,6 +47,7 @@ function registerChessHandlers({
       client.emit("chess:lobby", {
         games: listGames(),
         playerGameId: playerGame?.[0] || null,
+        myElo: getElo(username),
       });
     });
   const broadcastGame = (id) => {
@@ -48,9 +55,13 @@ function registerChessHandlers({
     if (!game?.gameStarted) return;
     refreshIds(game);
     [...game.joueurs, ...game.spectators].forEach((entry) =>
-      io.sockets.sockets
-        .get(entry.socketId)
-        ?.emit("chess:update", { ...game.getState(entry.pseudo), gameId: id }),
+      io.sockets.sockets.get(entry.socketId)?.emit("chess:update", {
+        ...game.getState(entry.pseudo),
+        gameId: id,
+        chessElos: Object.fromEntries(
+          game.joueurs.map((player) => [player.pseudo, getElo(player.pseudo)]),
+        ),
+      }),
     );
   };
   const startGameClock = (id, game) =>
@@ -84,6 +95,26 @@ function registerChessHandlers({
   const recordGame = (game, winner) => {
     if (game.vsBot) return;
 
+    const players = game.joueurs.filter((player) => !player.isBot);
+    if (players.length !== 2) return;
+    if (!FileService.data.chessElo) FileService.data.chessElo = {};
+
+    const [first, second] = players;
+    const firstElo =
+      Number(FileService.data.chessElo[first.pseudo]) || DEFAULT_ELO;
+    const secondElo =
+      Number(FileService.data.chessElo[second.pseudo]) || DEFAULT_ELO;
+    const expectedFirst = 1 / (1 + 10 ** ((secondElo - firstElo) / 400));
+    const firstResult = winner ? (winner === first.pseudo ? 1 : 0) : 0.5;
+    const secondResult = 1 - firstResult;
+
+    FileService.data.chessElo[first.pseudo] = Math.round(
+      firstElo + ELO_K_FACTOR * (firstResult - expectedFirst),
+    );
+    FileService.data.chessElo[second.pseudo] = Math.round(
+      secondElo + ELO_K_FACTOR * (secondResult - (1 - expectedFirst)),
+    );
+
     game.joueurs.forEach((player) => {
       FileService.data.chessGames[player.pseudo] =
         (FileService.data.chessGames[player.pseudo] || 0) + 1;
@@ -93,6 +124,7 @@ function registerChessHandlers({
         (FileService.data.chessWins[winner] || 0) + 1;
     FileService.save("chessGames", FileService.data.chessGames);
     FileService.save("chessWins", FileService.data.chessWins);
+    FileService.save("chessElo", FileService.data.chessElo);
     game.joueurs.forEach((player) =>
       applyAutoBadges({ pseudo: player.pseudo, FileService }),
     );
@@ -107,7 +139,7 @@ function registerChessHandlers({
     game.stopClock();
     clearTimeout(game.pauseTimer);
     recordGame(game, winner);
-    if (winner) {
+    if (winner && winner !== "Bot") {
       const wallet = addMoney(
         FileService,
         winner,
@@ -179,27 +211,34 @@ function registerChessHandlers({
       socket.emit("chess:update", {
         ...game.getState(pseudo),
         gameId: selectedGameId,
+        chessElos: Object.fromEntries(
+          game.joueurs.map((player) => [player.pseudo, getElo(player.pseudo)]),
+        ),
       });
   });
-  socket.on("chess:create", ({ timeMinutes = 10, vsBot = false } = {}) => {
-    const found = findUserGame();
-    if (found?.[1].getPlayer(pseudo))
-      return socket.emit(
-        "chess:error",
-        "Quitte ta table actuelle avant d'en créer une autre",
-      );
-    leaveCurrent();
-    const id = `chess-${Date.now()}-${socket.id}`;
-    const game = new ChessGame({
-      timeMinutes: Number(timeMinutes),
-      vsBot: Boolean(vsBot),
-    });
-    game.addPlayer(pseudo, socket.id);
-    if (game.vsBot) game.addBot();
-    chessGames.set(id, game);
-    selectedGameId = id;
-    broadcastLobby();
-  });
+  socket.on(
+    "chess:create",
+    ({ timeMinutes = 10, vsBot = false, botType = "classic" } = {}) => {
+      const found = findUserGame();
+      if (found?.[1].getPlayer(pseudo))
+        return socket.emit(
+          "chess:error",
+          "Quitte ta table actuelle avant d'en créer une autre",
+        );
+      leaveCurrent();
+      const id = `chess-${Date.now()}-${socket.id}`;
+      const game = new ChessGame({
+        timeMinutes: Number(timeMinutes),
+        vsBot: Boolean(vsBot),
+        botType,
+      });
+      game.addPlayer(pseudo, socket.id);
+      if (game.vsBot) game.addBot();
+      chessGames.set(id, game);
+      selectedGameId = id;
+      broadcastLobby();
+    },
+  );
   socket.on("chess:join", ({ gameId: id } = {}) => {
     const game = getGame(id);
     if (!game || game.gameStarted)
@@ -230,7 +269,13 @@ function registerChessHandlers({
     if (found && found[0] !== id) leaveCurrent();
     game.addSpectator(pseudo, socket.id);
     selectedGameId = id;
-    socket.emit("chess:update", { ...game.getState(pseudo), gameId: id });
+    socket.emit("chess:update", {
+      ...game.getState(pseudo),
+      gameId: id,
+      chessElos: Object.fromEntries(
+        game.joueurs.map((player) => [player.pseudo, getElo(player.pseudo)]),
+      ),
+    });
     broadcastLobby();
   });
   socket.on("chess:leave", () => {
@@ -253,6 +298,9 @@ function registerChessHandlers({
       io.sockets.sockets.get(player.socketId)?.emit("chess:gameStart", {
         ...game.getState(player.pseudo),
         gameId: id,
+        chessElos: Object.fromEntries(
+          game.joueurs.map((entry) => [entry.pseudo, getElo(entry.pseudo)]),
+        ),
       }),
     );
     broadcastLobby();
@@ -284,10 +332,13 @@ function registerChessHandlers({
     broadcastGame(selectedGameId);
 
     if (game.vsBot && game.chess.turn() === "b") {
-      setTimeout(() => {
+      setTimeout(async () => {
         const currentGame = getGame(selectedGameId);
         if (!currentGame || !currentGame.gameStarted) return;
-        const botResult = currentGame.playBotMove();
+        const botResult =
+          currentGame.botType === "stockfish"
+            ? await currentGame.playStockfishMove()
+            : currentGame.playBotMove();
         if (botResult?.winner || botResult?.draw)
           return finishGame(selectedGameId, {
             winner: botResult.winner,
@@ -296,6 +347,47 @@ function registerChessHandlers({
         if (botResult?.success) broadcastGame(selectedGameId);
       }, 220);
     }
+  });
+  socket.on("chess:resign", () => {
+    const game = getGame();
+    const player = game?.getPlayer(pseudo);
+    if (!game?.gameStarted || !player) return;
+    if (!game.vsBot && !game.canResign()) {
+      return socket.emit(
+        "chess:error",
+        "L'abandon est disponible après la moitié du temps total",
+      );
+    }
+    const opponent = game.joueurs.find((entry) => entry.pseudo !== pseudo);
+    finishGame(selectedGameId, {
+      winner: opponent?.pseudo || null,
+      reason: "Abandon",
+    });
+  });
+  socket.on("chess:offerDraw", () => {
+    const game = getGame();
+    if (!game?.gameStarted || game.vsBot) {
+      return socket.emit(
+        "chess:error",
+        "La nulle est disponible uniquement entre joueurs",
+      );
+    }
+    const result = game.offerDraw(pseudo);
+    if (!result.success) return;
+    if (result.agreed) {
+      return finishGame(selectedGameId, {
+        draw: true,
+        reason: "Nulle par accord",
+      });
+    }
+    game.joueurs
+      .filter((player) => player.pseudo !== pseudo && !player.isBot)
+      .forEach((player) =>
+        io.sockets.sockets.get(player.socketId)?.emit("chess:drawOffer", {
+          from: pseudo,
+        }),
+      );
+    broadcastGame(selectedGameId);
   });
   return {
     onDisconnect() {

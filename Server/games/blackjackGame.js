@@ -492,6 +492,17 @@ class BlackjackGame {
     if (!this.gameStarted || this.joueurs.length === 0) return;
     this.phase = "dealer";
 
+    const allPlayersBust = this.joueurs.every(
+      (player) =>
+        player.hands.length > 0 &&
+        player.hands.every((hand) => hand.status === "bust"),
+    );
+    if (allPlayersBust) {
+      this.endRound();
+      if (this.emitState) this.emitState(this.getState());
+      return;
+    }
+
     // Reveal de la carte cachée et on laisse le temps du suspense (match animation CSS)
     if (this.emitState) this.emitState(this.getState());
     await new Promise((r) => setTimeout(r, 2600));

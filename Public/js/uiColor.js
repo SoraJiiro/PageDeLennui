@@ -16,6 +16,39 @@ function normalizeHexColor(value, fallback = "#00FF00") {
   return `#${hex.toLowerCase()}`;
 }
 
+function hslToHex(value) {
+  const match = String(value || "")
+    .trim()
+    .match(/^hsl\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)$/i);
+  if (!match) return null;
+
+  const h = (Number(match[1]) % 360) / 360;
+  const s = Math.max(0, Math.min(100, Number(match[2]))) / 100;
+  const l = Math.max(0, Math.min(100, Number(match[3]))) / 100;
+  const hueToRgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  if (s === 0) {
+    const channel = Math.round(l * 255)
+      .toString(16)
+      .padStart(2, "0");
+    return `#${channel}${channel}${channel}`;
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const rgb = [h + 1 / 3, h, h - 1 / 3].map((t) =>
+    Math.round(hueToRgb(p, q, t) * 255)
+      .toString(16)
+      .padStart(2, "0"),
+  );
+  return `#${rgb.join("")}`;
+}
+
 function getRelativeLuminance(hexColor) {
   const color = normalizeHexColor(hexColor, "#000000").slice(1);
   const num = Number.parseInt(color, 16);
@@ -61,10 +94,21 @@ function notifyColorRejected() {
 
 function updatePrimaryThemeColor(color) {
   const root = document.documentElement;
-  const safeColor = normalizeHexColor(color, "#00ff00");
-  root.style.setProperty("--primary-color", safeColor);
-  root.style.setProperty("--primary-contrast-text", getContrastText(safeColor));
-  return safeColor;
+  const rawColor = String(color || "").trim();
+  const safeColor = normalizeHexColor(
+    rawColor,
+    hslToHex(rawColor) || "#00ff00",
+  );
+  const contrastColor = hslToHex(rawColor) || safeColor;
+  root.style.setProperty(
+    "--primary-color",
+    rawColor.match(/^hsl\(/i) ? rawColor : safeColor,
+  );
+  root.style.setProperty(
+    "--primary-contrast-text",
+    getContrastText(contrastColor),
+  );
+  return rawColor.match(/^hsl\(/i) ? rawColor : safeColor;
 }
 
 function updateSecondaryThemeColor(color) {
