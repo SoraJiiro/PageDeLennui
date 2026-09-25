@@ -1,12 +1,67 @@
 const { Chess } = require("chess.js");
 
+let stockfishReady = null;
+let stockfishQueue = Promise.resolve();
+let stockfishBestMove = null;
+
+function getStockfishEngine() {
+  if (!stockfishReady) {
+    stockfishReady = new Promise((resolve, reject) => {
+      const engine = require("stockfish")(
+        "lite-single",
+        (error, readyEngine) => {
+          if (error) return reject(error);
+          readyEngine.sendCommand("uci");
+          readyEngine.sendCommand("setoption name Skill Level value 20");
+          readyEngine.sendCommand("setoption name Hash value 32");
+          readyEngine.sendCommand("isready");
+          resolve(readyEngine);
+        },
+      );
+      engine.listener = (line) => {
+        const output = String(line || "");
+        if (output.startsWith("bestmove ")) stockfishBestMove = output;
+      };
+    }).catch((error) => {
+      stockfishReady = null;
+      throw error;
+    });
+  }
+  return stockfishReady;
+}
+
+function chooseStockfishMove(fen, initialTimeMs) {
+  const task = stockfishQueue.then(async () => {
+    const engine = await getStockfishEngine();
+    stockfishBestMove = null;
+    engine.sendCommand("position fen " + fen);
+    const thinkTime = Math.min(3000, Math.max(1200, initialTimeMs / 120));
+    engine.sendCommand(`go movetime ${thinkTime}`);
+
+    const deadline = Date.now() + 5000;
+    while (!stockfishBestMove && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+
+    const match = String(stockfishBestMove || "").match(
+      /^bestmove\s+([a-h][1-8])([a-h][1-8])([qrbn])?/i,
+    );
+    if (!match) return null;
+    return {
+      from: match[1],
+      to: match[2],
+      promotion: match[3]?.toLowerCase() || "q",
+    };
+  });
+  stockfishQueue = task.catch(() => {});
+  return task;
+}
+
 class ChessGame {
   constructor({ timeMinutes = 10, vsBot = false, botType = "classic" } = {}) {
     this.initialTimeMs = this.clampTimeMs(timeMinutes);
     this.vsBot = Boolean(vsBot);
     this.botType = botType === "stockfish" ? "stockfish" : "classic";
-    this.stockfish = null;
-    this.stockfishReady = null;
     this.botPlayer = null;
     this.joueurs = [];
     this.spectators = [];
@@ -315,46 +370,7 @@ class ChessGame {
   }
 
   async chooseStockfishMove() {
-    if (!this.stockfishReady) {
-      this.stockfishReady = new Promise((resolve, reject) => {
-        let engine;
-        const onOutput = (line) => {
-          const output = String(line || "");
-          if (output.startsWith("bestmove ")) this.stockfishBestMove = output;
-        };
-        engine = require("stockfish")("lite-single", (error, readyEngine) => {
-          if (error) return reject(error);
-          this.stockfish = readyEngine;
-          readyEngine.sendCommand("uci");
-          readyEngine.sendCommand("setoption name Skill Level value 20");
-          readyEngine.sendCommand("setoption name Hash value 32");
-          readyEngine.sendCommand("isready");
-          resolve(readyEngine);
-        });
-        engine.listener = onOutput;
-      });
-    }
-
-    const engine = await this.stockfishReady;
-    this.stockfishBestMove = null;
-    engine.sendCommand("position fen " + this.chess.fen());
-    const thinkTime = Math.min(3000, Math.max(1200, this.initialTimeMs / 120));
-    engine.sendCommand(`go movetime ${thinkTime}`);
-
-    const deadline = Date.now() + 5000;
-    while (!this.stockfishBestMove && Date.now() < deadline) {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    }
-
-    const match = String(this.stockfishBestMove || "").match(
-      /^bestmove\s+([a-h][1-8])([a-h][1-8])([qrbn])?/i,
-    );
-    if (!match) return null;
-    return {
-      from: match[1],
-      to: match[2],
-      promotion: match[3]?.toLowerCase() || "q",
-    };
+    return chooseStockfishMove(this.chess.fen(), this.initialTimeMs);
   }
 
   playBotMove() {
