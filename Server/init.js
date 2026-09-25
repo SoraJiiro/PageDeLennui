@@ -39,6 +39,7 @@ const { setupAdminLogBridge } = require("./logging/setupAdminLogBridge");
 const { setupAutoReload } = require("./bootstrap/setupAutoReload");
 const { setupShutdown } = require("./bootstrap/setupShutdown");
 const { registerShutdownContext } = require("./bootstrap/shutdownManager");
+const { startOpenFront } = require("./bootstrap/openFrontLauncher");
 
 // ------- Init -------
 const app = express();
@@ -100,6 +101,9 @@ setupAutoReload(io, config);
 
 // ------- Gestion propre de l'arrêt (CTRL+C) -------
 setupShutdown();
+
+// ------- Démarrage auto OpenFront -------
+startOpenFront();
 
 // ------- Start Serveur -------
 config.loadBlacklist("S");

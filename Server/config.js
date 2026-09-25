@@ -8,6 +8,9 @@ module.exports = {
   PORT: process.env.PORT || 7750,
   HOST: "",
   SESSION_SECRET: process.env.CLE_SID || "pDeS3CR3Ts1dKeY@523!",
+  OPENFRONT_BRIDGE_SECRET:
+    process.env.OPENFRONT_BRIDGE_SECRET ||
+    "change-this-openfront-bridge-secret",
 
   // Route
   DATA: path.join(__dirname, "..", "data"),

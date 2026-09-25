@@ -668,6 +668,27 @@ const leaderboardManager = {
     }));
     io.emit("pdehero:leaderboard", arr);
   },
+  broadcastOpenFrontLB(io) {
+    let arr = Object.entries(FileService.data.openfrontStats || {})
+      .filter(([pseudo]) => pseudo !== "_processed")
+      .map(([pseudo, stats]) => ({
+        pseudo,
+        games: Number(stats?.games) || 0,
+        wins: Number(stats?.wins) || 0,
+      }))
+      .sort(
+        (a, b) =>
+          b.wins - a.wins ||
+          b.games - a.games ||
+          a.pseudo.localeCompare(b.pseudo),
+      );
+    arr = this._withUsersFallback(arr, (pseudo) => ({
+      pseudo,
+      games: 0,
+      wins: 0,
+    }));
+    io.emit("openfront:leaderboard", arr);
+  },
   broadcastAimTrainerLB(io, selectedDuration = "30", targetSocket = null) {
     const src = FileService.data.aimTrainerScores || {};
     const isPerDuration =
@@ -1189,6 +1210,7 @@ function initSocketHandlers(io, socket, gameState) {
   leaderboardManager.broadcastSlotsLB(io);
   leaderboardManager.broadcastSudokuLB(io);
   leaderboardManager.broadcastPdeHeroLB(io);
+  leaderboardManager.broadcastOpenFrontLB(io);
 
   registerPdeHeroHandlers({
     io,

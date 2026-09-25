@@ -247,6 +247,7 @@ class FileService {
         "clicker_anti_cheat_settings.json",
       ),
       clickerUpgrades: path.join(config.DATA, "clicker_upgrades.json"),
+      openfrontStats: path.join(config.DATA, "openfront_stats.json"),
       fileActions: path.join(config.DATA, "file_actions.log"),
     };
 
@@ -542,6 +543,7 @@ class FileService {
         {},
       ),
       clickerUpgrades: this.readJSON(this.files.clickerUpgrades, {}),
+      openfrontStats: this.readJSON(this.files.openfrontStats, {}),
       // fileActions is an append-only log, don't try to parse as JSON here
     };
   }
@@ -805,6 +807,7 @@ class FileService {
       clickerFouChallenges: this.files.clickerFouChallenges,
       clickerAntiCheatSettings: this.files.clickerAntiCheatSettings,
       clickerUpgrades: this.files.clickerUpgrades,
+      openfrontStats: this.files.openfrontStats,
       chatMuted: this.files.chatMuted,
     };
     if (fileMap[key]) {

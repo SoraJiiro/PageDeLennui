@@ -376,6 +376,9 @@ function initSocket() {
   socket.on("pixelwar:leaderboard", (data) =>
     updateLeaderboard("pixelwar", data, "pixelsPlaced"),
   );
+  socket.on("openfront:leaderboard", (data) =>
+    updateLeaderboard("openfront", data, "wins"),
+  );
   socket.emit("pixelwar:get_leaderboard");
   socket.emit("aim:requestLeaderboard", { duration: "30" });
 
@@ -557,6 +560,17 @@ function updateLeaderboard(type, data, valueKey) {
                         <td>${clicks}</td>
                         <td>${money}</td>
                         <td>${tokens}</td>
+                    `;
+      tbody.appendChild(tr);
+      return;
+    }
+
+    if (type === "openfront") {
+      tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.pseudo}</td>
+                        <td>${Number(item.games || 0).toLocaleString("fr-FR")}</td>
+                        <td>${Number(item.wins || 0).toLocaleString("fr-FR")}</td>
                     `;
       tbody.appendChild(tr);
       return;

@@ -164,6 +164,12 @@ const AUTO_BADGES = [
     name: "Artiste",
     isEligible: ({ pixelwarPixelsPlaced }) => pixelwarPixelsPlaced >= 1000,
   },
+  {
+    id: "OpenFrontTag",
+    emoji: "🗺️",
+    name: "OpenFront Dictator",
+    isEligible: ({ openfrontWins }) => openfrontWins >= 10,
+  },
 ];
 
 function ensureBadgesData(FileService) {
@@ -260,6 +266,7 @@ function getEligibilitySnapshot(p, FileService) {
       p,
       "pixelsPlaced",
     ),
+    openfrontWins: readNum(FileService.data.openfrontStats, p, "wins"),
   };
 }
 
@@ -319,6 +326,8 @@ function getBadgeUnlockCondition({
       return `clickerFouDone === true (value=${Boolean(clickerFouDone)})`;
     case "Artiste":
       return `pixelwarPixelsPlaced >= 1000 (value=${Number(progress.pixelwarPixelsPlaced || 0)})`;
+    case "OpenFrontTag":
+      return `openfrontWins >= 10 (value=${Number(progress.openfrontWins || 0)})`;
     default:
       return "condition unknown";
   }
@@ -412,6 +421,7 @@ function applyAutoBadges({ pseudo, FileService }) {
   const slotsTotalBet = progress.slotsTotalBet;
   const casinoTotal = progress.casinoTotal;
   const pixelwarPixelsPlaced = progress.pixelwarPixelsPlaced;
+  const openfrontWins = progress.openfrontWins;
 
   const isOgLocked = Boolean(baseline && baseline.lockOg);
   const clickerFouDone = Boolean(
@@ -457,6 +467,7 @@ function applyAutoBadges({ pseudo, FileService }) {
             slotsTotalBet,
             casinoTotal,
             pixelwarPixelsPlaced,
+            openfrontWins,
             clickerFouDone,
           });
     if (eligible && !assignedSet.has(badge.id)) {

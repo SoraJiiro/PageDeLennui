@@ -1,9 +1,13 @@
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const express = require("express");
 const { FileService } = require("../util");
+const dbUsers = require("../db/dbUsers");
 const profileRoutes = require("./profileRoutes");
 const { listShopItems } = require("../services/shopCatalog");
+const { addMoney } = require("../services/wallet");
+const { applyAutoBadges } = require("../services/badgesAuto");
 
 function setupRoutes(
   app,
@@ -25,6 +29,96 @@ function setupRoutes(
 ) {
   app.locals.io = io;
   app.locals.pixelWarGame = pixelWarGame;
+
+  app.post("/api/integrations/openfront/events", (req, res) => {
+    const secret = String(config.OPENFRONT_BRIDGE_SECRET || "").trim();
+    const signature = String(req.get("x-openfront-signature") || "").trim();
+    if (!secret || !signature) {
+      return res.status(401).json({ message: "Bridge non configure" });
+    }
+    const body = JSON.stringify(req.body || {});
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(body)
+      .digest("hex");
+    if (
+      signature.length !== expected.length ||
+      !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+    ) {
+      return res.status(401).json({ message: "Signature invalide" });
+    }
+
+    const event = req.body || {};
+    const gameId = String(event.gameID || "").trim();
+    const players = Array.isArray(event.players) ? event.players : [];
+    const winner = String(event.winnerUsername || "").trim();
+    if (!gameId || players.length === 0 || !winner) {
+      return res.status(400).json({ message: "Evenement OpenFront incomplet" });
+    }
+
+    const stats = FileService.data.openfrontStats || {};
+    const processed = stats._processed || {};
+    if (processed[gameId]) return res.json({ success: true, duplicate: true });
+    const uniquePlayers = [
+      ...new Set(
+        players
+          .map((player) => String(player?.username || "").trim())
+          .filter(Boolean),
+      ),
+    ];
+    if (!uniquePlayers.includes(winner)) {
+      return res.status(400).json({ message: "Vainqueur absent des joueurs" });
+    }
+    const linkedPlayers = uniquePlayers.filter((pseudo) =>
+      dbUsers.findBypseudo(pseudo),
+    );
+    if (!linkedPlayers.includes(winner)) {
+      return res
+        .status(400)
+        .json({ message: "Vainqueur non lie a un compte PDE" });
+    }
+    linkedPlayers.forEach((pseudo) => {
+      if (!stats[pseudo] || typeof stats[pseudo] !== "object") {
+        stats[pseudo] = { games: 0, wins: 0 };
+      }
+      stats[pseudo].games = (Number(stats[pseudo].games) || 0) + 1;
+    });
+    stats[winner].wins = (Number(stats[winner].wins) || 0) + 1;
+    processed[gameId] = new Date().toISOString();
+    stats._processed = processed;
+    FileService.save("openfrontStats", stats);
+
+    const winnerWallet = addMoney(
+      FileService,
+      winner,
+      750,
+      FileService.data.clicks[winner] || 0,
+      "jeu:openfront",
+    );
+    io.to("user:" + winner).emit("economy:wallet", winnerWallet);
+    io.to("user:" + winner).emit("economy:gameMoney", {
+      game: "openfront",
+      gained: 750,
+      total: 750,
+      final: true,
+    });
+    try {
+      applyAutoBadges({ pseudo: winner, FileService });
+    } catch {}
+    try {
+      FileService.appendLog({
+        type: "GAME_MONEY_REWARD",
+        pseudo: winner,
+        game: "openfront",
+        gained: 750,
+        total: 750,
+        gameID: gameId,
+        at: new Date().toISOString(),
+      });
+    } catch {}
+    leaderboardManager.broadcastOpenFrontLB(io);
+    return res.json({ success: true, rewarded: winner });
+  });
 
   // API
   app.use("/api", authRoutes);

@@ -762,6 +762,16 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = url;
   }
 
+  function resolveExternalUrl(button) {
+    const configuredUrl = String(button?.dataset.externalUrl || "").trim();
+    if (configuredUrl !== "__OPENFRONT_LAN__") return configuredUrl;
+    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+    const currentHost = window.location.hostname;
+    const url = new URL(`${protocol}//${currentHost}:9000/`);
+    if (window.username) url.searchParams.set("pde_user", window.username);
+    return url.toString();
+  }
+
   function openSidebar() {
     if (sidebar) sidebar.classList.add("active");
     if (sidebarOverlay) sidebarOverlay.classList.add("active");
@@ -856,7 +866,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll(".ext-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const url = String(btn.dataset.externalUrl || "").trim();
+      const url = resolveExternalUrl(btn);
       const title = String(btn.dataset.externalTitle || "").trim();
       if (!url) return;
 

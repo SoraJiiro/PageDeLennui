@@ -1,10 +1,12 @@
 function setupShutdown() {
   const { requestShutdown } = require("./shutdownManager");
+  const { shutdownOpenFront } = require("./openFrontLauncher");
 
   const handler = (sig) => {
     try {
       console.log(`\n\n>> Arrêt du serveur (${sig})...`);
     } catch (e) {}
+    shutdownOpenFront();
     requestShutdown(sig);
   };
 

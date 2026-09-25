@@ -26,6 +26,12 @@
               "tag": "[NEW]",
               "strong": "Échecs :",
               "text": "Les joueurs peuvent abandonner après la moitié du temps de la partie ou proposer une nulle par accord mutuel."
+            },
+            {
+              "tagClass": "tag-new",
+              "tag": "[NEW]",
+              "strong": "OpenFront :",
+              "text": "OpenFront est maintenant disponible sur PDE, et vous serez récompensé pour vos victoires."
             }
           ]
         },
