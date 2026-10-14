@@ -16,6 +16,7 @@ function registerPdeHeroHandlers({
     totalNotes,
     hits,
     misses,
+    sustainSeconds,
     completed,
   } = {}) => {
     const safeScore = Math.floor(Number(score));
@@ -25,6 +26,7 @@ function registerPdeHeroHandlers({
     const safeTotalNotes = Math.floor(Number(totalNotes));
     const safeHits = Math.floor(Number(hits));
     const safeMisses = Math.floor(Number(misses));
+    const safeSustainSeconds = Number(sustainSeconds);
     const safeDifficulty = ["easy", "medium", "hard", "expert"].includes(
       difficulty,
     )
@@ -38,6 +40,7 @@ function registerPdeHeroHandlers({
       !Number.isSafeInteger(safeTotalNotes) ||
       !Number.isSafeInteger(safeHits) ||
       !Number.isSafeInteger(safeMisses) ||
+      !Number.isFinite(safeSustainSeconds) ||
       !safeDifficulty ||
       completed !== true ||
       safeScore < 0 ||
@@ -51,6 +54,8 @@ function registerPdeHeroHandlers({
       safeTotalNotes > 100000 ||
       safeHits < 0 ||
       safeMisses < 0 ||
+      safeSustainSeconds < 0 ||
+      safeSustainSeconds > (safeDuration + 1) * 5 ||
       safeHits + safeMisses !== safeTotalNotes
     )
       return;
@@ -61,10 +66,11 @@ function registerPdeHeroHandlers({
       hard: 1,
       expert: 1.75,
     }[safeDifficulty];
-    const maxPointsPerHit = Math.ceil(
-      400 * difficultyMultiplier * safeChartSpeed * safeHyperspeed,
+    const scoreScale = difficultyMultiplier * safeChartSpeed * safeHyperspeed;
+    const maxPlausibleScore = Math.ceil(
+      (safeHits * 400 + safeSustainSeconds * 400) * scoreScale,
     );
-    const verifiedScore = Math.min(safeScore, safeHits * maxPointsPerHit);
+    const verifiedScore = Math.min(safeScore, maxPlausibleScore);
     const scores = FileService.data.pdeHeroScores || {};
     const current =
       scores[pseudo] && typeof scores[pseudo] === "object"

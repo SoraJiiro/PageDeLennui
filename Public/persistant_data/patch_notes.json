@@ -2,6 +2,42 @@
   "replaceStatic": true,
   "entries": [
     {
+      "version": "v3.2.6",
+      "date": "14/10/2026",
+      "sections": [
+        {
+          "title": "Améliorations ",
+          "icon": "fa-wrench",
+          "items": [
+            {
+              "tagClass": "tag-change",
+              "tag": "[CHANGE]",
+              "strong": "PDE Hero :",
+              "text": "PDE Hero a été rework. (C'est Guitar Hero maintenant carrément)"
+            },
+            {
+              "tagClass": "tag-fix",
+              "tag": "[FIX]",
+              "strong": "Couleurs UI :",
+              "text": "Le bug de reset des couleurs UI à la reconnexion a été corrigé."
+            }
+          ]
+        },
+        {
+          "title": "Retraits / Resets",
+          "icon": "fa-arrow-right-arrow-left",
+          "items": [
+            {
+              "tagClass": "tag-removed",
+              "tag": "[RESET]",
+              "strong": "PDE Hero :",
+              "text": "Reset global des stats pour PDE Hero (post rework)."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "v3.2.5",
       "date": "24/09/2026",
       "sections": [

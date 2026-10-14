@@ -71,6 +71,16 @@ function formatBirthDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+function getPdeHeroGlobalScore(stats) {
+  if (Number.isFinite(Number(stats?.totalScore)) && stats?.totalScore != null) {
+    return Number(stats.totalScore);
+  }
+  return ["easy", "medium", "hard", "expert"].reduce(
+    (total, difficulty) => total + (Number(stats?.scores?.[difficulty]) || 0),
+    0,
+  );
+}
+
 function setPfp(url) {
   const img = qs("pfpImg");
   const fallback = qs("pfpFallback");
@@ -264,16 +274,8 @@ function renderStats(stats) {
       title: "PDE Hero",
       rows: [
         [
-          "Easy / Medium",
-          s.pdeHero?.scores
-            ? `${Number(s.pdeHero.scores.easy || 0)} / ${Number(s.pdeHero.scores.medium || 0)}`
-            : "0 / 0",
-        ],
-        [
-          "Hard / Expert",
-          s.pdeHero?.scores
-            ? `${Number(s.pdeHero.scores.hard || 0)} / ${Number(s.pdeHero.scores.expert || 0)}`
-            : "0 / 0",
+          "Score global",
+          getPdeHeroGlobalScore(s.pdeHero).toLocaleString("fr-FR"),
         ],
         ["Plus longue partie (s)", s.pdeHero?.longestGame || 0],
       ],
@@ -355,16 +357,8 @@ function renderStats(stats) {
     ["Aim Trainer (best 30s)", Number(s.aimTrainerBestByDuration?.["30"] || 0)],
     ["Aim Trainer (best 1mn)", Number(s.aimTrainerBestByDuration?.["60"] || 0)],
     [
-      "PDE Hero (easy/medium)",
-      s.pdeHero?.scores
-        ? `${Number(s.pdeHero.scores.easy || 0)} / ${Number(s.pdeHero.scores.medium || 0)}`
-        : "0 / 0",
-    ],
-    [
-      "PDE Hero (hard/expert)",
-      s.pdeHero?.scores
-        ? `${Number(s.pdeHero.scores.hard || 0)} / ${Number(s.pdeHero.scores.expert || 0)}`
-        : "0 / 0",
+      "PDE Hero (score global)",
+      getPdeHeroGlobalScore(s.pdeHero).toLocaleString("fr-FR"),
     ],
     ["PDE Hero (plus longue partie, s)", s.pdeHero?.longestGame || 0],
     [

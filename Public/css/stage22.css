@@ -1,77 +1,82 @@
 #stage22 {
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding: 12px;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding: 8px;
   box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
   background: var(--bg-color);
   color: var(--primary-color);
 }
 
 .pde-hero-card {
-  width: min(980px, 99vw);
-  max-height: calc(100dvh - 24px);
+  width: min(1400px, 100%);
+  height: min(1000px, calc(100% - 8px));
+  min-height: 0;
+  margin: auto;
   box-sizing: border-box;
   border: 2px solid var(--primary-color);
-  padding: 14px;
+  padding: 10px;
   background: var(--bg-color);
-  overflow: auto;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
 }
 
 .pde-hero-head,
-.pde-hero-stats,
-.pde-hero-controls,
+.pde-hero-chart-controls,
+.pde-hero-settings,
 .pde-hero-keys {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .pde-hero-head {
-  justify-content: space-between;
+  justify-content: center;
+  min-width: 0;
 }
 .pde-hero-head h2 {
   margin: 0;
   color: var(--bg-color);
   background: var(--primary-color);
-  padding: 5px 12px;
-}
-.pde-hero-stats {
-  justify-content: flex-end;
-}
-.pde-hero-stats span {
-  border: 1px solid var(--primary-color);
-  padding: 5px 9px;
-  font-weight: 700;
-}
-.pde-hero-presence {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-}
-.pde-hero-presence progress {
-  flex: 1;
-  height: 14px;
-  accent-color: #63e6be;
-}
-.pde-hero-presence span {
-  min-width: 3em;
-  text-align: right;
+  padding: 4px 10px;
+  font-size: 1rem;
 }
 .pde-hero-wrap {
-  margin: 14px auto 10px;
+  min-height: 0;
+  margin: 0;
   width: 100%;
   position: relative;
 }
 #pde-hero-canvas {
   display: block;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   border: 2px solid var(--primary-color);
+}
+.pde-hero-lyrics {
+  position: absolute;
+  inset: 8px 8px auto;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #bfc3ca;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+}
+.pde-hero-lyrics .is-active {
+  color: #ff9d32;
+}
+.pde-hero-lyrics[hidden] {
+  display: none;
 }
 .pde-hero-game-over {
   position: absolute;
@@ -106,36 +111,41 @@
   font-weight: 700;
 }
 .pde-hero-controls {
-  justify-content: space-between;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 .pde-hero-controls button,
 .pde-hero-key,
 #pde-hero-difficulty,
 #pde-hero-library-chart {
-  min-height: 34px;
+  min-height: 30px;
   border: 1px solid var(--primary-color);
   background: var(--bg-color);
   color: var(--primary-color);
   font-weight: 700;
 }
 .pde-hero-controls button {
-  padding: 6px 14px;
+  padding: 4px 10px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .pde-hero-difficulty {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-weight: 700;
+  white-space: nowrap;
 }
 .pde-hero-speed-control {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-weight: 700;
+  white-space: nowrap;
 }
 .pde-hero-speed-control input {
-  width: 100px;
+  width: clamp(55px, 8vw, 90px);
   accent-color: var(--primary-color);
 }
 .pde-hero-speed-control output {
@@ -143,48 +153,78 @@
 }
 #pde-hero-difficulty,
 #pde-hero-library-chart {
-  min-height: 34px;
-  padding: 4px 8px;
+  min-height: 30px;
+  max-width: 100%;
+  padding: 3px 6px;
 }
 .pde-hero-controls button:disabled {
   opacity: 0.45;
   cursor: default;
 }
 .pde-hero-keys {
-  margin-top: 12px;
+  margin: 0 0 0 auto;
 }
 .pde-hero-keys label {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.85rem;
+  gap: 3px;
 }
 .pde-hero-key {
-  width: 38px;
+  width: 30px;
+  min-height: 30px;
   text-align: center;
   text-transform: uppercase;
 }
 #pde-hero-status {
-  min-width: 150px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 700;
+  font-size: 0.8rem;
+}
+.pde-hero-chart-controls,
+.pde-hero-settings {
+  min-width: 0;
+}
+.pde-hero-chart-select {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+#pde-hero-library-chart {
+  width: 100%;
+}
+.pde-hero-settings {
+  justify-content: space-between;
+  font-size: 0.8rem;
 }
 
 @media (max-width: 600px) {
-  #stage22 {
-    padding: 8px;
-    align-items: flex-start;
-  }
   .pde-hero-card {
-    margin-top: 12px;
-    padding: 10px;
+    padding: 7px;
+    gap: 6px;
   }
-  .pde-hero-stats {
-    justify-content: flex-start;
+  .pde-hero-head {
+    align-items: center;
   }
-  .pde-hero-controls {
-    align-items: stretch;
+  .pde-hero-chart-controls {
+    gap: 4px;
   }
-  .pde-hero-controls button {
-    width: 100%;
+  .pde-hero-chart-controls button {
+    padding-inline: 6px;
+  }
+  .pde-hero-settings {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .pde-hero-keys {
+    margin-left: auto;
+  }
+  #pde-hero-status {
+    flex-basis: 100%;
   }
 }

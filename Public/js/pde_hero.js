@@ -2,11 +2,15 @@ import {
   adjustPdeHeroStagePresence,
   getPdeHeroMultiplier,
   getPdeHeroScoreMultiplier,
+  getPdeHeroSustainBonus,
+  groupPdeHeroLyrics,
   parsePdeHeroChart,
+  schedulePdeHeroLyrics,
   schedulePdeHeroTrack,
 } from "./pde_hero_chart.mjs";
 
 const DEFAULT_KEYS = ["d", "f", "j", "k", "l"];
+const SETTINGS_KEY = "pde-hero-settings";
 const COLORS = ["#ff4f64", "#ffb347", "#ffe14a", "#63e6be", "#74a7ff"];
 const DIFFICULTIES = {
   easy: { label: "Facile", travelTime: 3200 },
@@ -48,12 +52,7 @@ export function initPdeHero(socket) {
     return;
 
   const ctx = canvas.getContext("2d");
-  const scoreEl = document.getElementById("pde-hero-score");
-  const comboEl = document.getElementById("pde-hero-combo");
-  const missesEl = document.getElementById("pde-hero-misses");
-  const overHitsEl = document.getElementById("pde-hero-overhits");
   const statusEl = document.getElementById("pde-hero-status");
-  const timeEl = document.getElementById("pde-hero-time");
   const gameOverEl = document.getElementById("pde-hero-game-over");
   const restartButton = document.getElementById("pde-hero-restart");
   const finalScoreEl = document.getElementById("pde-hero-final-score");
@@ -63,10 +62,8 @@ export function initPdeHero(socket) {
   const finalHitsEl = document.getElementById("pde-hero-final-hits");
   const finalStreakEl = document.getElementById("pde-hero-final-streak");
   const gameOverTitleEl = document.getElementById("pde-hero-result-title");
-  const stagePresenceEl = document.getElementById("pde-hero-stage-presence");
-  const stagePresenceValueEl = document.getElementById(
-    "pde-hero-stage-presence-value",
-  );
+  const lyricsEl = document.getElementById("pde-hero-lyrics");
+  let lyricSpans = [];
   const state = {
     running: false,
     score: 0,
@@ -76,12 +73,18 @@ export function initPdeHero(socket) {
     misses: 0,
     hits: 0,
     overHits: 0,
+    sustainSeconds: 0,
     longest: 0,
     stagePresence: 80,
     totalNotes: 0,
     startedAt: 0,
     notes: [],
     pendingNotes: [],
+    lyrics: [],
+    lyricPhrases: [],
+    lyricIndex: -1,
+    lyricPhraseIndex: -1,
+    lyricActiveIndex: -1,
     particles: [],
     chart: null,
     chartDuration: 0,
@@ -97,6 +100,73 @@ export function initPdeHero(socket) {
   };
 
   let keys = loadKeys();
+  let savedSettings = {};
+  let importedChartSource = null;
+
+  try {
+    const parsedSettings = JSON.parse(
+      localStorage.getItem(SETTINGS_KEY) || "{}",
+    );
+    if (
+      parsedSettings &&
+      typeof parsedSettings === "object" &&
+      !Array.isArray(parsedSettings)
+    )
+      savedSettings = parsedSettings;
+  } catch (error) {
+    console.error("Impossible de lire les paramètres PDE Hero.", error);
+    statusEl.textContent = "Paramètres PDE Hero locaux illisibles.";
+  }
+  if (DIFFICULTIES[savedSettings.difficulty]) {
+    difficultySelect.value = savedSettings.difficulty;
+    state.difficulty = savedSettings.difficulty;
+  }
+  for (const [input, value] of [
+    [chartSpeedInput, savedSettings.chartSpeed],
+    [hyperspeedInput, savedSettings.hyperspeed],
+  ]) {
+    if (Number.isFinite(value)) {
+      input.value = String(
+        Math.max(Number(input.min), Math.min(Number(input.max), value)),
+      );
+    }
+  }
+  chartSpeedValue.value = `${Math.round(Number(chartSpeedInput.value) * 100)} %`;
+  hyperspeedValue.value = `${Number(hyperspeedInput.value).toFixed(1)}×`;
+  if (
+    typeof savedSettings.importedChart?.name === "string" &&
+    typeof savedSettings.importedChart?.content === "string"
+  ) {
+    try {
+      state.chart = parsePdeHeroChart(savedSettings.importedChart.content);
+      importedChartSource = savedSettings.importedChart;
+      statusEl.textContent = `${importedChartSource.name} chargé depuis les paramètres locaux.`;
+    } catch (error) {
+      console.error("La dernière chart PDE Hero sauvegardée est invalide.", error);
+      statusEl.textContent = "La dernière chart PDE Hero sauvegardée est invalide.";
+    }
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem(
+        SETTINGS_KEY,
+        JSON.stringify({
+          difficulty: difficultySelect.value,
+          chartSpeed: Number(chartSpeedInput.value),
+          hyperspeed: Number(hyperspeedInput.value),
+          chartId: importedChartSource
+            ? ""
+            : libraryChartSelect.value || savedSettings.chartId || "",
+          importedChart: importedChartSource,
+        }),
+      );
+    } catch (error) {
+      console.error("Impossible de sauvegarder les paramètres PDE Hero.", error);
+      if (!state.running)
+        statusEl.textContent = "Impossible de sauvegarder les paramètres PDE Hero localement.";
+    }
+  }
 
   function selectChartTrack(chart, difficulty) {
     const wanted = DIFFICULTY_ORDER.indexOf(difficulty);
@@ -140,9 +210,12 @@ export function initPdeHero(socket) {
   function resize() {
     const width = Math.max(
       1,
-      canvas.parentElement.getBoundingClientRect().width - 4,
+      canvas.getBoundingClientRect().width - 4,
     );
-    const availableHeight = Math.max(200, window.innerHeight - 270);
+    const availableHeight = Math.max(
+      160,
+      canvas.parentElement.clientHeight - 4,
+    );
     const height = Math.min(Math.round(width * 0.65), availableHeight);
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -159,6 +232,25 @@ export function initPdeHero(socket) {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
 
+  function getTrackBounds() {
+    const center = state.viewWidth / 2;
+    const width = state.viewWidth * 0.68;
+    return {
+      center,
+      x: center - width / 2,
+      width,
+      laneWidth: width / 5,
+    };
+  }
+
+  function getLaneBounds(lane) {
+    const track = getTrackBounds();
+    return {
+      center: track.x + (lane + 0.5) * track.laneWidth,
+      width: track.laneWidth,
+    };
+  }
+
   function draw(now) {
     const width = state.viewWidth;
     const height = state.viewHeight;
@@ -168,36 +260,52 @@ export function initPdeHero(socket) {
         .getPropertyValue("--bg-color")
         .trim() || "#111";
     ctx.fillRect(0, 0, width, height);
-    const laneWidth = width / 5;
+    const { x: trackX, width: trackWidth, laneWidth } = getTrackBounds();
     const hitY = height - 48;
+    const topY = Math.max(0, height * 0.05);
+
     for (let lane = 0; lane < 5; lane++) {
+      const laneX = trackX + lane * laneWidth;
       ctx.fillStyle =
         lane % 2 ? "rgba(255,255,255,.035)" : "rgba(255,255,255,.07)";
-      ctx.fillRect(lane * laneWidth, 0, laneWidth, height);
-      ctx.strokeStyle = "rgba(255,255,255,.2)";
-      ctx.strokeRect(lane * laneWidth, 0, laneWidth, height);
+      ctx.fillRect(laneX, topY, laneWidth, height - topY);
+      ctx.strokeStyle = "rgba(255,255,255,.18)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(laneX, topY);
+      ctx.lineTo(laneX, height);
+      ctx.stroke();
       ctx.fillStyle = COLORS[lane];
       ctx.font = "bold 16px sans-serif";
       ctx.textAlign = "center";
       ctx.fillText(
         keys[lane].toUpperCase(),
-        lane * laneWidth + laneWidth / 2,
+        laneX + laneWidth / 2,
         height - 14,
       );
     }
+    ctx.strokeStyle = "rgba(210,220,235,.48)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(trackX, topY, trackWidth, height - topY);
     ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(0, hitY);
-    ctx.lineTo(width, hitY);
+    ctx.moveTo(trackX, hitY);
+    ctx.lineTo(trackX + trackWidth, hitY);
     ctx.stroke();
 
-    const targetRadius = Math.min(24, laneWidth / 2 - 5);
+    const { width: hitLaneWidth } = getLaneBounds(0);
+    const targetRadius = Math.min(24, hitLaneWidth / 2 - 5);
     ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-    ctx.fillRect(0, hitY - targetRadius - 4, width, (targetRadius + 4) * 2);
+    ctx.fillRect(
+      trackX,
+      hitY - targetRadius - 4,
+      trackWidth,
+      (targetRadius + 4) * 2,
+    );
 
     for (let lane = 0; lane < 5; lane++) {
-      const cx = lane * laneWidth + laneWidth / 2;
+      const { center: cx } = getLaneBounds(lane);
       ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -207,22 +315,32 @@ export function initPdeHero(socket) {
 
     state.notes.forEach((note) => {
       const progress = Math.max(0, (now - note.spawnAt) / note.travelTime);
-      const radius = Math.min(20, laneWidth / 2 - 6);
-      const x = note.lane * laneWidth + laneWidth / 2;
-      const y = note.holding ? hitY : progress * hitY;
+      const y = note.hitRegistered ? hitY : progress * hitY;
+      const { center: x, width: noteLaneWidth } = getLaneBounds(note.lane);
+      const radius = Math.min(20, noteLaneWidth / 2 - 6);
       if (note.sustain > 0) {
-        const tailY = note.holding
-          ? hitY -
-            ((note.sustainEndAt - now) / note.travelTime) * hitY
-          : y - (note.sustain / (note.travelTime / 1000)) * hitY;
-        ctx.globalAlpha = 0.55;
-        ctx.fillStyle = COLORS[note.lane];
-        ctx.fillRect(
-          x - Math.max(5, radius * 0.55),
-          Math.max(0, tailY),
-          Math.max(10, radius * 1.1),
-          Math.max(0, y - Math.max(0, tailY)),
+        const sustainHeadY = Math.max(topY, y);
+        const tailY = Math.max(
+          topY,
+          Math.min(
+            sustainHeadY,
+            note.hitRegistered
+              ? hitY - ((note.sustainEndAt - now) / note.travelTime) * hitY
+              : y - (note.sustain / (note.travelTime / 1000)) * hitY,
+          ),
         );
+        const { center: tailX } = getLaneBounds(note.lane);
+        const tailHalfWidth = Math.max(2, radius * 0.28);
+        const noteHalfWidth = Math.max(2, radius * 0.28);
+        ctx.globalAlpha = note.releasedAt ? 0.22 : 0.55;
+        ctx.fillStyle = COLORS[note.lane];
+        ctx.beginPath();
+        ctx.moveTo(tailX - tailHalfWidth, tailY);
+        ctx.lineTo(tailX + tailHalfWidth, tailY);
+        ctx.lineTo(x + noteHalfWidth, sustainHeadY);
+        ctx.lineTo(x - noteHalfWidth, sustainHeadY);
+        ctx.closePath();
+        ctx.fill();
         ctx.globalAlpha = 1;
       }
       ctx.fillStyle = COLORS[note.lane];
@@ -233,28 +351,135 @@ export function initPdeHero(socket) {
       ctx.fill();
       ctx.shadowBlur = 0;
     });
-    state.particles = state.particles.filter(
-      (particle) => now - particle.createdAt < particle.duration,
-    );
-    state.particles.forEach((particle) => {
-      const progress = (now - particle.createdAt) / particle.duration;
-      ctx.globalAlpha = 1 - progress;
-      ctx.fillStyle = particle.color;
-      ctx.beginPath();
-      ctx.arc(
-        particle.x + particle.vx * progress,
-        particle.y + particle.vy * progress + progress * progress * 35,
-        particle.size * (1 - progress * 0.45),
-        0,
-        Math.PI * 2,
+    if (state.running) {
+      const hudX = trackX + trackWidth + width * 0.012;
+      const hudWidth = Math.max(1, width - hudX - width * 0.05);
+      const songProgress = Math.min(
+        1,
+        Math.max(0, (now - state.startedAt) / (state.chartDuration * 1000)),
       );
+      const barY = height * 0.1;
+      const barHeight = Math.max(6, height * 0.016);
+      ctx.fillStyle = "rgba(255,255,255,.22)";
+      ctx.fillRect(hudX, barY, hudWidth, barHeight);
+      ctx.fillStyle = "#168cff";
+      ctx.fillRect(hudX, barY, hudWidth * songProgress, barHeight);
+      const presenceY = barY + barHeight + 5;
+      const presenceHeight = Math.max(4, barHeight * 0.65);
+      ctx.fillStyle = "rgba(255,255,255,.22)";
+      ctx.fillRect(hudX, presenceY, hudWidth, presenceHeight);
+      ctx.fillStyle = "#63e6be";
+      ctx.fillRect(
+        hudX,
+        presenceY,
+        hudWidth * Math.max(0, Math.min(100, state.stagePresence)) / 100,
+        presenceHeight,
+      );
+
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff";
+      ctx.font = `800 ${Math.max(14, Math.min(34, width * 0.035))}px sans-serif`;
+      ctx.fillText(state.score.toLocaleString(), hudX + hudWidth, height * 0.19);
+
+      const multiplierProgress = state.multiplier === 4 ? 10 : state.combo % 10;
+      const segmentGap = 2;
+      const orbRadius = Math.min(24, width * 0.045, height * 0.07);
+      const orbX = trackX + trackWidth;
+      const orbY = (topY + height - 48) / 2;
+      const segmentWidth = Math.min(8, Math.max(4, width * 0.012));
+      const segmentHeight = Math.max(3, Math.min(7, height * 0.012));
+      const segmentsHeight = segmentHeight * 10 + segmentGap * 9;
+      const segmentsX = orbX - segmentWidth / 2;
+      const segmentsY = orbY - orbRadius - 5 - segmentsHeight;
+      ctx.fillStyle = "#000";
+      for (let i = 0; i < 10; i++) {
+        ctx.fillRect(
+          segmentsX,
+          segmentsY + (9 - i) * (segmentHeight + segmentGap),
+          segmentWidth,
+          segmentHeight,
+        );
+      }
+      ctx.fillStyle = "#d38aff";
+      for (let i = 0; i < multiplierProgress; i++) {
+        ctx.fillRect(
+          segmentsX,
+          segmentsY + (9 - i) * (segmentHeight + segmentGap),
+          segmentWidth,
+          segmentHeight,
+        );
+      }
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(12,8,20,.9)";
       ctx.fill();
-    });
-    ctx.globalAlpha = 1;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#bf4dff";
+      ctx.stroke();
+      ctx.fillStyle = "#d38aff";
+      ctx.textAlign = "center";
+      ctx.font = `bold ${Math.max(10, orbRadius * 1.05)}px sans-serif`;
+      ctx.fillText(`x${state.multiplier}`, orbX, orbY);
+      canvas.setAttribute(
+        "aria-label",
+        `PDE Hero. Score ${state.score}. Série ${state.combo}. Multiplicateur x${state.multiplier}. Progression ${Math.floor(songProgress * 100)}%. Stage presence ${state.stagePresence}%.`,
+      );
+    }
     const flashRemaining = Math.max(0, state.missFlashUntil - now);
     if (flashRemaining > 0) {
       ctx.fillStyle = `rgba(220, 25, 35, ${0.3 * (flashRemaining / 180)})`;
       ctx.fillRect(0, 0, width, height);
+    }
+    state.particles = state.particles.filter(
+      (particle) => now - particle.createdAt < particle.duration,
+    );
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    state.particles.forEach((particle) => {
+      const progress = Math.max(0, (now - particle.createdAt) / particle.duration);
+      const x = particle.x + particle.vx * progress;
+      const y = particle.y + particle.vy * progress + progress * progress * 35;
+      const radius = Math.max(2.5, particle.size * (1 - progress * 0.35));
+      ctx.globalAlpha = Math.max(0.35, 1 - progress);
+      ctx.fillStyle = particle.color;
+      ctx.shadowColor = particle.color;
+      ctx.shadowBlur = Math.max(12, radius * 3);
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function updateLyrics() {
+    const lyric = state.lyrics[state.lyricIndex];
+    if (!lyric) return;
+    const phraseIndex = state.lyricPhrases.findIndex(
+      (phrase) =>
+        state.lyricIndex >= phrase.startIndex &&
+        state.lyricIndex < phrase.endIndex,
+    );
+    if (phraseIndex !== state.lyricPhraseIndex) {
+      const phrase = state.lyricPhrases[phraseIndex];
+      lyricsEl.replaceChildren();
+      lyricSpans = phrase.syllables.map((syllable) => {
+        if (syllable.separatorBefore)
+          lyricsEl.append(document.createTextNode(syllable.separatorBefore));
+        const span = document.createElement("span");
+        span.textContent = syllable.text;
+        lyricsEl.append(span);
+        return span;
+      });
+      state.lyricPhraseIndex = phraseIndex;
+      state.lyricActiveIndex = -1;
+    }
+    const activeIndex = state.lyricIndex - state.lyricPhrases[phraseIndex].startIndex;
+    if (activeIndex !== state.lyricActiveIndex) {
+      lyricSpans.forEach((span, index) =>
+        span.classList.toggle("is-active", index <= activeIndex),
+      );
+      state.lyricActiveIndex = activeIndex;
     }
   }
 
@@ -263,7 +488,7 @@ export function initPdeHero(socket) {
     state.lastFrame = now;
     const travelTime = state.travelTime;
     const hitY = state.viewHeight - 48;
-    const laneWidth = state.viewWidth / 5;
+    const { laneWidth } = getTrackBounds();
     const noteDiameter = Math.min(42, laneWidth - 16);
     const distanceAfterHitZone = state.viewHeight - hitY + noteDiameter / 2;
     const timePastHitZone =
@@ -283,40 +508,45 @@ export function initPdeHero(socket) {
         sustain: pendingNote.sustain,
         sustainEndAt: hitAt + pendingNote.sustain * 1000,
         holding: false,
+        hitRegistered: false,
       });
     }
     const completedHolds = state.notes.filter(
       (note) => note.holding && now >= note.sustainEndAt,
     );
+    state.notes
+      .filter((note) => note.holding)
+      .forEach((note) => creditSustain(note, now));
     for (const note of completedHolds) {
-      state.notes.splice(state.notes.indexOf(note), 1);
-      registerHit(note, note.lane, note.sustainEndAt);
+      endSustain(note, note.sustainEndAt);
     }
     const expired = state.notes.filter(
-      (note) => !note.holding && note.missAt < now,
+      (note) => !note.hitRegistered && note.missAt < now,
     );
     expired.forEach(() => registerMiss());
     state.notes
-      .filter((note) => note.holding && now - (note.lastParticleAt || 0) >= 90)
+      .filter((note) => note.holding && now - (note.lastParticleAt || 0) >= 65)
       .forEach((note) => {
         note.lastParticleAt = now;
-        const x = note.lane * laneWidth + laneWidth / 2;
+        const { center: x } = getLaneBounds(note.lane);
         const y = hitY - 8;
         state.particles.push(
-          ...Array.from({ length: 2 }, () => ({
+          ...Array.from({ length: 3 }, () => ({
             x,
             y,
-            vx: (Math.random() - 0.5) * 16,
-            vy: -(8 + Math.random() * 18),
-            size: 1 + Math.random() * 1.5,
+            vx: (Math.random() - 0.5) * 90,
+            vy: -(18 + Math.random() * 50),
+            size: 3 + Math.random() * 3,
             color: COLORS[note.lane],
             createdAt: now,
-            duration: 280 + Math.random() * 170,
+            duration: 350 + Math.random() * 250,
           })),
         );
       });
-    state.notes = state.notes.filter(
-      (note) => note.holding || note.missAt >= now,
+    state.notes = state.notes.filter((note) =>
+      note.hitRegistered
+        ? note.holding || now < note.sustainEndAt
+        : note.missAt >= now,
     );
     if (!state.running) return;
     if (
@@ -330,11 +560,13 @@ export function initPdeHero(socket) {
     }
     const liveElapsed = Math.max(0, (now - state.startedAt) / 1000);
     state.longest = Math.max(state.longest, liveElapsed);
-    scoreEl.textContent = `Score: ${state.score}`;
-    comboEl.textContent = `Combo: ${state.combo} | x${state.multiplier}`;
-    missesEl.textContent = `Misses: ${state.misses}`;
-    overHitsEl.textContent = `Over hit: ${state.overHits}`;
-    timeEl.textContent = `Temps: ${Math.floor(liveElapsed)}s`;
+    while (
+      state.lyricIndex + 1 < state.lyrics.length &&
+      state.lyrics[state.lyricIndex + 1].at <= now
+    ) {
+      state.lyricIndex += 1;
+    }
+    updateLyrics();
     draw(now);
     state.animation = requestAnimationFrame(frame);
   }
@@ -346,23 +578,12 @@ export function initPdeHero(socket) {
     state.combo = 0;
     state.multiplier = 1;
     state.stagePresence = adjustPdeHeroStagePresence(state.stagePresence, false);
-    updateStagePresence();
     state.missFlashUntil = performance.now() + 180;
-    missesEl.textContent = `Misses: ${state.misses}`;
     draw(performance.now());
     window.setTimeout(() => draw(performance.now()), 190);
     if (state.stagePresence <= 0) {
       finish("Stage presence épuisée");
     }
-  }
-
-  function updateStagePresence() {
-    stagePresenceEl.value = state.stagePresence;
-    stagePresenceEl.setAttribute(
-      "aria-valuetext",
-      `${state.stagePresence}%`,
-    );
-    stagePresenceValueEl.textContent = `${state.stagePresence}%`;
   }
 
   function registerOverHit() {
@@ -372,7 +593,6 @@ export function initPdeHero(socket) {
     state.combo = 0;
     state.multiplier = 1;
     state.missFlashUntil = performance.now() + 180;
-    overHitsEl.textContent = `Over hit: ${state.overHits}`;
     draw(performance.now());
     window.setTimeout(() => draw(performance.now()), 190);
   }
@@ -415,9 +635,11 @@ export function initPdeHero(socket) {
         totalNotes: state.totalNotes,
         hits: state.hits,
         misses: state.misses,
+        sustainSeconds: state.sustainSeconds,
         completed,
       });
     }
+    lyricsEl.hidden = true;
   }
 
   function start() {
@@ -453,6 +675,7 @@ export function initPdeHero(socket) {
     state.misses = 0;
     state.hits = 0;
     state.overHits = 0;
+    state.sustainSeconds = 0;
     state.stagePresence = 80;
     state.totalNotes = schedule.notes.length;
     state.chartDifficulty = chartDifficulty;
@@ -466,6 +689,17 @@ export function initPdeHero(socket) {
     state.travelTime = travelTime;
     state.startedAt = schedule.startAt;
     state.pendingNotes = schedule.notes;
+    state.lyrics = schedulePdeHeroLyrics(
+      state.chart.lyrics || [],
+      schedule.startAt,
+      chartSpeed,
+    );
+    state.lyricPhrases = groupPdeHeroLyrics(state.lyrics);
+    state.lyricIndex = -1;
+    state.lyricPhraseIndex = -1;
+    state.lyricActiveIndex = -1;
+    lyricsEl.replaceChildren();
+    lyricsEl.hidden = state.lyrics.length === 0;
     state.particles = [];
     state.chartDuration = schedule.duration;
     state.lastFrame = state.startedAt;
@@ -475,9 +709,6 @@ export function initPdeHero(socket) {
     chartSpeedInput.disabled = true;
     hyperspeedInput.disabled = true;
     statusEl.textContent = `En jeu — ${DIFFICULTIES[chartDifficulty].label} (${chartTrack.name})`;
-    missesEl.textContent = "Misses: 0";
-    overHitsEl.textContent = "Over hit: 0";
-    updateStagePresence();
     state.animation = requestAnimationFrame(frame);
   }
 
@@ -487,42 +718,74 @@ export function initPdeHero(socket) {
       1,
       (now - hitNote.spawnAt) / hitNote.travelTime,
     );
-    const noteY = noteProgress * hitY;
+    const noteY = Math.min(hitY, noteProgress * hitY);
     state.hits += 1;
     state.combo += 1;
     state.maxCombo = Math.max(state.maxCombo, state.combo);
     state.multiplier = getPdeHeroMultiplier(state.combo);
     state.stagePresence = adjustPdeHeroStagePresence(state.stagePresence, true);
-    updateStagePresence();
     state.score += Math.round(100 * state.multiplier * state.scoreMultiplier);
-    const laneWidth = state.viewWidth / 5;
+    const { laneWidth, center: laneCenter } = getLaneBounds(lane);
     state.particles.push(
-      ...Array.from({ length: 12 }, () => ({
-        x: lane * laneWidth + laneWidth / 2,
+      ...Array.from({ length: 16 }, () => ({
+        x: laneCenter,
         y: noteY,
-        vx: (Math.random() - 0.5) * laneWidth * 0.8,
-        vy: -(20 + Math.random() * 35),
-        size: 2 + Math.random() * 3,
+        vx: (Math.random() - 0.5) * laneWidth * 3.2,
+        vy: -(40 + Math.random() * 80),
+        size: 5 + Math.random() * 5,
         color: COLORS[lane],
         createdAt: now,
-        duration: 380 + Math.random() * 220,
+        duration: 650 + Math.random() * 300,
       })),
     );
+  }
+
+  function creditSustain(note, at) {
+    const heldSeconds = Math.min(
+      note.sustain,
+      Math.max(0, (at - note.sustainStartedAt) / 1000),
+    );
+    const scoredSeconds = note.sustainScoredSeconds || 0;
+    state.score +=
+      getPdeHeroSustainBonus(
+        heldSeconds,
+        note.holdMultiplier,
+        state.scoreMultiplier,
+      ) -
+      getPdeHeroSustainBonus(
+        scoredSeconds,
+        note.holdMultiplier,
+        state.scoreMultiplier,
+      );
+    note.sustainScoredSeconds = heldSeconds;
+    return heldSeconds;
+  }
+
+  function endSustain(note, endedAt) {
+    const heldSeconds = creditSustain(note, endedAt);
+    state.sustainSeconds += heldSeconds;
+    note.holding = false;
+    note.releasedAt = endedAt;
   }
 
   function hit(key) {
     if (!state.running) return;
     const lane = keys.indexOf(key.toLowerCase());
-    if (lane < 0) return;
+    if (lane < 0) {
+      registerMiss();
+      return;
+    }
     const now = performance.now();
-    const laneNote = state.notes.find((note) => note.lane === lane);
+    const laneNote = state.notes.find(
+      (note) => note.lane === lane && !note.hitRegistered,
+    );
     if (laneNote && !laneNote.holding && now > laneNote.missAt) {
       state.notes.splice(state.notes.indexOf(laneNote), 1);
       registerMiss();
       return;
     }
     const index = state.notes.findIndex(
-      (note) => !note.holding &&
+      (note) => !note.hitRegistered &&
         note.lane === lane && now >= note.hitAt - 280 && now <= note.missAt,
     );
     if (index < 0) {
@@ -532,7 +795,12 @@ export function initPdeHero(socket) {
     const hitNote = state.notes[index];
     if (hitNote.sustain > 0) {
       hitNote.holding = true;
+      hitNote.hitRegistered = true;
+      hitNote.holdMultiplier = state.multiplier;
+      hitNote.sustainStartedAt = now;
+      hitNote.sustainScoredSeconds = 0;
       hitNote.sustainEndAt = hitNote.hitAt + hitNote.sustain * 1000;
+      registerHit(hitNote, lane, now);
       return;
     }
     state.notes.splice(index, 1);
@@ -545,12 +813,8 @@ export function initPdeHero(socket) {
       (note) => note.lane === lane && note.holding,
     );
     if (index < 0) return;
-    const [note] = state.notes.splice(index, 1);
-    if (performance.now() >= note.sustainEndAt) {
-      registerHit(note, lane, note.sustainEndAt);
-    } else {
-      registerMiss();
-    }
+    const note = state.notes[index];
+    endSustain(note, Math.min(performance.now(), note.sustainEndAt));
   }
 
   startButton.addEventListener("click", start);
@@ -558,9 +822,11 @@ export function initPdeHero(socket) {
   chartImportButton.addEventListener("click", () => chartFileInput.click());
   chartSpeedInput.addEventListener("input", () => {
     chartSpeedValue.value = `${Math.round(Number(chartSpeedInput.value) * 100)} %`;
+    saveSettings();
   });
   hyperspeedInput.addEventListener("input", () => {
     hyperspeedValue.value = `${Number(hyperspeedInput.value).toFixed(1)}×`;
+    saveSettings();
   });
   chartFileInput.addEventListener("change", async () => {
     const file = chartFileInput.files[0];
@@ -569,8 +835,11 @@ export function initPdeHero(socket) {
       if (state.running) throw new Error("Terminez la partie avant d’importer.");
       if (!file.name.toLowerCase().endsWith(".chart"))
         throw new Error("Sélectionnez un fichier .chart.");
-      state.chart = parsePdeHeroChart(await file.text());
+      const content = await file.text();
+      state.chart = parsePdeHeroChart(content);
+      importedChartSource = { name: file.name, content };
       libraryChartSelect.value = "";
+      saveSettings();
       const selectedTrack = selectChartTrack(
         state.chart,
         difficultySelect.value,
@@ -599,6 +868,8 @@ export function initPdeHero(socket) {
       const chart = parsePdeHeroChart(result.content);
       const selectedTrack = selectChartTrack(chart, difficultySelect.value);
       state.chart = chart;
+      importedChartSource = null;
+      saveSettings();
       statusEl.textContent = `${libraryChartSelect.selectedOptions[0].textContent} chargé — ${selectedTrack.track.notes.length} notes (${selectedTrack.track.name}).`;
     } catch (error) {
       statusEl.textContent = `Import impossible : ${error.message}`;
@@ -608,10 +879,11 @@ export function initPdeHero(socket) {
     }
   });
   difficultySelect.addEventListener("change", () => {
-    if (!state.running) return;
     const newDifficulty = difficultySelect.value;
-    finish("Partie abandonnée : difficulté modifiée", { save: false });
     state.difficulty = newDifficulty;
+    saveSettings();
+    if (!state.running) return;
+    finish("Partie abandonnée : difficulté modifiée", { save: false });
   });
   window.addEventListener("keydown", (event) => {
     if (event.repeat || event.target.matches("input, textarea, select")) return;
@@ -634,7 +906,13 @@ export function initPdeHero(socket) {
         option.textContent = title;
         libraryChartSelect.appendChild(option);
       });
-      if (charts.length === 0) {
+      if (!state.chart && savedSettings.chartId) {
+        libraryChartSelect.value = savedSettings.chartId;
+        if (libraryChartSelect.value) {
+          libraryChartSelect.dispatchEvent(new Event("change"));
+        }
+      }
+      if (charts.length === 0 && !state.chart) {
         statusEl.textContent =
           "Aucune chart disponible — importez un fichier .chart.";
       }

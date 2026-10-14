@@ -1664,24 +1664,12 @@
             <div class="pde-hero-card">
                 <div class="pde-hero-head">
                     <h2>PDE Hero.exe</h2>
-                    <div class="pde-hero-stats">
-                        <span id="pde-hero-score">Score: 0</span>
-                        <span id="pde-hero-combo">Combo: 0</span>
-                        <span id="pde-hero-misses">Misses: 0</span>
-                        <span id="pde-hero-overhits">Over hit: 0</span>
-                        <span id="pde-hero-time">Temps: 0s</span>
-                    </div>
-                </div>
-                <div class="pde-hero-presence">
-                    <label for="pde-hero-stage-presence">Stage presence</label>
-                    <progress id="pde-hero-stage-presence" max="100"
-                        value="80" aria-label="Stage presence"
-                        aria-valuetext="80%"></progress>
-                    <span id="pde-hero-stage-presence-value">80%</span>
                 </div>
                 <div class="pde-hero-wrap">
                     <canvas id="pde-hero-canvas"
                         aria-label="Jeu de rythme PDE Hero"></canvas>
+                    <div id="pde-hero-lyrics" class="pde-hero-lyrics"
+                        aria-live="polite" hidden></div>
                     <div id="pde-hero-game-over" class="pde-hero-game-over"
                         hidden>
                         <h3 id="pde-hero-result-title">GAME OVER</h3>
@@ -1696,52 +1684,60 @@
                     </div>
                 </div>
                 <div class="pde-hero-controls">
-                    <label class="pde-hero-difficulty">Difficulté
-                        <select id="pde-hero-difficulty">
-                            <option value="easy">Facile</option>
-                            <option value="medium">Moyen</option>
-                            <option value="hard" selected>Difficile</option>
-                            <option value="expert">Expert</option>
-                        </select>
-                    </label>
-                    <label class="pde-hero-speed-control">
-                        Rythme chart
-                        <input id="pde-hero-chart-speed" type="range"
-                            min="0.5" max="1" step="0.05" value="0.75" />
-                        <output id="pde-hero-chart-speed-value">75 %</output>
-                    </label>
-                    <label class="pde-hero-speed-control">
-                        Hyperspeed
-                        <input id="pde-hero-hyperspeed" type="range"
-                            min="1" max="2.5" step="0.1" value="1.5" />
-                        <output id="pde-hero-hyperspeed-value">1.5×</output>
-                    </label>
-                    <button id="pde-hero-chart-import"
-                        type="button">Importer .chart</button>
-                    <label class="pde-hero-difficulty">
-                        Chart disponible
-                        <select id="pde-hero-library-chart">
-                            <option value="">Choisir une chart…</option>
-                        </select>
-                    </label>
+                    <div class="pde-hero-chart-controls">
+                        <label class="pde-hero-chart-select">
+                            Chart
+                            <select id="pde-hero-library-chart">
+                                <option value="">Choisir une chart…</option>
+                            </select>
+                        </label>
+                        <button id="pde-hero-chart-import" type="button">
+                            Importer
+                        </button>
+                        <button id="pde-hero-start" type="button">
+                            Lancer
+                        </button>
+                        <span id="pde-hero-status">
+                            Choisissez une chart ou importez un fichier .chart.
+                        </span>
+                    </div>
                     <input id="pde-hero-chart-file" type="file"
                         accept=".chart,text/plain" hidden />
-                    <button id="pde-hero-start" type="button">Lancer la
-                        partie</button>
-                    <span id="pde-hero-status">Choisissez une chart disponible
-                        ou importez un fichier .chart.</span>
-                </div>
-                <div class="pde-hero-keys" aria-label="Touches PDE Hero">
-                    <label>Lane 1 <input class="pde-hero-key"
-                            maxlength="1" /></label>
-                    <label>Lane 2 <input class="pde-hero-key"
-                            maxlength="1" /></label>
-                    <label>Lane 3 <input class="pde-hero-key"
-                            maxlength="1" /></label>
-                    <label>Lane 4 <input class="pde-hero-key"
-                            maxlength="1" /></label>
-                    <label>Lane 5 <input class="pde-hero-key"
-                            maxlength="1" /></label>
+                    <div class="pde-hero-settings">
+                        <label class="pde-hero-difficulty">Difficulté
+                            <select id="pde-hero-difficulty">
+                                <option value="easy">Facile</option>
+                                <option value="medium">Moyen</option>
+                                <option value="hard" selected>Difficile</option>
+                                <option value="expert">Expert</option>
+                            </select>
+                        </label>
+                        <label class="pde-hero-speed-control">
+                            Rythme
+                            <input id="pde-hero-chart-speed" type="range"
+                                min="0.5" max="1" step="0.05" value="0.75" />
+                            <output id="pde-hero-chart-speed-value">75 %</output>
+                        </label>
+                        <label class="pde-hero-speed-control">
+                            Vitesse
+                            <input id="pde-hero-hyperspeed" type="range"
+                                min="1" max="2.5" step="0.1" value="1.5" />
+                            <output id="pde-hero-hyperspeed-value">1.5×</output>
+                        </label>
+                        <div class="pde-hero-keys" aria-label="Touches PDE Hero">
+                            <span>Touches</span>
+                            <label aria-label="Lane 1"><input
+                                    class="pde-hero-key" maxlength="1" /></label>
+                            <label aria-label="Lane 2"><input
+                                    class="pde-hero-key" maxlength="1" /></label>
+                            <label aria-label="Lane 3"><input
+                                    class="pde-hero-key" maxlength="1" /></label>
+                            <label aria-label="Lane 4"><input
+                                    class="pde-hero-key" maxlength="1" /></label>
+                            <label aria-label="Lane 5"><input
+                                    class="pde-hero-key" maxlength="1" /></label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

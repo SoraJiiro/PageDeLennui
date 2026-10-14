@@ -70,7 +70,19 @@ export function parsePdeHeroChart(text) {
 
   if (!Object.keys(tracks).length)
     throw new Error("Aucune difficulté jouable trouvée dans le fichier .chart.");
-  return { tracks };
+
+  const lyrics = [
+    ...(sections.get("events") || "").matchAll(
+      /^\s*(\d+)\s*=\s*E\s+"lyric\s+((?:\\.|[^"])*)"\s*$/gim,
+    ),
+  ]
+    .map(([, tick, text]) => ({
+      tick: Number(tick),
+      time: timeAtTick(Number(tick)),
+      text: text.replace(/\\"/g, '"').trim(),
+    }))
+    .filter(({ text }) => text);
+  return { tracks, lyrics };
 }
 
 export function schedulePdeHeroTrack(track, startAt, travelTime, chartSpeed) {
@@ -102,4 +114,46 @@ export function getPdeHeroMultiplier(combo) {
 
 export function adjustPdeHeroStagePresence(presence, hit) {
   return Math.max(0, Math.min(100, presence + (hit ? 1 : -10)));
+}
+
+export function schedulePdeHeroLyrics(lyrics, startAt, chartSpeed) {
+  return lyrics.map(({ time, text }) => ({
+    at: startAt + (time / chartSpeed) * 1000,
+    text,
+  }));
+}
+
+export function groupPdeHeroLyrics(lyrics) {
+  const phrases = [];
+  let phrase;
+  for (const [index, lyric] of lyrics.entries()) {
+    const previous = lyrics[index - 1];
+    if (
+      !phrase ||
+      lyric.at - previous.at > 1_250 ||
+      /[.!?,;:]$/.test(previous.text)
+    ) {
+      phrase = {
+        startIndex: index,
+        syllables: [],
+      };
+      phrases.push(phrase);
+    }
+    const previousSyllable = phrase.syllables.at(-1);
+    phrase.syllables.push({
+      at: lyric.at,
+      text: lyric.text.replace(/-$/, ""),
+      separatorBefore: previousSyllable && !previous.text.endsWith("-") ? " " : "",
+    });
+  }
+  phrases.forEach((item) => {
+    item.endIndex = item.startIndex + item.syllables.length;
+  });
+  return phrases;
+}
+
+export function getPdeHeroSustainBonus(heldSeconds, multiplier, scoreMultiplier) {
+  return Math.round(
+    Math.max(0, heldSeconds) * 100 * multiplier * scoreMultiplier,
+  );
 }

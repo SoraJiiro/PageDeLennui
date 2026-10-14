@@ -100,8 +100,8 @@ const AUTO_BADGES = [
     id: "RockstarTag",
     emoji: "🎸",
     name: "Rockstar",
-    isEligible: ({ pdeHeroLongestGame, pdeHeroHardOrExpertBestScore }) =>
-      pdeHeroLongestGame >= 250 && pdeHeroHardOrExpertBestScore >= 750000,
+    isEligible: ({ pdeHeroLongestGame, pdeHeroTotalScore }) =>
+      pdeHeroLongestGame >= 250 && pdeHeroTotalScore >= 750000,
   },
   {
     id: "P4Tag",
@@ -245,11 +245,13 @@ function getEligibilitySnapshot(p, FileService) {
       p,
       "longestGame",
     ),
-    pdeHeroHardOrExpertBestScore: Math.max(
+    pdeHeroTotalScore: Math.max(
       toInt(FileService.data.pdeHeroScores?.[p]?.totalScore),
-      toInt(FileService.data.pdeHeroScores?.[p]?.scores?.hard) ||
-        readNum(FileService.data.pdeHeroScores, p, "bestScore"),
-      toInt(FileService.data.pdeHeroScores?.[p]?.scores?.expert),
+      toInt(FileService.data.pdeHeroScores?.[p]?.scores?.easy) +
+        toInt(FileService.data.pdeHeroScores?.[p]?.scores?.medium) +
+        toInt(FileService.data.pdeHeroScores?.[p]?.scores?.hard) +
+        toInt(FileService.data.pdeHeroScores?.[p]?.scores?.expert),
+      readNum(FileService.data.pdeHeroScores, p, "bestScore"),
     ),
     p4Wins: readNum(FileService.data.p4Wins, p),
     mashWins: readNum(FileService.data.mashWins, p),
@@ -308,7 +310,7 @@ function getBadgeUnlockCondition({
     case "MastermindTag":
       return `chessGames >= 15 AND chessWins >= 10 (values=${Number(progress.chessGames || 0)} / ${Number(progress.chessWins || 0)})`;
     case "RockstarTag":
-      return `pdeHeroLongestGame >= 250 AND pdeHeroHardOrExpertBestScore >= 750000 (values=${Number(progress.pdeHeroLongestGame || 0)} / ${Number(progress.pdeHeroHardOrExpertBestScore || 0)})`;
+      return `pdeHeroLongestGame >= 250 AND pdeHeroTotalScore >= 750000 (values=${Number(progress.pdeHeroLongestGame || 0)} / ${Number(progress.pdeHeroTotalScore || 0)})`;
     case "P4Tag":
       return `p4Wins >= 15 (value=${Number(progress.p4Wins || 0)})`;
     case "MashTag":
@@ -409,7 +411,7 @@ function applyAutoBadges({ pseudo, FileService }) {
   const chessGames = progress.chessGames;
   const chessWins = progress.chessWins;
   const pdeHeroLongestGame = progress.pdeHeroLongestGame;
-  const pdeHeroHardOrExpertBestScore = progress.pdeHeroHardOrExpertBestScore;
+  const pdeHeroTotalScore = progress.pdeHeroTotalScore;
   const p4Wins = progress.p4Wins;
   const mashWins = progress.mashWins;
   const coinflipGames = progress.coinflipGames;
@@ -455,7 +457,7 @@ function applyAutoBadges({ pseudo, FileService }) {
             chessGames,
             chessWins,
             pdeHeroLongestGame,
-            pdeHeroHardOrExpertBestScore,
+            pdeHeroTotalScore,
             p4Wins,
             mashWins,
             coinflipGames,
