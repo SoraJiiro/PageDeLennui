@@ -2,5 +2,6 @@ data
 .env
 README.md
 tests
+test
 uploads
 charte_recompenses_jeux.txt
