@@ -5,7 +5,7 @@ function getTodayKey(now = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
-const logger = require("../logger");
+const logger = require("../logging/fileLogger");
 
 // Limite quotidienne exprimée en monnaie. Pour autoriser 750 tokens/jour,
 // la limite en monnaie doit être 750 * 50 = 37 500.

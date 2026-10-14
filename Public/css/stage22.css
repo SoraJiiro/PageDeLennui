@@ -47,6 +47,21 @@
   padding: 5px 9px;
   font-weight: 700;
 }
+.pde-hero-presence {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+.pde-hero-presence progress {
+  flex: 1;
+  height: 14px;
+  accent-color: #63e6be;
+}
+.pde-hero-presence span {
+  min-width: 3em;
+  text-align: right;
+}
 .pde-hero-wrap {
   margin: 14px auto 10px;
   width: 100%;
@@ -95,7 +110,8 @@
 }
 .pde-hero-controls button,
 .pde-hero-key,
-#pde-hero-difficulty {
+#pde-hero-difficulty,
+#pde-hero-library-chart {
   min-height: 34px;
   border: 1px solid var(--primary-color);
   background: var(--bg-color);
@@ -112,7 +128,21 @@
   gap: 6px;
   font-weight: 700;
 }
-#pde-hero-difficulty {
+.pde-hero-speed-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.pde-hero-speed-control input {
+  width: 100px;
+  accent-color: var(--primary-color);
+}
+.pde-hero-speed-control output {
+  min-width: 3.5em;
+}
+#pde-hero-difficulty,
+#pde-hero-library-chart {
   min-height: 34px;
   padding: 4px 8px;
 }

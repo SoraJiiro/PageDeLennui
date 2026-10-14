@@ -3,7 +3,6 @@ const words = require("../constants/motusWords");
 class MotusGame {
   constructor() {
     this.words = words || [];
-    console.log(`[MotusGame] Initialisé avec ${this.words.length} mots.`);
   }
 
   getRandomWord(excludeList = []) {

@@ -644,27 +644,16 @@ const leaderboardManager = {
     let arr = Object.entries(FileService.data.pdeHeroScores || {})
       .map(([pseudo, value]) => ({
         pseudo,
-        scores: {
-          easy: Number(value?.scores?.easy) || 0,
-          medium: Number(value?.scores?.medium) || 0,
-          hard: Number(value?.scores?.hard) || Number(value?.bestScore) || 0,
-          expert: Number(value?.scores?.expert) || 0,
-        },
-        longestGame: Number(value?.longestGame) || 0,
+        totalScore: Math.max(0, Number(value?.totalScore) || 0),
       }))
       .sort(
         (a, b) =>
-          b.scores.expert - a.scores.expert ||
-          b.scores.hard - a.scores.hard ||
-          b.scores.medium - a.scores.medium ||
-          b.scores.easy - a.scores.easy ||
-          b.longestGame - a.longestGame ||
+          b.totalScore - a.totalScore ||
           a.pseudo.localeCompare(b.pseudo),
       );
     arr = this._withUsersFallback(arr, (pseudo) => ({
       pseudo,
-      scores: { easy: 0, medium: 0, hard: 0, expert: 0 },
-      longestGame: 0,
+      totalScore: 0,
     }));
     io.emit("pdehero:leaderboard", arr);
   },

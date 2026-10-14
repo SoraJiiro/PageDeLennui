@@ -1,12 +1,3 @@
-const cache = new Map();
-
-function requireCached(key, modulePath) {
-  if (cache.has(key)) return cache.get(key);
-  const value = require(modulePath);
-  cache.set(key, value);
-  return value;
-}
-
 function defineLazyExport(name, getter) {
   Object.defineProperty(module.exports, name, {
     enumerable: true,
@@ -18,26 +9,26 @@ function defineLazyExport(name, getter) {
 // ------- Routing helpers -------
 defineLazyExport(
   "setupRoutes",
-  () => requireCached("setupRoutesModule", "./routes/setupRoutes").setupRoutes,
+  () => require("./routes/setupRoutes").setupRoutes,
 );
 
 // ------- Routes -------
 defineLazyExport("authRoutes", () =>
-  requireCached("authRoutes", "./routes/authRoutes"),
+  require("./routes/authRoutes"),
 );
 defineLazyExport("createAdminRouter", () =>
-  requireCached("createAdminRouter", "./routes/adminRoutes"),
+  require("./routes/adminRoutes"),
 );
 defineLazyExport("tagRoutes", () =>
-  requireCached("tagRoutes", "./routes/tagRoutes"),
+  require("./routes/tagRoutes"),
 );
 defineLazyExport("surveyRoutesFactory", () =>
-  requireCached("surveyRoutesFactory", "./routes/surveyRoutes"),
+  require("./routes/surveyRoutes"),
 );
 // defineLazyExport("guerreClansRoutesFactory", ...) supprimé (guerre des clans)
 defineLazyExport("suggestionRoutes", () =>
-  requireCached("suggestionRoutes", "./routes/suggestionRoutes"),
+  require("./routes/suggestionRoutes"),
 );
 defineLazyExport("easterEggRoutes", () =>
-  requireCached("easterEggRoutes", "./routes/easterEggRoutes"),
+  require("./routes/easterEggRoutes"),
 );

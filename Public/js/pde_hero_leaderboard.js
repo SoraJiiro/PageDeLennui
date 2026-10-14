@@ -10,11 +10,7 @@ export function initPdeHeroLeaderboard(socket) {
       [
         index + 1,
         entry.pseudo || "",
-        Number(entry.scores?.expert || 0).toLocaleString("fr-FR"),
-        Number(entry.scores?.hard || 0).toLocaleString("fr-FR"),
-        Number(entry.scores?.medium || 0).toLocaleString("fr-FR"),
-        Number(entry.scores?.easy || 0).toLocaleString("fr-FR"),
-        `${Number(entry.longestGame || 0)}s`,
+        Number(entry.totalScore || 0).toLocaleString("fr-FR"),
       ].forEach((value) => {
         const td = document.createElement("td");
         td.textContent = value;

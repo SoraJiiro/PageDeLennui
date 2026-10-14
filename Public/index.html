@@ -1030,8 +1030,7 @@
                     <h2>PDE Hero Leaderboard.exe</h2>
                 </div>
                 <table class="board" id="pde-hero-leaderboard">
-                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Expert</th><th>Difficile</th><th>Moyen</th><th>Facile</th><th>Temps
-                                (partie la plus longue)</th></tr></thead>
+                    <thead><tr><th>Rang</th><th>Pseudo</th><th>Score global</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -1668,21 +1667,30 @@
                     <div class="pde-hero-stats">
                         <span id="pde-hero-score">Score: 0</span>
                         <span id="pde-hero-combo">Combo: 0</span>
-                        <span id="pde-hero-misses">Misses: 0/7</span>
-                        <span id="pde-hero-overhits">Over hit: 0/7</span>
+                        <span id="pde-hero-misses">Misses: 0</span>
+                        <span id="pde-hero-overhits">Over hit: 0</span>
                         <span id="pde-hero-time">Temps: 0s</span>
                     </div>
+                </div>
+                <div class="pde-hero-presence">
+                    <label for="pde-hero-stage-presence">Stage presence</label>
+                    <progress id="pde-hero-stage-presence" max="100"
+                        value="80" aria-label="Stage presence"
+                        aria-valuetext="80%"></progress>
+                    <span id="pde-hero-stage-presence-value">80%</span>
                 </div>
                 <div class="pde-hero-wrap">
                     <canvas id="pde-hero-canvas"
                         aria-label="Jeu de rythme PDE Hero"></canvas>
                     <div id="pde-hero-game-over" class="pde-hero-game-over"
                         hidden>
-                        <h3>GAME OVER</h3>
+                        <h3 id="pde-hero-result-title">GAME OVER</h3>
                         <p id="pde-hero-final-score">Score : 0</p>
                         <p id="pde-hero-final-time">Duree : 0s</p>
-                        <p id="pde-hero-final-misses">Misses : 0 | Over hit :
-                            0</p>
+                        <p id="pde-hero-final-accuracy">Pourcentage hit : 0%</p>
+                        <p id="pde-hero-final-notes">Notes totales : 0</p>
+                        <p id="pde-hero-final-hits">Hits : 0 | Misses : 0</p>
+                        <p id="pde-hero-final-streak">Plus longue série : 0</p>
                         <button id="pde-hero-restart"
                             type="button">Rejouer</button>
                     </div>
@@ -1696,10 +1704,32 @@
                             <option value="expert">Expert</option>
                         </select>
                     </label>
+                    <label class="pde-hero-speed-control">
+                        Rythme chart
+                        <input id="pde-hero-chart-speed" type="range"
+                            min="0.5" max="1" step="0.05" value="0.75" />
+                        <output id="pde-hero-chart-speed-value">75 %</output>
+                    </label>
+                    <label class="pde-hero-speed-control">
+                        Hyperspeed
+                        <input id="pde-hero-hyperspeed" type="range"
+                            min="1" max="2.5" step="0.1" value="1.5" />
+                        <output id="pde-hero-hyperspeed-value">1.5×</output>
+                    </label>
+                    <button id="pde-hero-chart-import"
+                        type="button">Importer .chart</button>
+                    <label class="pde-hero-difficulty">
+                        Chart disponible
+                        <select id="pde-hero-library-chart">
+                            <option value="">Choisir une chart…</option>
+                        </select>
+                    </label>
+                    <input id="pde-hero-chart-file" type="file"
+                        accept=".chart,text/plain" hidden />
                     <button id="pde-hero-start" type="button">Lancer la
                         partie</button>
-                    <span id="pde-hero-status">Choisissez vos touches puis
-                        lancez.</span>
+                    <span id="pde-hero-status">Choisissez une chart disponible
+                        ou importez un fichier .chart.</span>
                 </div>
                 <div class="pde-hero-keys" aria-label="Touches PDE Hero">
                     <label>Lane 1 <input class="pde-hero-key"

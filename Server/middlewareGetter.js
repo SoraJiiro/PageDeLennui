@@ -1,12 +1,3 @@
-const cache = new Map();
-
-function requireCached(key, modulePath) {
-  if (cache.has(key)) return cache.get(key);
-  const value = require(modulePath);
-  cache.set(key, value);
-  return value;
-}
-
 function defineLazyExport(name, getter) {
   Object.defineProperty(module.exports, name, {
     enumerable: true,
@@ -17,15 +8,15 @@ function defineLazyExport(name, getter) {
 
 // ------- Middlewares -------
 defineLazyExport("requireAuth", () =>
-  requireCached("requireAuth", "./middlewares/requireAuth")
+  require("./middlewares/requireAuth")
 );
 
 defineLazyExport(
   "expressSession",
-  () => requireCached("util", "./util").expressSession
+  () => require("./util").expressSession
 );
 
 defineLazyExport(
   "blacklistMiddleware",
-  () => requireCached("util", "./util").blacklistMiddleware
+  () => require("./util").blacklistMiddleware
 );

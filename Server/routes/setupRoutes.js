@@ -120,6 +120,69 @@ function setupRoutes(
     return res.json({ success: true, rewarded: winner });
   });
 
+  async function listPdeHeroCharts() {
+    const chartRoot = path.join(config.DATA, "PDEHeroCharts");
+    const folders = await fs.promises.readdir(chartRoot, {
+      withFileTypes: true,
+    });
+    const charts = (
+      await Promise.all(
+        folders
+          .filter((folder) => folder.isDirectory())
+          .map(async (folder) => {
+            const folderPath = path.join(chartRoot, folder.name);
+            const files = await fs.promises.readdir(folderPath, {
+              withFileTypes: true,
+            });
+            const chartFiles = files.filter(
+              (file) =>
+                file.isFile() && path.extname(file.name).toLowerCase() === ".chart",
+            );
+            return chartFiles
+              .map((file) => {
+                const relativePath = path.join(folder.name, file.name);
+                return {
+                  id: Buffer.from(relativePath).toString("base64url"),
+                  title:
+                    chartFiles.length > 1
+                      ? `${folder.name} (${path.parse(file.name).name})`
+                      : folder.name,
+                  filePath: path.join(folderPath, file.name),
+                };
+              });
+          }),
+      )
+    )
+      .flat()
+      .sort((a, b) => a.title.localeCompare(b.title, "fr"));
+    return charts;
+  }
+
+  app.get("/api/pdehero/charts", requireAuth, async (_req, res) => {
+    try {
+      const charts = await listPdeHeroCharts();
+      res.json(charts.map(({ id, title }) => ({ id, title })));
+    } catch (error) {
+      console.error("Erreur lors du chargement des charts PDE Hero", error);
+      res.status(500).json({ message: "Bibliothèque PDE Hero indisponible." });
+    }
+  });
+
+  app.get("/api/pdehero/charts/:id", requireAuth, async (req, res) => {
+    try {
+      const charts = await listPdeHeroCharts();
+      const chart = charts.find(({ id }) => id === req.params.id);
+      if (!chart) {
+        return res.status(404).json({ message: "Chart introuvable." });
+      }
+      const content = await fs.promises.readFile(chart.filePath, "utf8");
+      return res.json({ content });
+    } catch (error) {
+      console.error("Erreur lors de la lecture d'une chart PDE Hero", error);
+      return res.status(500).json({ message: "Lecture de la chart impossible." });
+    }
+  });
+
   // API
   app.use("/api", authRoutes);
   app.use(

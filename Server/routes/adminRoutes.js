@@ -85,6 +85,7 @@ function createAdminRouter(io, motusGame, leaderboardManager, pixelWarGame) {
         expert: Math.max(0, Number(scores.expert) || 0),
       },
       longestGame: Math.max(0, Number(current?.longestGame) || 0),
+      totalScore: Math.max(0, Number(current?.totalScore) || 0),
     };
   }
 

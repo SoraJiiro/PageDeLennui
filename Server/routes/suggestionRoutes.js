@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 const { requireAuth } = require("../middlewareGetter");
 const { readAll, writeAll } = require("../db/dbUsers");
 const { markStepByCode } = require("../services/easterEggs");
+const { sleep } = require("../util");
 
 // Configure transporter
 /*
@@ -19,8 +20,7 @@ const transporter = nodemailer.createTransport({
 });*/
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
+  service: "gmail",
   secure: false,
   auth: {
     user: "pde.suggestions@gmail.com",
@@ -38,8 +38,6 @@ transporter.verify(function (error, success) {
         "ATTENTION: Aucun mot de passe d'application trouvé dans les variables d'environnement (APP_PSWD).",
       );
     }
-  } else {
-    console.log("* Serveur prêt à envoyer des emails. \n");
   }
 });
 

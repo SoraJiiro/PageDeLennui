@@ -1,12 +1,3 @@
-const cache = new Map();
-
-function requireCached(key, modulePath) {
-  if (cache.has(key)) return cache.get(key);
-  const value = require(modulePath);
-  cache.set(key, value);
-  return value;
-}
-
 function defineLazyExport(name, getter) {
   Object.defineProperty(module.exports, name, {
     enumerable: true,
@@ -17,32 +8,31 @@ function defineLazyExport(name, getter) {
 
 // ------- Games -------
 defineLazyExport("MashGame", () =>
-  requireCached("MashGame", "./games/mashGame"),
+  require("./games/mashGame"),
 );
-defineLazyExport("UnoGame", () => requireCached("UnoGame", "./games/unoGame"));
+defineLazyExport("UnoGame", () => require("./games/unoGame"));
 defineLazyExport("Puissance4Game", () =>
-  requireCached("Puissance4Game", "./games/puissance4Game"),
+  require("./games/puissance4Game"),
 );
 defineLazyExport("ChessGame", () =>
-  requireCached("ChessGame", "./games/chessGame"),
+  require("./games/chessGame"),
 );
 defineLazyExport("MotusGame", () =>
-  requireCached("MotusGame", "./games/motusGame"),
+  require("./games/motusGame"),
 );
 defineLazyExport("BlackjackGame", () =>
-  requireCached("BlackjackGame", "./games/blackjackGame"),
+  require("./games/blackjackGame"),
 );
 
 // ------- Services -------
 defineLazyExport("medalsService", () =>
-  requireCached("medalsService", "./services/medals"),
+  require("./services/medals"),
 );
 defineLazyExport(
   "recalculateMedals",
-  () => requireCached("medalsService", "./services/medals").recalculateMedals,
+  () => require("./services/medals").recalculateMedals,
 );
 defineLazyExport(
   "broadcastSystemMessage",
-  () =>
-    requireCached("medalsService", "./services/medals").broadcastSystemMessage,
+  () => require("./services/medals").broadcastSystemMessage,
 );

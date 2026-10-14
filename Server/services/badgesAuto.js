@@ -246,6 +246,7 @@ function getEligibilitySnapshot(p, FileService) {
       "longestGame",
     ),
     pdeHeroHardOrExpertBestScore: Math.max(
+      toInt(FileService.data.pdeHeroScores?.[p]?.totalScore),
       toInt(FileService.data.pdeHeroScores?.[p]?.scores?.hard) ||
         readNum(FileService.data.pdeHeroScores, p, "bestScore"),
       toInt(FileService.data.pdeHeroScores?.[p]?.scores?.expert),

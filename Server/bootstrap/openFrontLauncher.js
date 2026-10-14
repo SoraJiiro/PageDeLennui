@@ -75,7 +75,6 @@ function startOpenFront() {
     openFrontChild = null;
   });
 
-  console.log(`[OpenFront] lancé depuis ${openFrontRoot}`);
   return openFrontChild;
 }
 
@@ -124,5 +123,6 @@ process.on("exit", () => {
 
 module.exports = {
   startOpenFront,
+  getOpenFrontRoot,
   shutdownOpenFront,
 };

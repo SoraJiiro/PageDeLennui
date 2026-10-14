@@ -1,10 +1,11 @@
 const path = require("path");
+const fs = require("fs");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 
 // ------- Imports (legacy modules, paths preserved) -------
 const config = require("./config");
-const { GameStateManager } = require("./util");
+const { GameStateManager, sleep } = require("./util");
 const {
   expressSession,
   blacklistMiddleware,
@@ -16,7 +17,6 @@ const {
   createAdminRouter,
   tagRoutes,
   surveyRoutesFactory,
-  // guerreClansRoutesFactory supprimé
   suggestionRoutes,
   easterEggRoutes,
 } = require("./routeGetter");
@@ -27,8 +27,42 @@ const {
   pixelWarGame,
   broadcastSiteMoneyStats,
 } = require("./handlers");
-const { checkReconnect } = require("./reconnectHandler");
-const fileLogger = require("./logger");
+const pdeHeroChartsPath = path.join(config.DATA, "PDEHeroCharts");
+const pdeHeroChartCount = fs
+  .readdirSync(pdeHeroChartsPath, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .reduce(
+    (count, directory) =>
+      count +
+      fs
+        .readdirSync(path.join(pdeHeroChartsPath, directory.name), {
+          withFileTypes: true,
+        })
+        .filter(
+          (entry) =>
+            entry.isFile() &&
+            path.extname(entry.name).toLowerCase() === ".chart",
+        ).length,
+    0,
+  );
+
+void (async () => {
+  await sleep(750);
+  console.log(
+    `[MotusGame] Initialisé avec ${motusGame.getWordListLength()} mots.`,
+  );
+  await sleep(750);
+  console.log(`[PDE Hero] Initialisé avec ${pdeHeroChartCount} charts.`);
+  await sleep(750);
+  if (startOpenFront()) {
+    console.log(`[OpenFront] lancé depuis ${getOpenFrontRoot()}`);
+  }
+  console.log("");
+  await sleep(750);
+})();
+
+const { checkReconnect } = require("./sockets/reconnectHandler");
+const fileLogger = require("./logging/fileLogger");
 
 // ------- Imports (new bootstrap modules) -------
 const { createHttpServer } = require("./bootstrap/createHttpServer");
@@ -39,7 +73,10 @@ const { setupAdminLogBridge } = require("./logging/setupAdminLogBridge");
 const { setupAutoReload } = require("./bootstrap/setupAutoReload");
 const { setupShutdown } = require("./bootstrap/setupShutdown");
 const { registerShutdownContext } = require("./bootstrap/shutdownManager");
-const { startOpenFront } = require("./bootstrap/openFrontLauncher");
+const {
+  startOpenFront,
+  getOpenFrontRoot,
+} = require("./bootstrap/openFrontLauncher");
 
 // ------- Init -------
 const app = express();
@@ -101,9 +138,6 @@ setupAutoReload(io, config);
 
 // ------- Gestion propre de l'arrêt (CTRL+C) -------
 setupShutdown();
-
-// ------- Démarrage auto OpenFront -------
-startOpenFront();
 
 // ------- Start Serveur -------
 config.loadBlacklist("S");

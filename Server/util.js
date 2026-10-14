@@ -8,6 +8,10 @@ const DEFAULT_PFP_URL = "/Public/imgs/defaultProfile.png";
 
 const BLACKLIST_PATH = path.join(__dirname, "..", "blacklist.json");
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function normalizePseudoValue(pseudo) {
   const p = String(pseudo || "").trim();
   return p ? p.toLowerCase() : "";
@@ -115,17 +119,21 @@ function persistBanPseudo(pseudo) {
 }
 
 // ------- Session -------
-const expressSession = session({
-  name: "sid",
-  secret: config.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  },
-});
+function createExpressSession() {
+  return session({
+    name: "sid",
+    secret: config.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
+  });
+}
+
+const expressSession = createExpressSession();
 
 // ------- Blacklist + Middleware -------
 const alreadyTriedToConnect = [];
@@ -908,6 +916,9 @@ class GameStateManager {
 
 // ------- Exports -------
 module.exports = {
+  sleep,
+  normalizePseudoValue,
+  DEFAULT_PFP_URL,
   expressSession,
   blacklistMiddleware,
   FileService: new FileService(),
