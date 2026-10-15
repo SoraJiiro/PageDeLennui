@@ -472,6 +472,11 @@ function registerChatHandlers({
       ".vbs",
       ".lua",
       ".cpkt",
+      ".apk",
+      ".sh",
+      ".bat",
+      ".ps1",
+      ".cmd",
     ]);
 
     const allowedExact = new Set([

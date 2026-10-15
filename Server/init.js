@@ -41,7 +41,9 @@ const pdeHeroChartCount = fs
         .filter(
           (entry) =>
             entry.isFile() &&
-            path.extname(entry.name).toLowerCase() === ".chart",
+            [".chart", ".mid", ".midi"].includes(
+              path.extname(entry.name).toLowerCase(),
+            ),
         ).length,
     0,
   );

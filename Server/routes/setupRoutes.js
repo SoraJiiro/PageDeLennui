@@ -122,6 +122,9 @@ function setupRoutes(
 
   async function listPdeHeroCharts() {
     const chartRoot = path.join(config.DATA, "PDEHeroCharts");
+    const { parsePdeHeroChart, parsePdeHeroMidi } = await import(
+      "../../Public/js/pde_hero_chart.mjs"
+    );
     const folders = await fs.promises.readdir(chartRoot, {
       withFileTypes: true,
     });
@@ -136,20 +139,69 @@ function setupRoutes(
             });
             const chartFiles = files.filter(
               (file) =>
-                file.isFile() && path.extname(file.name).toLowerCase() === ".chart",
+                file.isFile() &&
+                [".chart", ".mid", ".midi"].includes(
+                  path.extname(file.name).toLowerCase(),
+                ),
             );
-            return chartFiles
-              .map((file) => {
+            return Promise.all(
+              chartFiles.map(async (file) => {
                 const relativePath = path.join(folder.name, file.name);
+                const filePath = path.join(folderPath, file.name);
+                const format = path.extname(file.name).toLowerCase() === ".chart"
+                  ? "chart"
+                  : "midi";
+                let duration = null;
+                try {
+                  const durationFile = files.find(
+                    (entry) =>
+                      entry.isFile() &&
+                      entry.name.toLowerCase() === "duree.txt",
+                  );
+                  if (format === "midi" && durationFile) {
+                    const durationPath = path.join(
+                      folderPath,
+                      durationFile.name,
+                    );
+                    const milliseconds = Number(
+                      (await fs.promises.readFile(durationPath, "utf8")).trim(),
+                    );
+                    if (Number.isFinite(milliseconds) && milliseconds > 0) {
+                      duration = milliseconds / 1000;
+                    } else {
+                      console.warn(`Durée invalide dans ${durationPath}`);
+                    }
+                  }
+                  if (duration === null) {
+                    const content =
+                      format === "chart"
+                        ? await fs.promises.readFile(filePath, "utf8")
+                        : await fs.promises.readFile(filePath);
+                    const chart = format === "chart"
+                      ? parsePdeHeroChart(content)
+                      : parsePdeHeroMidi(content);
+                    duration = Math.max(
+                      ...Object.values(chart.tracks).map((track) => track.duration),
+                    );
+                  }
+                } catch (error) {
+                  console.warn(
+                    `Impossible de lire la durée de la chart ${filePath}:`,
+                    error,
+                  );
+                }
                 return {
                   id: Buffer.from(relativePath).toString("base64url"),
                   title:
                     chartFiles.length > 1
                       ? `${folder.name} (${path.parse(file.name).name})`
                       : folder.name,
-                  filePath: path.join(folderPath, file.name),
+                  filePath,
+                  format,
+                  duration,
                 };
-              });
+              }),
+            );
           }),
       )
     )
@@ -161,7 +213,9 @@ function setupRoutes(
   app.get("/api/pdehero/charts", requireAuth, async (_req, res) => {
     try {
       const charts = await listPdeHeroCharts();
-      res.json(charts.map(({ id, title }) => ({ id, title })));
+      res.json(
+        charts.map(({ id, title, duration }) => ({ id, title, duration })),
+      );
     } catch (error) {
       console.error("Erreur lors du chargement des charts PDE Hero", error);
       res.status(500).json({ message: "Bibliothèque PDE Hero indisponible." });
@@ -175,8 +229,10 @@ function setupRoutes(
       if (!chart) {
         return res.status(404).json({ message: "Chart introuvable." });
       }
-      const content = await fs.promises.readFile(chart.filePath, "utf8");
-      return res.json({ content });
+      const content = chart.format === "chart"
+        ? await fs.promises.readFile(chart.filePath, "utf8")
+        : (await fs.promises.readFile(chart.filePath)).toString("base64");
+      return res.json({ content, format: chart.format });
     } catch (error) {
       console.error("Erreur lors de la lecture d'une chart PDE Hero", error);
       return res.status(500).json({ message: "Lecture de la chart impossible." });

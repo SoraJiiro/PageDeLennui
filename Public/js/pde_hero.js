@@ -5,12 +5,15 @@ import {
   getPdeHeroSustainBonus,
   groupPdeHeroLyrics,
   parsePdeHeroChart,
+  parsePdeHeroMidi,
+  schedulePdeHeroLongPauses,
   schedulePdeHeroLyrics,
   schedulePdeHeroTrack,
 } from "./pde_hero_chart.mjs";
 
 const DEFAULT_KEYS = ["d", "f", "j", "k", "l"];
 const SETTINGS_KEY = "pde-hero-settings";
+const CUSTOM_CHART_ID = "__custom__";
 const COLORS = ["#ff4f64", "#ffb347", "#ffe14a", "#63e6be", "#74a7ff"];
 const DIFFICULTIES = {
   easy: { label: "Facile", travelTime: 3200 },
@@ -20,10 +23,26 @@ const DIFFICULTIES = {
 };
 const DIFFICULTY_ORDER = Object.keys(DIFFICULTIES);
 
+function encodeMidi(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+function decodeMidi(base64) {
+  const binary = atob(base64);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return bytes.buffer;
+}
+
 export function initPdeHero(socket) {
   const stage = document.getElementById("stage22");
   const canvas = document.getElementById("pde-hero-canvas");
   const startButton = document.getElementById("pde-hero-start");
+  const stopButton = document.getElementById("pde-hero-stop");
   const chartImportButton = document.getElementById("pde-hero-chart-import");
   const chartFileInput = document.getElementById("pde-hero-chart-file");
   const libraryChartSelect = document.getElementById(
@@ -39,6 +58,7 @@ export function initPdeHero(socket) {
     !stage ||
     !canvas ||
     !startButton ||
+    !stopButton ||
     !chartImportButton ||
     !chartFileInput ||
     !libraryChartSelect ||
@@ -80,6 +100,7 @@ export function initPdeHero(socket) {
     startedAt: 0,
     notes: [],
     pendingNotes: [],
+    longPauses: [],
     lyrics: [],
     lyricPhrases: [],
     lyricIndex: -1,
@@ -138,8 +159,11 @@ export function initPdeHero(socket) {
     typeof savedSettings.importedChart?.content === "string"
   ) {
     try {
-      state.chart = parsePdeHeroChart(savedSettings.importedChart.content);
+      state.chart = savedSettings.importedChart.format === "midi"
+        ? parsePdeHeroMidi(decodeMidi(savedSettings.importedChart.content))
+        : parsePdeHeroChart(savedSettings.importedChart.content);
       importedChartSource = savedSettings.importedChart;
+      selectCustomChart();
       statusEl.textContent = `${importedChartSource.name} chargé depuis les paramètres locaux.`;
     } catch (error) {
       console.error("La dernière chart PDE Hero sauvegardée est invalide.", error);
@@ -166,6 +190,19 @@ export function initPdeHero(socket) {
       if (!state.running)
         statusEl.textContent = "Impossible de sauvegarder les paramètres PDE Hero localement.";
     }
+  }
+
+  function selectCustomChart() {
+    let option = [...libraryChartSelect.options].find(
+      ({ value }) => value === CUSTOM_CHART_ID,
+    );
+    if (!option) {
+      option = document.createElement("option");
+      option.value = CUSTOM_CHART_ID;
+      option.textContent = "Charte Custom";
+      libraryChartSelect.appendChild(option);
+    }
+    libraryChartSelect.value = CUSTOM_CHART_ID;
   }
 
   function selectChartTrack(chart, difficulty) {
@@ -251,6 +288,12 @@ export function initPdeHero(socket) {
     };
   }
 
+  function formatChartDuration(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+  }
+
   function draw(now) {
     const width = state.viewWidth;
     const height = state.viewHeight;
@@ -264,6 +307,8 @@ export function initPdeHero(socket) {
     const hitY = height - 48;
     const topY = Math.max(0, height * 0.05);
 
+    ctx.fillStyle = "#000";
+    ctx.fillRect(trackX, topY, trackWidth, height - topY);
     for (let lane = 0; lane < 5; lane++) {
       const laneX = trackX + lane * laneWidth;
       ctx.fillStyle =
@@ -295,7 +340,7 @@ export function initPdeHero(socket) {
     ctx.stroke();
 
     const { width: hitLaneWidth } = getLaneBounds(0);
-    const targetRadius = Math.min(24, hitLaneWidth / 2 - 5);
+    const targetRadius = Math.max(0, Math.min(24, hitLaneWidth / 2 - 5));
     ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
     ctx.fillRect(
       trackX,
@@ -317,7 +362,7 @@ export function initPdeHero(socket) {
       const progress = Math.max(0, (now - note.spawnAt) / note.travelTime);
       const y = note.hitRegistered ? hitY : progress * hitY;
       const { center: x, width: noteLaneWidth } = getLaneBounds(note.lane);
-      const radius = Math.min(20, noteLaneWidth / 2 - 6);
+      const radius = Math.max(0, Math.min(20, noteLaneWidth / 2 - 6));
       if (note.sustain > 0) {
         const sustainHeadY = Math.max(topY, y);
         const tailY = Math.max(
@@ -450,6 +495,33 @@ export function initPdeHero(socket) {
       ctx.fill();
     });
     ctx.restore();
+    const activePause = state.longPauses.find(
+      (pause) => now >= pause.startAt && now < pause.endAt,
+    );
+    if (activePause) {
+      const secondsUntilNextNote = Math.ceil(
+        (activePause.nextNoteAt - now) / 1000,
+      );
+      const centerX = trackX + trackWidth / 2;
+      const centerY = (topY + hitY) / 2;
+      const panelWidth = Math.min(trackWidth * 0.72, 300);
+      const panelHeight = Math.max(76, height * 0.19);
+      ctx.fillStyle = "rgba(0,0,0,.82)";
+      ctx.fillRect(
+        centerX - panelWidth / 2,
+        centerY - panelHeight / 2,
+        panelWidth,
+        panelHeight,
+      );
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff";
+      ctx.font = `bold ${Math.max(12, Math.min(18, width * 0.022))}px sans-serif`;
+      ctx.fillText("PROCHAINE NOTE", centerX, centerY - panelHeight * 0.22);
+      ctx.fillStyle = "#ff9d32";
+      ctx.font = `800 ${Math.max(24, Math.min(48, width * 0.06))}px sans-serif`;
+      ctx.fillText(`${secondsUntilNextNote}`, centerX, centerY + panelHeight * 0.2);
+    }
   }
 
   function updateLyrics() {
@@ -597,7 +669,10 @@ export function initPdeHero(socket) {
     window.setTimeout(() => draw(performance.now()), 190);
   }
 
-  function finish(message = "Partie terminee", { completed = false } = {}) {
+  function finish(
+    message = "Partie terminee",
+    { completed = false, stopped = false } = {},
+  ) {
     if (!state.running) return;
     state.running = false;
     cancelAnimationFrame(state.animation);
@@ -608,12 +683,17 @@ export function initPdeHero(socket) {
     state.longest = Math.max(state.longest, duration);
     state.maxCombo = Math.max(state.maxCombo, state.combo);
     startButton.disabled = false;
+    stopButton.hidden = true;
     statusEl.textContent = `${message} - ${state.score} points`;
     const finalDuration = Math.floor(duration);
     const accuracy = state.hits + state.misses
       ? Math.round((state.hits / (state.hits + state.misses)) * 100)
       : 0;
-    gameOverTitleEl.textContent = completed ? "CHART TERMINÉE" : "GAME OVER";
+    gameOverTitleEl.textContent = completed
+      ? "CHART TERMINÉE"
+      : stopped
+        ? "PARTIE ARRÊTÉE"
+        : "GAME OVER";
     finalScoreEl.textContent = `Score : ${state.score}`;
     finalTimeEl.textContent = `Duree : ${finalDuration}s`;
     finalAccuracyEl.textContent = `Pourcentage hit : ${accuracy}%`;
@@ -666,6 +746,11 @@ export function initPdeHero(socket) {
       travelTime,
       chartSpeed,
     );
+    state.longPauses = schedulePdeHeroLongPauses(
+      chartTrack,
+      schedule.startAt,
+      chartSpeed,
+    );
     state.running = true;
     gameOverEl.hidden = true;
     state.score = 0;
@@ -704,6 +789,7 @@ export function initPdeHero(socket) {
     state.chartDuration = schedule.duration;
     state.lastFrame = state.startedAt;
     startButton.disabled = true;
+    stopButton.hidden = false;
     chartImportButton.disabled = true;
     libraryChartSelect.disabled = true;
     chartSpeedInput.disabled = true;
@@ -770,12 +856,14 @@ export function initPdeHero(socket) {
 
   function hit(key) {
     if (!state.running) return;
+    const now = performance.now();
+    if (state.longPauses.some((pause) => now >= pause.startAt && now < pause.endAt))
+      return;
     const lane = keys.indexOf(key.toLowerCase());
     if (lane < 0) {
       registerMiss();
       return;
     }
-    const now = performance.now();
     const laneNote = state.notes.find(
       (note) => note.lane === lane && !note.hitRegistered,
     );
@@ -808,6 +896,7 @@ export function initPdeHero(socket) {
   }
 
   function release(key) {
+    if (!state.running) return;
     const lane = keys.indexOf(key.toLowerCase());
     const index = state.notes.findIndex(
       (note) => note.lane === lane && note.holding,
@@ -818,6 +907,9 @@ export function initPdeHero(socket) {
   }
 
   startButton.addEventListener("click", start);
+  stopButton.addEventListener("click", () =>
+    finish("Partie arrêtée — score non enregistré", { stopped: true }),
+  );
   restartButton.addEventListener("click", start);
   chartImportButton.addEventListener("click", () => chartFileInput.click());
   chartSpeedInput.addEventListener("input", () => {
@@ -833,12 +925,23 @@ export function initPdeHero(socket) {
     if (!file) return;
     try {
       if (state.running) throw new Error("Terminez la partie avant d’importer.");
-      if (!file.name.toLowerCase().endsWith(".chart"))
-        throw new Error("Sélectionnez un fichier .chart.");
-      const content = await file.text();
-      state.chart = parsePdeHeroChart(content);
-      importedChartSource = { name: file.name, content };
-      libraryChartSelect.value = "";
+      const extension = file.name.split(".").pop().toLowerCase();
+      if (!["chart", "mid", "midi"].includes(extension))
+        throw new Error("Sélectionnez un fichier .chart ou .mid.");
+      if (extension === "chart") {
+        const content = await file.text();
+        state.chart = parsePdeHeroChart(content);
+        importedChartSource = { name: file.name, content, format: "chart" };
+      } else {
+        const content = await file.arrayBuffer();
+        state.chart = parsePdeHeroMidi(content);
+        importedChartSource = {
+          name: file.name,
+          content: encodeMidi(content),
+          format: "midi",
+        };
+      }
+      selectCustomChart();
       saveSettings();
       const selectedTrack = selectChartTrack(
         state.chart,
@@ -853,7 +956,7 @@ export function initPdeHero(socket) {
   });
   libraryChartSelect.addEventListener("change", async () => {
     const chartId = libraryChartSelect.value;
-    if (!chartId) return;
+    if (!chartId || chartId === CUSTOM_CHART_ID) return;
     libraryChartSelect.disabled = true;
     try {
       if (state.running)
@@ -865,10 +968,15 @@ export function initPdeHero(socket) {
       if (!response.ok) {
         throw new Error(result.message || "Chargement de la chart impossible.");
       }
-      const chart = parsePdeHeroChart(result.content);
+      const chart = result.format === "midi"
+        ? parsePdeHeroMidi(decodeMidi(result.content))
+        : parsePdeHeroChart(result.content);
       const selectedTrack = selectChartTrack(chart, difficultySelect.value);
       state.chart = chart;
       importedChartSource = null;
+      libraryChartSelect.querySelector(
+        `option[value="${CUSTOM_CHART_ID}"]`,
+      )?.remove();
       saveSettings();
       statusEl.textContent = `${libraryChartSelect.selectedOptions[0].textContent} chargé — ${selectedTrack.track.notes.length} notes (${selectedTrack.track.name}).`;
     } catch (error) {
@@ -900,10 +1008,12 @@ export function initPdeHero(socket) {
       if (!response.ok) {
         throw new Error(charts.message || "Bibliothèque indisponible.");
       }
-      charts.forEach(({ id, title }) => {
+      charts.forEach(({ id, title, duration }) => {
         const option = document.createElement("option");
         option.value = id;
-        option.textContent = title;
+        option.textContent = Number.isFinite(duration)
+          ? `${title} (${formatChartDuration(duration)})`
+          : title;
         libraryChartSelect.appendChild(option);
       });
       if (!state.chart && savedSettings.chartId) {
